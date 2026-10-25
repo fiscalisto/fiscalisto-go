@@ -44,6 +44,7 @@ type Client struct {
 	key        string
 	baseURL    string
 	apiVersion string
+	language   string
 	http       *http.Client
 	maxRetries int
 	timeout    time.Duration
@@ -59,6 +60,9 @@ func WithBaseURL(u string) Option { return func(c *Client) { c.baseURL = strings
 // WithAPIVersion pide otra versión de la API (Fiscalisto-Version); con "" se usa la fijada en
 // la cuenta.
 func WithAPIVersion(v string) Option { return func(c *Client) { c.apiVersion = v } }
+
+// WithLanguage con "en" pide los mensajes de error en inglés (Accept-Language).
+func WithLanguage(lang string) Option { return func(c *Client) { c.language = lang } }
 
 // WithHTTPClient usa su propio *http.Client (transporte, proxy, trazas).
 func WithHTTPClient(h *http.Client) Option { return func(c *Client) { c.http = h } }
@@ -314,6 +318,9 @@ func (c *Client) send(ctx context.Context, method, target string, data []byte, k
 	req.Header.Set("Accept", "application/json")
 	if c.apiVersion != "" {
 		req.Header.Set("Fiscalisto-Version", c.apiVersion)
+	}
+	if c.language != "" {
+		req.Header.Set("Accept-Language", c.language)
 	}
 	if data != nil {
 		req.Header.Set("Content-Type", "application/json")

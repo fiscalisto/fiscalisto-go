@@ -1541,6 +1541,8 @@ type ErrorBodyError struct {
 	Param *string `json:"param,omitempty"`
 	// Código del SAT o del PAC (CFDI40xxx).
 	SATCode *string `json:"sat_code,omitempty"`
+	// Con Accept-Language: en, el mensaje original en español cuando message solo dice en inglés qué significa el código.
+	MessageEs *string `json:"message_es,omitempty"`
 	// La explicación de este código en la documentación.
 	DocURL string `json:"doc_url"`
 	// El id de la solicitud (req_…). Inclúyalo si nos escribe.
