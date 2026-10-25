@@ -22,6 +22,8 @@ type services struct {
 	TestData *TestDataService
 	// Entornos de prueba.
 	Sandboxes *SandboxesService
+	// Entornos de prueba.
+	TestClocks *TestClocksService
 	// Cuenta.
 	Balance *BalanceService
 	// Emisores.
@@ -82,6 +84,7 @@ func (s *services) init(c *Client) {
 	s.Account = &AccountService{c}
 	s.TestData = &TestDataService{c}
 	s.Sandboxes = &SandboxesService{c}
+	s.TestClocks = &TestClocksService{c}
 	s.Balance = &BalanceService{c}
 	s.Issuers = &IssuersService{c}
 	s.Invoices = &InvoicesService{c}
@@ -201,6 +204,67 @@ func (s *SandboxesService) Get(ctx context.Context, id string, opts ...RequestOp
 func (s *SandboxesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
 	if err := s.c.do(ctx, "DELETE", "/v1/sandboxes/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TestClocksService: Entornos de prueba (client.TestClocks).
+type TestClocksService struct{ c *Client }
+
+// Create: Crear un reloj de prueba
+//
+// Le da a un emisor de pruebas su propia hora, congelada en frozen_time (ahora, si no la manda): sus facturas recurrentes, cotizaciones, cuentas por cobrar y tickets cuentan los días con ella, y nada de eso corre solo hasta que usted lo adelanta. Para ver en segundos lo que pasa en meses. Solo emisores de prueba; uno por emisor.
+//
+// POST /v1/issuers/{id}/test_clock
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/create-test-clock
+func (s *TestClocksService) Create(ctx context.Context, id string, params *CreateTestClockParams, opts ...RequestOption) (*TestClock, error) {
+	out := new(TestClock)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/test_clock", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver el reloj de prueba
+//
+// GET /v1/issuers/{id}/test_clock
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/get-test-clock
+func (s *TestClocksService) Get(ctx context.Context, id string, opts ...RequestOption) (*TestClock, error) {
+	out := new(TestClock)
+	if err := s.c.do(ctx, "GET", "/v1/issuers/"+url.PathEscape(id)+"/test_clock", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar el reloj de prueba
+//
+// El emisor vuelve a la hora real; lo que el reloj dejó pendiente lo hacen los procesos diarios.
+//
+// DELETE /v1/issuers/{id}/test_clock
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/delete-test-clock
+func (s *TestClocksService) Delete(ctx context.Context, id string, opts ...RequestOption) (*TestClock, error) {
+	out := new(TestClock)
+	if err := s.c.do(ctx, "DELETE", "/v1/issuers/"+url.PathEscape(id)+"/test_clock", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Advance: Adelantar el reloj de prueba
+//
+// Mueve el reloj hasta frozen_time haciendo, día por día, lo que habría pasado: timbra las facturas recurrentes de cada periodo, vence las cotizaciones y hace las facturas globales de tickets, con sus eventos. Contesta cuando terminó, con lo que hizo en advanced, y llega test_clock.ready. Hasta 25 comprobantes por solicitud: si se detiene antes, stopped_early y otra llamada sigue. Los CFDI se timbran con la fecha real (el SAT solo acepta la de hoy); el periodo, los vencimientos y los eventos siguen al reloj.
+//
+// POST /v1/issuers/{id}/test_clock/advance
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/advance-test-clock
+func (s *TestClocksService) Advance(ctx context.Context, id string, params *AdvanceTestClockParams, opts ...RequestOption) (*TestClock, error) {
+	out := new(TestClock)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/test_clock/advance", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

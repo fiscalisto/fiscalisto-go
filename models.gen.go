@@ -79,6 +79,12 @@ type AdvanceList struct {
 	URL string `json:"url"`
 }
 
+// AdvanceTestClockParams: los campos de «Adelantar el reloj de prueba».
+type AdvanceTestClockParams struct {
+	// A dónde adelantarlo: después de la hora actual del reloj. Lo que toca en el camino se hace día por día.
+	FrozenTime string `json:"frozen_time"`
+}
+
 // ApplyAdvanceParams: El cuerpo de POST /v1/invoices (la factura de lo vendido) con method y remainder.
 type ApplyAdvanceParams struct {
 	// egreso (la factura completa y después una nota de crédito por el anticipo, opción A) o remanente (la factura solo por lo que falta, opción B).
@@ -1199,6 +1205,12 @@ type CreateStoreConnectionParamsSettings struct {
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
 }
 
+// CreateTestClockParams: los campos de «Crear un reloj de prueba».
+type CreateTestClockParams struct {
+	// Dónde empieza el reloj; si no la manda, ahora.
+	FrozenTime *string `json:"frozen_time,omitempty"`
+}
+
 // CreateTicketParams: los campos de «Registrar un ticket».
 type CreateTicketParams struct {
 	// El emisor (iss_…) que vendió. Por omisión, su único emisor.
@@ -1535,7 +1547,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready o balance.low.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -3127,6 +3139,8 @@ type Issuer struct {
 	StampsAs string `json:"stamps_as"`
 	// El entorno de prueba (sbx_…) al que pertenece, o null si es de la cuenta. Vea /v1/sandboxes.
 	Sandbox *string `json:"sandbox,omitempty"`
+	// Su reloj de prueba (solo emisores de prueba): la hora que es «hoy» para él, o null si va con la hora real. Vea POST /v1/issuers/{id}/test_clock.
+	TestClock *IssuerTestClock `json:"test_clock,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Cuándo se archivó (ya no timbra), o null.
@@ -3179,6 +3193,12 @@ type IssuerSATDownloads struct {
 	Available bool `json:"available"`
 	// Cuándo vence la e.firma guardada para las descargas, o null si no hay una.
 	EfirmaExpiresAt *string `json:"efirma_expires_at,omitempty"`
+}
+
+// IssuerTestClock: IssuerTestClock.
+type IssuerTestClock struct {
+	// La hora del reloj.
+	FrozenTime string `json:"frozen_time"`
 }
 
 // JournalEntry: La póliza de diario de un CFDI: sus cargos y abonos, que siempre cuadran.
@@ -3327,7 +3347,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -4627,6 +4647,44 @@ type TaxIDValidationWarning struct {
 	Suggestion *string `json:"suggestion,omitempty"`
 }
 
+// TestClock: El reloj de prueba de un emisor de pruebas: su «hoy», que solo avanza cuando usted lo adelanta, haciendo día por día lo que toca.
+type TestClock struct {
+	// clk_ y la clave del emisor.
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor de pruebas que vive en esta hora.
+	Issuer string `json:"issuer"`
+	// La hora del reloj: el «hoy» del emisor para sus facturas recurrentes, cotizaciones, cuentas por cobrar y tickets.
+	FrozenTime string `json:"frozen_time"`
+	// advancing mientras una solicitud lo adelanta; ready en cualquier otro momento.
+	//
+	// Valores: ready, advancing.
+	Status string `json:"status"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Al adelantarlo: lo que se hizo en el camino.
+	Advanced *TestClockAdvanced `json:"advanced,omitempty"`
+	// true si se detuvo antes de requested_time porque ya timbró 25 comprobantes en esta solicitud: adelántelo otra vez para seguir.
+	StoppedEarly *bool `json:"stopped_early,omitempty"`
+	// A dónde se pidió adelantarlo (con stopped_early).
+	RequestedTime *string `json:"requested_time,omitempty"`
+	// Siempre true.
+	Deleted *bool `json:"deleted,omitempty"`
+}
+
+// TestClockAdvanced: Al adelantarlo: lo que se hizo en el camino.
+type TestClockAdvanced struct {
+	// Facturas recurrentes timbradas en el camino.
+	RecurringInvoices int64 `json:"recurring_invoices"`
+	// Cotizaciones que vencieron en el camino.
+	QuotesExpired int64 `json:"quotes_expired"`
+	// Facturas globales de tickets timbradas en el camino.
+	GlobalInvoices int64 `json:"global_invoices"`
+}
+
 // TestDataReset: Lo que se borró (y se creó) al reiniciar los datos de prueba.
 type TestDataReset struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -4649,7 +4707,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 

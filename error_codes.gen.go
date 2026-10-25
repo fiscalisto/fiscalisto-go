@@ -146,6 +146,16 @@ const (
 	CodeStorePlatformUnavailable = "store_platform_unavailable"
 	// Los complementos de pago y las notas de crédito no se sustituyen: se cancelan y se emite otro.
 	CodeSubstitutionUnsupported = "substitution_unsupported"
+	// El reloj se está adelantando en otra solicitud (409, con Retry-After). Espere a test_clock.ready y repita.
+	CodeTestClockAdvancing = "test_clock_advancing"
+	// El emisor ya tiene un reloj de prueba: adelántelo, o bórrelo para volver a la hora real.
+	CodeTestClockExists = "test_clock_exists"
+	// frozen_time no sirve: no es una fecha y hora ISO 8601, es anterior a la hora del reloj (solo avanza) o va más de dos años adelante de la hora real.
+	CodeTestClockInvalid = "test_clock_invalid"
+	// El emisor no tiene reloj de prueba: créelo con POST /v1/issuers/{id}/test_clock.
+	CodeTestClockMissing = "test_clock_missing"
+	// Los relojes de prueba son de emisores de prueba: use su llave fk_test_ y un emisor de pruebas.
+	CodeTestClockUnsupported = "test_clock_unsupported"
 	// Esto solo existe en pruebas (como reiniciar los datos de prueba): use su llave fk_test_.
 	CodeTestModeOnly = "test_mode_only"
 	// Ese folio ya está registrado para el emisor con otro total o con otra propina (409). Con el mismo total se contesta el ticket que ya existe.
