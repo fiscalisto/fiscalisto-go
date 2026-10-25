@@ -50,6 +50,10 @@ type services struct {
 	SatCatalogs *SatCatalogsService
 	// Listas del SAT.
 	SatLists *SatListsService
+	// Descargas del SAT.
+	SatDownloads *SatDownloadsService
+	// Descargas del SAT.
+	SatInvoices *SatInvoicesService
 	// Webhooks.
 	WebhookEndpoints *WebhookEndpointsService
 	// Eventos.
@@ -74,6 +78,8 @@ func (s *services) init(c *Client) {
 	s.Products = &ProductsService{c}
 	s.SatCatalogs = &SatCatalogsService{c}
 	s.SatLists = &SatListsService{c}
+	s.SatDownloads = &SatDownloadsService{c}
+	s.SatInvoices = &SatInvoicesService{c}
 	s.WebhookEndpoints = &WebhookEndpointsService{c}
 	s.Events = &EventsService{c}
 }
@@ -206,7 +212,7 @@ func (s *IssuersService) UploadCertificate(ctx context.Context, id string, param
 
 // SignEfirma: Firmar el contrato con el PAC
 //
-// Una sola vez por RFC antes de timbrar en producción: firma el contrato de servicio del PAC (Finkok) con la e.firma del emisor. La e.firma se usa en memoria para esa firma y nunca se guarda.
+// Una sola vez por RFC antes de timbrar en producción: firma el contrato de servicio del PAC (Finkok) con la e.firma del emisor. La e.firma se usa en memoria para esa firma y no se guarda, salvo que mande keep_for_downloads: true para pedirle al SAT las facturas del emisor (POST /v1/sat_downloads); entonces se guarda cifrada y puede borrarla con DELETE.
 //
 // POST /v1/issuers/{id}/efirma
 //
@@ -214,6 +220,21 @@ func (s *IssuersService) UploadCertificate(ctx context.Context, id string, param
 func (s *IssuersService) SignEfirma(ctx context.Context, id string, params *SignEfirmaParams, opts ...RequestOption) (*Issuer, error) {
 	out := new(Issuer)
 	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/efirma", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteEfirma: Borrar la e.firma guardada
+//
+// Borra la e.firma que guardó con keep_for_downloads. El emisor sigue timbrando; ya no puede pedir descargas al SAT hasta que la mande de nuevo.
+//
+// DELETE /v1/issuers/{id}/efirma
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/delete-efirma
+func (s *IssuersService) DeleteEfirma(ctx context.Context, id string, opts ...RequestOption) (*Issuer, error) {
+	out := new(Issuer)
+	if err := s.c.do(ctx, "DELETE", "/v1/issuers/"+url.PathEscape(id)+"/efirma", nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -935,6 +956,95 @@ func (s *SatListsService) Check(ctx context.Context, params *CheckSatListsParams
 		return nil, err
 	}
 	return out, nil
+}
+
+// SatDownloadsService: Descargas del SAT (client.SatDownloads).
+type SatDownloadsService struct{ c *Client }
+
+// Create: Pedirle al SAT las facturas de un emisor
+//
+// La descarga masiva del SAT: las facturas que el emisor recibió (o emitió) en un periodo de hasta un año, con su XML. Contesta 202 de inmediato; el SAT tarda de minutos a horas y al terminar llega sat_download.completed (o sat_download.failed) y las facturas quedan en GET /v1/sat_invoices. En producción necesita la e.firma guardada del emisor; en pruebas no se le pregunta al SAT: la descarga trae facturas de ejemplo al instante. No usa timbres.
+//
+// POST /v1/sat_downloads
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/create-sat-download
+func (s *SatDownloadsService) Create(ctx context.Context, params *CreateSatDownloadParams, opts ...RequestOption) (*SATDownload, error) {
+	out := new(SATDownload)
+	if err := s.c.do(ctx, "POST", "/v1/sat_downloads", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar descargas del SAT
+//
+// GET /v1/sat_downloads
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/list-sat-downloads
+func (s *SatDownloadsService) List(ctx context.Context, params *ListSatDownloadsParams, opts ...RequestOption) (*Page[SATDownload], error) {
+	return list[SATDownload](ctx, s.c, "/v1/sat_downloads", params, "", opts)
+}
+
+// ListAutoPaging: Listar descargas del SAT, todos, página por página: for x, err := range …
+func (s *SatDownloadsService) ListAutoPaging(ctx context.Context, params *ListSatDownloadsParams, opts ...RequestOption) iter.Seq2[SATDownload, error] {
+	return listAll[SATDownload](ctx, s.c, "/v1/sat_downloads", params, opts)
+}
+
+// Get: Ver una descarga del SAT
+//
+// GET /v1/sat_downloads/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-download
+func (s *SatDownloadsService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATDownload, error) {
+	out := new(SATDownload)
+	if err := s.c.do(ctx, "GET", "/v1/sat_downloads/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SatInvoicesService: Descargas del SAT (client.SatInvoices).
+type SatInvoicesService struct{ c *Client }
+
+// List: Listar facturas del SAT
+//
+// Las facturas que trajeron sus descargas (y las demás que Fiscalisto tenga del emisor), de la más reciente a la más antigua por fecha.
+//
+// GET /v1/sat_invoices
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/list-sat-invoices
+func (s *SatInvoicesService) List(ctx context.Context, params *ListSatInvoicesParams, opts ...RequestOption) (*Page[SATInvoice], error) {
+	return list[SATInvoice](ctx, s.c, "/v1/sat_invoices", params, "", opts)
+}
+
+// ListAutoPaging: Listar facturas del SAT, todos, página por página: for x, err := range …
+func (s *SatInvoicesService) ListAutoPaging(ctx context.Context, params *ListSatInvoicesParams, opts ...RequestOption) iter.Seq2[SATInvoice, error] {
+	return listAll[SATInvoice](ctx, s.c, "/v1/sat_invoices", params, opts)
+}
+
+// Get: Ver una factura del SAT
+//
+// GET /v1/sat_invoices/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-invoice
+func (s *SatInvoicesService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATInvoice, error) {
+	out := new(SATInvoice)
+	if err := s.c.do(ctx, "GET", "/v1/sat_invoices/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Xml: Descargar el XML de una factura del SAT
+//
+// El CFDI tal como lo entregó el SAT.
+//
+// GET /v1/sat_invoices/{id}/xml
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-invoice-xml
+func (s *SatInvoicesService) XML(ctx context.Context, id string, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/sat_invoices/"+url.PathEscape(id)+"/xml", nil, nil, false, opts)
+	return string(b), err
 }
 
 // WebhookEndpointsService: Webhooks (client.WebhookEndpoints).

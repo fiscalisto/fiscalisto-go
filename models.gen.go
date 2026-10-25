@@ -743,6 +743,28 @@ type CreateRetentionParamsTotals struct {
 	Exempt *float64 `json:"exempt,omitempty"`
 }
 
+// CreateSatDownloadParams: los campos de «Pedirle al SAT las facturas de un emisor».
+type CreateSatDownloadParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// received (las facturas que le hicieron al emisor, por omisión) o issued (las que emitió, aunque no haya sido con Fiscalisto).
+	//
+	// Valores: received, issued.
+	Direction *string `json:"direction,omitempty"`
+	// Desde qué día (incluido), en hora de la Ciudad de México.
+	From string `json:"from"`
+	// Hasta qué día (incluido). A lo más un año después de from, y no después de hoy.
+	To string `json:"to"`
+	// Solo un tipo de comprobante: I, E, P, T o N. Por omisión, todos.
+	//
+	// Valores: I, E, P, T, N.
+	Type *string `json:"type,omitempty"`
+	// Solo las de un RFC: el emisor de las recibidas, o el receptor de las emitidas.
+	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
+	// Una sola factura, por su folio fiscal (UUID).
+	UUID *string `json:"uuid,omitempty"`
+}
+
 // CreateWebhookEndpointParams: los campos de «Crear un webhook».
 type CreateWebhookEndpointParams struct {
 	// Dirección https de su servidor que recibe los avisos.
@@ -979,7 +1001,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, issuer.ready o balance.low.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, issuer.ready o balance.low.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -2497,6 +2519,8 @@ type Issuer struct {
 	Requirement *string `json:"requirement,omitempty"`
 	// El sello digital (CSD) cargado: número de serie y vencimiento.
 	Certificate *IssuerCertificate `json:"certificate,omitempty"`
+	// Si puede pedirle al SAT sus facturas (POST /v1/sat_downloads): available es true en pruebas, y en producción mientras su e.firma guardada esté vigente (efirma_expires_at).
+	SATDownloads IssuerSATDownloads `json:"sat_downloads"`
 	// Registro patronal ante el IMSS (RegistroPatronal), 11 caracteres. Necesario para timbrar nómina.
 	EmployerRegistration *string `json:"employer_registration,omitempty"`
 	// CURP, 18 caracteres.
@@ -2549,6 +2573,14 @@ type IssuerOnboardingLink struct {
 	CreatedAt *string `json:"created_at,omitempty"`
 }
 
+// IssuerSATDownloads: Si puede pedirle al SAT sus facturas (POST /v1/sat_downloads): available es true en pruebas, y en producción mientras su e.firma guardada esté vigente (efirma_expires_at).
+type IssuerSATDownloads struct {
+	// true si puede pedir descargas al SAT ahora: siempre en pruebas; en producción con su e.firma guardada y vigente.
+	Available bool `json:"available"`
+	// Cuándo vence la e.firma guardada para las descargas, o null si no hay una.
+	EfirmaExpiresAt *string `json:"efirma_expires_at,omitempty"`
+}
+
 // ListAdvancesParams: los campos de «Listar anticipos sin aplicar».
 type ListAdvancesParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -2597,7 +2629,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -2679,6 +2711,40 @@ type ListRetentionsParams struct {
 	Recipient *string `json:"recipient,omitempty"`
 	// Ejercicio, 4 dígitos.
 	Year *string `json:"year,omitempty"`
+}
+
+// ListSatDownloadsParams: los campos de «Listar descargas del SAT».
+type ListSatDownloadsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListSatInvoicesParams: los campos de «Listar facturas del SAT».
+type ListSatInvoicesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// received (por omisión) o issued.
+	//
+	// Valores: received, issued.
+	Direction *string `json:"direction,omitempty"`
+	// I, E, P, T o N.
+	//
+	// Valores: I, E, P, T, N.
+	Type *string `json:"type,omitempty"`
+	// El RFC de quien la emitió (recibidas) o de quien la recibió (emitidas).
+	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
+	// Con fecha desde este día (AAAA-MM-DD).
+	DateGte *string `json:"date_gte,omitempty"`
+	// Con fecha hasta este día (AAAA-MM-DD), incluido.
+	DateLte *string `json:"date_lte,omitempty"`
 }
 
 // ListWebhookEndpointsParams: los campos de «Listar webhooks».
@@ -3059,6 +3125,160 @@ type SATCatalogEntryList struct {
 	URL string `json:"url"`
 }
 
+// SATDownload: Una solicitud al SAT de las facturas emitidas o recibidas de un emisor en un periodo.
+type SATDownload struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor cuyas facturas se piden.
+	Issuer string `json:"issuer"`
+	// received (las que le hicieron) o issued (las que emitió).
+	//
+	// Valores: received, issued.
+	Direction string `json:"direction"`
+	// Desde qué día (incluido).
+	From *string `json:"from,omitempty"`
+	// Hasta qué día (incluido).
+	To *string `json:"to,omitempty"`
+	// El tipo de comprobante pedido, o null si todos.
+	//
+	// Valores: I, E, P, T, N.
+	Type *string `json:"type,omitempty"`
+	// El RFC de la contraparte pedido, o null.
+	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
+	// El folio fiscal pedido, o null.
+	UUID *string `json:"uuid,omitempty"`
+	// processing (el SAT la está preparando: de minutos a horas), completed (las facturas ya están en GET /v1/sat_invoices) o failed (el motivo en error).
+	//
+	// Valores: processing, completed, failed.
+	Status string `json:"status"`
+	// Cuántas facturas nuevas trajo (las que ya tenía no cuentan). null mientras no termine.
+	NewInvoices *int64 `json:"new_invoices,omitempty"`
+	// Por qué falló, como lo dijo el SAT. null si no falló.
+	Error *string `json:"error,omitempty"`
+	// Cuándo se pidió.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo terminó, o null.
+	CompletedAt *string `json:"completed_at,omitempty"`
+}
+
+// SATDownloadList: Una página de la lista.
+type SATDownloadList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATDownload `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// SATInvoice: Una factura que el SAT tiene del emisor, emitida o recibida, traída con una descarga.
+type SATInvoice struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor de su cuenta (iss_…) a quien pertenece esta factura.
+	Issuer string `json:"issuer"`
+	// El folio fiscal (UUID del timbre).
+	UUID string `json:"uuid"`
+	// received (se la hicieron al emisor) o issued (la emitió).
+	//
+	// Valores: received, issued.
+	Direction string `json:"direction"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: I, E, P, T, N.
+	Type *string `json:"type,omitempty"`
+	// La fecha del comprobante (Fecha), en la hora local con que se emitió.
+	Date string `json:"date"`
+	// Serie (Serie), o null.
+	Series *string `json:"series,omitempty"`
+	// Folio (Folio), o null.
+	Folio *string `json:"folio,omitempty"`
+	// Quien la emitió (Emisor).
+	IssuedBy SATInvoiceIssuedBy `json:"issued_by"`
+	// A quien se la emitieron (Receptor).
+	IssuedTo SATInvoiceIssuedTo `json:"issued_to"`
+	// Moneda (Moneda): MXN, USD…
+	Currency *string `json:"currency,omitempty"`
+	// Tipo de cambio (TipoCambio), o null en pesos.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Método de pago (MetodoPago): PUE o PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Uso del CFDI (UsoCFDI).
+	Use *string `json:"use,omitempty"`
+	// Subtotal (SubTotal).
+	Subtotal *float64 `json:"subtotal,omitempty"`
+	// Total (Total).
+	Total *float64 `json:"total,omitempty"`
+	// Impuestos del comprobante: trasladados (iva, ieps), retenidos (iva_withheld, isr_withheld, ieps_withheld) y locales.
+	Taxes SATInvoiceTaxes `json:"taxes"`
+	// Su estado en el SAT cuando se revisó: active (vigente) o canceled. null si aún no se revisa.
+	//
+	// Valores: active, canceled.
+	SATStatus *string `json:"sat_status,omitempty"`
+	// La descarga (sdl_…) que la trajo, o null.
+	SATDownload *string `json:"sat_download,omitempty"`
+	// Cuándo llegó.
+	DownloadedAt *string `json:"downloaded_at,omitempty"`
+}
+
+// SATInvoiceIssuedBy: Quien la emitió (Emisor).
+type SATInvoiceIssuedBy struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// SATInvoiceIssuedTo: A quien se la emitieron (Receptor).
+type SATInvoiceIssuedTo struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// SATInvoiceList: Una página de la lista.
+type SATInvoiceList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATInvoice `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// SATInvoiceTaxes: Impuestos del comprobante: trasladados (iva, ieps), retenidos (iva_withheld, isr_withheld, ieps_withheld) y locales.
+type SATInvoiceTaxes struct {
+	// IVA trasladado.
+	IVA float64 `json:"iva"`
+	// IEPS trasladado.
+	IEPS float64 `json:"ieps"`
+	// IVA retenido.
+	IVAWithheld float64 `json:"iva_withheld"`
+	// ISR retenido.
+	ISRWithheld float64 `json:"isr_withheld"`
+	// IEPS retenido.
+	IEPSWithheld float64 `json:"ieps_withheld"`
+	// Impuestos locales trasladados (ISH y similares).
+	LocalTransferred float64 `json:"local_transferred"`
+	// Impuestos locales retenidos.
+	LocalWithheld float64 `json:"local_withheld"`
+}
+
 // SATListCheck: Si un RFC aparece en las listas del SAT (69-B, 69-B Bis y art. 69).
 type SATListCheck struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -3131,6 +3351,8 @@ type SignEfirmaParams struct {
 	Key string `json:"key"`
 	// La contraseña de la llave privada (.key). Se usa para abrirla y no se guarda en texto.
 	Password string `json:"password"`
+	// true para guardarla (cifrada) y poder pedir al SAT las facturas del emisor con POST /v1/sat_downloads. Sin esto solo firma el contrato con el PAC y no se guarda.
+	KeepForDownloads *bool `json:"keep_for_downloads,omitempty"`
 }
 
 // TaxIDValidation: Si los datos fiscales de un cliente van a pasar el SAT.
@@ -3197,7 +3419,7 @@ type TaxIDValidationWarning struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 }
 
