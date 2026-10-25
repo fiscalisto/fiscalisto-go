@@ -765,6 +765,34 @@ type CreateSatDownloadParams struct {
 	UUID *string `json:"uuid,omitempty"`
 }
 
+// CreateTicketParams: los campos de «Registrar un ticket».
+type CreateTicketParams struct {
+	// El emisor (iss_…) que vendió. Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El folio de la venta en su sistema, único por emisor: letras, números, - _ / y punto. Registrar el mismo folio con el mismo total responde el ticket que ya existe.
+	Folio string `json:"folio"`
+	// Lo que se cobró, impuestos incluidos y sin propina.
+	Total float64 `json:"total"`
+	// Propina: no va en la factura. El cliente puede escribir el total con ella o sin ella.
+	Tip *float64 `json:"tip,omitempty"`
+	// c_FormaPago de la venta: 01 efectivo, 04 tarjeta de crédito…
+	PaymentForm string `json:"payment_form"`
+	// Cuándo se vendió: ISO 8601 (2026-10-02T13:45:00-06:00) o la hora de la Ciudad de México sin zona. Por omisión, ahora.
+	SoldAt *string `json:"sold_at,omitempty"`
+	// Un producto (prd_…) de su catálogo: el concepto de la factura.
+	Product *string `json:"product,omitempty"`
+	// El concepto. Con `product`, reemplaza su descripción; sin él, va con `product_key`.
+	Description *string `json:"description,omitempty"`
+	// c_ClaveProdServ (8 dígitos), si no usa `product`.
+	ProductKey *string `json:"product_key,omitempty"`
+	// c_ClaveUnidad. Por omisión, la de la clave del producto.
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Tasa de IVA incluida en el total. Por omisión 0.16.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+}
+
 // CreateWebhookEndpointParams: los campos de «Crear un webhook».
 type CreateWebhookEndpointParams struct {
 	// Dirección https de su servidor que recibe los avisos.
@@ -1001,7 +1029,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, issuer.ready o balance.low.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, issuer.ready o balance.low.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -2629,7 +2657,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -2745,6 +2773,24 @@ type ListSatInvoicesParams struct {
 	DateGte *string `json:"date_gte,omitempty"`
 	// Con fecha hasta este día (AAAA-MM-DD), incluido.
 	DateLte *string `json:"date_lte,omitempty"`
+}
+
+// ListTicketsParams: los campos de «Listar tickets».
+type ListTicketsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// pending, invoiced, global o cancelled.
+	//
+	// Valores: pending, invoiced, global, cancelled.
+	Status *string `json:"status,omitempty"`
+	// Vendidos desde (ISO 8601 o AAAA-MM-DD).
+	SoldAtGte *string `json:"sold_at_gte,omitempty"`
+	// Vendidos hasta (ISO 8601 o AAAA-MM-DD, el día completo).
+	SoldAtLte *string `json:"sold_at_lte,omitempty"`
 }
 
 // ListWebhookEndpointsParams: los campos de «Listar webhooks».
@@ -3335,6 +3381,28 @@ type SATListCheckList2 struct {
 	Details map[string]string `json:"details,omitempty"`
 }
 
+// SelfInvoicing: El portal de autofactura de un emisor y sus reglas.
+type SelfInvoicing struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El portal permanente del emisor: ahí cualquier comprador factura con su código y su total.
+	PortalURL string `json:"portal_url"`
+	// month: se factura hasta el fin del mes de la venta. days: hasta window_days días después.
+	//
+	// Valores: month, days.
+	Window string `json:"window"`
+	// Días para facturar con window: days.
+	WindowDays int64 `json:"window_days"`
+	// Cada cuánto se timbra sola la factura global con lo que nadie facturó: 01 diaria, 02 semanal, 03 quincenal, 04 mensual.
+	//
+	// Valores: 01, 02, 03, 04.
+	GlobalPeriodicity string `json:"global_periodicity"`
+}
+
 // SendInvoiceParams: los campos de «Enviar por correo».
 type SendInvoiceParams struct {
 	// A quién (correos separados por comas).
@@ -3443,8 +3511,72 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
+}
+
+// Ticket: Una venta que su comprador puede facturar él mismo en el portal del emisor (autofactura).
+type Ticket struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor que vendió.
+	Issuer string `json:"issuer"`
+	// El folio de la venta en su sistema.
+	Folio string `json:"folio"`
+	// Lo que su comprador escribe en el portal junto con el total: el folio y 4 caracteres al azar (A123-K7QX). Imprímalo en el ticket o mándelo con la compra.
+	Code string `json:"code"`
+	// pending (se puede facturar), invoiced (su comprador lo facturó: la factura en invoice), global (entró en la factura global del periodo) o cancelled.
+	//
+	// Valores: pending, invoiced, global, cancelled.
+	Status string `json:"status"`
+	// La página del portal con el código ya escrito: el comprador pone el total y sus datos. Puede incrustarla con fiscalisto.js. null si ya no está pendiente.
+	URL *string `json:"url,omitempty"`
+	// Lo que se cobró, impuestos incluidos y sin propina.
+	Total float64 `json:"total"`
+	// La propina (no va en la factura).
+	Tip float64 `json:"tip"`
+	// c_FormaPago de la venta.
+	PaymentForm string `json:"payment_form"`
+	// El concepto de la factura.
+	Description string `json:"description"`
+	// c_ClaveProdServ del concepto.
+	ProductKey string `json:"product_key"`
+	// Cuándo se vendió.
+	SoldAt string `json:"sold_at"`
+	// El último día (AAAA-MM-DD) en que el comprador puede facturarlo; después entra en la factura global.
+	InvoiceableUntil string `json:"invoiceable_until"`
+	// La factura (inv_…) que hizo su comprador, o null.
+	Invoice *string `json:"invoice,omitempty"`
+	// La factura global (inv_…) en que entró, o null.
+	GlobalInvoice *string `json:"global_invoice,omitempty"`
+	// A quién se facturó, o null.
+	Customer *TicketCustomer `json:"customer,omitempty"`
+	// Cuándo se registró.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// TicketCustomer: TicketCustomer.
+type TicketCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// TicketList: Una página de la lista.
+type TicketList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Ticket `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
@@ -3571,6 +3703,20 @@ type UpdateProductParams struct {
 	IVARetention *float64 `json:"iva_retention,omitempty"`
 	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
+}
+
+// UpdateSelfInvoicingParams: los campos de «Cambiar las reglas de autofactura».
+type UpdateSelfInvoicingParams struct {
+	// Hasta cuándo se puede facturar un ticket: `month`, hasta el fin del mes de la venta (lo usual ante el SAT); `days`, `window_days` días después.
+	//
+	// Valores: month, days.
+	Window *string `json:"window,omitempty"`
+	// Días para facturar con `window: days`.
+	WindowDays *int64 `json:"window_days,omitempty"`
+	// c_Periodicidad de la factura global con los tickets que nadie facturó: 01 diaria, 02 semanal, 03 quincenal, 04 mensual.
+	//
+	// Valores: 01, 02, 03, 04.
+	GlobalPeriodicity *string `json:"global_periodicity,omitempty"`
 }
 
 // UpdateWebhookEndpointParams: los campos de «Actualizar un webhook».

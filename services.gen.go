@@ -56,6 +56,8 @@ type services struct {
 	SatDownloads *SatDownloadsService
 	// Descargas del SAT.
 	SatInvoices *SatInvoicesService
+	// Autofactura.
+	Tickets *TicketsService
 	// Webhooks.
 	WebhookEndpoints *WebhookEndpointsService
 	// Eventos.
@@ -83,6 +85,7 @@ func (s *services) init(c *Client) {
 	s.SatLists = &SatListsService{c}
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
+	s.Tickets = &TicketsService{c}
 	s.WebhookEndpoints = &WebhookEndpointsService{c}
 	s.Events = &EventsService{c}
 }
@@ -271,6 +274,34 @@ func (s *IssuersService) DeleteEfirma(ctx context.Context, id string, opts ...Re
 func (s *IssuersService) CreateOnboardingLink(ctx context.Context, id string, params *CreateIssuerOnboardingLinkParams, opts ...RequestOption) (*IssuerOnboardingLink, error) {
 	out := new(IssuerOnboardingLink)
 	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/onboarding_links", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetSelfInvoicing: Ver el portal de autofactura de un emisor
+//
+// GET /v1/issuers/{id}/self_invoicing
+//
+// https://fiscalisto.com/docs/api/referencia/autofactura/get-self-invoicing
+func (s *IssuersService) GetSelfInvoicing(ctx context.Context, id string, opts ...RequestOption) (*SelfInvoicing, error) {
+	out := new(SelfInvoicing)
+	if err := s.c.do(ctx, "GET", "/v1/issuers/"+url.PathEscape(id)+"/self_invoicing", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateSelfInvoicing: Cambiar las reglas de autofactura
+//
+// Hasta cuándo se puede facturar un ticket y cada cuánto se timbra la factura global.
+//
+// POST /v1/issuers/{id}/self_invoicing
+//
+// https://fiscalisto.com/docs/api/referencia/autofactura/update-self-invoicing
+func (s *IssuersService) UpdateSelfInvoicing(ctx context.Context, id string, params *UpdateSelfInvoicingParams, opts ...RequestOption) (*SelfInvoicing, error) {
+	out := new(SelfInvoicing)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/self_invoicing", params, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1066,6 +1097,68 @@ func (s *SatInvoicesService) Get(ctx context.Context, id string, opts ...Request
 func (s *SatInvoicesService) XML(ctx context.Context, id string, opts ...RequestOption) (string, error) {
 	b, err := s.c.raw(ctx, "GET", "/v1/sat_invoices/"+url.PathEscape(id)+"/xml", nil, nil, false, opts)
 	return string(b), err
+}
+
+// TicketsService: Autofactura (client.Tickets).
+type TicketsService struct{ c *Client }
+
+// Create: Registrar un ticket
+//
+// Una venta que su comprador factura él mismo: con el código (code) y el total en el portal del emisor (url, que puede incrustar en su página con fiscalisto.js), da sus datos fiscales y la factura se timbra al momento con los timbres de su cuenta. Lo que nadie factura entra solo en la factura global del periodo. Registrar otra vez el mismo folio con el mismo total contesta el ticket que ya existe (los reintentos son seguros); con otro total, 409.
+//
+// POST /v1/tickets
+//
+// https://fiscalisto.com/docs/api/referencia/autofactura/create-ticket
+func (s *TicketsService) Create(ctx context.Context, params *CreateTicketParams, opts ...RequestOption) (*Ticket, error) {
+	out := new(Ticket)
+	if err := s.c.do(ctx, "POST", "/v1/tickets", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar tickets
+//
+// Del más reciente al más antiguo por fecha de venta.
+//
+// GET /v1/tickets
+//
+// https://fiscalisto.com/docs/api/referencia/autofactura/list-tickets
+func (s *TicketsService) List(ctx context.Context, params *ListTicketsParams, opts ...RequestOption) (*Page[Ticket], error) {
+	return list[Ticket](ctx, s.c, "/v1/tickets", params, "", opts)
+}
+
+// ListAutoPaging: Listar tickets, todos, página por página: for x, err := range …
+func (s *TicketsService) ListAutoPaging(ctx context.Context, params *ListTicketsParams, opts ...RequestOption) iter.Seq2[Ticket, error] {
+	return listAll[Ticket](ctx, s.c, "/v1/tickets", params, opts)
+}
+
+// Get: Ver un ticket
+//
+// GET /v1/tickets/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/autofactura/get-ticket
+func (s *TicketsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Ticket, error) {
+	out := new(Ticket)
+	if err := s.c.do(ctx, "GET", "/v1/tickets/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Cancel: Cancelar un ticket
+//
+// Una venta que no se hizo (devolución, error): ya no se puede facturar ni entra en la factura global. Solo mientras esté pendiente.
+//
+// DELETE /v1/tickets/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/autofactura/cancel-ticket
+func (s *TicketsService) Cancel(ctx context.Context, id string, opts ...RequestOption) (*Ticket, error) {
+	out := new(Ticket)
+	if err := s.c.do(ctx, "DELETE", "/v1/tickets/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // WebhookEndpointsService: Webhooks (client.WebhookEndpoints).
