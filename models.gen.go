@@ -607,6 +607,154 @@ type CreateProductParams struct {
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 }
 
+// CreateQuoteParams: los campos de «Crear una cotización».
+type CreateQuoteParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Un cliente de su catálogo (cus_…), uno con sus datos fiscales (como en POST /v1/invoices: se agrega a sus clientes) o solo name y email si aún no los tiene.
+	Customer json.RawMessage `json:"customer,omitempty"`
+	// Los conceptos, como en POST /v1/invoices.
+	Items []CreateQuoteParamsItem `json:"items"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	//
+	// Valores: PUE, PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Observaciones que aparecen en el PDF (no van en el XML).
+	Notes *string `json:"notes,omitempty"`
+	// Hasta cuándo es válida (AAAA-MM-DD, hasta un año). Por omisión, en 15 días.
+	ValidUntil *string `json:"valid_until,omitempty"`
+	// Condiciones: tiempo de entrega, anticipo, garantía…
+	Terms *string `json:"terms,omitempty"`
+	// Al aceptarla, timbrar la factura sola (con los datos fiscales del cliente; si no los tiene, la página se los pide primero). Por omisión false: la factura se timbra con POST /v1/quotes/{id}/invoice.
+	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+}
+
+// CreateQuoteParamsItem: Un concepto. description, product_key y unit_price son obligatorios, salvo que mande product (prd_…): entonces vienen de su catálogo y lo que mande encima gana.
+type CreateQuoteParamsItem struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product *string `json:"product,omitempty"`
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description *string `json:"description,omitempty"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey *string `json:"product_key,omitempty"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Nombre de la unidad (Unidad), hasta 20 caracteres.
+	UnitName *string `json:"unit_name,omitempty"`
+	// Número de identificación o SKU (NoIdentificacion).
+	SKU *string `json:"sku,omitempty"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Descuento (Descuento).
+	Discount *float64 `json:"discount,omitempty"`
+	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
+	//
+	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
+	Taxability *string `json:"taxability,omitempty"`
+	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// IEPS trasladado: tasa (0.265…) o cuota en pesos por unidad, según ieps_factor.
+	IEPS *float64 `json:"ieps,omitempty"`
+	// Tasa o Cuota (TipoFactor del IEPS).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
+	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
+	IEPSUnits *float64 `json:"ieps_units,omitempty"`
+	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	IVARetention *float64 `json:"iva_retention,omitempty"`
+	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	ISRRetention *float64 `json:"isr_retention,omitempty"`
+	// Números de cuenta predial (CuentaPredial) en arrendamiento.
+	Predial []string `json:"predial,omitempty"`
+	// Números de pedimento (InformacionAduanera) de mercancía importada.
+	Pedimentos []string `json:"pedimentos,omitempty"`
+	// A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+	ThirdParty *CreateQuoteParamsItemThirdParty `json:"third_party,omitempty"`
+	// Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+	Iedu *CreateQuoteParamsItemIedu `json:"iedu,omitempty"`
+	// Complemento de vehículo usado.
+	UsedVehicle *CreateQuoteParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// CreateQuoteParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+type CreateQuoteParamsItemIedu struct {
+	// Nombre del alumno (nombreAlumno).
+	StudentName string `json:"student_name"`
+	// CURP, 18 caracteres.
+	CURP string `json:"curp"`
+	// Nivel educativo (nivelEducativo).
+	//
+	// Valores: Preescolar, Primaria, Secundaria, Profesional técnico, Bachillerato o su equivalente.
+	Level string `json:"level"`
+	// Reconocimiento de validez oficial de estudios (autRVOE).
+	Rvoe string `json:"rvoe"`
+	// RFC de quien paga, si no es el receptor (rfcPago).
+	PayerTaxID *string `json:"payer_tax_id,omitempty"`
+}
+
+// CreateQuoteParamsItemThirdParty: A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+type CreateQuoteParamsItemThirdParty struct {
+	// RFC de a cuenta de quién (RfcACuentaTerceros).
+	TaxID string `json:"tax_id"`
+	// Nombre (NombreACuentaTerceros).
+	Name string `json:"name"`
+	// Régimen fiscal (RegimenFiscalACuentaTerceros), c_RegimenFiscal.
+	TaxSystem string `json:"tax_system"`
+	// Código postal de su domicilio fiscal (DomicilioFiscalACuentaTerceros).
+	Zip string `json:"zip"`
+}
+
+// CreateQuoteParamsItemUsedVehicle: Complemento de vehículo usado.
+type CreateQuoteParamsItemUsedVehicle struct {
+	// Monto de adquisición (montoAdquisicion).
+	PurchaseAmount float64 `json:"purchase_amount"`
+	// Monto de enajenación (montoEnajenacion).
+	SaleAmount float64 `json:"sale_amount"`
+	// Clave vehicular (claveVehicular).
+	VehicleKey string `json:"vehicle_key"`
+	// Marca (marca).
+	Make string `json:"make"`
+	// Tipo o versión (tipo).
+	Type string `json:"type"`
+	// Año del modelo (modelo), 4 dígitos.
+	Model string `json:"model"`
+	// Número de motor (numeroMotor).
+	EngineNumber *string `json:"engine_number,omitempty"`
+	// Número de serie (numeroSerie).
+	SerialNumber *string `json:"serial_number,omitempty"`
+	// Número de identificación vehicular (NIV).
+	Niv *string `json:"niv,omitempty"`
+	// Valor según la guía EBC o Libro Azul (valor).
+	GuideValue float64 `json:"guide_value"`
+	// Información aduanera de la importación del vehículo (InformacionAduanera).
+	Customs []CreateQuoteParamsItemUsedVehicleCustom `json:"customs,omitempty"`
+}
+
+// CreateQuoteParamsItemUsedVehicleCustom: CreateQuoteParamsItemUsedVehicleCustom.
+type CreateQuoteParamsItemUsedVehicleCustom struct {
+	// Número del documento de importación (numero).
+	Number string `json:"number"`
+	// Fecha del documento (fecha), AAAA-MM-DD.
+	Date string `json:"date"`
+	// Aduana (aduana).
+	Office *string `json:"office,omitempty"`
+}
+
 // CreateRecurringInvoiceParams: los campos de «Crear una factura recurrente».
 type CreateRecurringInvoiceParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -1139,7 +1287,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, issuer.ready o balance.low.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready o balance.low.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -2769,7 +2917,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -2833,6 +2981,20 @@ type ListProductsParams struct {
 	SKU *string `json:"sku,omitempty"`
 	// Solo los de esta clave del SAT.
 	ProductKey *string `json:"product_key,omitempty"`
+}
+
+// ListQuotesParams: los campos de «Listar cotizaciones».
+type ListQuotesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las que estén en este estado.
+	//
+	// Valores: draft, sent, viewed, accepted, rejected, expired, invoiced.
+	Status *string `json:"status,omitempty"`
 }
 
 // ListRecurringInvoicesParams: los campos de «Listar facturas recurrentes».
@@ -3121,6 +3283,98 @@ type ProductList struct {
 	Object string `json:"object"`
 	// Los objetos de esta página.
 	Data []Product `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// Quote: Una cotización: su cliente la ve en una liga, la acepta, pide cambios o la rechaza, y se factura.
+type Quote struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Su serie y folio, como lo ve el cliente (COT-12).
+	Number string `json:"number"`
+	// Cambiar una ya enviada hace una versión nueva con el mismo número; el id contesta siempre la última.
+	Version int64 `json:"version"`
+	// draft, sent, viewed (el cliente abrió la liga), accepted, rejected, expired (pasó valid_until) o invoiced.
+	//
+	// Valores: draft, sent, viewed, accepted, rejected, expired, invoiced.
+	Status string `json:"status"`
+	// La liga donde el cliente la ve, descarga su PDF, la acepta, pide cambios o la rechaza; null mientras sea borrador.
+	URL *string `json:"url,omitempty"`
+	// A quién va: tax_id null si aún no tiene sus datos fiscales; catalog_id es su cliente (cus_…) en su catálogo, o null.
+	Customer QuoteCustomer `json:"customer"`
+	// La moneda.
+	Currency string `json:"currency"`
+	// Los conceptos, como los de una factura.
+	Items []QuoteItem `json:"items"`
+	// El total con impuestos.
+	Total *float64 `json:"total,omitempty"`
+	// Su último día de validez (AAAA-MM-DD).
+	ValidUntil string `json:"valid_until"`
+	// Las condiciones impresas: entrega, anticipo, garantía…
+	Terms *string `json:"terms,omitempty"`
+	// Las notas, como las de una factura.
+	Notes *string `json:"notes,omitempty"`
+	// Si al aceptarla se timbra la factura sola.
+	AutoInvoice bool `json:"auto_invoice"`
+	// Lo que escribió el cliente al pedir cambios o al rechazarla, o null.
+	CustomerComment *string `json:"customer_comment,omitempty"`
+	// Cuándo se envió.
+	SentAt *string `json:"sent_at,omitempty"`
+	// Cuándo el cliente abrió la liga por primera vez.
+	ViewedAt *string `json:"viewed_at,omitempty"`
+	// Cuándo se aceptó o rechazó.
+	DecidedAt *string `json:"decided_at,omitempty"`
+	// customer (en su liga) o user (usted, con POST /v1/quotes/{id}/accept o desde la app).
+	//
+	// Valores: customer, user.
+	DecidedBy *string `json:"decided_by,omitempty"`
+	// La factura (inv_…) que se timbró de ella, o null.
+	Invoice *string `json:"invoice,omitempty"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// QuoteCustomer: A quién va: tax_id null si aún no tiene sus datos fiscales; catalog_id es su cliente (cus_…) en su catálogo, o null.
+type QuoteCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email *string `json:"email,omitempty"`
+	// El cliente (cus_…) en su catálogo, o null si no está en él.
+	CatalogID *string `json:"catalog_id,omitempty"`
+}
+
+// QuoteItem: QuoteItem.
+type QuoteItem struct {
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description string `json:"description"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey string `json:"product_key"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice float64 `json:"unit_price"`
+}
+
+// QuoteList: Una página de la lista.
+type QuoteList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Quote `json:"data"`
 	// true si hay más: pida la siguiente con starting_after igual al id del último.
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
@@ -3637,6 +3891,18 @@ type SendInvoiceParams struct {
 	Cc *string `json:"cc,omitempty"`
 }
 
+// SendQuoteParams: los campos de «Mandar una cotización».
+type SendQuoteParams struct {
+	// Mandarla por correo, con su PDF y la liga (por omisión true). Con false solo se marca enviada y contesta url, para que usted la mande.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// A quién (hasta 5 correos). Por omisión, el correo del cliente.
+	To *string `json:"to,omitempty"`
+	// Un mensaje en el correo.
+	Message *string `json:"message,omitempty"`
+	// Al aceptarla, timbrar la factura sola (con los datos fiscales del cliente; si no los tiene, la página se los pide primero). Por omisión false: la factura se timbra con POST /v1/quotes/{id}/invoice.
+	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+}
+
 // SendRetentionParams: los campos de «Enviar por correo».
 type SendRetentionParams struct {
 	// A quién (correos separados por comas).
@@ -3737,7 +4003,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -3929,6 +4195,150 @@ type UpdateProductParams struct {
 	IVARetention *float64 `json:"iva_retention,omitempty"`
 	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
+}
+
+// UpdateQuoteParams: los campos de «Cambiar una cotización».
+type UpdateQuoteParams struct {
+	// Un cliente de su catálogo (cus_…), uno con sus datos fiscales (como en POST /v1/invoices: se agrega a sus clientes) o solo name y email si aún no los tiene.
+	Customer json.RawMessage `json:"customer,omitempty"`
+	// Los conceptos, como en POST /v1/invoices.
+	Items []UpdateQuoteParamsItem `json:"items,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	//
+	// Valores: PUE, PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Observaciones que aparecen en el PDF (no van en el XML).
+	Notes *string `json:"notes,omitempty"`
+	// Hasta cuándo es válida (AAAA-MM-DD, hasta un año). Por omisión, en 15 días.
+	ValidUntil *string `json:"valid_until,omitempty"`
+	// Condiciones: tiempo de entrega, anticipo, garantía…
+	Terms *string `json:"terms,omitempty"`
+}
+
+// UpdateQuoteParamsItem: Un concepto. description, product_key y unit_price son obligatorios, salvo que mande product (prd_…): entonces vienen de su catálogo y lo que mande encima gana.
+type UpdateQuoteParamsItem struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product *string `json:"product,omitempty"`
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description *string `json:"description,omitempty"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey *string `json:"product_key,omitempty"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Nombre de la unidad (Unidad), hasta 20 caracteres.
+	UnitName *string `json:"unit_name,omitempty"`
+	// Número de identificación o SKU (NoIdentificacion).
+	SKU *string `json:"sku,omitempty"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Descuento (Descuento).
+	Discount *float64 `json:"discount,omitempty"`
+	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
+	//
+	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
+	Taxability *string `json:"taxability,omitempty"`
+	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// IEPS trasladado: tasa (0.265…) o cuota en pesos por unidad, según ieps_factor.
+	IEPS *float64 `json:"ieps,omitempty"`
+	// Tasa o Cuota (TipoFactor del IEPS).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
+	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
+	IEPSUnits *float64 `json:"ieps_units,omitempty"`
+	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	IVARetention *float64 `json:"iva_retention,omitempty"`
+	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	ISRRetention *float64 `json:"isr_retention,omitempty"`
+	// Números de cuenta predial (CuentaPredial) en arrendamiento.
+	Predial []string `json:"predial,omitempty"`
+	// Números de pedimento (InformacionAduanera) de mercancía importada.
+	Pedimentos []string `json:"pedimentos,omitempty"`
+	// A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+	ThirdParty *UpdateQuoteParamsItemThirdParty `json:"third_party,omitempty"`
+	// Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+	Iedu *UpdateQuoteParamsItemIedu `json:"iedu,omitempty"`
+	// Complemento de vehículo usado.
+	UsedVehicle *UpdateQuoteParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// UpdateQuoteParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+type UpdateQuoteParamsItemIedu struct {
+	// Nombre del alumno (nombreAlumno).
+	StudentName string `json:"student_name"`
+	// CURP, 18 caracteres.
+	CURP string `json:"curp"`
+	// Nivel educativo (nivelEducativo).
+	//
+	// Valores: Preescolar, Primaria, Secundaria, Profesional técnico, Bachillerato o su equivalente.
+	Level string `json:"level"`
+	// Reconocimiento de validez oficial de estudios (autRVOE).
+	Rvoe string `json:"rvoe"`
+	// RFC de quien paga, si no es el receptor (rfcPago).
+	PayerTaxID *string `json:"payer_tax_id,omitempty"`
+}
+
+// UpdateQuoteParamsItemThirdParty: A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+type UpdateQuoteParamsItemThirdParty struct {
+	// RFC de a cuenta de quién (RfcACuentaTerceros).
+	TaxID string `json:"tax_id"`
+	// Nombre (NombreACuentaTerceros).
+	Name string `json:"name"`
+	// Régimen fiscal (RegimenFiscalACuentaTerceros), c_RegimenFiscal.
+	TaxSystem string `json:"tax_system"`
+	// Código postal de su domicilio fiscal (DomicilioFiscalACuentaTerceros).
+	Zip string `json:"zip"`
+}
+
+// UpdateQuoteParamsItemUsedVehicle: Complemento de vehículo usado.
+type UpdateQuoteParamsItemUsedVehicle struct {
+	// Monto de adquisición (montoAdquisicion).
+	PurchaseAmount float64 `json:"purchase_amount"`
+	// Monto de enajenación (montoEnajenacion).
+	SaleAmount float64 `json:"sale_amount"`
+	// Clave vehicular (claveVehicular).
+	VehicleKey string `json:"vehicle_key"`
+	// Marca (marca).
+	Make string `json:"make"`
+	// Tipo o versión (tipo).
+	Type string `json:"type"`
+	// Año del modelo (modelo), 4 dígitos.
+	Model string `json:"model"`
+	// Número de motor (numeroMotor).
+	EngineNumber *string `json:"engine_number,omitempty"`
+	// Número de serie (numeroSerie).
+	SerialNumber *string `json:"serial_number,omitempty"`
+	// Número de identificación vehicular (NIV).
+	Niv *string `json:"niv,omitempty"`
+	// Valor según la guía EBC o Libro Azul (valor).
+	GuideValue float64 `json:"guide_value"`
+	// Información aduanera de la importación del vehículo (InformacionAduanera).
+	Customs []UpdateQuoteParamsItemUsedVehicleCustom `json:"customs,omitempty"`
+}
+
+// UpdateQuoteParamsItemUsedVehicleCustom: UpdateQuoteParamsItemUsedVehicleCustom.
+type UpdateQuoteParamsItemUsedVehicleCustom struct {
+	// Número del documento de importación (numero).
+	Number string `json:"number"`
+	// Fecha del documento (fecha), AAAA-MM-DD.
+	Date string `json:"date"`
+	// Aduana (aduana).
+	Office *string `json:"office,omitempty"`
 }
 
 // UpdateRecurringInvoiceParams: los campos de «Cambiar o pausar una factura recurrente».

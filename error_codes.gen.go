@@ -88,6 +88,14 @@ const (
 	CodeParameterUnknown = "parameter_unknown"
 	// El recibo de nómina no se puede calcular o timbrar con esos datos (periodo, días, registro patronal del emisor…).
 	CodePayrollInvalid = "payroll_invalid"
+	// La cotización no tiene los datos fiscales del cliente: agrégueselos con POST /v1/quotes/{id} (customer) o mándela con auto_invoice para que los dé al aceptarla.
+	CodeQuoteCustomerMissing = "quote_customer_missing"
+	// La cotización no se pudo guardar o ya no cambia (aceptada, rechazada o facturada), o no se puede mandar así. El mensaje dice por qué.
+	CodeQuoteInvalid = "quote_invalid"
+	// Solo se borra una cotización que nunca se envió.
+	CodeQuoteNotDraft = "quote_not_draft"
+	// La cotización se rechazó o venció: no se factura. Si venció, cámbiele valid_until (es una versión nueva).
+	CodeQuoteNotInvoiceable = "quote_not_invoiceable"
 	// Demasiadas solicitudes con la llave. Espere lo que dice Retry-After y reintente.
 	CodeRateLimit = "rate_limit"
 	// La factura recurrente no se pudo guardar: el día, la hora, la zona o la factura no son válidos. El mensaje dice cuál.

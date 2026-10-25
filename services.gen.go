@@ -60,6 +60,8 @@ type services struct {
 	Tickets *TicketsService
 	// Facturas recurrentes.
 	RecurringInvoices *RecurringInvoicesService
+	// Cotizaciones.
+	Quotes *QuotesService
 	// Webhooks.
 	WebhookEndpoints *WebhookEndpointsService
 	// Eventos.
@@ -89,6 +91,7 @@ func (s *services) init(c *Client) {
 	s.SatInvoices = &SatInvoicesService{c}
 	s.Tickets = &TicketsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
+	s.Quotes = &QuotesService{c}
 	s.WebhookEndpoints = &WebhookEndpointsService{c}
 	s.Events = &EventsService{c}
 }
@@ -1269,6 +1272,141 @@ func (s *RecurringInvoicesService) Run(ctx context.Context, id string, opts ...R
 		return nil, err
 	}
 	return out, nil
+}
+
+// QuotesService: Cotizaciones (client.Quotes).
+type QuotesService struct{ c *Client }
+
+// Create: Crear una cotización
+//
+// Una cotización en borrador, con los conceptos y las condiciones de pago de una factura (se revisan con las mismas reglas, así que siempre se puede facturar). customer es un cliente de su catálogo, uno con sus datos fiscales (se agrega a sus clientes) o solo name y email si aún no los tiene. Se manda con POST /v1/quotes/{id}/send.
+//
+// POST /v1/quotes
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/create-quote
+func (s *QuotesService) Create(ctx context.Context, params *CreateQuoteParams, opts ...RequestOption) (*Quote, error) {
+	out := new(Quote)
+	if err := s.c.do(ctx, "POST", "/v1/quotes", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar cotizaciones
+//
+// Las más recientes primero, cada una en su última versión.
+//
+// GET /v1/quotes
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/list-quotes
+func (s *QuotesService) List(ctx context.Context, params *ListQuotesParams, opts ...RequestOption) (*Page[Quote], error) {
+	return list[Quote](ctx, s.c, "/v1/quotes", params, "", opts)
+}
+
+// ListAutoPaging: Listar cotizaciones, todos, página por página: for x, err := range …
+func (s *QuotesService) ListAutoPaging(ctx context.Context, params *ListQuotesParams, opts ...RequestOption) iter.Seq2[Quote, error] {
+	return listAll[Quote](ctx, s.c, "/v1/quotes", params, opts)
+}
+
+// Get: Ver una cotización
+//
+// Su última versión.
+//
+// GET /v1/quotes/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/get-quote
+func (s *QuotesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Quote, error) {
+	out := new(Quote)
+	if err := s.c.do(ctx, "GET", "/v1/quotes/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar una cotización
+//
+// Solo lo que mande cambia. Un borrador cambia ahí mismo; una que ya se envió se vuelve una versión nueva en borrador (mismo número, version + 1) que el cliente ve al mandarla; mientras, su liga muestra la anterior. Una aceptada, rechazada o facturada ya no cambia.
+//
+// POST /v1/quotes/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/update-quote
+func (s *QuotesService) Update(ctx context.Context, id string, params *UpdateQuoteParams, opts ...RequestOption) (*Quote, error) {
+	out := new(Quote)
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una cotización
+//
+// Solo una que nunca se envió; si no, 400 quote_not_draft.
+//
+// DELETE /v1/quotes/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/delete-quote
+func (s *QuotesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/quotes/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Send: Mandar una cotización
+//
+// La manda por correo con su PDF y la liga donde el cliente la ve, la acepta, pide cambios o la rechaza. Con send_email: false solo se marca enviada y contesta url, para que usted la mande por WhatsApp o su propio correo.
+//
+// POST /v1/quotes/{id}/send
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/send-quote
+func (s *QuotesService) Send(ctx context.Context, id string, params *SendQuoteParams, opts ...RequestOption) (*Quote, error) {
+	out := new(Quote)
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/send", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Accept: Marcar aceptada
+//
+// El cliente le dijo que sí por teléfono, en persona… Llega quote.accepted. No timbra: para eso, POST /v1/quotes/{id}/invoice.
+//
+// POST /v1/quotes/{id}/accept
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/accept-quote
+func (s *QuotesService) Accept(ctx context.Context, id string, opts ...RequestOption) (*Quote, error) {
+	out := new(Quote)
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/accept", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Invoice: Facturar una cotización
+//
+// Timbra la factura con los conceptos de la cotización y los datos fiscales del cliente, y la deja facturada (invoice). Si no estaba aceptada, la marca aceptada. Una en otra moneda va al tipo de cambio de hoy. Sin los datos fiscales del cliente, 400 quote_customer_missing; rechazada o vencida, 400 quote_not_invoiceable. Si ya se facturó, contesta esa factura.
+//
+// POST /v1/quotes/{id}/invoice
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/invoice-quote
+func (s *QuotesService) Invoice(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/invoice", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Pdf: Descargar el PDF
+//
+// El PDF de su última versión, con el diseño de PDF del emisor.
+//
+// GET /v1/quotes/{id}/pdf
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/get-quote-pdf
+func (s *QuotesService) PDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/quotes/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
 }
 
 // WebhookEndpointsService: Webhooks (client.WebhookEndpoints).
