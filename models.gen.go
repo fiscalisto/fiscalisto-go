@@ -3,6 +3,8 @@
 
 package fiscalisto
 
+import "encoding/json"
+
 // Account: La cuenta API de la llave que hizo la solicitud.
 type Account struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
@@ -605,6 +607,114 @@ type CreateProductParams struct {
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 }
 
+// CreateRecurringInvoiceParams: los campos de «Crear una factura recurrente».
+type CreateRecurringInvoiceParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Para reconocerla: «Renta oficina 3», «Plan Pro de ACME».
+	Name string `json:"name"`
+	// Cada cuánto y a qué hora se timbra.
+	Schedule CreateRecurringInvoiceParamsSchedule `json:"schedule"`
+	// La factura que se repite: el cuerpo de POST /v1/invoices, sin issuer, folio, date, global ni metadata. En description puede usar {mes}, {mes anterior}, {mes siguiente}, {año}, {año anterior}, {año siguiente} y {periodo}: cada factura los llena con su fecha.
+	Invoice CreateRecurringInvoiceParamsInvoice `json:"invoice"`
+	// Mandar cada factura al correo del cliente (customer.email o el del catálogo). Por omisión true.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Si quedaron periodos sin timbrar (sin timbres, en pausa con su fecha pasada): all los timbra todos, cada uno con su mes; latest solo el más reciente. Por omisión all.
+	//
+	// Valores: all, latest.
+	CatchUp *string `json:"catch_up,omitempty"`
+}
+
+// CreateRecurringInvoiceParamsInvoice: La factura que se repite: el cuerpo de POST /v1/invoices, sin issuer, folio, date, global ni metadata. En description puede usar {mes}, {mes anterior}, {mes siguiente}, {año}, {año anterior}, {año siguiente} y {periodo}: cada factura los llena con su fecha.
+type CreateRecurringInvoiceParamsInvoice struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []InvoiceCreateItem `json:"items"`
+	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
+	//
+	// Valores: I, T.
+	Type *string `json:"type,omitempty"`
+	// Complemento Carta Porte 3.1 (traslado de mercancías).
+	CartaPorte *InvoiceCreateCartaPorte `json:"carta_porte,omitempty"`
+	// Complemento INE (procesos electorales).
+	INE *InvoiceCreateINE `json:"ine,omitempty"`
+	// Complemento de leyendas fiscales.
+	Leyendas []InvoiceCreateLeyenda `json:"leyendas,omitempty"`
+	// Complemento de donatarias.
+	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
+	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
+	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva…
+	//
+	// Valores: 01, 02, 03, 04.
+	Export *string `json:"export,omitempty"`
+	// Complemento de comercio exterior 2.0.
+	ComercioExterior *InvoiceCreateComercioExterior `json:"comercio_exterior,omitempty"`
+	// Factura global a público en general (InformacionGlobal): periodicidad, meses y año.
+	Global *InvoiceCreateGlobal `json:"global,omitempty"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	//
+	// Valores: PUE, PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Con PUE: true si aún no le pagan («Por cobrar» en la app) aunque se pagará este mes.
+	PaidLater *bool `json:"paid_later,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	Series *string `json:"series,omitempty"`
+	// Observaciones que aparecen en el PDF (no van en el XML).
+	Notes *string `json:"notes,omitempty"`
+	// Idioma del PDF: es (por omisión) o en.
+	//
+	// Valores: es, en, bi.
+	PDFLanguage *string `json:"pdf_language,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda *InvoiceCreateAddenda `json:"addenda,omitempty"`
+	// CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
+	Related *InvoiceCreateRelated `json:"related,omitempty"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	Folio *int64 `json:"folio,omitempty"`
+	// Con un folio elegido: true para que los siguientes sigan desde ese número.
+	ContinueSequence *bool `json:"continue_sequence,omitempty"`
+	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
+	Date *string `json:"date,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Correos con copia, separados por comas.
+	EmailCc *string `json:"email_cc,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// CreateRecurringInvoiceParamsSchedule: Cada cuánto y a qué hora se timbra.
+type CreateRecurringInvoiceParamsSchedule struct {
+	// monthly: cada interval meses en day_of_month. weekly o daily: cada interval semanas o días desde start_date.
+	//
+	// Valores: monthly, weekly, daily.
+	Frequency string `json:"frequency"`
+	// Cada cuántos meses, semanas o días. Por omisión 1. Hasta 24 meses, 52 semanas o 365 días.
+	Interval *int64 `json:"interval,omitempty"`
+	// Con monthly: el día, del 1 al 28, o "last" (el último del mes). Por omisión el día de start_date, o el de hoy.
+	DayOfMonth json.RawMessage `json:"day_of_month,omitempty"`
+	// La primera factura, AAAA-MM-DD (hoy o después). Por omisión: con monthly, el próximo day_of_month; con weekly o daily, hoy.
+	StartDate *string `json:"start_date,omitempty"`
+	// La hora (0 a 23) en que se timbra, en time_zone. Por omisión 7.
+	Hour *int64 `json:"hour,omitempty"`
+	// La zona de esa hora. Por omisión America/Mexico_City.
+	//
+	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Ciudad_Juarez.
+	TimeZone *string `json:"time_zone,omitempty"`
+}
+
 // CreateRetentionParams: los campos de «Timbrar una constancia de retenciones».
 type CreateRetentionParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -1029,7 +1139,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, issuer.ready o balance.low.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, issuer.ready o balance.low.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -1169,6 +1279,8 @@ type Invoice struct {
 	Email *InvoiceEmail `json:"email,omitempty"`
 	// Por qué el SAT o el PAC no lo aceptaron: mensaje, código del SAT y texto original.
 	Error *InvoiceError `json:"error,omitempty"`
+	// La factura recurrente (rin_…) que la timbró sola, o null si se timbró con una llamada.
+	RecurringInvoice *string `json:"recurring_invoice,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
@@ -2657,7 +2769,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -2721,6 +2833,20 @@ type ListProductsParams struct {
 	SKU *string `json:"sku,omitempty"`
 	// Solo los de esta clave del SAT.
 	ProductKey *string `json:"product_key,omitempty"`
+}
+
+// ListRecurringInvoicesParams: los campos de «Listar facturas recurrentes».
+type ListRecurringInvoicesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// active o paused.
+	//
+	// Valores: active, paused.
+	Status *string `json:"status,omitempty"`
 }
 
 // ListRetentionsParams: los campos de «Listar constancias».
@@ -2999,6 +3125,106 @@ type ProductList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// RecurringInvoice: Una factura que el emisor timbra solo, cada mes, semana o día.
+type RecurringInvoice struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Para reconocerla.
+	Name string `json:"name"`
+	// active (timbra en cada fecha) o paused.
+	//
+	// Valores: active, paused.
+	Status string `json:"status"`
+	// Cada cuánto: frequency (monthly, weekly o daily), interval, day_of_month (con monthly; "last" es el último del mes), y la hora (hour, en time_zone) en que se timbra.
+	Schedule RecurringInvoiceSchedule `json:"schedule"`
+	// La fecha (AAAA-MM-DD) de la siguiente factura.
+	NextInvoiceOn string `json:"next_invoice_on"`
+	// La fecha del último periodo que timbró, o null si aún no timbra ninguna.
+	LastInvoicedOn *string `json:"last_invoiced_on,omitempty"`
+	// La última factura (inv_…) que timbró, o null.
+	LastInvoice *string `json:"last_invoice,omitempty"`
+	// Por qué no se pudo timbrar la última vez (sin timbres, el cliente borrado, el SAT la rechazó…), o null. Se vuelve a intentar a la siguiente hora del día siguiente; también llega recurring_invoice.failed.
+	LastError *RecurringInvoiceLastError `json:"last_error,omitempty"`
+	// Si cada factura se manda al correo del cliente.
+	SendEmail bool `json:"send_email"`
+	// Si quedaron periodos sin timbrar: all los timbra todos, latest solo el más reciente.
+	//
+	// Valores: all, latest.
+	CatchUp string `json:"catch_up"`
+	// A quién se factura.
+	Customer RecurringInvoiceCustomer `json:"customer"`
+	// La moneda de la factura.
+	Currency string `json:"currency"`
+	// Los conceptos, con description tal como se guardó ({mes}, {año}… se llenan en cada factura).
+	Items []RecurringInvoiceItem `json:"items"`
+	// El total de cada factura con los precios de hoy.
+	Total *float64 `json:"total,omitempty"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// RecurringInvoiceCustomer: A quién se factura.
+type RecurringInvoiceCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// RecurringInvoiceItem: RecurringInvoiceItem.
+type RecurringInvoiceItem struct {
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description string `json:"description"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey string `json:"product_key"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice float64 `json:"unit_price"`
+}
+
+// RecurringInvoiceLastError: RecurringInvoiceLastError.
+type RecurringInvoiceLastError struct {
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message *string `json:"message,omitempty"`
+}
+
+// RecurringInvoiceList: Una página de la lista.
+type RecurringInvoiceList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []RecurringInvoice `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// RecurringInvoiceSchedule: Cada cuánto: frequency (monthly, weekly o daily), interval, day_of_month (con monthly; "last" es el último del mes), y la hora (hour, en time_zone) en que se timbra.
+type RecurringInvoiceSchedule struct {
+	// monthly: cada interval meses en day_of_month. weekly o daily: cada interval semanas o días.
+	//
+	// Valores: monthly, weekly, daily.
+	Frequency string `json:"frequency"`
+	// Cada cuántos meses, semanas o días.
+	Interval int64 `json:"interval"`
+	// Con monthly: el día del mes, del 1 al 28, o "last" (el último). null con weekly o daily.
+	DayOfMonth json.RawMessage `json:"day_of_month,omitempty"`
+	// La hora (0 a 23) en que se timbra, en time_zone.
+	Hour int64 `json:"hour"`
+	// La zona de esa hora (America/Mexico_City, America/Cancun…).
+	TimeZone string `json:"time_zone"`
 }
 
 // ResetTestDataParams: los campos de «Reiniciar los datos de prueba».
@@ -3511,7 +3737,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -3703,6 +3929,114 @@ type UpdateProductParams struct {
 	IVARetention *float64 `json:"iva_retention,omitempty"`
 	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
+}
+
+// UpdateRecurringInvoiceParams: los campos de «Cambiar o pausar una factura recurrente».
+type UpdateRecurringInvoiceParams struct {
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Cada cuánto y a qué hora se timbra.
+	Schedule *UpdateRecurringInvoiceParamsSchedule `json:"schedule,omitempty"`
+	// La factura completa que se repite desde la siguiente vez (reemplaza la anterior).
+	Invoice *UpdateRecurringInvoiceParamsInvoice `json:"invoice,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Si quedaron periodos sin timbrar: all los timbra todos, cada uno con su mes; latest solo el más reciente.
+	//
+	// Valores: all, latest.
+	CatchUp *string `json:"catch_up,omitempty"`
+	// false la pausa; true la reanuda desde hoy, sin timbrar las fechas que pasaron en pausa.
+	Active *bool `json:"active,omitempty"`
+}
+
+// UpdateRecurringInvoiceParamsInvoice: La factura completa que se repite desde la siguiente vez (reemplaza la anterior).
+type UpdateRecurringInvoiceParamsInvoice struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []InvoiceCreateItem `json:"items"`
+	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
+	//
+	// Valores: I, T.
+	Type *string `json:"type,omitempty"`
+	// Complemento Carta Porte 3.1 (traslado de mercancías).
+	CartaPorte *InvoiceCreateCartaPorte `json:"carta_porte,omitempty"`
+	// Complemento INE (procesos electorales).
+	INE *InvoiceCreateINE `json:"ine,omitempty"`
+	// Complemento de leyendas fiscales.
+	Leyendas []InvoiceCreateLeyenda `json:"leyendas,omitempty"`
+	// Complemento de donatarias.
+	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
+	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
+	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva…
+	//
+	// Valores: 01, 02, 03, 04.
+	Export *string `json:"export,omitempty"`
+	// Complemento de comercio exterior 2.0.
+	ComercioExterior *InvoiceCreateComercioExterior `json:"comercio_exterior,omitempty"`
+	// Factura global a público en general (InformacionGlobal): periodicidad, meses y año.
+	Global *InvoiceCreateGlobal `json:"global,omitempty"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	//
+	// Valores: PUE, PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Con PUE: true si aún no le pagan («Por cobrar» en la app) aunque se pagará este mes.
+	PaidLater *bool `json:"paid_later,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	Series *string `json:"series,omitempty"`
+	// Observaciones que aparecen en el PDF (no van en el XML).
+	Notes *string `json:"notes,omitempty"`
+	// Idioma del PDF: es (por omisión) o en.
+	//
+	// Valores: es, en, bi.
+	PDFLanguage *string `json:"pdf_language,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda *InvoiceCreateAddenda `json:"addenda,omitempty"`
+	// CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
+	Related *InvoiceCreateRelated `json:"related,omitempty"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	Folio *int64 `json:"folio,omitempty"`
+	// Con un folio elegido: true para que los siguientes sigan desde ese número.
+	ContinueSequence *bool `json:"continue_sequence,omitempty"`
+	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
+	Date *string `json:"date,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Correos con copia, separados por comas.
+	EmailCc *string `json:"email_cc,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// UpdateRecurringInvoiceParamsSchedule: Cada cuánto y a qué hora se timbra.
+type UpdateRecurringInvoiceParamsSchedule struct {
+	// monthly: cada interval meses en day_of_month. weekly o daily: cada interval semanas o días desde start_date.
+	//
+	// Valores: monthly, weekly, daily.
+	Frequency *string `json:"frequency,omitempty"`
+	// Cada cuántos meses, semanas o días. Por omisión 1. Hasta 24 meses, 52 semanas o 365 días.
+	Interval *int64 `json:"interval,omitempty"`
+	// Con monthly: el día, del 1 al 28, o "last" (el último del mes). Por omisión el día de start_date, o el de hoy.
+	DayOfMonth json.RawMessage `json:"day_of_month,omitempty"`
+	// La primera factura, AAAA-MM-DD (hoy o después). Por omisión: con monthly, el próximo day_of_month; con weekly o daily, hoy.
+	StartDate *string `json:"start_date,omitempty"`
+	// La hora (0 a 23) en que se timbra, en time_zone. Por omisión 7.
+	Hour *int64 `json:"hour,omitempty"`
+	// La zona de esa hora. Por omisión America/Mexico_City.
+	//
+	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Ciudad_Juarez.
+	TimeZone *string `json:"time_zone,omitempty"`
 }
 
 // UpdateSelfInvoicingParams: los campos de «Cambiar las reglas de autofactura».

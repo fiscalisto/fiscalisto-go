@@ -90,6 +90,14 @@ const (
 	CodePayrollInvalid = "payroll_invalid"
 	// Demasiadas solicitudes con la llave. Espere lo que dice Retry-After y reintente.
 	CodeRateLimit = "rate_limit"
+	// La factura recurrente no se pudo guardar: el día, la hora, la zona o la factura no son válidos. El mensaje dice cuál.
+	CodeRecurringInvalid = "recurring_invalid"
+	// El emisor ya tiene el máximo de facturas recurrentes activas (25 en pruebas, 5,000 en producción). Pause o borre las que ya no use.
+	CodeRecurringLimit = "recurring_limit"
+	// Aún no toca timbrar la factura recurrente (409): su next_invoice_on es después de hoy. Para una factura antes de tiempo, use POST /v1/invoices.
+	CodeRecurringNotDue = "recurring_not_due"
+	// La factura recurrente está en pausa: reanúdela con active: true para timbrarla.
+	CodeRecurringPaused = "recurring_paused"
 	// Otra solicitud con la misma Idempotency-Key sigue en proceso. Espere un momento y repítala.
 	CodeRequestInProgress = "request_in_progress"
 	// No existe un objeto con ese id (o es de otro emisor o del otro modo).

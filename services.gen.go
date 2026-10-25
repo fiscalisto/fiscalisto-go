@@ -58,6 +58,8 @@ type services struct {
 	SatInvoices *SatInvoicesService
 	// Autofactura.
 	Tickets *TicketsService
+	// Facturas recurrentes.
+	RecurringInvoices *RecurringInvoicesService
 	// Webhooks.
 	WebhookEndpoints *WebhookEndpointsService
 	// Eventos.
@@ -86,6 +88,7 @@ func (s *services) init(c *Client) {
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
 	s.Tickets = &TicketsService{c}
+	s.RecurringInvoices = &RecurringInvoicesService{c}
 	s.WebhookEndpoints = &WebhookEndpointsService{c}
 	s.Events = &EventsService{c}
 }
@@ -1156,6 +1159,113 @@ func (s *TicketsService) Get(ctx context.Context, id string, opts ...RequestOpti
 func (s *TicketsService) Cancel(ctx context.Context, id string, opts ...RequestOption) (*Ticket, error) {
 	out := new(Ticket)
 	if err := s.c.do(ctx, "DELETE", "/v1/tickets/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RecurringInvoicesService: Facturas recurrentes (client.RecurringInvoices).
+type RecurringInvoicesService struct{ c *Client }
+
+// Create: Crear una factura recurrente
+//
+// Una factura que el emisor timbra solo en cada fecha (cada interval meses en day_of_month, o cada interval semanas o días), a la hora que elija, con los timbres de su cuenta, y la manda al cliente si send_email. Cada una es una factura normal (invoice.stamped, con recurring_invoice) y nunca se timbra dos veces el mismo periodo. invoice es el cuerpo de POST /v1/invoices: se revisa ahora, con las mismas reglas.
+//
+// POST /v1/recurring_invoices
+//
+// https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/create-recurring-invoice
+func (s *RecurringInvoicesService) Create(ctx context.Context, params *CreateRecurringInvoiceParams, opts ...RequestOption) (*RecurringInvoice, error) {
+	out := new(RecurringInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar facturas recurrentes
+//
+// Las más recientes primero.
+//
+// GET /v1/recurring_invoices
+//
+// https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/list-recurring-invoices
+func (s *RecurringInvoicesService) List(ctx context.Context, params *ListRecurringInvoicesParams, opts ...RequestOption) (*Page[RecurringInvoice], error) {
+	return list[RecurringInvoice](ctx, s.c, "/v1/recurring_invoices", params, "", opts)
+}
+
+// ListAutoPaging: Listar facturas recurrentes, todos, página por página: for x, err := range …
+func (s *RecurringInvoicesService) ListAutoPaging(ctx context.Context, params *ListRecurringInvoicesParams, opts ...RequestOption) iter.Seq2[RecurringInvoice, error] {
+	return listAll[RecurringInvoice](ctx, s.c, "/v1/recurring_invoices", params, opts)
+}
+
+// Get: Ver una factura recurrente
+//
+// GET /v1/recurring_invoices/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/get-recurring-invoice
+func (s *RecurringInvoicesService) Get(ctx context.Context, id string, opts ...RequestOption) (*RecurringInvoice, error) {
+	out := new(RecurringInvoice)
+	if err := s.c.do(ctx, "GET", "/v1/recurring_invoices/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar o pausar una factura recurrente
+//
+// Solo lo que mande cambia. invoice reemplaza la factura completa desde la siguiente vez. active: false la pausa; active: true la reanuda desde hoy, sin timbrar las fechas que pasaron en pausa. schedule.start_date mueve la siguiente fecha.
+//
+// POST /v1/recurring_invoices/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/update-recurring-invoice
+func (s *RecurringInvoicesService) Update(ctx context.Context, id string, params *UpdateRecurringInvoiceParams, opts ...RequestOption) (*RecurringInvoice, error) {
+	out := new(RecurringInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una factura recurrente
+//
+// Ya no timbra más; las facturas que timbró se quedan.
+//
+// DELETE /v1/recurring_invoices/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/delete-recurring-invoice
+func (s *RecurringInvoicesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/recurring_invoices/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Skip: Saltar la siguiente factura
+//
+// La siguiente fecha pasa a la que sigue, sin timbrar nada.
+//
+// POST /v1/recurring_invoices/{id}/skip
+//
+// https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/skip-recurring-invoice
+func (s *RecurringInvoicesService) Skip(ctx context.Context, id string, opts ...RequestOption) (*RecurringInvoice, error) {
+	out := new(RecurringInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id)+"/skip", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Run: Timbrar ahora la que toca
+//
+// Timbra el periodo que ya toca (next_invoice_on es hoy o antes) sin esperar su hora. Si no toca aún, 409 recurring_not_due. Si la hora llega mientras tanto, no se timbra dos veces: es el mismo periodo.
+//
+// POST /v1/recurring_invoices/{id}/run
+//
+// https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/run-recurring-invoice
+func (s *RecurringInvoicesService) Run(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id)+"/run", nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
