@@ -31,6 +31,8 @@ type AccountKey struct {
 	ReadOnly bool `json:"read_only"`
 	// Cuándo deja de funcionar: la vigencia elegida al crearla, o el fin del traslape al cambiarla. null si no vence.
 	ExpiresAt *string `json:"expires_at,omitempty"`
+	// El entorno de prueba (sbx_…) de la llave: solo ve sus emisores, webhooks y eventos. null si es de la cuenta.
+	Sandbox *string `json:"sandbox,omitempty"`
 }
 
 // Advance: Un anticipo timbrado que aún no se aplica.
@@ -1123,6 +1125,12 @@ type CreateRetentionParamsTotals struct {
 	Taxed *float64 `json:"taxed,omitempty"`
 	// Monto exento (MontoTotExent). Por omisión 0.
 	Exempt *float64 `json:"exempt,omitempty"`
+}
+
+// CreateSandboxParams: los campos de «Crear un entorno de prueba».
+type CreateSandboxParams struct {
+	// Para quién o para qué es, por ejemplo el nombre de quien lo usa.
+	Name string `json:"name"`
 }
 
 // CreateSatDownloadParams: los campos de «Pedirle al SAT las facturas de un emisor».
@@ -3117,6 +3125,8 @@ type Issuer struct {
 	CURP *string `json:"curp,omitempty"`
 	// RFC con el que se timbra: el del emisor en producción y el de pruebas del SAT (EKU9003173C9) en pruebas.
 	StampsAs string `json:"stamps_as"`
+	// El entorno de prueba (sbx_…) al que pertenece, o null si es de la cuenta. Vea /v1/sandboxes.
+	Sandbox *string `json:"sandbox,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Cuándo se archivó (ya no timbra), o null.
@@ -4353,6 +4363,48 @@ type SATListCheckList2 struct {
 	Details map[string]string `json:"details,omitempty"`
 }
 
+// Sandbox: Un entorno de prueba: el modo de pruebas propio de una persona, con su emisor, llaves, webhooks y eventos aparte.
+type Sandbox struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Nombre.
+	Name string `json:"name"`
+	// Emisores activos en el entorno.
+	Issuers int64 `json:"issuers"`
+	// El emisor de pruebas del SAT con que nace (solo al crearlo).
+	Issuer *Issuer `json:"issuer,omitempty"`
+	// Solo al crearlo.
+	Key *SandboxKey `json:"key,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Siempre true.
+	Deleted *bool `json:"deleted,omitempty"`
+}
+
+// SandboxKey: Solo al crearlo.
+type SandboxKey struct {
+	// Id de la llave.
+	ID string `json:"id"`
+	// La llave fk_test_… del entorno. Solo se ve esta vez: guárdela.
+	Secret string `json:"secret"`
+}
+
+// SandboxList: Una página de la lista.
+type SandboxList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Sandbox `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // SelfInvoicing: El portal de autofactura de un emisor y sus reglas.
 type SelfInvoicing struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -5181,6 +5233,8 @@ type WebhookEndpoint struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// El entorno de prueba (sbx_…) al que pertenece, o null si es de la cuenta. Vea /v1/sandboxes.
+	Sandbox *string `json:"sandbox,omitempty"`
 	// Dirección https de su servidor que recibe los avisos.
 	URL string `json:"url"`
 	// Para qué es, para usted.

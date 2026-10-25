@@ -20,6 +20,8 @@ type services struct {
 	Account *AccountService
 	// Cuenta.
 	TestData *TestDataService
+	// Entornos de prueba.
+	Sandboxes *SandboxesService
 	// Cuenta.
 	Balance *BalanceService
 	// Emisores.
@@ -79,6 +81,7 @@ type services struct {
 func (s *services) init(c *Client) {
 	s.Account = &AccountService{c}
 	s.TestData = &TestDataService{c}
+	s.Sandboxes = &SandboxesService{c}
 	s.Balance = &BalanceService{c}
 	s.Issuers = &IssuersService{c}
 	s.Invoices = &InvoicesService{c}
@@ -139,6 +142,65 @@ type TestDataService struct{ c *Client }
 func (s *TestDataService) Reset(ctx context.Context, params *ResetTestDataParams, opts ...RequestOption) (*TestDataReset, error) {
 	out := new(TestDataReset)
 	if err := s.c.do(ctx, "POST", "/v1/test_data/reset", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SandboxesService: Entornos de prueba (client.Sandboxes).
+type SandboxesService struct{ c *Client }
+
+// Create: Crear un entorno de prueba
+//
+// Un modo de pruebas propio para una persona o un proyecto: nace con el emisor de pruebas del SAT y una llave fk_test_ (key.secret, una sola vez) que solo ve los emisores, webhooks y eventos del entorno, y que reinicia solo los suyos. Se crea con una llave de pruebas de la cuenta (no de otro entorno ni limitada a emisores). Hasta 25 por cuenta.
+//
+// POST /v1/sandboxes
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/create-sandbox
+func (s *SandboxesService) Create(ctx context.Context, params *CreateSandboxParams, opts ...RequestOption) (*Sandbox, error) {
+	out := new(Sandbox)
+	if err := s.c.do(ctx, "POST", "/v1/sandboxes", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar entornos de prueba
+//
+// GET /v1/sandboxes
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/list-sandboxes
+func (s *SandboxesService) List(ctx context.Context, opts ...RequestOption) (*SandboxList, error) {
+	out := new(SandboxList)
+	if err := s.c.do(ctx, "GET", "/v1/sandboxes", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un entorno de prueba
+//
+// GET /v1/sandboxes/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/get-sandbox
+func (s *SandboxesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Sandbox, error) {
+	out := new(Sandbox)
+	if err := s.c.do(ctx, "GET", "/v1/sandboxes/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un entorno de prueba
+//
+// Sus llaves dejan de funcionar al momento, sus emisores se archivan y sus webhooks se borran. No toca nada de la cuenta ni de otros entornos.
+//
+// DELETE /v1/sandboxes/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/delete-sandbox
+func (s *SandboxesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/sandboxes/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
