@@ -141,7 +141,7 @@ type TestDataService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/cuenta/reset-test-data
 func (s *TestDataService) Reset(ctx context.Context, params *ResetTestDataParams, opts ...RequestOption) (*TestDataReset, error) {
 	out := new(TestDataReset)
-	if err := s.c.do(ctx, "POST", "/v1/test_data/reset", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/test_data/reset", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -159,7 +159,7 @@ type SandboxesService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/create-sandbox
 func (s *SandboxesService) Create(ctx context.Context, params *CreateSandboxParams, opts ...RequestOption) (*Sandbox, error) {
 	out := new(Sandbox)
-	if err := s.c.do(ctx, "POST", "/v1/sandboxes", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/sandboxes", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -236,7 +236,7 @@ type IssuersService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/emisores/create-issuer
 func (s *IssuersService) Create(ctx context.Context, params *CreateIssuerParams, opts ...RequestOption) (*Issuer, error) {
 	out := new(Issuer)
-	if err := s.c.do(ctx, "POST", "/v1/issuers", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/issuers", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -278,7 +278,7 @@ func (s *IssuersService) Get(ctx context.Context, id string, opts ...RequestOpti
 // https://fiscalisto.com/docs/api/referencia/emisores/update-issuer
 func (s *IssuersService) Update(ctx context.Context, id string, params *UpdateIssuerParams, opts ...RequestOption) (*Issuer, error) {
 	out := new(Issuer)
-	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -308,7 +308,7 @@ func (s *IssuersService) Archive(ctx context.Context, id string, opts ...Request
 // https://fiscalisto.com/docs/api/referencia/emisores/upload-certificate
 func (s *IssuersService) UploadCertificate(ctx context.Context, id string, params *UploadCertificateParams, opts ...RequestOption) (*Issuer, error) {
 	out := new(Issuer)
-	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/certificates", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/certificates", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -323,7 +323,7 @@ func (s *IssuersService) UploadCertificate(ctx context.Context, id string, param
 // https://fiscalisto.com/docs/api/referencia/emisores/sign-efirma
 func (s *IssuersService) SignEfirma(ctx context.Context, id string, params *SignEfirmaParams, opts ...RequestOption) (*Issuer, error) {
 	out := new(Issuer)
-	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/efirma", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/efirma", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -353,7 +353,7 @@ func (s *IssuersService) DeleteEfirma(ctx context.Context, id string, opts ...Re
 // https://fiscalisto.com/docs/api/referencia/emisores/create-issuer-onboarding-link
 func (s *IssuersService) CreateOnboardingLink(ctx context.Context, id string, params *CreateIssuerOnboardingLinkParams, opts ...RequestOption) (*IssuerOnboardingLink, error) {
 	out := new(IssuerOnboardingLink)
-	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/onboarding_links", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/onboarding_links", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -381,7 +381,7 @@ func (s *IssuersService) GetSelfInvoicing(ctx context.Context, id string, opts .
 // https://fiscalisto.com/docs/api/referencia/autofactura/update-self-invoicing
 func (s *IssuersService) UpdateSelfInvoicing(ctx context.Context, id string, params *UpdateSelfInvoicingParams, opts ...RequestOption) (*SelfInvoicing, error) {
 	out := new(SelfInvoicing)
-	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/self_invoicing", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/self_invoicing", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -481,7 +481,7 @@ func (s *InvoicesService) Send(ctx context.Context, id string, params *SendInvoi
 // https://fiscalisto.com/docs/api/referencia/facturas/cancel-invoice
 func (s *InvoicesService) Cancel(ctx context.Context, id string, params *CancelInvoiceParams, opts ...RequestOption) (*Invoice, error) {
 	out := new(Invoice)
-	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/cancel", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/cancel", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -511,7 +511,7 @@ func (s *InvoicesService) Substitute(ctx context.Context, id string, params *Inv
 // https://fiscalisto.com/docs/api/referencia/cuentas-por-cobrar/mark-invoice-paid
 func (s *InvoicesService) MarkPaid(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
 	out := new(Invoice)
-	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/mark_paid", nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/mark_paid", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -526,7 +526,7 @@ func (s *InvoicesService) MarkPaid(ctx context.Context, id string, opts ...Reque
 // https://fiscalisto.com/docs/api/referencia/cuentas-por-cobrar/mark-invoice-unpaid
 func (s *InvoicesService) MarkUnpaid(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
 	out := new(Invoice)
-	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/mark_unpaid", nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/mark_unpaid", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -563,7 +563,7 @@ type BankTransactionsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/create-bank-transactions
 func (s *BankTransactionsService) Create(ctx context.Context, params *CreateBankTransactionsParams, opts ...RequestOption) (*BankImport, error) {
 	out := new(BankImport)
-	if err := s.c.do(ctx, "POST", "/v1/bank_transactions", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -607,7 +607,7 @@ func (s *BankTransactionsService) Get(ctx context.Context, id string, opts ...Re
 // https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/match-bank-transaction
 func (s *BankTransactionsService) Match(ctx context.Context, id string, params *MatchBankTransactionParams, opts ...RequestOption) (*BankTransaction, error) {
 	out := new(BankTransaction)
-	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/match", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/match", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -622,7 +622,7 @@ func (s *BankTransactionsService) Match(ctx context.Context, id string, params *
 // https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/classify-bank-transaction
 func (s *BankTransactionsService) Classify(ctx context.Context, id string, params *ClassifyBankTransactionParams, opts ...RequestOption) (*BankTransaction, error) {
 	out := new(BankTransaction)
-	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/classify", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/classify", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -637,7 +637,7 @@ func (s *BankTransactionsService) Classify(ctx context.Context, id string, param
 // https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/reopen-bank-transaction
 func (s *BankTransactionsService) Reopen(ctx context.Context, id string, opts ...RequestOption) (*BankTransaction, error) {
 	out := new(BankTransaction)
-	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/reopen", nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/reopen", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -794,7 +794,7 @@ func (s *RetentionsService) XML(ctx context.Context, id string, params *GetReten
 // https://fiscalisto.com/docs/api/referencia/retenciones/send-retention
 func (s *RetentionsService) Send(ctx context.Context, id string, params *SendRetentionParams, opts ...RequestOption) (*Retention, error) {
 	out := new(Retention)
-	if err := s.c.do(ctx, "POST", "/v1/retentions/"+url.PathEscape(id)+"/send", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/retentions/"+url.PathEscape(id)+"/send", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -809,7 +809,7 @@ func (s *RetentionsService) Send(ctx context.Context, id string, params *SendRet
 // https://fiscalisto.com/docs/api/referencia/retenciones/cancel-retention
 func (s *RetentionsService) Cancel(ctx context.Context, id string, params *CancelRetentionParams, opts ...RequestOption) (*Retention, error) {
 	out := new(Retention)
-	if err := s.c.do(ctx, "POST", "/v1/retentions/"+url.PathEscape(id)+"/cancel", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/retentions/"+url.PathEscape(id)+"/cancel", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -825,7 +825,7 @@ type EmployeesService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/nomina/create-employee
 func (s *EmployeesService) Create(ctx context.Context, params *CreateEmployeeParams, opts ...RequestOption) (*Employee, error) {
 	out := new(Employee)
-	if err := s.c.do(ctx, "POST", "/v1/employees", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/employees", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -865,7 +865,7 @@ func (s *EmployeesService) Get(ctx context.Context, id string, opts ...RequestOp
 // https://fiscalisto.com/docs/api/referencia/nomina/update-employee
 func (s *EmployeesService) Update(ctx context.Context, id string, params *UpdateEmployeeParams, opts ...RequestOption) (*Employee, error) {
 	out := new(Employee)
-	if err := s.c.do(ctx, "POST", "/v1/employees/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/employees/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -911,7 +911,7 @@ func (s *PayrollReceiptsService) Create(ctx context.Context, params *CreatePayro
 // https://fiscalisto.com/docs/api/referencia/nomina/preview-payroll-receipt
 func (s *PayrollReceiptsService) Preview(ctx context.Context, params *PreviewPayrollReceiptParams, opts ...RequestOption) (*PayrollReceiptPreview, error) {
 	out := new(PayrollReceiptPreview)
-	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/preview", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/preview", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -976,7 +976,7 @@ type TaxIdsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/clientes/validate-tax-id
 func (s *TaxIdsService) Validate(ctx context.Context, params *ValidateTaxIdParams, opts ...RequestOption) (*TaxIDValidation, error) {
 	out := new(TaxIDValidation)
-	if err := s.c.do(ctx, "POST", "/v1/tax_ids/validate", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/tax_ids/validate", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -992,7 +992,7 @@ type CustomersService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/clientes/create-customer
 func (s *CustomersService) Create(ctx context.Context, params *CreateCustomerParams, opts ...RequestOption) (*Customer, error) {
 	out := new(Customer)
-	if err := s.c.do(ctx, "POST", "/v1/customers", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/customers", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1032,7 +1032,7 @@ func (s *CustomersService) Get(ctx context.Context, id string, opts ...RequestOp
 // https://fiscalisto.com/docs/api/referencia/clientes/update-customer
 func (s *CustomersService) Update(ctx context.Context, id string, params *UpdateCustomerParams, opts ...RequestOption) (*Customer, error) {
 	out := new(Customer)
-	if err := s.c.do(ctx, "POST", "/v1/customers/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/customers/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1063,7 +1063,7 @@ type CustomerDataRequestsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/clientes/create-customer-data-request
 func (s *CustomerDataRequestsService) Create(ctx context.Context, params *CreateCustomerDataRequestParams, opts ...RequestOption) (*CustomerDataRequest, error) {
 	out := new(CustomerDataRequest)
-	if err := s.c.do(ctx, "POST", "/v1/customer_data_requests", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/customer_data_requests", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1121,7 +1121,7 @@ type ProductsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/productos/create-product
 func (s *ProductsService) Create(ctx context.Context, params *CreateProductParams, opts ...RequestOption) (*Product, error) {
 	out := new(Product)
-	if err := s.c.do(ctx, "POST", "/v1/products", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/products", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1161,7 +1161,7 @@ func (s *ProductsService) Get(ctx context.Context, id string, opts ...RequestOpt
 // https://fiscalisto.com/docs/api/referencia/productos/update-product
 func (s *ProductsService) Update(ctx context.Context, id string, params *UpdateProductParams, opts ...RequestOption) (*Product, error) {
 	out := new(Product)
-	if err := s.c.do(ctx, "POST", "/v1/products/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/products/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1225,7 +1225,7 @@ func (s *SatListsService) Get(ctx context.Context, taxId string, opts ...Request
 // https://fiscalisto.com/docs/api/referencia/listas-del-sat/check-sat-lists
 func (s *SatListsService) Check(ctx context.Context, params *CheckSatListsParams, opts ...RequestOption) (*SATListCheckList, error) {
 	out := new(SATListCheckList)
-	if err := s.c.do(ctx, "POST", "/v1/sat_lists/check", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/sat_lists/check", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1243,7 +1243,7 @@ type SatDownloadsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/descargas-del-sat/create-sat-download
 func (s *SatDownloadsService) Create(ctx context.Context, params *CreateSatDownloadParams, opts ...RequestOption) (*SATDownload, error) {
 	out := new(SATDownload)
-	if err := s.c.do(ctx, "POST", "/v1/sat_downloads", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/sat_downloads", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1332,7 +1332,7 @@ type TicketsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/autofactura/create-ticket
 func (s *TicketsService) Create(ctx context.Context, params *CreateTicketParams, opts ...RequestOption) (*Ticket, error) {
 	out := new(Ticket)
-	if err := s.c.do(ctx, "POST", "/v1/tickets", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/tickets", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1482,7 +1482,7 @@ type StoreConnectionsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/create-store-connection
 func (s *StoreConnectionsService) Create(ctx context.Context, params *CreateStoreConnectionParams, opts ...RequestOption) (*StoreConnection, error) {
 	out := new(StoreConnection)
-	if err := s.c.do(ctx, "POST", "/v1/store_connections", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/store_connections", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1526,7 +1526,7 @@ func (s *StoreConnectionsService) Get(ctx context.Context, id string, opts ...Re
 // https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/update-store-connection
 func (s *StoreConnectionsService) Update(ctx context.Context, id string, params *UpdateStoreConnectionParams, opts ...RequestOption) (*StoreConnection, error) {
 	out := new(StoreConnection)
-	if err := s.c.do(ctx, "POST", "/v1/store_connections/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/store_connections/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1556,7 +1556,7 @@ func (s *StoreConnectionsService) Delete(ctx context.Context, id string, opts ..
 // https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/import-store-orders
 func (s *StoreConnectionsService) ImportOrders(ctx context.Context, id string, params *ImportStoreOrdersParams, opts ...RequestOption) (*StoreImport, error) {
 	out := new(StoreImport)
-	if err := s.c.do(ctx, "POST", "/v1/store_connections/"+url.PathEscape(id)+"/import_orders", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/store_connections/"+url.PathEscape(id)+"/import_orders", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1574,7 +1574,7 @@ type RecurringInvoicesService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/create-recurring-invoice
 func (s *RecurringInvoicesService) Create(ctx context.Context, params *CreateRecurringInvoiceParams, opts ...RequestOption) (*RecurringInvoice, error) {
 	out := new(RecurringInvoice)
-	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1618,7 +1618,7 @@ func (s *RecurringInvoicesService) Get(ctx context.Context, id string, opts ...R
 // https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/update-recurring-invoice
 func (s *RecurringInvoicesService) Update(ctx context.Context, id string, params *UpdateRecurringInvoiceParams, opts ...RequestOption) (*RecurringInvoice, error) {
 	out := new(RecurringInvoice)
-	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1648,7 +1648,7 @@ func (s *RecurringInvoicesService) Delete(ctx context.Context, id string, opts .
 // https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/skip-recurring-invoice
 func (s *RecurringInvoicesService) Skip(ctx context.Context, id string, opts ...RequestOption) (*RecurringInvoice, error) {
 	out := new(RecurringInvoice)
-	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id)+"/skip", nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id)+"/skip", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1663,7 +1663,7 @@ func (s *RecurringInvoicesService) Skip(ctx context.Context, id string, opts ...
 // https://fiscalisto.com/docs/api/referencia/facturas-recurrentes/run-recurring-invoice
 func (s *RecurringInvoicesService) Run(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
 	out := new(Invoice)
-	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id)+"/run", nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/recurring_invoices/"+url.PathEscape(id)+"/run", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1681,7 +1681,7 @@ type QuotesService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/cotizaciones/create-quote
 func (s *QuotesService) Create(ctx context.Context, params *CreateQuoteParams, opts ...RequestOption) (*Quote, error) {
 	out := new(Quote)
-	if err := s.c.do(ctx, "POST", "/v1/quotes", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/quotes", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1727,7 +1727,7 @@ func (s *QuotesService) Get(ctx context.Context, id string, opts ...RequestOptio
 // https://fiscalisto.com/docs/api/referencia/cotizaciones/update-quote
 func (s *QuotesService) Update(ctx context.Context, id string, params *UpdateQuoteParams, opts ...RequestOption) (*Quote, error) {
 	out := new(Quote)
-	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1757,7 +1757,7 @@ func (s *QuotesService) Delete(ctx context.Context, id string, opts ...RequestOp
 // https://fiscalisto.com/docs/api/referencia/cotizaciones/send-quote
 func (s *QuotesService) Send(ctx context.Context, id string, params *SendQuoteParams, opts ...RequestOption) (*Quote, error) {
 	out := new(Quote)
-	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/send", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/send", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1772,7 +1772,7 @@ func (s *QuotesService) Send(ctx context.Context, id string, params *SendQuotePa
 // https://fiscalisto.com/docs/api/referencia/cotizaciones/accept-quote
 func (s *QuotesService) Accept(ctx context.Context, id string, opts ...RequestOption) (*Quote, error) {
 	out := new(Quote)
-	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/accept", nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/accept", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1816,7 +1816,7 @@ type WebhookEndpointsService struct{ c *Client }
 // https://fiscalisto.com/docs/api/referencia/webhooks/create-webhook-endpoint
 func (s *WebhookEndpointsService) Create(ctx context.Context, params *CreateWebhookEndpointParams, opts ...RequestOption) (*WebhookEndpoint, error) {
 	out := new(WebhookEndpoint)
-	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1856,7 +1856,7 @@ func (s *WebhookEndpointsService) Get(ctx context.Context, id string, opts ...Re
 // https://fiscalisto.com/docs/api/referencia/webhooks/update-webhook-endpoint
 func (s *WebhookEndpointsService) Update(ctx context.Context, id string, params *UpdateWebhookEndpointParams, opts ...RequestOption) (*WebhookEndpoint, error) {
 	out := new(WebhookEndpoint)
-	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1884,7 +1884,7 @@ func (s *WebhookEndpointsService) Delete(ctx context.Context, id string, opts ..
 // https://fiscalisto.com/docs/api/referencia/webhooks/roll-webhook-secret
 func (s *WebhookEndpointsService) RollSecret(ctx context.Context, id string, params *RollWebhookSecretParams, opts ...RequestOption) (*WebhookEndpoint, error) {
 	out := new(WebhookEndpoint)
-	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints/"+url.PathEscape(id)+"/roll_secret", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints/"+url.PathEscape(id)+"/roll_secret", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1899,7 +1899,7 @@ func (s *WebhookEndpointsService) RollSecret(ctx context.Context, id string, par
 // https://fiscalisto.com/docs/api/referencia/webhooks/test-webhook-endpoint
 func (s *WebhookEndpointsService) Test(ctx context.Context, id string, params *TestWebhookEndpointParams, opts ...RequestOption) (*WebhookTest, error) {
 	out := new(WebhookTest)
-	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints/"+url.PathEscape(id)+"/test", params, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints/"+url.PathEscape(id)+"/test", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

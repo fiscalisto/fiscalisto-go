@@ -44,9 +44,11 @@ const (
 	CodeEmailFailed = "email_failed"
 	// La cuenta llegó al máximo de webhooks en este modo.
 	CodeEndpointLimit = "endpoint_limit"
+	// Idempotency-Key es de 1 a 255 caracteres ASCII, sin acentos ni ñ: el id de su pedido o un UUID.
+	CodeIdempotencyKeyInvalid = "idempotency_key_invalid"
 	// Lo que timbra exige el encabezado Idempotency-Key (8 a 255 caracteres, uno nuevo por comprobante). Así un reintento nunca timbra dos veces.
 	CodeIdempotencyKeyMissing = "idempotency_key_missing"
-	// Esa Idempotency-Key ya se usó con otro cuerpo. Use una nueva para un comprobante distinto.
+	// Esa Idempotency-Key ya se usó en las últimas 24 horas con otra solicitud (otra ruta u otro cuerpo). Use una nueva para cada operación distinta.
 	CodeIdempotencyKeyReused = "idempotency_key_reused"
 	// La cuenta no tiene timbres de producción. Compre un paquete en Desarrolladores › Timbres. En pruebas nunca pasa. Para enterarse antes, escuche balance.low o active la recarga automática.
 	CodeInsufficientBalance = "insufficient_balance"
@@ -114,7 +116,7 @@ const (
 	CodeRecurringNotDue = "recurring_not_due"
 	// La factura recurrente está en pausa: reanúdela con active: true para timbrarla.
 	CodeRecurringPaused = "recurring_paused"
-	// Otra solicitud con la misma Idempotency-Key sigue en proceso. Espere un momento y repítala.
+	// Otra solicitud con la misma Idempotency-Key sigue en proceso (409, con Retry-After). Repítala en un momento con la misma llave: contestará lo mismo.
 	CodeRequestInProgress = "request_in_progress"
 	// No existe un objeto con ese id (o es de otro emisor o del otro modo).
 	CodeResourceMissing = "resource_missing"

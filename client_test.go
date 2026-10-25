@@ -100,13 +100,35 @@ func TestErrors(t *testing.T) {
 	}
 }
 
+func TestPostRetriesWithTheSameKey(t *testing.T) {
+	var calls atomic.Int32
+	keys := map[string]bool{}
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		keys[r.Header.Get("Idempotency-Key")] = true
+		if calls.Add(1) < 3 {
+			w.WriteHeader(500)
+			return
+		}
+		_, _ = io.WriteString(w, `{"id":"cus_1"}`)
+	})
+	if _, err := c.Customers.Update(context.Background(), "cus_1", &UpdateCustomerParams{}); err != nil {
+		t.Fatal(err)
+	}
+	if calls.Load() != 3 || len(keys) != 1 || keys[""] {
+		t.Fatalf("%d llamadas, llaves %v", calls.Load(), keys)
+	}
+}
+
 func TestPostWithoutKeyIsNotRetried(t *testing.T) {
 	var calls atomic.Int32
 	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
+		if r.Header.Get("Idempotency-Key") != "" {
+			t.Error("sin idempotent no lleva llave")
+		}
 		w.WriteHeader(500)
 	})
-	_, err := c.Customers.Update(context.Background(), "cus_1", &UpdateCustomerParams{})
+	err := c.do(context.Background(), "POST", "/v1/customers", map[string]any{}, nil, false, nil, nil)
 	var apiErr *Error
 	if !errors.As(err, &apiErr) || apiErr.StatusCode != 500 || calls.Load() != 1 {
 		t.Fatalf("%v, %d llamadas", err, calls.Load())
