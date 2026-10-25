@@ -62,6 +62,10 @@ type services struct {
 	SatInvoices *SatInvoicesService
 	// Autofactura.
 	Tickets *TicketsService
+	// Contabilidad.
+	Accounting *AccountingService
+	// Tiendas en línea.
+	StoreConnections *StoreConnectionsService
 	// Facturas recurrentes.
 	RecurringInvoices *RecurringInvoicesService
 	// Cotizaciones.
@@ -96,6 +100,8 @@ func (s *services) init(c *Client) {
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
 	s.Tickets = &TicketsService{c}
+	s.Accounting = &AccountingService{c}
+	s.StoreConnections = &StoreConnectionsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
 	s.Quotes = &QuotesService{c}
 	s.WebhookEndpoints = &WebhookEndpointsService{c}
@@ -1309,6 +1315,186 @@ func (s *TicketsService) Get(ctx context.Context, id string, opts ...RequestOpti
 func (s *TicketsService) Cancel(ctx context.Context, id string, opts ...RequestOption) (*Ticket, error) {
 	out := new(Ticket)
 	if err := s.c.do(ctx, "DELETE", "/v1/tickets/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AccountingService: Contabilidad (client.Accounting).
+type AccountingService struct{ c *Client }
+
+// JournalEntries: Listar las pólizas de un mes
+//
+// Una póliza de diario por cada CFDI de ingreso o egreso vigente del mes, emitido o recibido (los recibidos con la categoría de su gasto), con sus cuentas y código agrupador del SAT. En pesos; un CFDI en otra moneda sin tipo de cambio no se registra. Es un punto de partida para su contador: no incluye bancos, nómina ni depreciaciones.
+//
+// GET /v1/accounting/journal_entries
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-journal-entries
+func (s *AccountingService) JournalEntries(ctx context.Context, params *ListJournalEntriesParams, opts ...RequestOption) (*Page[JournalEntry], error) {
+	return list[JournalEntry](ctx, s.c, "/v1/accounting/journal_entries", params, "", opts)
+}
+
+// JournalEntriesAutoPaging: Listar las pólizas de un mes, todos, página por página: for x, err := range …
+func (s *AccountingService) JournalEntriesAutoPaging(ctx context.Context, params *ListJournalEntriesParams, opts ...RequestOption) iter.Seq2[JournalEntry, error] {
+	return listAll[JournalEntry](ctx, s.c, "/v1/accounting/journal_entries", params, opts)
+}
+
+// TrialBalance: Ver la balanza de comprobación
+//
+// Saldo inicial, cargos, abonos y saldo final de cada cuenta en el mes. Los saldos iniciales se acumulan desde el primer CFDI (las de resultados, desde enero), y los resultados de cada año anterior se cierran a capital.
+//
+// GET /v1/accounting/trial_balance
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-trial-balance
+func (s *AccountingService) TrialBalance(ctx context.Context, params *GetTrialBalanceParams, opts ...RequestOption) (*TrialBalance, error) {
+	out := new(TrialBalance)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/trial_balance", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Accounts: Ver el catálogo de cuentas
+//
+// Las cuentas que usan las pólizas, con su código agrupador del SAT.
+//
+// GET /v1/accounting/accounts
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-ledger-accounts
+func (s *AccountingService) Accounts(ctx context.Context, params *ListLedgerAccountsParams, opts ...RequestOption) (*LedgerAccountList, error) {
+	out := new(LedgerAccountList)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/accounts", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ElectronicAccounting: Descargar la contabilidad electrónica
+//
+// El ZIP del mes para el Buzón Tributario: el catálogo (CT) y la balanza (BN, o BC si es complementaria), cada uno en su ZIP con el nombre que espera el SAT, en el formato 1.3 del Anexo 24. Con journal_request, también las pólizas (PL), que se entregan cuando el SAT las pide.
+//
+// GET /v1/accounting/electronic_accounting
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-electronic-accounting
+func (s *AccountingService) ElectronicAccounting(ctx context.Context, params *GetElectronicAccountingParams, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/accounting/electronic_accounting", nil, params, false, opts)
+	return string(b), err
+}
+
+// Diot: Ver la DIOT de un mes
+//
+// Lo efectivamente pagado a cada proveedor en el mes (facturas PUE y complementos de pago recibidos), con sus notas de crédito como devoluciones, por tipo de operación. Sale de las facturas recibidas que trajo de las descargas del SAT. Desde enero de 2025 (formato 2025).
+//
+// GET /v1/accounting/diot
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-diot
+func (s *AccountingService) Diot(ctx context.Context, params *GetDiotParams, opts ...RequestOption) (*Diot, error) {
+	out := new(Diot)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/diot", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DiotFile: Descargar la DIOT para el SAT
+//
+// El TXT de carga masiva de la DIOT 2025: 54 campos separados por |, pesos enteros. Con group_small_suppliers=true junta en una línea global a los proveedores chicos (regla 4.5.2 RMF). Un mes sin pagos a proveedores responde diot_empty: esa se presenta sin operaciones en el portal del SAT.
+//
+// GET /v1/accounting/diot/file
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-diot-file
+func (s *AccountingService) DiotFile(ctx context.Context, params *GetDiotFileParams, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/accounting/diot/file", nil, params, false, opts)
+	return string(b), err
+}
+
+// StoreConnectionsService: Tiendas en línea (client.StoreConnections).
+type StoreConnectionsService struct{ c *Client }
+
+// Create: Conectar una tienda
+//
+// Shopify: con el dominio y las llaves de la app de la tienda (Dev Dashboard, permisos read_orders y write_orders) registra los webhooks y queda active. Mercado Libre: queda pending hasta que el vendedor autorice en authorize_url. Desde entonces cada pedido pagado es un ticket (folio SHOP-1001 o ML-…), que su comprador factura en el portal o entra en la factura global; un pedido cancelado o reembolsado completo cancela su ticket.
+//
+// POST /v1/store_connections
+//
+// https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/create-store-connection
+func (s *StoreConnectionsService) Create(ctx context.Context, params *CreateStoreConnectionParams, opts ...RequestOption) (*StoreConnection, error) {
+	out := new(StoreConnection)
+	if err := s.c.do(ctx, "POST", "/v1/store_connections", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar tiendas
+//
+// Las más recientes primero, también las desconectadas.
+//
+// GET /v1/store_connections
+//
+// https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/list-store-connections
+func (s *StoreConnectionsService) List(ctx context.Context, params *ListStoreConnectionsParams, opts ...RequestOption) (*Page[StoreConnection], error) {
+	return list[StoreConnection](ctx, s.c, "/v1/store_connections", params, "", opts)
+}
+
+// ListAutoPaging: Listar tiendas, todos, página por página: for x, err := range …
+func (s *StoreConnectionsService) ListAutoPaging(ctx context.Context, params *ListStoreConnectionsParams, opts ...RequestOption) iter.Seq2[StoreConnection, error] {
+	return listAll[StoreConnection](ctx, s.c, "/v1/store_connections", params, opts)
+}
+
+// Get: Ver una tienda
+//
+// GET /v1/store_connections/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/get-store-connection
+func (s *StoreConnectionsService) Get(ctx context.Context, id string, opts ...RequestOption) (*StoreConnection, error) {
+	out := new(StoreConnection)
+	if err := s.c.do(ctx, "GET", "/v1/store_connections/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar cómo se vuelven tickets sus pedidos
+//
+// Cuenta para los pedidos que lleguen; los tickets ya hechos no cambian.
+//
+// POST /v1/store_connections/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/update-store-connection
+func (s *StoreConnectionsService) Update(ctx context.Context, id string, params *UpdateStoreConnectionParams, opts ...RequestOption) (*StoreConnection, error) {
+	out := new(StoreConnection)
+	if err := s.c.do(ctx, "POST", "/v1/store_connections/"+url.PathEscape(id), params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Desconectar una tienda
+//
+// Sus pedidos dejan de llegar y se borran sus llaves y webhooks. Los tickets que ya hizo siguen.
+//
+// DELETE /v1/store_connections/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/delete-store-connection
+func (s *StoreConnectionsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*StoreConnection, error) {
+	out := new(StoreConnection)
+	if err := s.c.do(ctx, "DELETE", "/v1/store_connections/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ImportOrders: Traer pedidos pagados
+//
+// Los pedidos pagados desde una fecha (hasta 31 días, 200 a la vez) que no llegaron por webhook: la tienda se conectó después o estuvo caída. Un pedido que ya es ticket no se repite.
+//
+// POST /v1/store_connections/{id}/import_orders
+//
+// https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/import-store-orders
+func (s *StoreConnectionsService) ImportOrders(ctx context.Context, id string, params *ImportStoreOrdersParams, opts ...RequestOption) (*StoreImport, error) {
+	out := new(StoreImport)
+	if err := s.c.do(ctx, "POST", "/v1/store_connections/"+url.PathEscape(id)+"/import_orders", params, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

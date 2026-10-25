@@ -1147,6 +1147,50 @@ type CreateSatDownloadParams struct {
 	UUID *string `json:"uuid,omitempty"`
 }
 
+// CreateStoreConnectionParams: los campos de «Conectar una tienda».
+type CreateStoreConnectionParams struct {
+	// El emisor (iss_…) dueño de la tienda. Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// shopify o mercadolibre.
+	//
+	// Valores: shopify, mercadolibre.
+	Platform string `json:"platform"`
+	// Shopify: el dominio de la tienda (mi-tienda.myshopify.com).
+	Shop *string `json:"shop,omitempty"`
+	// Shopify: el Client ID de la app de la tienda (Dev Dashboard).
+	ClientID *string `json:"client_id,omitempty"`
+	// Shopify: el Client secret de esa app; con él se firman los webhooks. Se guarda cifrado y nunca se muestra.
+	ClientSecret *string `json:"client_secret,omitempty"`
+	// Shopify, solo apps personalizadas antiguas: su token de la Admin API (shpat_…); client_secret es entonces su API secret key.
+	AccessToken *string `json:"access_token,omitempty"`
+	// Mercado Libre: a dónde volver después de autorizar (se agregan store_connection y status).
+	ReturnURL *string `json:"return_url,omitempty"`
+	// Cómo se vuelve ticket cada pedido.
+	Settings *CreateStoreConnectionParamsSettings `json:"settings,omitempty"`
+}
+
+// CreateStoreConnectionParamsSettings: Cómo se vuelve ticket cada pedido.
+type CreateStoreConnectionParamsSettings struct {
+	// c_ClaveProdServ de lo que vende (8 dígitos).
+	ProductKey *string `json:"product_key,omitempty"`
+	// c_ClaveUnidad. Por omisión, la de la clave del producto.
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Tasa de IVA incluida en los precios. Por omisión 0.16.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// El concepto de cada ticket. Por omisión, el pedido y sus artículos («Pedido 1001: Playera (2), Gorra»).
+	Description *string `json:"description,omitempty"`
+	// Lo que va antes del número del pedido en el folio del ticket. Por omisión SHOP- o ML-.
+	FolioPrefix *string `json:"folio_prefix,omitempty"`
+	// c_FormaPago cuando la forma de pago del pedido no está en payment_forms. Por omisión 04 (Shopify) o 31 (Mercado Libre).
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// c_FormaPago por pasarela de Shopify (shopify_payments, paypal, manual…) o tipo de pago de Mercado Libre (credit_card, debit_card, account_money, ticket, bank_transfer).
+	PaymentForms map[string]string `json:"payment_forms,omitempty"`
+	// Mercado Libre: timbrar en cuanto se paga si el comprador dejó sus datos fiscales completos. Por omisión true.
+	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+}
+
 // CreateTicketParams: los campos de «Registrar un ticket».
 type CreateTicketParams struct {
 	// El emisor (iss_…) que vendió. Por omisión, su único emisor.
@@ -1311,6 +1355,78 @@ type Deleted struct {
 	Deleted bool `json:"deleted"`
 }
 
+// Diot: La DIOT de un mes: lo pagado a cada proveedor, por tipo de operación.
+type Diot struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// La proporción de IVA acreditable del mes para gastos comunes (1 si no la aplica).
+	Proportion float64 `json:"proportion"`
+	// Una línea por proveedor y tipo de operación, con lo pagado en el mes.
+	Lines []DiotLine `json:"lines"`
+	// Lo que conviene revisar antes de presentarla.
+	Warnings []string `json:"warnings"`
+}
+
+// DiotLine: DiotLine.
+type DiotLine struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Tipo de tercero: 04 nacional, 05 extranjero, 15 global.
+	//
+	// Valores: 15, 04, 05.
+	ThirdPartyType string `json:"third_party_type"`
+	// Tipo de operación: 02 enajenación de bienes, 03 servicios profesionales, 06 uso o goce temporal, 07 importación, 85 otros, 87 operaciones globales.
+	//
+	// Valores: 85, 87, 02, 03, 06, 07.
+	OperationType string `json:"operation_type"`
+	// Lo pagado en el mes por tasa, en pesos, con su IVA.
+	Paid DiotLinePaid `json:"paid"`
+	// Las devoluciones (notas de crédito) del mes, por tasa.
+	Returns DiotLineReturns `json:"returns"`
+	// El proveedor está en la lista 69-B definitiva: revise si deduce sus CFDI.
+	Blacklisted bool `json:"blacklisted"`
+}
+
+// DiotLinePaid: Lo pagado en el mes por tasa, en pesos, con su IVA.
+type DiotLinePaid struct {
+	// Valor de los actos al 16 %.
+	Base16 float64 `json:"base_16"`
+	// Valor de los actos al 8 % (región fronteriza).
+	Base8 float64 `json:"base_8"`
+	// Valor de los actos al 0 %.
+	Base0 float64 `json:"base_0"`
+	// Valor de los actos exentos.
+	Exempt float64 `json:"exempt"`
+	// Valor de los actos no objeto de IVA.
+	NotTaxable float64 `json:"not_taxable"`
+	// El IVA de esos actos.
+	Vat float64 `json:"vat"`
+}
+
+// DiotLineReturns: Las devoluciones (notas de crédito) del mes, por tasa.
+type DiotLineReturns struct {
+	// Valor de los actos al 16 %.
+	Base16 float64 `json:"base_16"`
+	// Valor de los actos al 8 % (región fronteriza).
+	Base8 float64 `json:"base_8"`
+	// Valor de los actos al 0 %.
+	Base0 float64 `json:"base_0"`
+	// Valor de las devoluciones exentas.
+	Exempt float64 `json:"exempt"`
+	// Valor de los actos no objeto de IVA.
+	NotTaxable float64 `json:"not_taxable"`
+	// El IVA de esos actos.
+	Vat float64 `json:"vat"`
+}
+
 // Employee: Un empleado de un emisor, para sus recibos de nómina.
 type Employee struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
@@ -1441,6 +1557,46 @@ type EventList struct {
 	URL string `json:"url"`
 }
 
+// GetDiotFileParams: los campos de «Descargar la DIOT para el SAT».
+type GetDiotFileParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// true para agrupar proveedores de hasta $50,000 en el mes (regla 4.5.2).
+	GroupSmallSuppliers *bool `json:"group_small_suppliers,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetDiotParams: los campos de «Ver la DIOT de un mes».
+type GetDiotParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetElectronicAccountingParams: los campos de «Descargar la contabilidad electrónica».
+type GetElectronicAccountingParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// normal (BN, por omisión) o complementary (BC, con modified_on).
+	//
+	// Valores: normal, complementary.
+	Type *string `json:"type,omitempty"`
+	// complementary: el día en que se modificó (AAAA-MM-DD).
+	ModifiedOn *string `json:"modified_on,omitempty"`
+	// Para incluir las pólizas: AF acto de fiscalización, FC fiscalización compulsa (con order_number), DE devolución o CO compensación (con procedure_number).
+	//
+	// Valores: AF, FC, DE, CO.
+	JournalRequest *string `json:"journal_request,omitempty"`
+	// AF y FC: el número de orden (ABC1234567/26).
+	OrderNumber *string `json:"order_number,omitempty"`
+	// DE y CO: el número de trámite (AB123456789012).
+	ProcedureNumber *string `json:"procedure_number,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetInvoiceParams: los campos de «Ver una factura».
 type GetInvoiceParams struct {
 	// Con un UUID en vez del id, el emisor (iss_…) si la cuenta tiene varios.
@@ -1487,6 +1643,20 @@ type GetSatCatalogParams struct {
 	Q *string `json:"q,omitempty"`
 	// Hasta cuántos, de 1 a 100 (búsquedas). Por omisión 20.
 	Limit *int64 `json:"limit,omitempty"`
+}
+
+// GetTrialBalanceParams: los campos de «Ver la balanza de comprobación».
+type GetTrialBalanceParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ImportStoreOrdersParams: los campos de «Traer pedidos pagados».
+type ImportStoreOrdersParams struct {
+	// Desde qué día (AAAA-MM-DD, hasta 31 días atrás). Por omisión, hace 7 días.
+	Since *string `json:"since,omitempty"`
 }
 
 // Invoice: Un CFDI 4.0 emitido: factura de ingreso o global, traslado, nota de crédito (E), complemento de pago (P) o recibo de nómina (N).
@@ -3001,6 +3171,90 @@ type IssuerSATDownloads struct {
 	EfirmaExpiresAt *string `json:"efirma_expires_at,omitempty"`
 }
 
+// JournalEntry: La póliza de diario de un CFDI: sus cargos y abonos, que siempre cuadran.
+type JournalEntry struct {
+	// El número de la póliza: D-AAAAMM-NNNNN, en orden de fecha dentro del mes.
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// La fecha del CFDI.
+	Date string `json:"date"`
+	// Factura o nota de crédito, su folio y la contraparte.
+	Description string `json:"description"`
+	// La factura (inv_…) si la timbró este emisor; null si la recibió.
+	Invoice *string `json:"invoice,omitempty"`
+	// El folio fiscal del CFDI.
+	UUID string `json:"uuid"`
+	// El RFC de la contraparte (cliente o proveedor).
+	TaxID string `json:"tax_id"`
+	// El total del CFDI, en su moneda.
+	Total float64 `json:"total"`
+	// La moneda del CFDI.
+	Currency string `json:"currency"`
+	// El tipo de cambio, si no es en pesos; null si es en pesos.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Los movimientos, en pesos: el cargo (debit) o abono (credit) a cada cuenta.
+	Lines []JournalEntryLine `json:"lines"`
+}
+
+// JournalEntryLine: JournalEntryLine.
+type JournalEntryLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// El cargo, en pesos.
+	Debit float64 `json:"debit"`
+	// El abono, en pesos.
+	Credit float64 `json:"credit"`
+}
+
+// JournalEntryList: Una página de la lista.
+type JournalEntryList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []JournalEntry `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// LedgerAccount: Una cuenta del catálogo, con su código agrupador del SAT.
+type LedgerAccount struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El número de cuenta (NumCta).
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// El código agrupador del SAT (Anexo 24).
+	GroupingCode string `json:"grouping_code"`
+	// debit (deudora) o credit (acreedora).
+	//
+	// Valores: debit, credit.
+	Nature string `json:"nature"`
+}
+
+// LedgerAccountList: Una página de la lista.
+type LedgerAccountList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []LedgerAccount `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // ListAdvancesParams: los campos de «Listar anticipos sin aplicar».
 type ListAdvancesParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -3119,6 +3373,24 @@ type ListIssuersParams struct {
 	IncludeArchived *bool `json:"include_archived,omitempty"`
 }
 
+// ListJournalEntriesParams: los campos de «Listar las pólizas de un mes».
+type ListJournalEntriesParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// Cuántas por página, de 1 a 1,000. Por omisión 100.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id de la última póliza de la página anterior.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListLedgerAccountsParams: los campos de «Ver el catálogo de cuentas».
+type ListLedgerAccountsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListProductsParams: los campos de «Listar productos».
 type ListProductsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -3223,6 +3495,16 @@ type ListSatInvoicesParams struct {
 	DateGte *string `json:"date_gte,omitempty"`
 	// Con fecha hasta este día (AAAA-MM-DD), incluido.
 	DateLte *string `json:"date_lte,omitempty"`
+}
+
+// ListStoreConnectionsParams: los campos de «Listar tiendas».
+type ListStoreConnectionsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // ListTicketsParams: los campos de «Listar tickets».
@@ -3659,7 +3941,7 @@ type RecurringInvoiceItem struct {
 
 // RecurringInvoiceLastError: RecurringInvoiceLastError.
 type RecurringInvoiceLastError struct {
-	// Qué pasó y cómo corregirlo, para una persona.
+	// Qué pasó.
 	Message *string `json:"message,omitempty"`
 }
 
@@ -4131,6 +4413,108 @@ type SignEfirmaParams struct {
 	KeepForDownloads *bool `json:"keep_for_downloads,omitempty"`
 }
 
+// StoreConnection: Una tienda de Shopify o Mercado Libre cuyos pedidos pagados se vuelven tickets de autofactura del emisor.
+type StoreConnection struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor dueño de la tienda.
+	Issuer string `json:"issuer"`
+	// shopify o mercadolibre.
+	//
+	// Valores: shopify, mercadolibre.
+	Platform string `json:"platform"`
+	// El dominio de la tienda de Shopify, o el id del vendedor en Mercado Libre (al autorizar).
+	Shop *string `json:"shop,omitempty"`
+	// pending (Mercado Libre espera que el vendedor autorice en authorize_url), active o disconnected.
+	//
+	// Valores: pending, active, disconnected.
+	Status string `json:"status"`
+	// Si está pending: la página de Mercado Libre donde el vendedor autoriza (vale un día; cada consulta da una nueva). Si no, null.
+	AuthorizeURL *string `json:"authorize_url,omitempty"`
+	// Cómo se vuelve ticket cada pedido.
+	Settings StoreConnectionSettings `json:"settings"`
+	// Cuántos pedidos se han vuelto tickets.
+	OrdersCount int64 `json:"orders_count"`
+	// Cuándo llegó el último, o null.
+	LastOrderAt *string `json:"last_order_at,omitempty"`
+	// El último problema (un pedido en dólares, un ticket que ya se facturó cuando se canceló el pedido…), o null.
+	LastError *StoreConnectionLastError `json:"last_error,omitempty"`
+	// Cuándo se conectó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// StoreConnectionLastError: StoreConnectionLastError.
+type StoreConnectionLastError struct {
+	// Qué pasó.
+	Message string `json:"message"`
+	// Cuándo.
+	At *string `json:"at,omitempty"`
+}
+
+// StoreConnectionList: Una página de la lista.
+type StoreConnectionList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []StoreConnection `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// StoreConnectionSettings: Cómo se vuelve ticket cada pedido.
+type StoreConnectionSettings struct {
+	// c_ClaveProdServ de lo que vende, o null.
+	ProductKey *string `json:"product_key,omitempty"`
+	// c_ClaveUnidad, o null (la de la clave del producto).
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Tasa de IVA incluida en los precios.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA string `json:"iva"`
+	// El concepto fijo de cada ticket, o null (el pedido y sus artículos).
+	Description *string `json:"description,omitempty"`
+	// Lo que va antes del número del pedido en el folio.
+	FolioPrefix string `json:"folio_prefix"`
+	// c_FormaPago cuando la del pedido no está en payment_forms, o null.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// c_FormaPago por pasarela o tipo de pago.
+	PaymentForms map[string]string `json:"payment_forms"`
+	// Mercado Libre: si se timbra al momento con los datos fiscales del comprador; null en Shopify.
+	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+}
+
+// StoreImport: Los pedidos pagados que se trajeron.
+type StoreImport struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// La conexión (stc_…).
+	StoreConnection string `json:"store_connection"`
+	// Desde qué día se buscaron pedidos.
+	Since string `json:"since"`
+	// Pedidos que son tickets (los que ya lo eran cuentan otra vez).
+	Tickets int64 `json:"tickets"`
+	// De ellos, los que se facturaron al momento con los datos del comprador.
+	Invoiced int64 `json:"invoiced"`
+	// Los que no se volvieron ticket, con el motivo.
+	Skipped []StoreImportSkippedItem `json:"skipped"`
+}
+
+// StoreImportSkippedItem: StoreImportSkippedItem.
+type StoreImportSkippedItem struct {
+	// El pedido.
+	Order string `json:"order"`
+	// Por qué no se volvió ticket.
+	Reason string `json:"reason"`
+}
+
 // TaxIDValidation: Si los datos fiscales de un cliente van a pasar el SAT.
 type TaxIDValidation struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -4279,6 +4663,56 @@ type TicketList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// TrialBalance: La balanza de comprobación de un mes.
+type TrialBalance struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// Cuántas pólizas tuvo el mes.
+	JournalEntries int64 `json:"journal_entries"`
+	// Cada cuenta con movimiento o saldo: saldo inicial, cargos, abonos y saldo final.
+	Accounts []TrialBalanceAccount `json:"accounts"`
+	// Cargos y abonos del mes: siempre iguales.
+	Totals TrialBalanceTotals `json:"totals"`
+}
+
+// TrialBalanceAccount: TrialBalanceAccount.
+type TrialBalanceAccount struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// El código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// debit (deudora) o credit (acreedora).
+	//
+	// Valores: debit, credit.
+	Nature string `json:"nature"`
+	// El saldo al empezar el mes.
+	OpeningBalance float64 `json:"opening_balance"`
+	// Los cargos del mes.
+	Debit float64 `json:"debit"`
+	// Los abonos del mes.
+	Credit float64 `json:"credit"`
+	// El saldo al terminar el mes.
+	ClosingBalance float64 `json:"closing_balance"`
+}
+
+// TrialBalanceTotals: Cargos y abonos del mes: siempre iguales.
+type TrialBalanceTotals struct {
+	// Todos los cargos del mes.
+	Debit float64 `json:"debit"`
+	// Todos los abonos del mes.
+	Credit float64 `json:"credit"`
 }
 
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
@@ -4671,6 +5105,34 @@ type UpdateSelfInvoicingParams struct {
 	//
 	// Valores: 01, 02, 03, 04.
 	GlobalPeriodicity *string `json:"global_periodicity,omitempty"`
+}
+
+// UpdateStoreConnectionParams: los campos de «Cambiar cómo se vuelven tickets sus pedidos».
+type UpdateStoreConnectionParams struct {
+	// Lo que cambia; lo demás queda.
+	Settings UpdateStoreConnectionParamsSettings `json:"settings"`
+}
+
+// UpdateStoreConnectionParamsSettings: Lo que cambia; lo demás queda.
+type UpdateStoreConnectionParamsSettings struct {
+	// c_ClaveProdServ de lo que vende (8 dígitos).
+	ProductKey *string `json:"product_key,omitempty"`
+	// c_ClaveUnidad. Por omisión, la de la clave del producto.
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Tasa de IVA incluida en los precios. Por omisión 0.16.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// El concepto de cada ticket. Por omisión, el pedido y sus artículos («Pedido 1001: Playera (2), Gorra»).
+	Description *string `json:"description,omitempty"`
+	// Lo que va antes del número del pedido en el folio del ticket. Por omisión SHOP- o ML-.
+	FolioPrefix *string `json:"folio_prefix,omitempty"`
+	// c_FormaPago cuando la forma de pago del pedido no está en payment_forms. Por omisión 04 (Shopify) o 31 (Mercado Libre).
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// c_FormaPago por pasarela de Shopify (shopify_payments, paypal, manual…) o tipo de pago de Mercado Libre (credit_card, debit_card, account_money, ticket, bank_transfer).
+	PaymentForms map[string]string `json:"payment_forms,omitempty"`
+	// Mercado Libre: timbrar en cuanto se paga si el comprador dejó sus datos fiscales completos. Por omisión true.
+	AutoInvoice *bool `json:"auto_invoice,omitempty"`
 }
 
 // UpdateWebhookEndpointParams: los campos de «Actualizar un webhook».
