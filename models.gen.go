@@ -201,6 +201,94 @@ type BalancePack struct {
 	ExpiresAt *string `json:"expires_at,omitempty"`
 }
 
+// BankImport: Los depósitos que se agregaron.
+type BankImport struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Cuántos depósitos se agregaron.
+	Added int64 `json:"added"`
+	// Cuántos ya estaban (se omitieron).
+	Duplicates int64 `json:"duplicates"`
+	// Los depósitos agregados.
+	Data []BankTransaction `json:"data"`
+}
+
+// BankTransaction: Un depósito de la cuenta del emisor, y las facturas que pagó.
+type BankTransaction struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El día del depósito (AAAA-MM-DD).
+	Date string `json:"date"`
+	// Lo depositado, en pesos.
+	Amount float64 `json:"amount"`
+	// El concepto del banco.
+	Description string `json:"description"`
+	// La referencia o clave de rastreo, o null.
+	Reference *string `json:"reference,omitempty"`
+	// Los últimos 4 dígitos de la cuenta, o null.
+	Account *string `json:"account,omitempty"`
+	// El RFC de quien depositó, si se sabe.
+	PayerTaxID *string `json:"payer_tax_id,omitempty"`
+	// open (sin conciliar), matched (pagó facturas) o classified (no es de una factura).
+	//
+	// Valores: open, matched, classified.
+	Status string `json:"status"`
+	// classified: venta (aún sin facturar), prestamo, traspaso o devolucion; si no, null.
+	//
+	// Valores: venta, prestamo, traspaso, devolucion.
+	Classification *string `json:"classification,omitempty"`
+	// Una nota al clasificarlo, o null.
+	Note *string `json:"note,omitempty"`
+	// Las facturas (inv_…) que pagó, si está conciliado.
+	Invoices []string `json:"invoices"`
+	// El complemento de pago (inv_…) timbrado con él, o null.
+	Payment *string `json:"payment,omitempty"`
+	// Si está abierto, las facturas que parece pagar (por monto, RFC, folio en el concepto y fecha): invoices, lo que toca a cada una (amounts), method, confidence (high o medium) y por qué (reasons). null si ninguna encaja.
+	SuggestedMatch *BankTransactionSuggestedMatch `json:"suggested_match,omitempty"`
+	// Cuándo se mandó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// BankTransactionList: Una página de la lista.
+type BankTransactionList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []BankTransaction `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// BankTransactionSuggestedMatch: BankTransactionSuggestedMatch.
+type BankTransactionSuggestedMatch struct {
+	// Las facturas, como el cuerpo de POST /v1/invoices, con reference opcional.
+	Invoices []string `json:"invoices"`
+	// Lo que el depósito pagaría de cada factura (por inv_…).
+	Amounts map[string]any `json:"amounts"`
+	// egreso (la factura completa y después una nota de crédito por el anticipo, opción A) o remanente (la factura solo por lo que falta, opción B).
+	//
+	// Valores: PPD, PUE.
+	Method string `json:"method"`
+	// high (el monto y además el RFC, el nombre o el folio coinciden) o medium (revíselo antes).
+	//
+	// Valores: high, medium.
+	Confidence string `json:"confidence"`
+	// Por qué se sugiere, en palabras.
+	Reasons []string `json:"reasons"`
+}
+
 // CancelInvoiceParams: los campos de «Cancelar una factura».
 type CancelInvoiceParams struct {
 	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 nominativa en una global.
@@ -225,6 +313,16 @@ type CancelRetentionParams struct {
 type CheckSatListsParams struct {
 	// Los RFC a revisar, hasta 1000.
 	TaxIDs []string `json:"tax_ids"`
+}
+
+// ClassifyBankTransactionParams: los campos de «Explicar un depósito sin factura».
+type ClassifyBankTransactionParams struct {
+	// venta (una venta que aún no se factura), prestamo, traspaso (entre cuentas propias) o devolucion.
+	//
+	// Valores: venta, prestamo, traspaso, devolucion.
+	Classification string `json:"classification"`
+	// Una nota para su equipo (de dónde vino, por qué).
+	Note *string `json:"note,omitempty"`
 }
 
 // CreateAdvanceParams: los campos de «Timbrar un anticipo».
@@ -283,6 +381,30 @@ type CreateAdvanceParamsCustomerForeign struct {
 	Country string `json:"country"`
 	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
 	TaxID string `json:"tax_id"`
+}
+
+// CreateBankTransactionsParams: los campos de «Mandar depósitos».
+type CreateBankTransactionsParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// La cuenta (CLABE o número; se guardan sus últimos 4 dígitos).
+	Account *string `json:"account,omitempty"`
+	// Los depósitos, hasta 1,000 por solicitud.
+	Transactions []CreateBankTransactionsParamsTransaction `json:"transactions"`
+}
+
+// CreateBankTransactionsParamsTransaction: CreateBankTransactionsParamsTransaction.
+type CreateBankTransactionsParamsTransaction struct {
+	// El día del depósito (AAAA-MM-DD).
+	Date string `json:"date"`
+	// Lo depositado, en pesos. Los retiros no se mandan.
+	Amount float64 `json:"amount"`
+	// El concepto del banco, como viene (SPEI, nombre del ordenante…).
+	Description string `json:"description"`
+	// La referencia o clave de rastreo.
+	Reference *string `json:"reference,omitempty"`
+	// El RFC de quien depositó, si lo sabe (ayuda a sugerir la factura).
+	PayerTaxID *string `json:"payer_tax_id,omitempty"`
 }
 
 // CreateCreditNoteParams: los campos de «Timbrar una nota de crédito».
@@ -533,6 +655,8 @@ type CreatePaymentParams struct {
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// El depósito (btx_…) con que le pagaron: queda conciliado con este complemento, y date es su día si no manda otra.
+	BankTransaction *string `json:"bank_transaction,omitempty"`
 }
 
 // CreatePaymentParamsDocument: CreatePaymentParamsDocument.
@@ -1287,7 +1411,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready o balance.low.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready o balance.low.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -1413,6 +1537,14 @@ type Invoice struct {
 	Taxes *InvoiceTaxes `json:"taxes,omitempty"`
 	// Total en la moneda del comprobante (Total).
 	Total *float64 `json:"total,omitempty"`
+	// Si ya se cobró (Cuentas por cobrar): paid, partial (complementos de pago o notas de crédito por una parte) o unpaid. Una PUE está paid, salvo con paid_later hasta POST /v1/invoices/{id}/mark_paid. null si no es de ingreso o no está vigente.
+	//
+	// Valores: paid, partial, unpaid.
+	PaymentStatus *string `json:"payment_status,omitempty"`
+	// Lo que falta por cobrar, en su moneda, o null.
+	AmountDue *float64 `json:"amount_due,omitempty"`
+	// Lo cobrado: complementos de pago y notas de crédito vigentes, o todo si es PUE pagada. null si no aplica.
+	AmountPaid *float64 `json:"amount_paid,omitempty"`
 	// CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
 	Related map[string]any `json:"related,omitempty"`
 	// Solo en un complemento de pago (type P).
@@ -2877,6 +3009,20 @@ type ListAdvancesParams struct {
 	Customer *string `json:"customer,omitempty"`
 }
 
+// ListBankTransactionsParams: los campos de «Listar depósitos».
+type ListBankTransactionsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// open (sin conciliar), matched o classified.
+	//
+	// Valores: open, matched, classified.
+	Status *string `json:"status,omitempty"`
+}
+
 // ListCustomerDataRequestsParams: los campos de «Listar solicitudes de datos».
 type ListCustomerDataRequestsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -2917,7 +3063,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -2951,6 +3097,10 @@ type ListInvoicesParams struct {
 	Type *string `json:"type,omitempty"`
 	// RFC del cliente.
 	Customer *string `json:"customer,omitempty"`
+	// Facturas de ingreso por lo que deben: unpaid, partial, open (unpaid o partial) o paid.
+	//
+	// Valores: unpaid, partial, open, paid.
+	PaymentStatus *string `json:"payment_status,omitempty"`
 	// Creadas desde, en ISO 8601. Un día solo (2026-10-01) cuenta desde su inicio en hora de la Ciudad de México.
 	CreatedGte *string `json:"created_gte,omitempty"`
 	// Creadas hasta, en ISO 8601. Un día solo (2026-10-31) incluye el día completo en hora de la Ciudad de México.
@@ -2995,6 +3145,18 @@ type ListQuotesParams struct {
 	//
 	// Valores: draft, sent, viewed, accepted, rejected, expired, invoiced.
 	Status *string `json:"status,omitempty"`
+}
+
+// ListReceivablesParams: los campos de «Ver lo que le deben».
+type ListReceivablesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo este RFC.
+	Customer *string `json:"customer,omitempty"`
 }
 
 // ListRecurringInvoicesParams: los campos de «Listar facturas recurrentes».
@@ -3087,6 +3249,12 @@ type ListWebhookEndpointsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
+}
+
+// MatchBankTransactionParams: los campos de «Conciliar un depósito».
+type MatchBankTransactionParams struct {
+	// Las facturas (inv_… o UUID) que pagó este depósito, de un mismo cliente. Sin ellas, las de suggested_match.
+	Invoices []string `json:"invoices,omitempty"`
 }
 
 // PayrollReceiptPreview: El recibo como se timbraría: percepciones, deducciones (ISR, IMSS), otros pagos (subsidio) y el neto.
@@ -3375,6 +3543,48 @@ type QuoteList struct {
 	Object string `json:"object"`
 	// Los objetos de esta página.
 	Data []Quote `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// Receivable: Lo que un cliente le debe a un emisor en una moneda, de sus facturas abiertas.
+type Receivable struct {
+	// El RFC y la moneda (RFC:MXN): para starting_after.
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El cliente que debe.
+	Customer ReceivableCustomer `json:"customer"`
+	// La moneda de esas facturas.
+	Currency string `json:"currency"`
+	// Lo que debe en total, en esa moneda.
+	AmountDue float64 `json:"amount_due"`
+	// Cuántas facturas tiene abiertas.
+	OpenInvoices int64 `json:"open_invoices"`
+	// La fecha (AAAA-MM-DD) de su factura abierta más antigua.
+	OldestInvoiceDate string `json:"oldest_invoice_date"`
+}
+
+// ReceivableCustomer: El cliente que debe.
+type ReceivableCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// ReceivableList: Una página de la lista.
+type ReceivableList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Receivable `json:"data"`
 	// true si hay más: pida la siguiente con starting_after igual al id del último.
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
@@ -4003,7 +4213,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low.
 	Type *string `json:"type,omitempty"`
 }
 

@@ -26,6 +26,10 @@ type services struct {
 	Issuers *IssuersService
 	// Facturas.
 	Invoices *InvoicesService
+	// Cuentas por cobrar.
+	Receivables *ReceivablesService
+	// Conciliación bancaria.
+	BankTransactions *BankTransactionsService
 	// Pagos y notas de crédito.
 	Payments *PaymentsService
 	// Pagos y notas de crédito.
@@ -74,6 +78,8 @@ func (s *services) init(c *Client) {
 	s.Balance = &BalanceService{c}
 	s.Issuers = &IssuersService{c}
 	s.Invoices = &InvoicesService{c}
+	s.Receivables = &ReceivablesService{c}
+	s.BankTransactions = &BankTransactionsService{c}
 	s.Payments = &PaymentsService{c}
 	s.CreditNotes = &CreditNotesService{c}
 	s.Advances = &AdvancesService{c}
@@ -423,6 +429,147 @@ func (s *InvoicesService) Cancel(ctx context.Context, id string, params *CancelI
 func (s *InvoicesService) Substitute(ctx context.Context, id string, params *InvoiceCreate, opts ...RequestOption) (*Invoice, error) {
 	out := new(Invoice)
 	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/substitute", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MarkPaid: Marcar pagada
+//
+// Una factura PUE timbrada con paid_later (o marcada por cobrar) ya se pagó: queda paid y llega invoice.paid. Una PPD se paga con su complemento de pago (POST /v1/payments).
+//
+// POST /v1/invoices/{id}/mark_paid
+//
+// https://fiscalisto.com/docs/api/referencia/cuentas-por-cobrar/mark-invoice-paid
+func (s *InvoicesService) MarkPaid(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/mark_paid", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MarkUnpaid: Marcar por cobrar
+//
+// Una factura PUE que el cliente aún no paga (le paga este mes): queda unpaid hasta POST /v1/invoices/{id}/mark_paid. Si el mes termina sin pago, la ley pide sustituirla por una PPD (regla 2.7.1.39 de la RMF).
+//
+// POST /v1/invoices/{id}/mark_unpaid
+//
+// https://fiscalisto.com/docs/api/referencia/cuentas-por-cobrar/mark-invoice-unpaid
+func (s *InvoicesService) MarkUnpaid(ctx context.Context, id string, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id)+"/mark_unpaid", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ReceivablesService: Cuentas por cobrar (client.Receivables).
+type ReceivablesService struct{ c *Client }
+
+// List: Ver lo que le deben
+//
+// Lo que debe cada cliente, por moneda, de sus facturas abiertas (PPD con saldo y PUE por cobrar), ordenado por RFC. Las facturas de cada uno: GET /v1/invoices?customer=RFC&payment_status=open.
+//
+// GET /v1/receivables
+//
+// https://fiscalisto.com/docs/api/referencia/cuentas-por-cobrar/list-receivables
+func (s *ReceivablesService) List(ctx context.Context, params *ListReceivablesParams, opts ...RequestOption) (*Page[Receivable], error) {
+	return list[Receivable](ctx, s.c, "/v1/receivables", params, "", opts)
+}
+
+// ListAutoPaging: Ver lo que le deben, todos, página por página: for x, err := range …
+func (s *ReceivablesService) ListAutoPaging(ctx context.Context, params *ListReceivablesParams, opts ...RequestOption) iter.Seq2[Receivable, error] {
+	return listAll[Receivable](ctx, s.c, "/v1/receivables", params, opts)
+}
+
+// BankTransactionsService: Conciliación bancaria (client.BankTransactions).
+type BankTransactionsService struct{ c *Client }
+
+// Create: Mandar depósitos
+//
+// Los depósitos de la cuenta del emisor (de la API de su banco o de un estado de cuenta), hasta 1,000 por solicitud. Uno que ya mandó (mismo día, monto, referencia y concepto) se omite, así que puede mandar periodos que se enciman. Cada uno trae suggested_match: las facturas que parece pagar.
+//
+// POST /v1/bank_transactions
+//
+// https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/create-bank-transactions
+func (s *BankTransactionsService) Create(ctx context.Context, params *CreateBankTransactionsParams, opts ...RequestOption) (*BankImport, error) {
+	out := new(BankImport)
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar depósitos
+//
+// Los más recientes primero; los abiertos con su suggested_match.
+//
+// GET /v1/bank_transactions
+//
+// https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/list-bank-transactions
+func (s *BankTransactionsService) List(ctx context.Context, params *ListBankTransactionsParams, opts ...RequestOption) (*Page[BankTransaction], error) {
+	return list[BankTransaction](ctx, s.c, "/v1/bank_transactions", params, "", opts)
+}
+
+// ListAutoPaging: Listar depósitos, todos, página por página: for x, err := range …
+func (s *BankTransactionsService) ListAutoPaging(ctx context.Context, params *ListBankTransactionsParams, opts ...RequestOption) iter.Seq2[BankTransaction, error] {
+	return listAll[BankTransaction](ctx, s.c, "/v1/bank_transactions", params, opts)
+}
+
+// Get: Ver un depósito
+//
+// GET /v1/bank_transactions/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/get-bank-transaction
+func (s *BankTransactionsService) Get(ctx context.Context, id string, opts ...RequestOption) (*BankTransaction, error) {
+	out := new(BankTransaction)
+	if err := s.c.do(ctx, "GET", "/v1/bank_transactions/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Match: Conciliar un depósito
+//
+// El depósito pagó estas facturas (de un mismo cliente), o sin invoices, las de suggested_match. Sus facturas PUE por cobrar quedan pagadas (invoice.paid). No timbra: para pagar una PPD con este depósito, POST /v1/payments con bank_transaction.
+//
+// POST /v1/bank_transactions/{id}/match
+//
+// https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/match-bank-transaction
+func (s *BankTransactionsService) Match(ctx context.Context, id string, params *MatchBankTransactionParams, opts ...RequestOption) (*BankTransaction, error) {
+	out := new(BankTransaction)
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/match", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Classify: Explicar un depósito sin factura
+//
+// Un depósito que ninguna factura explica: venta (aún sin facturar), prestamo, traspaso o devolucion. El SAT puede presumir ingreso un depósito sin explicar (CFF art. 59 fr. III).
+//
+// POST /v1/bank_transactions/{id}/classify
+//
+// https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/classify-bank-transaction
+func (s *BankTransactionsService) Classify(ctx context.Context, id string, params *ClassifyBankTransactionParams, opts ...RequestOption) (*BankTransaction, error) {
+	out := new(BankTransaction)
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/classify", params, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reopen: Deshacer la conciliación
+//
+// Vuelve a open, y sus facturas vuelven a deber. Si se pagó con un complemento vigente, cancélelo antes.
+//
+// POST /v1/bank_transactions/{id}/reopen
+//
+// https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/reopen-bank-transaction
+func (s *BankTransactionsService) Reopen(ctx context.Context, id string, opts ...RequestOption) (*BankTransaction, error) {
+	out := new(BankTransaction)
+	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/reopen", nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
