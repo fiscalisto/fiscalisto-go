@@ -15,6 +15,10 @@ type Account struct {
 	Object string `json:"object"`
 	// El nombre de la cuenta API.
 	Name string `json:"name"`
+	// La versión de la API de la cuenta (la de sus solicitudes sin Fiscalisto-Version). Ver Versiones.
+	APIVersion string `json:"api_version"`
+	// La versión más reciente de la API.
+	LatestAPIVersion string `json:"latest_api_version"`
 	// La llave con que se hizo la solicitud: id, nombre y emisores a los que se limita.
 	Key AccountKey `json:"key"`
 }
@@ -1247,6 +1251,8 @@ type CreateWebhookEndpointParams struct {
 	Events []string `json:"events,omitempty"`
 	// Para qué es, para usted (no se manda en los eventos).
 	Description *string `json:"description,omitempty"`
+	// La versión de la API en que llegan sus eventos (por ejemplo 2026-10-24); null o sin mandar: la de la cuenta. Así actualiza un endpoint a la vez.
+	APIVersion *string `json:"api_version,omitempty"`
 }
 
 // Customer: Un cliente del catálogo de un emisor.
@@ -4825,6 +4831,12 @@ type TrialBalanceTotals struct {
 	Credit float64 `json:"credit"`
 }
 
+// UpdateAccountParams: los campos de «Cambiar la versión de la API».
+type UpdateAccountParams struct {
+	// La versión de la API de la cuenta: la que reciben sus solicitudes sin Fiscalisto-Version y sus webhooks sin api_version propio. Pruebe antes la nueva con el encabezado.
+	APIVersion string `json:"api_version"`
+}
+
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
 type UpdateCustomerParams struct {
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
@@ -5255,6 +5267,8 @@ type UpdateWebhookEndpointParams struct {
 	Description *string `json:"description,omitempty"`
 	// true para apagarlo sin borrarlo.
 	Disabled *bool `json:"disabled,omitempty"`
+	// La versión de la API en que llegan sus eventos (por ejemplo 2026-10-24); null o sin mandar: la de la cuenta. Así actualiza un endpoint a la vez.
+	APIVersion *string `json:"api_version,omitempty"`
 }
 
 // UploadCertificateParams: los campos de «Subir el CSD».
@@ -5309,6 +5323,8 @@ type WebhookEndpoint struct {
 	FailingSince *string `json:"failing_since,omitempty"`
 	// Hasta cuándo el secreto anterior también firma (después de cambiarlo), o null.
 	PreviousSecretExpiresAt *string `json:"previous_secret_expires_at,omitempty"`
+	// La versión de la API de sus eventos; null: la de la cuenta.
+	APIVersion *string `json:"api_version,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Secreto de firma (whsec_…). Solo viene al crearlo o al cambiarlo: guárdelo para verificar las firmas.

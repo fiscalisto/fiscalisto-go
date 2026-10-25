@@ -47,7 +47,7 @@ func TestKeys(t *testing.T) {
 func TestCreateSendsJSONAndIdempotencyKey(t *testing.T) {
 	var keys []string
 	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer fk_test_abc" || !strings.HasPrefix(r.Header.Get("User-Agent"), "fiscalisto-go/") {
+		if r.Header.Get("Authorization") != "Bearer fk_test_abc" || !strings.HasPrefix(r.Header.Get("User-Agent"), "fiscalisto-go/") || r.Header.Get("Fiscalisto-Version") != APIVersion {
 			t.Errorf("encabezados: %v", r.Header)
 		}
 		keys = append(keys, r.Header.Get("Idempotency-Key"))

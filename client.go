@@ -31,6 +31,9 @@ import (
 // Version del SDK, en el User-Agent.
 const Version = "0.1.0"
 
+// APIVersion es la versión de la API para la que se hizo este SDK (cabecera Fiscalisto-Version).
+const APIVersion = "2026-10-24"
+
 // DefaultBaseURL es la dirección de la API.
 const DefaultBaseURL = "https://api.fiscalisto.com"
 
@@ -40,6 +43,7 @@ type Client struct {
 	services
 	key        string
 	baseURL    string
+	apiVersion string
 	http       *http.Client
 	maxRetries int
 	timeout    time.Duration
@@ -51,6 +55,10 @@ type Option func(*Client)
 
 // WithBaseURL usa otra dirección de la API (un proxy, pruebas).
 func WithBaseURL(u string) Option { return func(c *Client) { c.baseURL = strings.TrimRight(u, "/") } }
+
+// WithAPIVersion pide otra versión de la API (Fiscalisto-Version); con "" se usa la fijada en
+// la cuenta.
+func WithAPIVersion(v string) Option { return func(c *Client) { c.apiVersion = v } }
 
 // WithHTTPClient usa su propio *http.Client (transporte, proxy, trazas).
 func WithHTTPClient(h *http.Client) Option { return func(c *Client) { c.http = h } }
@@ -76,6 +84,7 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{
 		key:        apiKey,
 		baseURL:    DefaultBaseURL,
+		apiVersion: APIVersion,
 		http:       http.DefaultClient,
 		maxRetries: 2,
 		timeout:    80 * time.Second,
@@ -303,6 +312,9 @@ func (c *Client) send(ctx context.Context, method, target string, data []byte, k
 	req.Header.Set("Authorization", "Bearer "+c.key)
 	req.Header.Set("User-Agent", "fiscalisto-go/"+Version)
 	req.Header.Set("Accept", "application/json")
+	if c.apiVersion != "" {
+		req.Header.Set("Fiscalisto-Version", c.apiVersion)
+	}
 	if data != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

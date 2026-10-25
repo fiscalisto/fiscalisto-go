@@ -132,6 +132,21 @@ func (s *AccountService) Get(ctx context.Context, opts ...RequestOption) (*Accou
 	return out, nil
 }
 
+// Update: Cambiar la versión de la API
+//
+// Mueve la versión de la API de la cuenta: la que reciben sus solicitudes sin el encabezado Fiscalisto-Version y sus webhooks sin api_version propio. Antes, pruebe la nueva mandando Fiscalisto-Version en sus solicitudes. Con una llave de la cuenta con todos los permisos (no de un entorno de prueba). Queda en Desarrolladores › Actividad.
+//
+// POST /v1/account
+//
+// https://fiscalisto.com/docs/api/referencia/cuenta/update-account
+func (s *AccountService) Update(ctx context.Context, params *UpdateAccountParams, opts ...RequestOption) (*Account, error) {
+	out := new(Account)
+	if err := s.c.do(ctx, "POST", "/v1/account", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TestDataService: Cuenta (client.TestData).
 type TestDataService struct{ c *Client }
 

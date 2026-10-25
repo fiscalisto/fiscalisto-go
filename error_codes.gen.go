@@ -10,6 +10,8 @@ package fiscalisto
 //
 // Vea https://fiscalisto.com/docs/api/errores.
 const (
+	// No existe esa versión de la API (en Fiscalisto-Version o api_version). El mensaje dice cuáles hay; vea Versiones.
+	CodeAPIVersionInvalid = "api_version_invalid"
 	// El depósito no se puede conciliar, clasificar o reabrir así (ya está conciliado, las facturas son de otro cliente o una está cancelada…). El mensaje dice por qué.
 	CodeBankTransactionInvalid = "bank_transaction_invalid"
 	// Una factura del lote no pasa la revisión; param dice cuál (invoices.3.items.0.unit_price). Ninguna del lote se timbró.
