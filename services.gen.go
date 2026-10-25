@@ -19,6 +19,8 @@ type services struct {
 	// Cuenta.
 	Account *AccountService
 	// Cuenta.
+	TestData *TestDataService
+	// Cuenta.
 	Balance *BalanceService
 	// Emisores.
 	Issuers *IssuersService
@@ -62,6 +64,7 @@ type services struct {
 
 func (s *services) init(c *Client) {
 	s.Account = &AccountService{c}
+	s.TestData = &TestDataService{c}
 	s.Balance = &BalanceService{c}
 	s.Issuers = &IssuersService{c}
 	s.Invoices = &InvoicesService{c}
@@ -97,6 +100,24 @@ type AccountService struct{ c *Client }
 func (s *AccountService) Get(ctx context.Context, opts ...RequestOption) (*Account, error) {
 	out := new(Account)
 	if err := s.c.do(ctx, "GET", "/v1/account", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TestDataService: Cuenta (client.TestData).
+type TestDataService struct{ c *Client }
+
+// Reset: Reiniciar los datos de prueba
+//
+// Deja el modo de pruebas como nuevo: cada emisor de pruebas conserva su RFC y su CSD de pruebas pero pierde sus facturas, clientes, productos, lotes, ligas y descargas, y se borran los eventos y el registro de solicitudes de pruebas. Las llaves y los webhooks se quedan. Con seed (por omisión) deja 3 clientes y 3 productos de ejemplo. Solo con una llave fk_test_; producción nunca se toca.
+//
+// POST /v1/test_data/reset
+//
+// https://fiscalisto.com/docs/api/referencia/cuenta/reset-test-data
+func (s *TestDataService) Reset(ctx context.Context, params *ResetTestDataParams, opts ...RequestOption) (*TestDataReset, error) {
+	out := new(TestDataReset)
+	if err := s.c.do(ctx, "POST", "/v1/test_data/reset", params, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

@@ -2955,6 +2955,12 @@ type ProductList struct {
 	URL string `json:"url"`
 }
 
+// ResetTestDataParams: los campos de «Reiniciar los datos de prueba».
+type ResetTestDataParams struct {
+	// true (por omisión) para dejarle a cada emisor de pruebas 3 clientes y 3 productos de ejemplo. false para dejarlo vacío.
+	Seed *bool `json:"seed,omitempty"`
+}
+
 // Retention: Una constancia de retenciones e información de pagos (CFDI de retenciones 2.0).
 type Retention struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
@@ -3413,6 +3419,24 @@ type TaxIDValidationWarning struct {
 	Message string `json:"message"`
 	// El valor sugerido, o null.
 	Suggestion *string `json:"suggestion,omitempty"`
+}
+
+// TestDataReset: Lo que se borró (y se creó) al reiniciar los datos de prueba.
+type TestDataReset struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Cuántos emisores de pruebas se vaciaron (archivados incluidos).
+	Issuers int64 `json:"issuers"`
+	// Cuántos registros se borraron: facturas, clientes, productos, lotes, ligas, descargas…
+	DeletedRows int64 `json:"deleted_rows"`
+	// Cuántos eventos de pruebas se borraron (con sus entregas).
+	DeletedEvents int64 `json:"deleted_events"`
+	// Clientes de ejemplo creados (con seed).
+	CustomersCreated int64 `json:"customers_created"`
+	// Productos de ejemplo creados (con seed).
+	ProductsCreated int64 `json:"products_created"`
 }
 
 // TestWebhookEndpointParams: los campos de «Mandar un evento de prueba».

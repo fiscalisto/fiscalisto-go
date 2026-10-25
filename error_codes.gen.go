@@ -108,6 +108,8 @@ const (
 	CodeStampRateLimit = "stamp_rate_limit"
 	// Los complementos de pago y las notas de crédito no se sustituyen: se cancelan y se emite otro.
 	CodeSubstitutionUnsupported = "substitution_unsupported"
+	// Esto solo existe en pruebas (como reiniciar los datos de prueba): use su llave fk_test_.
+	CodeTestModeOnly = "test_mode_only"
 	// La API no contestó a tiempo (connection_error). Con lo que timbra, repita con la misma Idempotency-Key para saber si se timbró.
 	CodeTimeout = "timeout"
 	// Mande el cuerpo con Content-Type: application/json.
