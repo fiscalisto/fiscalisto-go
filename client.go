@@ -2,7 +2,7 @@
 // cancelarlos, recibir webhooks.
 //
 //	client, err := fiscalisto.NewClient("fk_test_…")
-//	invoice, err := client.Invoices.Create(ctx, &fiscalisto.CreateInvoiceParams{…})
+//	invoice, err := client.Invoices.Create(ctx, &fiscalisto.InvoiceCreate{…})
 //
 // Cada recurso es un campo de Client (client.Invoices, client.Customers…). Los campos opcionales
 // de una solicitud son apuntadores: fiscalisto.String("PUE"), fiscalisto.Int64(10). Lo que timbra
@@ -29,7 +29,7 @@ import (
 )
 
 // Version del SDK, en el User-Agent.
-const Version = "0.1.0"
+const Version = "0.1.1"
 
 // APIVersion es la versión de la API para la que se hizo este SDK (cabecera Fiscalisto-Version).
 const APIVersion = "2026-10-24"
@@ -213,6 +213,12 @@ func randomKey() string {
 
 // raw does one call and returns the answer's bytes, or an *Error.
 func (c *Client) raw(ctx context.Context, method, path string, body, query any, idempotent bool, opts []RequestOption) ([]byte, error) {
+	b, _, _, err := c.call(ctx, method, path, body, query, idempotent, opts)
+	return b, err
+}
+
+// call is raw plus the success's status and Request-Id, for an answer that turns out unreadable.
+func (c *Client) call(ctx context.Context, method, path string, body, query any, idempotent bool, opts []RequestOption) ([]byte, int, string, error) {
 	cfg := requestConfig{timeout: c.timeout}
 	for _, o := range opts {
 		o(&cfg)
@@ -223,7 +229,7 @@ func (c *Client) raw(ctx context.Context, method, path string, body, query any, 
 	}
 	q, err := queryOf(query)
 	if err != nil {
-		return nil, err
+		return nil, 0, "", err
 	}
 	target := c.baseURL + path
 	if len(q) > 0 {
@@ -234,7 +240,7 @@ func (c *Client) raw(ctx context.Context, method, path string, body, query any, 
 		if isNil(body) {
 			data = []byte("{}")
 		} else if data, err = json.Marshal(body); err != nil {
-			return nil, err
+			return nil, 0, "", err
 		}
 	}
 	key := ""
@@ -252,18 +258,18 @@ func (c *Client) raw(ctx context.Context, method, path string, body, query any, 
 		status, header, answer, err := c.send(ctx, method, target, data, key, cfg.timeout)
 		if err != nil {
 			if ctx.Err() != nil {
-				return nil, ctx.Err()
+				return nil, 0, "", ctx.Err()
 			}
 			if safe && attempt < retries {
 				if err := c.sleep(ctx, backoff(attempt)); err != nil {
-					return nil, err
+					return nil, 0, "", err
 				}
 				continue
 			}
-			return nil, connectionError(err, key, cfg.timeout)
+			return nil, 0, "", connectionError(err, key, cfg.timeout)
 		}
 		if status >= 200 && status < 300 {
-			return answer, nil
+			return answer, status, header.Get("Request-Id"), nil
 		}
 		e := &Error{StatusCode: status, RequestID: header.Get("Request-Id"), IdempotencyKey: key}
 		var envelope struct {
@@ -294,11 +300,11 @@ func (c *Client) raw(ctx context.Context, method, path string, body, query any, 
 				wait = time.Duration(retryAfter * float64(time.Second))
 			}
 			if err := c.sleep(ctx, wait); err != nil {
-				return nil, err
+				return nil, 0, "", err
 			}
 			continue
 		}
-		return nil, e
+		return nil, 0, "", e
 	}
 }
 
@@ -357,12 +363,25 @@ func connectionError(err error, key string, timeout time.Duration) *Error {
 
 // do does one call and reads its JSON answer into out.
 func (c *Client) do(ctx context.Context, method, path string, body, query any, idempotent bool, out any, opts []RequestOption) error {
-	b, err := c.raw(ctx, method, path, body, query, idempotent, opts)
+	b, status, requestID, err := c.call(ctx, method, path, body, query, idempotent, opts)
 	if err != nil {
 		return err
 	}
 	if err := json.Unmarshal(b, out); err != nil {
-		return fmt.Errorf("fiscalisto: la respuesta no se pudo leer: %w", err)
+		var syntax *json.SyntaxError
+		if !errors.As(err, &syntax) && len(bytes.TrimSpace(b)) > 0 {
+			return fmt.Errorf("fiscalisto: la respuesta no se pudo leer: %w", err)
+		}
+		// A proxy's or a network portal's page answered instead of the API.
+		text := strings.Join(strings.Fields(string(b)), " ")
+		if len(text) > 80 {
+			text = text[:80]
+		}
+		if text == "" {
+			text = "vacía"
+		}
+		return &Error{Type: "api_error", Code: CodeInvalidResponse, StatusCode: status, RequestID: requestID, cause: err,
+			Message: fmt.Sprintf("La respuesta (%d) no es de la API: %s. ¿Hay un proxy o un portal de por medio?", status, text)}
 	}
 	return nil
 }

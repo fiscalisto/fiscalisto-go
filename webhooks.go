@@ -36,9 +36,9 @@ func VerifyWebhook(payload []byte, header http.Header, secret string) (*Event, e
 
 // VerifyWebhookAt es VerifyWebhook con la hora y la tolerancia que usted diga (pruebas).
 func VerifyWebhookAt(payload []byte, header http.Header, secret string, now time.Time, tolerance time.Duration) (*Event, error) {
-	id := header.Get("Webhook-Id")
-	timestamp := header.Get("Webhook-Timestamp")
-	signatures := header.Get("Webhook-Signature")
+	id := headerValue(header, "Webhook-Id")
+	timestamp := headerValue(header, "Webhook-Timestamp")
+	signatures := headerValue(header, "Webhook-Signature")
 	if id == "" || timestamp == "" || signatures == "" {
 		return nil, &webhookError{"faltan los encabezados webhook-id, webhook-timestamp o webhook-signature"}
 	}
@@ -96,4 +96,18 @@ func DataObject[T any](event *Event) (*T, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// headerValue is header.Get, also for an http.Header built from a map of lowercase names (an AWS
+// Lambda event's), which Get doesn't find.
+func headerValue(header http.Header, name string) string {
+	if v := header.Get(name); v != "" {
+		return v
+	}
+	for k, v := range header {
+		if len(v) > 0 && strings.EqualFold(k, name) {
+			return v[0]
+		}
+	}
+	return ""
 }

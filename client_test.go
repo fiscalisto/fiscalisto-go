@@ -240,6 +240,14 @@ func TestVerifyWebhook(t *testing.T) {
 	if _, err := VerifyWebhookAt(body, h, secret, now.Add(10*time.Minute), DefaultWebhookTolerance); !errors.Is(err, ErrWebhookSignature) {
 		t.Fatalf("fuera de tiempo: %v", err)
 	}
+	// An http.Header made from a map of lowercase names (an AWS Lambda event's), not with Set.
+	lower := http.Header{}
+	for k, v := range h {
+		lower[strings.ToLower(k)] = v
+	}
+	if _, err := VerifyWebhookAt(body, lower, secret, now, DefaultWebhookTolerance); err != nil {
+		t.Fatalf("encabezados en minúsculas: %v", err)
+	}
 }
 
 func TestStringOr(t *testing.T) {

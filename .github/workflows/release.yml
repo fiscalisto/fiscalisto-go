@@ -1,0 +1,20 @@
+# Checks a version tag (v0.1.1) from Fiscalisto's repository (scripts/sdk-release.sh) and
+# asks the Go proxy for it, so `go get fiscalisto.com/go@latest` finds it right away.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: The tag is the package's version
+        run: grep -q "const Version = \"${GITHUB_REF_NAME#v}\"" client.go
+      - run: test -z "$(gofmt -l .)" && go vet ./... && go test ./...
+      - run: curl -fsS "https://proxy.golang.org/fiscalisto.com/go/@v/$GITHUB_REF_NAME.info"

@@ -64,6 +64,8 @@ type services struct {
 	SatDownloads *SatDownloadsService
 	// Descargas del SAT.
 	SatInvoices *SatInvoicesService
+	// Declaraciones del SAT.
+	SatDeclarations *SatDeclarationsService
 	// Autofactura.
 	Tickets *TicketsService
 	// Contabilidad.
@@ -105,6 +107,7 @@ func (s *services) init(c *Client) {
 	s.SatLists = &SatListsService{c}
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
+	s.SatDeclarations = &SatDeclarationsService{c}
 	s.Tickets = &TicketsService{c}
 	s.Accounting = &AccountingService{c}
 	s.StoreConnections = &StoreConnectionsService{c}
@@ -553,7 +556,7 @@ func (s *InvoicesService) Send(ctx context.Context, id string, params *SendInvoi
 
 // Cancel: Cancelar una factura
 //
-// Pide la cancelación al SAT. Si el cliente debe aceptarla queda en pending (escuche invoice.canceled o invoice.cancellation_rejected). Usa un timbre la primera vez que el SAT acepta la solicitud; repetirla, o pedirla otra vez después de un rechazo, no. Nunca se niega por falta de timbres.
+// Pide la cancelación al SAT. Si el cliente debe aceptarla queda en pending (escuche invoice.canceled o invoice.cancellation_rejected). No usa timbres.
 //
 // POST /v1/invoices/{id}/cancel
 //
@@ -881,7 +884,7 @@ func (s *RetentionsService) Send(ctx context.Context, id string, params *SendRet
 
 // Cancel: Cancelar una constancia
 //
-// Se cancela en el momento (no espera aceptación). Usa un timbre.
+// Se cancela en el momento (no espera aceptación). No usa timbres.
 //
 // POST /v1/retentions/{id}/cancel
 //
@@ -1315,7 +1318,7 @@ type SatDownloadsService struct{ c *Client }
 
 // Create: Pedirle al SAT las facturas de un emisor
 //
-// La descarga masiva del SAT: las facturas que el emisor recibió (o emitió) en un periodo de hasta un año, con su XML. Contesta 202 de inmediato; el SAT tarda de minutos a horas y al terminar llega sat_download.completed (o sat_download.failed) y las facturas quedan en GET /v1/sat_invoices. En producción necesita la e.firma guardada del emisor; en pruebas no se le pregunta al SAT: la descarga trae facturas de ejemplo al instante. No usa timbres.
+// La descarga masiva del SAT: las facturas que el emisor recibió (o emitió) en un periodo de hasta un año, con su XML. Contesta 202 de inmediato; el SAT tarda de minutos a horas y al terminar llega sat_download.completed (o sat_download.failed) y las facturas quedan en GET /v1/sat_invoices. En producción necesita la e.firma guardada del emisor; en pruebas no se le pregunta al SAT: la descarga trae facturas de ejemplo al instante. En producción usa 1 timbre por cada 100 CFDI que trae (al menos 1).
 //
 // POST /v1/sat_downloads
 //
@@ -1396,6 +1399,87 @@ func (s *SatInvoicesService) Get(ctx context.Context, id string, opts ...Request
 // https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-invoice-xml
 func (s *SatInvoicesService) XML(ctx context.Context, id string, opts ...RequestOption) (string, error) {
 	b, err := s.c.raw(ctx, "GET", "/v1/sat_invoices/"+url.PathEscape(id)+"/xml", nil, nil, false, opts)
+	return string(b), err
+}
+
+// SatDeclarationsService: Declaraciones del SAT (client.SatDeclarations).
+type SatDeclarationsService struct{ c *Client }
+
+// Refresh: Consultar las declaraciones de un emisor en el SAT
+//
+// Entra al SAT con la e.firma guardada del emisor y trae las declaraciones que presentó: provisionales o definitivas (desde 2022), la anual de persona moral (desde 2019) y las del servicio anterior Declaraciones y pagos, con su PDF, su acuse y sus cifras. La primera consulta trae todos los años que el SAT conserva; las siguientes, este año y el anterior. Solo consulta: nunca presenta ni firma nada. En producción usa 1 timbre por consulta (regresa si el SAT no contesta) y se puede hacer una vez cada 10 minutos por emisor. Contesta en menos de un minuto; si queda algo por bajar (status processing), sigue solo en la siguiente hora sin otro timbre. En pruebas no se le pregunta al SAT: trae declaraciones de ejemplo al instante.
+//
+// POST /v1/sat_declarations/refresh
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/refresh-sat-declarations
+func (s *SatDeclarationsService) Refresh(ctx context.Context, params *RefreshSatDeclarationsParams, opts ...RequestOption) (*SATDeclarationsRefresh, error) {
+	out := new(SATDeclarationsRefresh)
+	if err := s.c.do(ctx, "POST", "/v1/sat_declarations/refresh", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar declaraciones del SAT
+//
+// Las declaraciones que trajeron sus consultas, del ejercicio y mes más recientes a los más antiguos (la anual antes de los meses de su año). No usa timbres.
+//
+// GET /v1/sat_declarations
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/list-sat-declarations
+func (s *SatDeclarationsService) List(ctx context.Context, params *ListSatDeclarationsParams, opts ...RequestOption) (*Page[SATDeclaration], error) {
+	return list[SATDeclaration](ctx, s.c, "/v1/sat_declarations", params, "", opts)
+}
+
+// ListAutoPaging: Listar declaraciones del SAT, todos, página por página: for x, err := range …
+func (s *SatDeclarationsService) ListAutoPaging(ctx context.Context, params *ListSatDeclarationsParams, opts ...RequestOption) iter.Seq2[SATDeclaration, error] {
+	return listAll[SATDeclaration](ctx, s.c, "/v1/sat_declarations", params, opts)
+}
+
+// Get: Ver una declaración del SAT
+//
+// GET /v1/sat_declarations/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-declaration
+func (s *SatDeclarationsService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATDeclaration, error) {
+	out := new(SATDeclaration)
+	if err := s.c.do(ctx, "GET", "/v1/sat_declarations/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Pdf: Descargar el PDF de una declaración
+//
+// La declaración como la da el SAT. No usa timbres.
+//
+// GET /v1/sat_declarations/{id}/pdf
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-declaration-pdf
+func (s *SatDeclarationsService) PDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/sat_declarations/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
+}
+
+// Receipt: Descargar el acuse de una declaración
+//
+// El acuse de recibo, con la línea de captura si hay algo a pagar. No usa timbres.
+//
+// GET /v1/sat_declarations/{id}/receipt
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-declaration-receipt
+func (s *SatDeclarationsService) Receipt(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/sat_declarations/"+url.PathEscape(id)+"/receipt", nil, nil, false, opts)
+}
+
+// FinancialStatements: Descargar los estados financieros de una anual
+//
+// El Excel de estados financieros de la anual de persona moral, como lo da el SAT. No usa timbres.
+//
+// GET /v1/sat_declarations/{id}/financial_statements
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-declaration-financial-statements
+func (s *SatDeclarationsService) FinancialStatements(ctx context.Context, id string, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/sat_declarations/"+url.PathEscape(id)+"/financial_statements", nil, nil, false, opts)
 	return string(b), err
 }
 

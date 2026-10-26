@@ -722,7 +722,9 @@ type CreateProductParams struct {
 	// Número de identificación o SKU (NoIdentificacion).
 	SKU *string `json:"sku,omitempty"`
 	// Precio unitario antes de impuestos (ValorUnitario).
-	UnitPrice float64 `json:"unit_price"`
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Precio abierto: sin precio fijo (una noche de hotel que cambia cada día); cada factura manda su unit_price.
+	OpenPrice *bool `json:"open_price,omitempty"`
 	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
@@ -741,6 +743,18 @@ type CreateProductParams struct {
 	IVARetention *float64 `json:"iva_retention,omitempty"`
 	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
+	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
+	LocalTaxes []CreateProductParamsLocalTax `json:"local_taxes,omitempty"`
+}
+
+// CreateProductParamsLocalTax: CreateProductParamsLocalTax.
+type CreateProductParamsLocalTax struct {
+	// true si es una retención local; false si es un traslado.
+	Retention bool `json:"retention"`
+	// Nombre del impuesto local (ImpLocTrasladado o ImpLocRetenido), como ISH.
+	Name string `json:"name"`
+	// Tasa en por ciento (TasadeTraslado o TasadeRetencion).
+	Rate float64 `json:"rate"`
 }
 
 // CreateQuoteParams: los campos de «Crear una cotización».
@@ -1281,6 +1295,8 @@ type Customer struct {
 	Foreign *CustomerForeign `json:"foreign,omitempty"`
 	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
 	IEPSTaxpayer bool `json:"ieps_taxpayer"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
 	UpdatedAt *string `json:"updated_at,omitempty"`
 }
@@ -1507,6 +1523,8 @@ type Employee struct {
 	Position *string `json:"position,omitempty"`
 	// Lo que el SAT podría observar de sus datos, antes de timbrar.
 	Warnings []string `json:"warnings"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
 }
 
 // EmployeeList: Una página de la lista.
@@ -3297,7 +3315,7 @@ type LedgerAccountList struct {
 type ListAdvancesParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
-	// RFC del cliente.
+	// RFC del cliente o su id (cus_…).
 	Customer *string `json:"customer,omitempty"`
 }
 
@@ -3387,7 +3405,7 @@ type ListInvoicesParams struct {
 	//
 	// Valores: I, E, P, T, N.
 	Type *string `json:"type,omitempty"`
-	// RFC del cliente.
+	// RFC del cliente o su id (cus_…).
 	Customer *string `json:"customer,omitempty"`
 	// Facturas de ingreso por lo que deben: unpaid, partial, open (unpaid o partial) o paid.
 	//
@@ -3465,7 +3483,7 @@ type ListReceivablesParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
-	// Solo este RFC.
+	// Solo este cliente: su RFC o su id (cus_…).
 	Customer *string `json:"customer,omitempty"`
 }
 
@@ -3499,6 +3517,22 @@ type ListRetentionsParams struct {
 	Recipient *string `json:"recipient,omitempty"`
 	// Ejercicio, 4 dígitos.
 	Year *string `json:"year,omitempty"`
+}
+
+// ListSatDeclarationsParams: los campos de «Listar declaraciones del SAT».
+type ListSatDeclarationsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de un ejercicio, como 2025.
+	Year *int64 `json:"year,omitempty"`
+	// monthly (provisionales o definitivas), annual (la anual) o dyp (Declaraciones y pagos).
+	//
+	// Valores: monthly, annual, dyp.
+	Source *string `json:"source,omitempty"`
 }
 
 // ListSatDownloadsParams: los campos de «Listar descargas del SAT».
@@ -3749,6 +3783,8 @@ type Product struct {
 	SKU *string `json:"sku,omitempty"`
 	// Precio unitario antes de impuestos (ValorUnitario).
 	UnitPrice float64 `json:"unit_price"`
+	// Precio abierto: el producto no tiene precio fijo y cada concepto con él manda su unit_price.
+	OpenPrice bool `json:"open_price"`
 	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
 	Taxability string `json:"taxability"`
 	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
@@ -3761,6 +3797,10 @@ type Product struct {
 	IVARetention float64 `json:"iva_retention"`
 	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention float64 `json:"isr_retention"`
+	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
+	LocalTaxes []ProductLocalTax `json:"local_taxes"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
 	UpdatedAt *string `json:"updated_at,omitempty"`
 }
@@ -3775,6 +3815,16 @@ type ProductList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// ProductLocalTax: ProductLocalTax.
+type ProductLocalTax struct {
+	// true si es una retención local; false si es un traslado.
+	Retention bool `json:"retention"`
+	// Nombre del impuesto local (ImpLocTrasladado o ImpLocRetenido), como ISH.
+	Name string `json:"name"`
+	// Tasa en por ciento (TasadeTraslado o TasadeRetencion).
+	Rate float64 `json:"rate"`
 }
 
 // Quote: Una cotización: su cliente la ve en una liga, la acepta, pide cambios o la rechaza, y se factura.
@@ -4011,6 +4061,12 @@ type RecurringInvoiceSchedule struct {
 	TimeZone string `json:"time_zone"`
 }
 
+// RefreshSatDeclarationsParams: los campos de «Consultar las declaraciones de un emisor en el SAT».
+type RefreshSatDeclarationsParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ResetTestDataParams: los campos de «Reiniciar los datos de prueba».
 type ResetTestDataParams struct {
 	// true (por omisión) para dejarle a cada emisor de pruebas 3 clientes y 3 productos de ejemplo. false para dejarlo vacío.
@@ -4185,6 +4241,148 @@ type SATCatalogEntryList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// SATDeclaration: Una declaración que el emisor presentó ante el SAT (provisional o definitiva, anual o del servicio anterior Declaraciones y pagos), con sus cifras y sus archivos.
+type SATDeclaration struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor que la presentó.
+	Issuer string `json:"issuer"`
+	// monthly (provisional o definitiva, desde 2022), annual (la anual de persona moral) o dyp (el servicio anterior Declaraciones y pagos, 2021 y antes).
+	//
+	// Valores: monthly, annual, dyp.
+	Source string `json:"source"`
+	// El ejercicio.
+	Year int64 `json:"year"`
+	// El mes (1 a 12), o null en la anual y otros periodos.
+	Month *int64 `json:"month,omitempty"`
+	// El periodo como lo nombra el SAT: «Enero», «Del Ejercicio»…
+	Period string `json:"period"`
+	// normal o complementary (complementaria).
+	//
+	// Valores: normal, complementary.
+	Type string `json:"type"`
+	// El tipo de complementaria como lo dice el SAT («Modificación de obligaciones»…), o null.
+	ComplementaryType *string `json:"complementary_type,omitempty"`
+	// El número de operación que le dio el SAT.
+	OperationNumber string `json:"operation_number"`
+	// La línea de captura, si hubo algo a pagar.
+	PaymentLine *string `json:"payment_line,omitempty"`
+	// Cuándo se presentó (AAAA-MM-DD).
+	FiledOn *string `json:"filed_on,omitempty"`
+	// El coeficiente de utilidad que aplicó (ISR de personas morales), o null.
+	ProfitCoefficient *float64 `json:"profit_coefficient,omitempty"`
+	// El ISR a cargo, según el acuse.
+	ISRDue *float64 `json:"isr_due,omitempty"`
+	// El IVA a cargo, según el acuse.
+	VatDue *float64 `json:"vat_due,omitempty"`
+	// El total a pagar, según el acuse.
+	TotalDue *float64 `json:"total_due,omitempty"`
+	// Las cifras de la declaración por impuesto (tax), cada una con su texto como lo imprime el SAT (label) y su valor. Vacío en las de Declaraciones y pagos (su PDF trae dos columnas que no se leen con certeza) o si el PDF aún no llega.
+	Sections []SATDeclarationSection `json:"sections"`
+	// Lo que dice el acuse: cada concepto con su cantidad a cargo y a pagar, el total, la línea de captura y su vigencia. null si el acuse aún no llega.
+	Receipt *SATDeclarationReceipt `json:"receipt,omitempty"`
+	// Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
+	Files SATDeclarationFiles `json:"files"`
+	// Por qué falta un archivo, como lo dijo el SAT (por ejemplo «No se puede generar el archivo»). Se vuelve a pedir en la siguiente consulta.
+	FilesError *string `json:"files_error,omitempty"`
+	// Cuándo se trajo por primera vez.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// SATDeclarationFiles: Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
+type SATDeclarationFiles struct {
+	// Si ya tiene la declaración en PDF (GET …/pdf).
+	PDF bool `json:"pdf"`
+	// Si ya tiene el acuse (GET …/receipt).
+	Receipt bool `json:"receipt"`
+	// Si ya tiene el Excel de estados financieros (GET …/financial_statements), solo en la anual de persona moral.
+	FinancialStatements bool `json:"financial_statements"`
+}
+
+// SATDeclarationList: Una página de la lista.
+type SATDeclarationList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATDeclaration `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// SATDeclarationReceipt: SATDeclarationReceipt.
+type SATDeclarationReceipt struct {
+	// Cada impuesto del acuse.
+	Concepts []SATDeclarationReceiptConcept `json:"concepts"`
+	// Total en la moneda del comprobante (Total).
+	Total *float64 `json:"total,omitempty"`
+	// La línea de captura del acuse.
+	PaymentLine *string `json:"payment_line,omitempty"`
+	// Hasta cuándo sirve la línea de captura (AAAA-MM-DD).
+	ValidUntil *string `json:"valid_until,omitempty"`
+}
+
+// SATDeclarationReceiptConcept: SATDeclarationReceiptConcept.
+type SATDeclarationReceiptConcept struct {
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept string `json:"concept"`
+	// Lo que resultó a cargo.
+	Due *float64 `json:"due,omitempty"`
+	// La cantidad a cargo.
+	AmountDue *float64 `json:"amount_due,omitempty"`
+	// La cantidad a pagar.
+	AmountToPay *float64 `json:"amount_to_pay,omitempty"`
+}
+
+// SATDeclarationSection: SATDeclarationSection.
+type SATDeclarationSection struct {
+	// Impuesto: isr, iva o ieps (ImpuestoRet 001, 002, 003).
+	Tax string `json:"tax"`
+	// Los renglones del impuesto, en el orden del PDF.
+	Fields []SATDeclarationSectionField `json:"fields"`
+}
+
+// SATDeclarationSectionField: SATDeclarationSectionField.
+type SATDeclarationSectionField struct {
+	// El renglón como lo imprime el SAT.
+	Label string `json:"label"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value json.RawMessage `json:"value,omitempty"`
+}
+
+// SATDeclarationsRefresh: Lo que trajo una consulta de las declaraciones del emisor en el SAT.
+type SATDeclarationsRefresh struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor consultado.
+	Issuer string `json:"issuer"`
+	// completed (ya bajó todo) o processing (queda algo por bajar: sigue solo en la siguiente hora, sin otro timbre).
+	//
+	// Valores: completed, processing.
+	Status string `json:"status"`
+	// Cuántas declaraciones listó el SAT en los años consultados.
+	Found int64 `json:"found"`
+	// Cuántos archivos bajó en esta consulta.
+	Downloaded int64 `json:"downloaded"`
+	// Cuántas declaraciones quedan con archivos por bajar.
+	Pending int64 `json:"pending"`
+	// Si una parte del SAT falló (por ejemplo, la anual), lo que dijo; lo demás sí se trajo. null si todo salió.
+	Warning *string `json:"warning,omitempty"`
+	// Cuándo se consultó.
+	RefreshedAt string `json:"refreshed_at"`
+	// Desde cuándo se puede volver a consultar este emisor (10 minutos después).
+	NextRefreshAt string `json:"next_refresh_at"`
 }
 
 // SATDownload: Una solicitud al SAT de las facturas emitidas o recibidas de un emisor en un periodo.
@@ -4945,6 +5143,8 @@ type UpdateProductParams struct {
 	SKU *string `json:"sku,omitempty"`
 	// Precio unitario antes de impuestos (ValorUnitario).
 	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Precio abierto: sin precio fijo (una noche de hotel que cambia cada día); cada factura manda su unit_price.
+	OpenPrice *bool `json:"open_price,omitempty"`
 	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
@@ -4963,6 +5163,18 @@ type UpdateProductParams struct {
 	IVARetention *float64 `json:"iva_retention,omitempty"`
 	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
+	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
+	LocalTaxes []UpdateProductParamsLocalTax `json:"local_taxes,omitempty"`
+}
+
+// UpdateProductParamsLocalTax: UpdateProductParamsLocalTax.
+type UpdateProductParamsLocalTax struct {
+	// true si es una retención local; false si es un traslado.
+	Retention bool `json:"retention"`
+	// Nombre del impuesto local (ImpLocTrasladado o ImpLocRetenido), como ISH.
+	Name string `json:"name"`
+	// Tasa en por ciento (TasadeTraslado o TasadeRetencion).
+	Rate float64 `json:"rate"`
 }
 
 // UpdateQuoteParams: los campos de «Cambiar una cotización».
