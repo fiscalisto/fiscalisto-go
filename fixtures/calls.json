@@ -601,6 +601,13 @@
 		"go": "SatDeclarations.List",
 		"java": "satDeclarations.list"
 	},
+	"GET /v1/sat_declarations/calendar": {
+		"python": "sat_declarations.calendar",
+		"php": "satDeclarations->calendar",
+		"dotnet": "SatDeclarations.CalendarAsync",
+		"go": "SatDeclarations.Calendar",
+		"java": "satDeclarations.calendar"
+	},
 	"GET /v1/sat_declarations/{id}": {
 		"python": "sat_declarations.get",
 		"php": "satDeclarations->get",

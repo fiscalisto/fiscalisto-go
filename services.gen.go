@@ -188,6 +188,8 @@ func (s *SandboxesService) Create(ctx context.Context, params *CreateSandboxPara
 
 // List: Listar entornos de prueba
 //
+// Los entornos de prueba de la cuenta, cada uno con su emisor de prueba y su llave fk_test_. Hasta 25 por cuenta.
+//
 // GET /v1/sandboxes
 //
 // https://fiscalisto.com/docs/api/referencia/entornos-de-prueba/list-sandboxes
@@ -200,6 +202,8 @@ func (s *SandboxesService) List(ctx context.Context, opts ...RequestOption) (*Sa
 }
 
 // Get: Ver un entorno de prueba
+//
+// Un entorno de prueba: su nombre, su emisor y lo que lleva usado hoy de sus reinicios.
 //
 // GET /v1/sandboxes/{id}
 //
@@ -246,6 +250,8 @@ func (s *TestClocksService) Create(ctx context.Context, id string, params *Creat
 }
 
 // Get: Ver el reloj de prueba
+//
+// La hora que es «hoy» para un emisor de prueba y hasta dónde se ha adelantado. Solo emisores de prueba.
 //
 // GET /v1/issuers/{id}/test_clock
 //
@@ -326,6 +332,8 @@ func (s *IssuersService) Create(ctx context.Context, params *CreateIssuerParams,
 
 // List: Listar emisores
 //
+// Los emisores de la cuenta en el modo de la llave, los más recientes primero. Una llave limitada a algunos emisores solo ve los suyos.
+//
 // GET /v1/issuers
 //
 // https://fiscalisto.com/docs/api/referencia/emisores/list-issuers
@@ -339,6 +347,8 @@ func (s *IssuersService) ListAutoPaging(ctx context.Context, params *ListIssuers
 }
 
 // Get: Ver un emisor
+//
+// Un emisor: sus datos fiscales, si ya puede timbrar (status, CSD y contrato con el PAC) y su registro patronal.
 //
 // GET /v1/issuers/{id}
 //
@@ -443,6 +453,8 @@ func (s *IssuersService) CreateOnboardingLink(ctx context.Context, id string, pa
 
 // GetSelfInvoicing: Ver el portal de autofactura de un emisor
 //
+// El portal de autofactura del emisor: su dirección, hasta cuándo se puede facturar un ticket y cómo se arma la factura global.
+//
 // GET /v1/issuers/{id}/self_invoicing
 //
 // https://fiscalisto.com/docs/api/referencia/autofactura/get-self-invoicing
@@ -519,6 +531,8 @@ func (s *InvoicesService) Get(ctx context.Context, id string, params *GetInvoice
 }
 
 // Pdf: Descargar el PDF
+//
+// La representación impresa del CFDI, como la recibe su cliente. En vez del id puede usar el UUID (con issuer si la cuenta tiene varios emisores).
 //
 // GET /v1/invoices/{id}/pdf
 //
@@ -669,6 +683,8 @@ func (s *BankTransactionsService) ListAutoPaging(ctx context.Context, params *Li
 
 // Get: Ver un depósito
 //
+// Un depósito mandado a conciliación, con las facturas que se le encontraron o el pago que se registró con él.
+//
 // GET /v1/bank_transactions/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/conciliacion-bancaria/get-bank-transaction
@@ -781,6 +797,8 @@ func (s *AdvancesService) Create(ctx context.Context, params *CreateAdvanceParam
 
 // List: Listar anticipos sin aplicar
 //
+// Los anticipos timbrados que todavía no se aplican a una factura, con lo que queda de cada uno. Filtre por customer para los de un cliente.
+//
 // GET /v1/advances
 //
 // https://fiscalisto.com/docs/api/referencia/anticipos/list-advances
@@ -812,6 +830,8 @@ type RetentionsService struct{ c *Client }
 
 // Create: Timbrar una constancia de retenciones
 //
+// Timbra una constancia de retenciones e información de pagos (Retenciones 2.0) con los folios RET1, RET2… del emisor. Una vez por Idempotency-Key; con send_email y email la manda al receptor al timbrarla.
+//
 // POST /v1/retentions
 //
 // https://fiscalisto.com/docs/api/referencia/retenciones/create-retention
@@ -824,6 +844,8 @@ func (s *RetentionsService) Create(ctx context.Context, params *CreateRetentionP
 }
 
 // List: Listar constancias
+//
+// Las constancias del emisor, las más recientes primero.
 //
 // GET /v1/retentions
 //
@@ -839,6 +861,8 @@ func (s *RetentionsService) ListAutoPaging(ctx context.Context, params *ListRete
 
 // Get: Ver una constancia
 //
+// Una constancia de retenciones con su estado, sus impuestos retenidos y, si se mandó, a quién.
+//
 // GET /v1/retentions/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/retenciones/get-retention
@@ -852,6 +876,8 @@ func (s *RetentionsService) Get(ctx context.Context, id string, params *GetReten
 
 // Pdf: Descargar el PDF
 //
+// La representación impresa de la constancia.
+//
 // GET /v1/retentions/{id}/pdf
 //
 // https://fiscalisto.com/docs/api/referencia/retenciones/get-retention-pdf
@@ -860,6 +886,8 @@ func (s *RetentionsService) PDF(ctx context.Context, id string, params *GetReten
 }
 
 // Xml: Descargar el XML
+//
+// El XML timbrado de la constancia, tal como lo tiene el SAT.
 //
 // GET /v1/retentions/{id}/xml
 //
@@ -870,6 +898,8 @@ func (s *RetentionsService) XML(ctx context.Context, id string, params *GetReten
 }
 
 // Send: Enviar por correo
+//
+// Manda el PDF y el XML de la constancia a los correos de to (o al que se dio al timbrarla). Dos envíos a la vez de la misma constancia: el segundo contesta email_failed.
 //
 // POST /v1/retentions/{id}/send
 //
@@ -902,6 +932,8 @@ type EmployeesService struct{ c *Client }
 
 // Create: Crear un empleado
 //
+// Un empleado del emisor para sus recibos de nómina: RFC, CURP, NSS, salario diario, salario diario integrado y periodicidad. Lo que no mande tiene el valor usual (contrato indefinido, jornada diurna, quincenal, riesgo clase I). warnings dice lo que el SAT podría rechazar.
+//
 // POST /v1/employees
 //
 // https://fiscalisto.com/docs/api/referencia/nomina/create-employee
@@ -914,6 +946,8 @@ func (s *EmployeesService) Create(ctx context.Context, params *CreateEmployeePar
 }
 
 // List: Listar empleados
+//
+// Los empleados del emisor, los más recientes primero.
 //
 // GET /v1/employees
 //
@@ -929,6 +963,8 @@ func (s *EmployeesService) ListAutoPaging(ctx context.Context, params *ListEmplo
 
 // Get: Ver un empleado
 //
+// Un empleado con sus datos y lo que el SAT podría rechazar en warnings.
+//
 // GET /v1/employees/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/nomina/get-employee
@@ -941,6 +977,8 @@ func (s *EmployeesService) Get(ctx context.Context, id string, opts ...RequestOp
 }
 
 // Update: Actualizar un empleado
+//
+// Cambia solo los campos que manda; los recibos ya timbrados no cambian.
 //
 // POST /v1/employees/{id}
 //
@@ -988,6 +1026,8 @@ func (s *PayrollReceiptsService) Create(ctx context.Context, params *CreatePayro
 
 // Preview: Calcular un recibo sin timbrar
 //
+// El recibo como se timbraría (percepciones, ISR con el subsidio para el empleo, cuotas IMSS y el neto), sin timbrar ni usar timbres.
+//
 // POST /v1/payroll_receipts/preview
 //
 // https://fiscalisto.com/docs/api/referencia/nomina/preview-payroll-receipt
@@ -1018,6 +1058,8 @@ func (s *InvoiceBatchesService) Create(ctx context.Context, params *CreateInvoic
 }
 
 // List: Listar lotes
+//
+// Los lotes de facturas, los más recientes primero, con cuántas se timbraron y cuántas fallaron.
 //
 // GET /v1/invoice_batches
 //
@@ -1069,6 +1111,8 @@ type CustomersService struct{ c *Client }
 
 // Create: Crear un cliente
 //
+// Un cliente del catálogo del emisor, con sus datos fiscales como vienen en su constancia. Un RFC que ya está en el catálogo contesta customer_exists.
+//
 // POST /v1/customers
 //
 // https://fiscalisto.com/docs/api/referencia/clientes/create-customer
@@ -1081,6 +1125,8 @@ func (s *CustomersService) Create(ctx context.Context, params *CreateCustomerPar
 }
 
 // List: Listar clientes
+//
+// Los clientes del emisor, los más recientes primero. Con tax_id, el de ese RFC.
 //
 // GET /v1/customers
 //
@@ -1096,6 +1142,8 @@ func (s *CustomersService) ListAutoPaging(ctx context.Context, params *ListCusto
 
 // Get: Ver un cliente
 //
+// Un cliente del catálogo.
+//
 // GET /v1/customers/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/clientes/get-customer
@@ -1109,6 +1157,8 @@ func (s *CustomersService) Get(ctx context.Context, id string, opts ...RequestOp
 
 // Update: Actualizar un cliente
 //
+// Cambia solo los campos que manda. Las facturas ya timbradas no cambian.
+//
 // POST /v1/customers/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/clientes/update-customer
@@ -1121,6 +1171,8 @@ func (s *CustomersService) Update(ctx context.Context, id string, params *Update
 }
 
 // Delete: Borrar un cliente
+//
+// Lo quita del catálogo. Sus facturas timbradas siguen igual.
 //
 // DELETE /v1/customers/{id}
 //
@@ -1153,6 +1205,8 @@ func (s *CustomerDataRequestsService) Create(ctx context.Context, params *Create
 
 // List: Listar solicitudes de datos
 //
+// Las ligas para pedir datos fiscales, las más recientes primero, con su estado.
+//
 // GET /v1/customer_data_requests
 //
 // https://fiscalisto.com/docs/api/referencia/clientes/list-customer-data-requests
@@ -1166,6 +1220,8 @@ func (s *CustomerDataRequestsService) ListAutoPaging(ctx context.Context, params
 }
 
 // Get: Ver una solicitud de datos
+//
+// Una solicitud de datos: su liga y, si el cliente ya contestó, sus datos fiscales y el cliente que se guardó.
 //
 // GET /v1/customer_data_requests/{id}
 //
@@ -1198,6 +1254,8 @@ type ProductsService struct{ c *Client }
 
 // Create: Crear un producto
 //
+// Un producto o servicio del catálogo del emisor, con su clave del SAT, su unidad, su precio y sus impuestos, para usarlo en items con product.
+//
 // POST /v1/products
 //
 // https://fiscalisto.com/docs/api/referencia/productos/create-product
@@ -1210,6 +1268,8 @@ func (s *ProductsService) Create(ctx context.Context, params *CreateProductParam
 }
 
 // List: Listar productos
+//
+// Los productos del emisor, los más recientes primero. Filtre por sku o product_key.
 //
 // GET /v1/products
 //
@@ -1225,6 +1285,8 @@ func (s *ProductsService) ListAutoPaging(ctx context.Context, params *ListProduc
 
 // Get: Ver un producto
 //
+// Un producto del catálogo.
+//
 // GET /v1/products/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/productos/get-product
@@ -1238,6 +1300,8 @@ func (s *ProductsService) Get(ctx context.Context, id string, opts ...RequestOpt
 
 // Update: Actualizar un producto
 //
+// Cambia solo los campos que manda. Las facturas ya timbradas no cambian.
+//
 // POST /v1/products/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/productos/update-product
@@ -1250,6 +1314,8 @@ func (s *ProductsService) Update(ctx context.Context, id string, params *UpdateP
 }
 
 // Delete: Borrar un producto
+//
+// Lo quita del catálogo. Las facturas que lo usaron siguen igual.
 //
 // DELETE /v1/products/{id}
 //
@@ -1333,6 +1399,8 @@ func (s *SatDownloadsService) Create(ctx context.Context, params *CreateSatDownl
 
 // List: Listar descargas del SAT
 //
+// Las descargas pedidas al SAT, las más recientes primero, con su estado.
+//
 // GET /v1/sat_downloads
 //
 // https://fiscalisto.com/docs/api/referencia/descargas-del-sat/list-sat-downloads
@@ -1346,6 +1414,8 @@ func (s *SatDownloadsService) ListAutoPaging(ctx context.Context, params *ListSa
 }
 
 // Get: Ver una descarga del SAT
+//
+// Una descarga del SAT: su periodo, su estado y cuántos CFDI trajo. Al terminar llega sat_download.completed.
 //
 // GET /v1/sat_downloads/{id}
 //
@@ -1378,6 +1448,8 @@ func (s *SatInvoicesService) ListAutoPaging(ctx context.Context, params *ListSat
 }
 
 // Get: Ver una factura del SAT
+//
+// Un CFDI que trajo una descarga del SAT, con sus importes y su estado ante el SAT.
 //
 // GET /v1/sat_invoices/{id}
 //
@@ -1436,7 +1508,24 @@ func (s *SatDeclarationsService) ListAutoPaging(ctx context.Context, params *Lis
 	return listAll[SATDeclaration](ctx, s.c, "/v1/sat_declarations", params, opts)
 }
 
+// Calendar: Ver el año mes por mes
+//
+// Cada mes del ejercicio con sus obligaciones: presentada (con sus declaraciones), falta (venció y no la encontramos) o por presentar, con el día en que vence (el 17 del mes siguiente, o el día hábil siguiente, más los días por el sexto dígito del RFC). Se arma con lo que trajeron sus consultas; no usa timbres.
+//
+// GET /v1/sat_declarations/calendar
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-declaration-calendar
+func (s *SatDeclarationsService) Calendar(ctx context.Context, params *GetSatDeclarationCalendarParams, opts ...RequestOption) (*SATDeclarationCalendar, error) {
+	out := new(SATDeclarationCalendar)
+	if err := s.c.do(ctx, "GET", "/v1/sat_declarations/calendar", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Get: Ver una declaración del SAT
+//
+// Una declaración presentada al SAT, con sus cifras en summary y si ya están su PDF y su acuse.
 //
 // GET /v1/sat_declarations/{id}
 //
@@ -1518,6 +1607,8 @@ func (s *TicketsService) ListAutoPaging(ctx context.Context, params *ListTickets
 }
 
 // Get: Ver un ticket
+//
+// Un ticket de autofactura: si ya se facturó (invoice) o entró en la factura global (global_invoice).
 //
 // GET /v1/tickets/{id}
 //
@@ -1699,6 +1790,8 @@ func (s *StoreConnectionsService) ListAutoPaging(ctx context.Context, params *Li
 
 // Get: Ver una tienda
 //
+// Una tienda conectada (Shopify, Mercado Libre o WooCommerce), su estado y lo último que importó.
+//
 // GET /v1/store_connections/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/tiendas-en-linea/get-store-connection
@@ -1790,6 +1883,8 @@ func (s *RecurringInvoicesService) ListAutoPaging(ctx context.Context, params *L
 }
 
 // Get: Ver una factura recurrente
+//
+// Una factura recurrente: su calendario, la próxima fecha, la última factura que timbró y, si falló, por qué en last_error.
 //
 // GET /v1/recurring_invoices/{id}
 //
@@ -2017,6 +2112,8 @@ func (s *WebhookEndpointsService) Create(ctx context.Context, params *CreateWebh
 
 // List: Listar webhooks
 //
+// Los webhooks del modo de la llave. Hasta 16 por modo.
+//
 // GET /v1/webhook_endpoints
 //
 // https://fiscalisto.com/docs/api/referencia/webhooks/list-webhook-endpoints
@@ -2031,6 +2128,8 @@ func (s *WebhookEndpointsService) ListAutoPaging(ctx context.Context, params *Li
 
 // Get: Ver un webhook
 //
+// Un webhook: su dirección, los eventos que recibe y si sus entregas fallan. El secreto solo viene al crearlo.
+//
 // GET /v1/webhook_endpoints/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/webhooks/get-webhook-endpoint
@@ -2044,6 +2143,8 @@ func (s *WebhookEndpointsService) Get(ctx context.Context, id string, opts ...Re
 
 // Update: Actualizar un webhook
 //
+// Cambia su dirección, sus eventos, su descripción o su versión de la API; con disabled: false vuelve a encender uno que se apagó.
+//
 // POST /v1/webhook_endpoints/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/webhooks/update-webhook-endpoint
@@ -2056,6 +2157,8 @@ func (s *WebhookEndpointsService) Update(ctx context.Context, id string, params 
 }
 
 // Delete: Borrar un webhook
+//
+// Deja de mandar eventos a esa dirección. Los eventos siguen en GET /v1/events.
 //
 // DELETE /v1/webhook_endpoints/{id}
 //
@@ -2118,6 +2221,8 @@ func (s *EventsService) ListAutoPaging(ctx context.Context, params *ListEventsPa
 }
 
 // Get: Ver un evento
+//
+// Un evento de los últimos 30 días, con el objeto como estaba cuando pasó.
 //
 // GET /v1/events/{id}
 //

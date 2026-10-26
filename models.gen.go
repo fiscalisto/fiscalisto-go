@@ -303,7 +303,7 @@ type BankTransactionSuggestedMatch struct {
 
 // CancelInvoiceParams: los campos de «Cancelar una factura».
 type CancelInvoiceParams struct {
-	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 nominativa en una global.
+	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
 	//
 	// Valores: 01, 02, 03, 04.
 	Motive *string `json:"motive,omitempty"`
@@ -313,7 +313,7 @@ type CancelInvoiceParams struct {
 
 // CancelRetentionParams: los campos de «Cancelar una constancia».
 type CancelRetentionParams struct {
-	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 nominativa en una global.
+	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
 	//
 	// Valores: 01, 02, 03, 04.
 	Motive *string `json:"motive,omitempty"`
@@ -1301,11 +1301,11 @@ type CrossChecksMonth struct {
 
 // CrossChecksMonthCheck: CrossChecksMonthCheck.
 type CrossChecksMonthCheck struct {
-	// Qué cifra: vat_charged (IVA trasladado), vat_creditable (IVA acreditable), vat_withheld (IVA que le retuvieron) o isr_income (ingresos para ISR: nominales en persona moral, cobrados en los demás).
+	// Qué cifra: vat_charged (IVA trasladado), vat_creditable (IVA acreditable), vat_withheld (IVA que le retuvieron), isr_income (ingresos para ISR: nominales en persona moral, cobrados en los demás) y, solo en los meses en que retuvo, isr_withheld_salaries (ISR retenido por salarios y asimilados, contra sus recibos de nómina), isr_withheld_suppliers (ISR retenido por honorarios y arrendamiento, contra las facturas recibidas que pagó) o vat_withheld_suppliers (IVA retenido a proveedores).
 	//
-	// Valores: vat_charged, vat_creditable, vat_withheld, isr_income.
+	// Valores: vat_charged, vat_creditable, vat_withheld, isr_income, isr_withheld_salaries, isr_withheld_suppliers, vat_withheld_suppliers.
 	Key string `json:"key"`
-	// matches (hasta $2 de diferencia), differs, not_filed (no hay declaración del mes) o unreadable (la declaración no trae la cifra en un renglón reconocible).
+	// matches (hasta $2 de diferencia), differs, not_filed (no hay declaración del mes, o en una retención ninguna declaración del mes la trae) o unreadable (la declaración no trae la cifra en un renglón reconocible).
 	//
 	// Valores: matches, differs, not_filed, unreadable.
 	Status string `json:"status"`
@@ -1667,7 +1667,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -2025,6 +2025,14 @@ type GetSatCatalogParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 }
 
+// GetSatDeclarationCalendarParams: los campos de «Ver el año mes por mes».
+type GetSatDeclarationCalendarParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El ejercicio, como 2026. Por omisión, el actual.
+	Year *int64 `json:"year,omitempty"`
+}
+
 // GetTrialBalanceParams: los campos de «Ver la balanza de comprobación».
 type GetTrialBalanceParams struct {
 	// El mes (AAAA-MM).
@@ -2213,7 +2221,7 @@ type InvoiceBatchList struct {
 type InvoiceCancellation struct {
 	// pending (espera la respuesta del cliente), accepted (cancelada), rejected (el cliente la rechazó) o lapsed (venció; puede pedirla otra vez).
 	Status *string `json:"status,omitempty"`
-	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 nominativa en una global.
+	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
 	Motive *string `json:"motive,omitempty"`
 	// El comprobante que sustituye a este (su id o su UUID), con el motivo 01.
 	Substitution *string `json:"substitution,omitempty"`
@@ -3711,7 +3719,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -3871,6 +3879,12 @@ type ListSatDeclarationsParams struct {
 	//
 	// Valores: monthly, annual, dyp.
 	Source *string `json:"source,omitempty"`
+	// Solo las de un mes (1 a 12).
+	Month *int64 `json:"month,omitempty"`
+	// normal o complementary (complementarias).
+	//
+	// Valores: normal, complementary.
+	Type *string `json:"type,omitempty"`
 }
 
 // ListSatDownloadsParams: los campos de «Listar descargas del SAT».
@@ -4471,7 +4485,7 @@ type Retention struct {
 type RetentionCancellation struct {
 	// pending (espera la respuesta del cliente), accepted (cancelada), rejected (el cliente la rechazó) o lapsed (venció; puede pedirla otra vez).
 	Status string `json:"status"`
-	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 nominativa en una global.
+	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
 	Motive *string `json:"motive,omitempty"`
 	// Cuándo se canceló.
 	CanceledAt *string `json:"canceled_at,omitempty"`
@@ -4625,6 +4639,8 @@ type SATDeclaration struct {
 	Sections []SATDeclarationSection `json:"sections"`
 	// Lo que dice el acuse: cada concepto con su cantidad a cargo y a pagar, el total, la línea de captura y su vigencia. null si el acuse aún no llega.
 	Receipt *SATDeclarationReceipt `json:"receipt,omitempty"`
+	// Las mismas cifras con nombres fijos, por obligación (ISR, IVA, cada retención), para leerlas igual cada mes sin conocer el formato del SAT. Una cifra que no viene en la declaración o no se pudo leer es null, nunca 0. En Declaraciones y pagos solo trae lo del acuse.
+	Summary SATDeclarationSummary `json:"summary"`
 	// Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
 	Files SATDeclarationFiles `json:"files"`
 	// Por qué falta un archivo, como lo dijo el SAT (por ejemplo «No se puede generar el archivo»). Se vuelve a pedir en la siguiente consulta.
@@ -4633,6 +4649,46 @@ type SATDeclaration struct {
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Cuándo cambió por última vez.
 	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// SATDeclarationCalendar: El ejercicio del emisor mes por mes: qué obligaciones presentó, cuáles parecen faltar y cuáles aún no vencen.
+type SATDeclarationCalendar struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El ejercicio.
+	Year int64 `json:"year"`
+	// Cuántas obligaciones ya vencidas no encontramos presentadas en el SAT.
+	Missing int64 `json:"missing"`
+	// Los 12 meses y, en persona moral, la anual (month null). Las obligaciones se deducen de lo que el emisor presenta: ISR e IVA cada mes desde el primero que presentó; una retención si la presentó en 2 de los 3 meses anteriores o antes y después. La opinión de cumplimiento del SAT es la que manda.
+	Months []SATDeclarationCalendarMonth `json:"months"`
+}
+
+// SATDeclarationCalendarMonth: SATDeclarationCalendarMonth.
+type SATDeclarationCalendarMonth struct {
+	// El mes (1 a 12), o null para la anual.
+	Month *int64 `json:"month,omitempty"`
+	// El último día para presentarla (AAAA-MM-DD).
+	DueOn string `json:"due_on"`
+	// Las obligaciones del mes.
+	Obligations []SATDeclarationCalendarMonthObligation `json:"obligations"`
+}
+
+// SATDeclarationCalendarMonthObligation: SATDeclarationCalendarMonthObligation.
+type SATDeclarationCalendarMonthObligation struct {
+	// Qué obligación es (las de summary.obligations), o annual_return para la anual.
+	//
+	// Valores: isr, vat, ieps, isr_salaries, isr_assimilated_salaries, isr_professional_services, isr_rent, vat_withholdings, other.
+	Obligation string `json:"obligation"`
+	// filed (presentada), missing (venció y no la encontramos) o due (aún no vence).
+	//
+	// Valores: filed, missing, due.
+	Status string `json:"status"`
+	// Las declaraciones (dcl_…) que la presentaron, la normal y sus complementarias.
+	Declarations []string `json:"declarations"`
 }
 
 // SATDeclarationFiles: Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
@@ -4695,6 +4751,32 @@ type SATDeclarationSectionField struct {
 	Label string `json:"label"`
 	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
 	Value json.RawMessage `json:"value,omitempty"`
+}
+
+// SATDeclarationSummary: Las mismas cifras con nombres fijos, por obligación (ISR, IVA, cada retención), para leerlas igual cada mes sin conocer el formato del SAT. Una cifra que no viene en la declaración o no se pudo leer es null, nunca 0. En Declaraciones y pagos solo trae lo del acuse.
+type SATDeclarationSummary struct {
+	// Cada obligación de la declaración: isr, vat, ieps, isr_salaries, isr_assimilated_salaries, isr_professional_services, isr_rent, vat_withholdings u other.
+	Obligations []SATDeclarationSummaryObligation `json:"obligations"`
+	// El total a pagar del acuse; si no hay acuse, la suma de las obligaciones cuando todas se conocen.
+	TotalToPay *float64 `json:"total_to_pay,omitempty"`
+}
+
+// SATDeclarationSummaryObligation: SATDeclarationSummaryObligation.
+type SATDeclarationSummaryObligation struct {
+	// Qué obligación es.
+	//
+	// Valores: isr, vat, ieps, isr_salaries, isr_assimilated_salaries, isr_professional_services, isr_rent, vat_withholdings, other.
+	Obligation string `json:"obligation"`
+	// Su nombre como lo imprime el SAT.
+	Name string `json:"name"`
+	// true si sus cifras se leyeron de la declaración; false si solo vienen del acuse.
+	Read bool `json:"read"`
+	// La cantidad a cargo.
+	AmountDue *float64 `json:"amount_due,omitempty"`
+	// La cantidad a pagar.
+	AmountToPay *float64 `json:"amount_to_pay,omitempty"`
+	// Sus cifras con nombres fijos. ISR: income, invoiced_income, income_ytd, deductions, profit_coefficient, taxable_profit, losses_applied, tax_base, tax_caused, prior_payments, withheld. IVA: taxable_16, taxable_0, exempt, charged, paid_16, creditable, withheld, balance_applied. Salarios: workers, payments, exempt, withheld. Todas: surcharges, inflation, paid_before, due, in_favor, to_pay. null si no viene o no se pudo leer.
+	Figures map[string]any `json:"figures"`
 }
 
 // SATDeclarationsRefresh: Lo que trajo una consulta de las declaraciones del emisor en el SAT.
@@ -5251,7 +5333,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
