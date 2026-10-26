@@ -1550,7 +1550,7 @@ type AccountingService struct{ c *Client }
 
 // JournalEntries: Listar las pólizas de un mes
 //
-// Una póliza de diario por cada CFDI de ingreso o egreso vigente del mes, emitido o recibido (los recibidos con la categoría de su gasto), con sus cuentas y código agrupador del SAT. En pesos; un CFDI en otra moneda sin tipo de cambio no se registra. Es un punto de partida para su contador: no incluye bancos, nómina ni depreciaciones.
+// Las pólizas de diario del mes, con sus cuentas y código agrupador del SAT: una por cada CFDI de ingreso o egreso vigente, emitido o recibido (los recibidos con la categoría de su gasto); una por cada pago de un complemento; una por cada recibo de nómina, y una con la depreciación de los activos fijos. Un PUE se registra cobrado o pagado según su forma de pago. En pesos; un CFDI en otra moneda sin tipo de cambio no se registra. No incluye movimientos de banco sin CFDI ni provisiones.
 //
 // GET /v1/accounting/journal_entries
 //
@@ -1566,7 +1566,7 @@ func (s *AccountingService) JournalEntriesAutoPaging(ctx context.Context, params
 
 // TrialBalance: Ver la balanza de comprobación
 //
-// Saldo inicial, cargos, abonos y saldo final de cada cuenta en el mes. Los saldos iniciales se acumulan desde el primer CFDI (las de resultados, desde enero), y los resultados de cada año anterior se cierran a capital.
+// Saldo inicial, cargos, abonos y saldo final de cada cuenta en el mes. Los saldos iniciales se acumulan desde el primer CFDI, o desde los saldos iniciales capturados en la app (las de resultados, desde enero), y los resultados de cada año anterior se cierran a capital.
 //
 // GET /v1/accounting/trial_balance
 //
@@ -1574,6 +1574,36 @@ func (s *AccountingService) JournalEntriesAutoPaging(ctx context.Context, params
 func (s *AccountingService) TrialBalance(ctx context.Context, params *GetTrialBalanceParams, opts ...RequestOption) (*TrialBalance, error) {
 	out := new(TrialBalance)
 	if err := s.c.do(ctx, "GET", "/v1/accounting/trial_balance", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FinancialStatements: Ver los estados financieros
+//
+// El estado de resultados (del mes y del año hasta ese mes) y el balance general al cierre del mes, leídos de la misma balanza, así que siempre suman las mismas pólizas.
+//
+// GET /v1/accounting/financial_statements
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-financial-statements
+func (s *AccountingService) FinancialStatements(ctx context.Context, params *GetFinancialStatementsParams, opts ...RequestOption) (*FinancialStatements, error) {
+	out := new(FinancialStatements)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/financial_statements", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CrossChecks: Cruzar lo declarado con lo facturado
+//
+// Cada mes ya vencido del año: el IVA trasladado, acreditable y retenido y los ingresos para ISR que el emisor declaró (de GET /v1/sat_declarations, después de POST /v1/sat_declarations/refresh) contra lo que dicen sus CFDI. Hasta $2 de diferencia es redondeo (las declaraciones van en pesos enteros). Una cifra que la declaración no trae en un renglón reconocible es unreadable con declared null, nunca 0. También el IVA a favor y el régimen con que factura. Gratis: no consulta al SAT.
+//
+// GET /v1/accounting/cross_checks
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-cross-checks
+func (s *AccountingService) CrossChecks(ctx context.Context, params *GetCrossChecksParams, opts ...RequestOption) (*CrossChecks, error) {
+	out := new(CrossChecks)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/cross_checks", nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

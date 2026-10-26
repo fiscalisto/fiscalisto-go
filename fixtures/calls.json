@@ -1,0 +1,947 @@
+{
+	"GET /v1/account": {
+		"python": "account.get",
+		"php": "account->get",
+		"dotnet": "Account.GetAsync",
+		"go": "Account.Get",
+		"java": "account.get"
+	},
+	"POST /v1/account": {
+		"python": "account.update",
+		"php": "account->update",
+		"dotnet": "Account.UpdateAsync",
+		"go": "Account.Update",
+		"java": "account.update"
+	},
+	"POST /v1/test_data/reset": {
+		"python": "test_data.reset",
+		"php": "testData->reset",
+		"dotnet": "TestData.ResetAsync",
+		"go": "TestData.Reset",
+		"java": "testData.reset"
+	},
+	"POST /v1/sandboxes": {
+		"python": "sandboxes.create",
+		"php": "sandboxes->create",
+		"dotnet": "Sandboxes.CreateAsync",
+		"go": "Sandboxes.Create",
+		"java": "sandboxes.create"
+	},
+	"GET /v1/sandboxes": {
+		"python": "sandboxes.list",
+		"php": "sandboxes->list",
+		"dotnet": "Sandboxes.ListAsync",
+		"go": "Sandboxes.List",
+		"java": "sandboxes.list"
+	},
+	"GET /v1/sandboxes/{id}": {
+		"python": "sandboxes.get",
+		"php": "sandboxes->get",
+		"dotnet": "Sandboxes.GetAsync",
+		"go": "Sandboxes.Get",
+		"java": "sandboxes.get"
+	},
+	"DELETE /v1/sandboxes/{id}": {
+		"python": "sandboxes.delete",
+		"php": "sandboxes->delete",
+		"dotnet": "Sandboxes.DeleteAsync",
+		"go": "Sandboxes.Delete",
+		"java": "sandboxes.delete"
+	},
+	"POST /v1/issuers/{id}/test_clock": {
+		"python": "test_clocks.create",
+		"php": "testClocks->create",
+		"dotnet": "TestClocks.CreateAsync",
+		"go": "TestClocks.Create",
+		"java": "testClocks.create"
+	},
+	"GET /v1/issuers/{id}/test_clock": {
+		"python": "test_clocks.get",
+		"php": "testClocks->get",
+		"dotnet": "TestClocks.GetAsync",
+		"go": "TestClocks.Get",
+		"java": "testClocks.get"
+	},
+	"DELETE /v1/issuers/{id}/test_clock": {
+		"python": "test_clocks.delete",
+		"php": "testClocks->delete",
+		"dotnet": "TestClocks.DeleteAsync",
+		"go": "TestClocks.Delete",
+		"java": "testClocks.delete"
+	},
+	"POST /v1/issuers/{id}/test_clock/advance": {
+		"python": "test_clocks.advance",
+		"php": "testClocks->advance",
+		"dotnet": "TestClocks.AdvanceAsync",
+		"go": "TestClocks.Advance",
+		"java": "testClocks.advance"
+	},
+	"GET /v1/balance": {
+		"python": "balance.get",
+		"php": "balance->get",
+		"dotnet": "Balance.GetAsync",
+		"go": "Balance.Get",
+		"java": "balance.get"
+	},
+	"POST /v1/issuers": {
+		"python": "issuers.create",
+		"php": "issuers->create",
+		"dotnet": "Issuers.CreateAsync",
+		"go": "Issuers.Create",
+		"java": "issuers.create"
+	},
+	"GET /v1/issuers": {
+		"python": "issuers.list",
+		"php": "issuers->list",
+		"dotnet": "Issuers.ListAsync",
+		"go": "Issuers.List",
+		"java": "issuers.list"
+	},
+	"GET /v1/issuers/{id}": {
+		"python": "issuers.get",
+		"php": "issuers->get",
+		"dotnet": "Issuers.GetAsync",
+		"go": "Issuers.Get",
+		"java": "issuers.get"
+	},
+	"POST /v1/issuers/{id}": {
+		"python": "issuers.update",
+		"php": "issuers->update",
+		"dotnet": "Issuers.UpdateAsync",
+		"go": "Issuers.Update",
+		"java": "issuers.update"
+	},
+	"DELETE /v1/issuers/{id}": {
+		"python": "issuers.archive",
+		"php": "issuers->archive",
+		"dotnet": "Issuers.ArchiveAsync",
+		"go": "Issuers.Archive",
+		"java": "issuers.archive"
+	},
+	"POST /v1/issuers/{id}/certificates": {
+		"python": "issuers.upload_certificate",
+		"php": "issuers->uploadCertificate",
+		"dotnet": "Issuers.UploadCertificateAsync",
+		"go": "Issuers.UploadCertificate",
+		"java": "issuers.uploadCertificate"
+	},
+	"POST /v1/issuers/{id}/efirma": {
+		"python": "issuers.sign_efirma",
+		"php": "issuers->signEfirma",
+		"dotnet": "Issuers.SignEfirmaAsync",
+		"go": "Issuers.SignEfirma",
+		"java": "issuers.signEfirma"
+	},
+	"DELETE /v1/issuers/{id}/efirma": {
+		"python": "issuers.delete_efirma",
+		"php": "issuers->deleteEfirma",
+		"dotnet": "Issuers.DeleteEfirmaAsync",
+		"go": "Issuers.DeleteEfirma",
+		"java": "issuers.deleteEfirma"
+	},
+	"POST /v1/issuers/{id}/onboarding_links": {
+		"python": "issuers.create_onboarding_link",
+		"php": "issuers->createOnboardingLink",
+		"dotnet": "Issuers.CreateOnboardingLinkAsync",
+		"go": "Issuers.CreateOnboardingLink",
+		"java": "issuers.createOnboardingLink"
+	},
+	"POST /v1/invoices": {
+		"python": "invoices.create",
+		"php": "invoices->create",
+		"dotnet": "Invoices.CreateAsync",
+		"go": "Invoices.Create",
+		"java": "invoices.create"
+	},
+	"GET /v1/invoices": {
+		"python": "invoices.list",
+		"php": "invoices->list",
+		"dotnet": "Invoices.ListAsync",
+		"go": "Invoices.List",
+		"java": "invoices.list"
+	},
+	"GET /v1/invoices/{id}": {
+		"python": "invoices.get",
+		"php": "invoices->get",
+		"dotnet": "Invoices.GetAsync",
+		"go": "Invoices.Get",
+		"java": "invoices.get"
+	},
+	"GET /v1/invoices/{id}/pdf": {
+		"python": "invoices.pdf",
+		"php": "invoices->pdf",
+		"dotnet": "Invoices.PdfAsync",
+		"go": "Invoices.PDF",
+		"java": "invoices.pdf"
+	},
+	"GET /v1/invoices/{id}/xml": {
+		"python": "invoices.xml",
+		"php": "invoices->xml",
+		"dotnet": "Invoices.XmlAsync",
+		"go": "Invoices.XML",
+		"java": "invoices.xml"
+	},
+	"POST /v1/invoices/{id}/send": {
+		"python": "invoices.send",
+		"php": "invoices->send",
+		"dotnet": "Invoices.SendAsync",
+		"go": "Invoices.Send",
+		"java": "invoices.send"
+	},
+	"POST /v1/invoices/{id}/cancel": {
+		"python": "invoices.cancel",
+		"php": "invoices->cancel",
+		"dotnet": "Invoices.CancelAsync",
+		"go": "Invoices.Cancel",
+		"java": "invoices.cancel"
+	},
+	"POST /v1/invoices/{id}/substitute": {
+		"python": "invoices.substitute",
+		"php": "invoices->substitute",
+		"dotnet": "Invoices.SubstituteAsync",
+		"go": "Invoices.Substitute",
+		"java": "invoices.substitute"
+	},
+	"POST /v1/invoices/{id}/mark_paid": {
+		"python": "invoices.mark_paid",
+		"php": "invoices->markPaid",
+		"dotnet": "Invoices.MarkPaidAsync",
+		"go": "Invoices.MarkPaid",
+		"java": "invoices.markPaid"
+	},
+	"POST /v1/invoices/{id}/mark_unpaid": {
+		"python": "invoices.mark_unpaid",
+		"php": "invoices->markUnpaid",
+		"dotnet": "Invoices.MarkUnpaidAsync",
+		"go": "Invoices.MarkUnpaid",
+		"java": "invoices.markUnpaid"
+	},
+	"GET /v1/receivables": {
+		"python": "receivables.list",
+		"php": "receivables->list",
+		"dotnet": "Receivables.ListAsync",
+		"go": "Receivables.List",
+		"java": "receivables.list"
+	},
+	"POST /v1/bank_transactions": {
+		"python": "bank_transactions.create",
+		"php": "bankTransactions->create",
+		"dotnet": "BankTransactions.CreateAsync",
+		"go": "BankTransactions.Create",
+		"java": "bankTransactions.create"
+	},
+	"GET /v1/bank_transactions": {
+		"python": "bank_transactions.list",
+		"php": "bankTransactions->list",
+		"dotnet": "BankTransactions.ListAsync",
+		"go": "BankTransactions.List",
+		"java": "bankTransactions.list"
+	},
+	"GET /v1/bank_transactions/{id}": {
+		"python": "bank_transactions.get",
+		"php": "bankTransactions->get",
+		"dotnet": "BankTransactions.GetAsync",
+		"go": "BankTransactions.Get",
+		"java": "bankTransactions.get"
+	},
+	"POST /v1/bank_transactions/{id}/match": {
+		"python": "bank_transactions.match",
+		"php": "bankTransactions->match",
+		"dotnet": "BankTransactions.MatchAsync",
+		"go": "BankTransactions.Match",
+		"java": "bankTransactions.match"
+	},
+	"POST /v1/bank_transactions/{id}/classify": {
+		"python": "bank_transactions.classify",
+		"php": "bankTransactions->classify",
+		"dotnet": "BankTransactions.ClassifyAsync",
+		"go": "BankTransactions.Classify",
+		"java": "bankTransactions.classify"
+	},
+	"POST /v1/bank_transactions/{id}/reopen": {
+		"python": "bank_transactions.reopen",
+		"php": "bankTransactions->reopen",
+		"dotnet": "BankTransactions.ReopenAsync",
+		"go": "BankTransactions.Reopen",
+		"java": "bankTransactions.reopen"
+	},
+	"POST /v1/payments": {
+		"python": "payments.create",
+		"php": "payments->create",
+		"dotnet": "Payments.CreateAsync",
+		"go": "Payments.Create",
+		"java": "payments.create"
+	},
+	"POST /v1/credit_notes": {
+		"python": "credit_notes.create",
+		"php": "creditNotes->create",
+		"dotnet": "CreditNotes.CreateAsync",
+		"go": "CreditNotes.Create",
+		"java": "creditNotes.create"
+	},
+	"POST /v1/advances": {
+		"python": "advances.create",
+		"php": "advances->create",
+		"dotnet": "Advances.CreateAsync",
+		"go": "Advances.Create",
+		"java": "advances.create"
+	},
+	"GET /v1/advances": {
+		"python": "advances.list",
+		"php": "advances->list",
+		"dotnet": "Advances.ListAsync",
+		"go": "Advances.List",
+		"java": "advances.list"
+	},
+	"POST /v1/advances/{id}/apply": {
+		"python": "advances.apply",
+		"php": "advances->apply",
+		"dotnet": "Advances.ApplyAsync",
+		"go": "Advances.Apply",
+		"java": "advances.apply"
+	},
+	"POST /v1/retentions": {
+		"python": "retentions.create",
+		"php": "retentions->create",
+		"dotnet": "Retentions.CreateAsync",
+		"go": "Retentions.Create",
+		"java": "retentions.create"
+	},
+	"GET /v1/retentions": {
+		"python": "retentions.list",
+		"php": "retentions->list",
+		"dotnet": "Retentions.ListAsync",
+		"go": "Retentions.List",
+		"java": "retentions.list"
+	},
+	"GET /v1/retentions/{id}": {
+		"python": "retentions.get",
+		"php": "retentions->get",
+		"dotnet": "Retentions.GetAsync",
+		"go": "Retentions.Get",
+		"java": "retentions.get"
+	},
+	"GET /v1/retentions/{id}/pdf": {
+		"python": "retentions.pdf",
+		"php": "retentions->pdf",
+		"dotnet": "Retentions.PdfAsync",
+		"go": "Retentions.PDF",
+		"java": "retentions.pdf"
+	},
+	"GET /v1/retentions/{id}/xml": {
+		"python": "retentions.xml",
+		"php": "retentions->xml",
+		"dotnet": "Retentions.XmlAsync",
+		"go": "Retentions.XML",
+		"java": "retentions.xml"
+	},
+	"POST /v1/retentions/{id}/send": {
+		"python": "retentions.send",
+		"php": "retentions->send",
+		"dotnet": "Retentions.SendAsync",
+		"go": "Retentions.Send",
+		"java": "retentions.send"
+	},
+	"POST /v1/retentions/{id}/cancel": {
+		"python": "retentions.cancel",
+		"php": "retentions->cancel",
+		"dotnet": "Retentions.CancelAsync",
+		"go": "Retentions.Cancel",
+		"java": "retentions.cancel"
+	},
+	"POST /v1/employees": {
+		"python": "employees.create",
+		"php": "employees->create",
+		"dotnet": "Employees.CreateAsync",
+		"go": "Employees.Create",
+		"java": "employees.create"
+	},
+	"GET /v1/employees": {
+		"python": "employees.list",
+		"php": "employees->list",
+		"dotnet": "Employees.ListAsync",
+		"go": "Employees.List",
+		"java": "employees.list"
+	},
+	"GET /v1/employees/{id}": {
+		"python": "employees.get",
+		"php": "employees->get",
+		"dotnet": "Employees.GetAsync",
+		"go": "Employees.Get",
+		"java": "employees.get"
+	},
+	"POST /v1/employees/{id}": {
+		"python": "employees.update",
+		"php": "employees->update",
+		"dotnet": "Employees.UpdateAsync",
+		"go": "Employees.Update",
+		"java": "employees.update"
+	},
+	"DELETE /v1/employees/{id}": {
+		"python": "employees.delete",
+		"php": "employees->delete",
+		"dotnet": "Employees.DeleteAsync",
+		"go": "Employees.Delete",
+		"java": "employees.delete"
+	},
+	"POST /v1/payroll_receipts": {
+		"python": "payroll_receipts.create",
+		"php": "payrollReceipts->create",
+		"dotnet": "PayrollReceipts.CreateAsync",
+		"go": "PayrollReceipts.Create",
+		"java": "payrollReceipts.create"
+	},
+	"POST /v1/payroll_receipts/preview": {
+		"python": "payroll_receipts.preview",
+		"php": "payrollReceipts->preview",
+		"dotnet": "PayrollReceipts.PreviewAsync",
+		"go": "PayrollReceipts.Preview",
+		"java": "payrollReceipts.preview"
+	},
+	"POST /v1/invoice_batches": {
+		"python": "invoice_batches.create",
+		"php": "invoiceBatches->create",
+		"dotnet": "InvoiceBatches.CreateAsync",
+		"go": "InvoiceBatches.Create",
+		"java": "invoiceBatches.create"
+	},
+	"GET /v1/invoice_batches": {
+		"python": "invoice_batches.list",
+		"php": "invoiceBatches->list",
+		"dotnet": "InvoiceBatches.ListAsync",
+		"go": "InvoiceBatches.List",
+		"java": "invoiceBatches.list"
+	},
+	"GET /v1/invoice_batches/{id}": {
+		"python": "invoice_batches.get",
+		"php": "invoiceBatches->get",
+		"dotnet": "InvoiceBatches.GetAsync",
+		"go": "InvoiceBatches.Get",
+		"java": "invoiceBatches.get"
+	},
+	"POST /v1/tax_ids/validate": {
+		"python": "tax_ids.validate",
+		"php": "taxIds->validate",
+		"dotnet": "TaxIds.ValidateAsync",
+		"go": "TaxIds.Validate",
+		"java": "taxIds.validate"
+	},
+	"POST /v1/customers": {
+		"python": "customers.create",
+		"php": "customers->create",
+		"dotnet": "Customers.CreateAsync",
+		"go": "Customers.Create",
+		"java": "customers.create"
+	},
+	"GET /v1/customers": {
+		"python": "customers.list",
+		"php": "customers->list",
+		"dotnet": "Customers.ListAsync",
+		"go": "Customers.List",
+		"java": "customers.list"
+	},
+	"GET /v1/customers/{id}": {
+		"python": "customers.get",
+		"php": "customers->get",
+		"dotnet": "Customers.GetAsync",
+		"go": "Customers.Get",
+		"java": "customers.get"
+	},
+	"POST /v1/customers/{id}": {
+		"python": "customers.update",
+		"php": "customers->update",
+		"dotnet": "Customers.UpdateAsync",
+		"go": "Customers.Update",
+		"java": "customers.update"
+	},
+	"DELETE /v1/customers/{id}": {
+		"python": "customers.delete",
+		"php": "customers->delete",
+		"dotnet": "Customers.DeleteAsync",
+		"go": "Customers.Delete",
+		"java": "customers.delete"
+	},
+	"POST /v1/customer_data_requests": {
+		"python": "customer_data_requests.create",
+		"php": "customerDataRequests->create",
+		"dotnet": "CustomerDataRequests.CreateAsync",
+		"go": "CustomerDataRequests.Create",
+		"java": "customerDataRequests.create"
+	},
+	"GET /v1/customer_data_requests": {
+		"python": "customer_data_requests.list",
+		"php": "customerDataRequests->list",
+		"dotnet": "CustomerDataRequests.ListAsync",
+		"go": "CustomerDataRequests.List",
+		"java": "customerDataRequests.list"
+	},
+	"GET /v1/customer_data_requests/{id}": {
+		"python": "customer_data_requests.get",
+		"php": "customerDataRequests->get",
+		"dotnet": "CustomerDataRequests.GetAsync",
+		"go": "CustomerDataRequests.Get",
+		"java": "customerDataRequests.get"
+	},
+	"DELETE /v1/customer_data_requests/{id}": {
+		"python": "customer_data_requests.cancel",
+		"php": "customerDataRequests->cancel",
+		"dotnet": "CustomerDataRequests.CancelAsync",
+		"go": "CustomerDataRequests.Cancel",
+		"java": "customerDataRequests.cancel"
+	},
+	"POST /v1/products": {
+		"python": "products.create",
+		"php": "products->create",
+		"dotnet": "Products.CreateAsync",
+		"go": "Products.Create",
+		"java": "products.create"
+	},
+	"GET /v1/products": {
+		"python": "products.list",
+		"php": "products->list",
+		"dotnet": "Products.ListAsync",
+		"go": "Products.List",
+		"java": "products.list"
+	},
+	"GET /v1/products/{id}": {
+		"python": "products.get",
+		"php": "products->get",
+		"dotnet": "Products.GetAsync",
+		"go": "Products.Get",
+		"java": "products.get"
+	},
+	"POST /v1/products/{id}": {
+		"python": "products.update",
+		"php": "products->update",
+		"dotnet": "Products.UpdateAsync",
+		"go": "Products.Update",
+		"java": "products.update"
+	},
+	"DELETE /v1/products/{id}": {
+		"python": "products.delete",
+		"php": "products->delete",
+		"dotnet": "Products.DeleteAsync",
+		"go": "Products.Delete",
+		"java": "products.delete"
+	},
+	"GET /v1/sat_catalogs/{name}": {
+		"python": "sat_catalogs.get",
+		"php": "satCatalogs->get",
+		"dotnet": "SatCatalogs.GetAsync",
+		"go": "SatCatalogs.Get",
+		"java": "satCatalogs.get"
+	},
+	"GET /v1/sat_lists/{tax_id}": {
+		"python": "sat_lists.get",
+		"php": "satLists->get",
+		"dotnet": "SatLists.GetAsync",
+		"go": "SatLists.Get",
+		"java": "satLists.get"
+	},
+	"POST /v1/sat_lists/check": {
+		"python": "sat_lists.check",
+		"php": "satLists->check",
+		"dotnet": "SatLists.CheckAsync",
+		"go": "SatLists.Check",
+		"java": "satLists.check"
+	},
+	"POST /v1/sat_downloads": {
+		"python": "sat_downloads.create",
+		"php": "satDownloads->create",
+		"dotnet": "SatDownloads.CreateAsync",
+		"go": "SatDownloads.Create",
+		"java": "satDownloads.create"
+	},
+	"GET /v1/sat_downloads": {
+		"python": "sat_downloads.list",
+		"php": "satDownloads->list",
+		"dotnet": "SatDownloads.ListAsync",
+		"go": "SatDownloads.List",
+		"java": "satDownloads.list"
+	},
+	"GET /v1/sat_downloads/{id}": {
+		"python": "sat_downloads.get",
+		"php": "satDownloads->get",
+		"dotnet": "SatDownloads.GetAsync",
+		"go": "SatDownloads.Get",
+		"java": "satDownloads.get"
+	},
+	"GET /v1/sat_invoices": {
+		"python": "sat_invoices.list",
+		"php": "satInvoices->list",
+		"dotnet": "SatInvoices.ListAsync",
+		"go": "SatInvoices.List",
+		"java": "satInvoices.list"
+	},
+	"GET /v1/sat_invoices/{id}": {
+		"python": "sat_invoices.get",
+		"php": "satInvoices->get",
+		"dotnet": "SatInvoices.GetAsync",
+		"go": "SatInvoices.Get",
+		"java": "satInvoices.get"
+	},
+	"GET /v1/sat_invoices/{id}/xml": {
+		"python": "sat_invoices.xml",
+		"php": "satInvoices->xml",
+		"dotnet": "SatInvoices.XmlAsync",
+		"go": "SatInvoices.XML",
+		"java": "satInvoices.xml"
+	},
+	"POST /v1/sat_declarations/refresh": {
+		"python": "sat_declarations.refresh",
+		"php": "satDeclarations->refresh",
+		"dotnet": "SatDeclarations.RefreshAsync",
+		"go": "SatDeclarations.Refresh",
+		"java": "satDeclarations.refresh"
+	},
+	"GET /v1/sat_declarations": {
+		"python": "sat_declarations.list",
+		"php": "satDeclarations->list",
+		"dotnet": "SatDeclarations.ListAsync",
+		"go": "SatDeclarations.List",
+		"java": "satDeclarations.list"
+	},
+	"GET /v1/sat_declarations/{id}": {
+		"python": "sat_declarations.get",
+		"php": "satDeclarations->get",
+		"dotnet": "SatDeclarations.GetAsync",
+		"go": "SatDeclarations.Get",
+		"java": "satDeclarations.get"
+	},
+	"GET /v1/sat_declarations/{id}/pdf": {
+		"python": "sat_declarations.pdf",
+		"php": "satDeclarations->pdf",
+		"dotnet": "SatDeclarations.PdfAsync",
+		"go": "SatDeclarations.PDF",
+		"java": "satDeclarations.pdf"
+	},
+	"GET /v1/sat_declarations/{id}/receipt": {
+		"python": "sat_declarations.receipt",
+		"php": "satDeclarations->receipt",
+		"dotnet": "SatDeclarations.ReceiptAsync",
+		"go": "SatDeclarations.Receipt",
+		"java": "satDeclarations.receipt"
+	},
+	"GET /v1/sat_declarations/{id}/financial_statements": {
+		"python": "sat_declarations.financial_statements",
+		"php": "satDeclarations->financialStatements",
+		"dotnet": "SatDeclarations.FinancialStatementsAsync",
+		"go": "SatDeclarations.FinancialStatements",
+		"java": "satDeclarations.financialStatements"
+	},
+	"POST /v1/tickets": {
+		"python": "tickets.create",
+		"php": "tickets->create",
+		"dotnet": "Tickets.CreateAsync",
+		"go": "Tickets.Create",
+		"java": "tickets.create"
+	},
+	"GET /v1/tickets": {
+		"python": "tickets.list",
+		"php": "tickets->list",
+		"dotnet": "Tickets.ListAsync",
+		"go": "Tickets.List",
+		"java": "tickets.list"
+	},
+	"GET /v1/tickets/{id}": {
+		"python": "tickets.get",
+		"php": "tickets->get",
+		"dotnet": "Tickets.GetAsync",
+		"go": "Tickets.Get",
+		"java": "tickets.get"
+	},
+	"DELETE /v1/tickets/{id}": {
+		"python": "tickets.cancel",
+		"php": "tickets->cancel",
+		"dotnet": "Tickets.CancelAsync",
+		"go": "Tickets.Cancel",
+		"java": "tickets.cancel"
+	},
+	"GET /v1/issuers/{id}/self_invoicing": {
+		"python": "issuers.get_self_invoicing",
+		"php": "issuers->getSelfInvoicing",
+		"dotnet": "Issuers.GetSelfInvoicingAsync",
+		"go": "Issuers.GetSelfInvoicing",
+		"java": "issuers.getSelfInvoicing"
+	},
+	"POST /v1/issuers/{id}/self_invoicing": {
+		"python": "issuers.update_self_invoicing",
+		"php": "issuers->updateSelfInvoicing",
+		"dotnet": "Issuers.UpdateSelfInvoicingAsync",
+		"go": "Issuers.UpdateSelfInvoicing",
+		"java": "issuers.updateSelfInvoicing"
+	},
+	"GET /v1/accounting/journal_entries": {
+		"python": "accounting.journal_entries",
+		"php": "accounting->journalEntries",
+		"dotnet": "Accounting.JournalEntriesAsync",
+		"go": "Accounting.JournalEntries",
+		"java": "accounting.journalEntries"
+	},
+	"GET /v1/accounting/trial_balance": {
+		"python": "accounting.trial_balance",
+		"php": "accounting->trialBalance",
+		"dotnet": "Accounting.TrialBalanceAsync",
+		"go": "Accounting.TrialBalance",
+		"java": "accounting.trialBalance"
+	},
+	"GET /v1/accounting/financial_statements": {
+		"python": "accounting.financial_statements",
+		"php": "accounting->financialStatements",
+		"dotnet": "Accounting.FinancialStatementsAsync",
+		"go": "Accounting.FinancialStatements",
+		"java": "accounting.financialStatements"
+	},
+	"GET /v1/accounting/cross_checks": {
+		"python": "accounting.cross_checks",
+		"php": "accounting->crossChecks",
+		"dotnet": "Accounting.CrossChecksAsync",
+		"go": "Accounting.CrossChecks",
+		"java": "accounting.crossChecks"
+	},
+	"GET /v1/accounting/accounts": {
+		"python": "accounting.accounts",
+		"php": "accounting->accounts",
+		"dotnet": "Accounting.AccountsAsync",
+		"go": "Accounting.Accounts",
+		"java": "accounting.accounts"
+	},
+	"GET /v1/accounting/electronic_accounting": {
+		"python": "accounting.electronic_accounting",
+		"php": "accounting->electronicAccounting",
+		"dotnet": "Accounting.ElectronicAccountingAsync",
+		"go": "Accounting.ElectronicAccounting",
+		"java": "accounting.electronicAccounting"
+	},
+	"GET /v1/accounting/diot": {
+		"python": "accounting.diot",
+		"php": "accounting->diot",
+		"dotnet": "Accounting.DiotAsync",
+		"go": "Accounting.Diot",
+		"java": "accounting.diot"
+	},
+	"GET /v1/accounting/diot/file": {
+		"python": "accounting.diot_file",
+		"php": "accounting->diotFile",
+		"dotnet": "Accounting.DiotFileAsync",
+		"go": "Accounting.DiotFile",
+		"java": "accounting.diotFile"
+	},
+	"POST /v1/store_connections": {
+		"python": "store_connections.create",
+		"php": "storeConnections->create",
+		"dotnet": "StoreConnections.CreateAsync",
+		"go": "StoreConnections.Create",
+		"java": "storeConnections.create"
+	},
+	"GET /v1/store_connections": {
+		"python": "store_connections.list",
+		"php": "storeConnections->list",
+		"dotnet": "StoreConnections.ListAsync",
+		"go": "StoreConnections.List",
+		"java": "storeConnections.list"
+	},
+	"GET /v1/store_connections/{id}": {
+		"python": "store_connections.get",
+		"php": "storeConnections->get",
+		"dotnet": "StoreConnections.GetAsync",
+		"go": "StoreConnections.Get",
+		"java": "storeConnections.get"
+	},
+	"POST /v1/store_connections/{id}": {
+		"python": "store_connections.update",
+		"php": "storeConnections->update",
+		"dotnet": "StoreConnections.UpdateAsync",
+		"go": "StoreConnections.Update",
+		"java": "storeConnections.update"
+	},
+	"DELETE /v1/store_connections/{id}": {
+		"python": "store_connections.delete",
+		"php": "storeConnections->delete",
+		"dotnet": "StoreConnections.DeleteAsync",
+		"go": "StoreConnections.Delete",
+		"java": "storeConnections.delete"
+	},
+	"POST /v1/store_connections/{id}/import_orders": {
+		"python": "store_connections.import_orders",
+		"php": "storeConnections->importOrders",
+		"dotnet": "StoreConnections.ImportOrdersAsync",
+		"go": "StoreConnections.ImportOrders",
+		"java": "storeConnections.importOrders"
+	},
+	"POST /v1/recurring_invoices": {
+		"python": "recurring_invoices.create",
+		"php": "recurringInvoices->create",
+		"dotnet": "RecurringInvoices.CreateAsync",
+		"go": "RecurringInvoices.Create",
+		"java": "recurringInvoices.create"
+	},
+	"GET /v1/recurring_invoices": {
+		"python": "recurring_invoices.list",
+		"php": "recurringInvoices->list",
+		"dotnet": "RecurringInvoices.ListAsync",
+		"go": "RecurringInvoices.List",
+		"java": "recurringInvoices.list"
+	},
+	"GET /v1/recurring_invoices/{id}": {
+		"python": "recurring_invoices.get",
+		"php": "recurringInvoices->get",
+		"dotnet": "RecurringInvoices.GetAsync",
+		"go": "RecurringInvoices.Get",
+		"java": "recurringInvoices.get"
+	},
+	"POST /v1/recurring_invoices/{id}": {
+		"python": "recurring_invoices.update",
+		"php": "recurringInvoices->update",
+		"dotnet": "RecurringInvoices.UpdateAsync",
+		"go": "RecurringInvoices.Update",
+		"java": "recurringInvoices.update"
+	},
+	"DELETE /v1/recurring_invoices/{id}": {
+		"python": "recurring_invoices.delete",
+		"php": "recurringInvoices->delete",
+		"dotnet": "RecurringInvoices.DeleteAsync",
+		"go": "RecurringInvoices.Delete",
+		"java": "recurringInvoices.delete"
+	},
+	"POST /v1/recurring_invoices/{id}/skip": {
+		"python": "recurring_invoices.skip",
+		"php": "recurringInvoices->skip",
+		"dotnet": "RecurringInvoices.SkipAsync",
+		"go": "RecurringInvoices.Skip",
+		"java": "recurringInvoices.skip"
+	},
+	"POST /v1/recurring_invoices/{id}/run": {
+		"python": "recurring_invoices.run",
+		"php": "recurringInvoices->run",
+		"dotnet": "RecurringInvoices.RunAsync",
+		"go": "RecurringInvoices.Run",
+		"java": "recurringInvoices.run"
+	},
+	"POST /v1/quotes": {
+		"python": "quotes.create",
+		"php": "quotes->create",
+		"dotnet": "Quotes.CreateAsync",
+		"go": "Quotes.Create",
+		"java": "quotes.create"
+	},
+	"GET /v1/quotes": {
+		"python": "quotes.list",
+		"php": "quotes->list",
+		"dotnet": "Quotes.ListAsync",
+		"go": "Quotes.List",
+		"java": "quotes.list"
+	},
+	"GET /v1/quotes/{id}": {
+		"python": "quotes.get",
+		"php": "quotes->get",
+		"dotnet": "Quotes.GetAsync",
+		"go": "Quotes.Get",
+		"java": "quotes.get"
+	},
+	"POST /v1/quotes/{id}": {
+		"python": "quotes.update",
+		"php": "quotes->update",
+		"dotnet": "Quotes.UpdateAsync",
+		"go": "Quotes.Update",
+		"java": "quotes.update"
+	},
+	"DELETE /v1/quotes/{id}": {
+		"python": "quotes.delete",
+		"php": "quotes->delete",
+		"dotnet": "Quotes.DeleteAsync",
+		"go": "Quotes.Delete",
+		"java": "quotes.delete"
+	},
+	"POST /v1/quotes/{id}/send": {
+		"python": "quotes.send",
+		"php": "quotes->send",
+		"dotnet": "Quotes.SendAsync",
+		"go": "Quotes.Send",
+		"java": "quotes.send"
+	},
+	"POST /v1/quotes/{id}/accept": {
+		"python": "quotes.accept",
+		"php": "quotes->accept",
+		"dotnet": "Quotes.AcceptAsync",
+		"go": "Quotes.Accept",
+		"java": "quotes.accept"
+	},
+	"POST /v1/quotes/{id}/invoice": {
+		"python": "quotes.invoice",
+		"php": "quotes->invoice",
+		"dotnet": "Quotes.InvoiceAsync",
+		"go": "Quotes.Invoice",
+		"java": "quotes.invoice"
+	},
+	"GET /v1/quotes/{id}/pdf": {
+		"python": "quotes.pdf",
+		"php": "quotes->pdf",
+		"dotnet": "Quotes.PdfAsync",
+		"go": "Quotes.PDF",
+		"java": "quotes.pdf"
+	},
+	"POST /v1/webhook_endpoints": {
+		"python": "webhook_endpoints.create",
+		"php": "webhookEndpoints->create",
+		"dotnet": "WebhookEndpoints.CreateAsync",
+		"go": "WebhookEndpoints.Create",
+		"java": "webhookEndpoints.create"
+	},
+	"GET /v1/webhook_endpoints": {
+		"python": "webhook_endpoints.list",
+		"php": "webhookEndpoints->list",
+		"dotnet": "WebhookEndpoints.ListAsync",
+		"go": "WebhookEndpoints.List",
+		"java": "webhookEndpoints.list"
+	},
+	"GET /v1/webhook_endpoints/{id}": {
+		"python": "webhook_endpoints.get",
+		"php": "webhookEndpoints->get",
+		"dotnet": "WebhookEndpoints.GetAsync",
+		"go": "WebhookEndpoints.Get",
+		"java": "webhookEndpoints.get"
+	},
+	"POST /v1/webhook_endpoints/{id}": {
+		"python": "webhook_endpoints.update",
+		"php": "webhookEndpoints->update",
+		"dotnet": "WebhookEndpoints.UpdateAsync",
+		"go": "WebhookEndpoints.Update",
+		"java": "webhookEndpoints.update"
+	},
+	"DELETE /v1/webhook_endpoints/{id}": {
+		"python": "webhook_endpoints.delete",
+		"php": "webhookEndpoints->delete",
+		"dotnet": "WebhookEndpoints.DeleteAsync",
+		"go": "WebhookEndpoints.Delete",
+		"java": "webhookEndpoints.delete"
+	},
+	"POST /v1/webhook_endpoints/{id}/roll_secret": {
+		"python": "webhook_endpoints.roll_secret",
+		"php": "webhookEndpoints->rollSecret",
+		"dotnet": "WebhookEndpoints.RollSecretAsync",
+		"go": "WebhookEndpoints.RollSecret",
+		"java": "webhookEndpoints.rollSecret"
+	},
+	"POST /v1/webhook_endpoints/{id}/test": {
+		"python": "webhook_endpoints.test",
+		"php": "webhookEndpoints->test",
+		"dotnet": "WebhookEndpoints.TestAsync",
+		"go": "WebhookEndpoints.Test",
+		"java": "webhookEndpoints.test"
+	},
+	"GET /v1/events": {
+		"python": "events.list",
+		"php": "events->list",
+		"dotnet": "Events.ListAsync",
+		"go": "Events.List",
+		"java": "events.list"
+	},
+	"GET /v1/events/{id}": {
+		"python": "events.get",
+		"php": "events->get",
+		"dotnet": "Events.GetAsync",
+		"go": "Events.Get",
+		"java": "events.get"
+	}
+}

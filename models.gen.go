@@ -1269,6 +1269,100 @@ type CreateWebhookEndpointParams struct {
 	APIVersion *string `json:"api_version,omitempty"`
 }
 
+// CrossChecks: Lo que el emisor declaró cada mes contra lo que dicen sus CFDI, el IVA a favor y el régimen con que factura.
+type CrossChecks struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El ejercicio.
+	Year int64 `json:"year"`
+	// Cada mes cuya declaración mensual ya venció (el día 17 del mes siguiente), con sus cruces. Un mes con complementaria toma, por impuesto, la más reciente que lo trae.
+	Months []CrossChecksMonth `json:"months"`
+	// El IVA a favor que muestran las declaraciones del año y lo que meses posteriores acreditaron. Una estimación con las declaraciones leídas, no la cuenta del SAT.
+	VatBalanceInFavor CrossChecksVatBalanceInFavor `json:"vat_balance_in_favor"`
+	// Los regímenes del emisor (registered, de su constancia) y con cuáles facturó en el año.
+	TaxRegimes CrossChecksTaxRegimes `json:"tax_regimes"`
+}
+
+// CrossChecksMonth: CrossChecksMonth.
+type CrossChecksMonth struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El peor de sus cruces: differs (no coincide), unreadable (una cifra no se pudo leer), not_filed (sin declaración mensual) o matches.
+	//
+	// Valores: matches, differs, not_filed, unreadable.
+	Status string `json:"status"`
+	// Un cruce por cifra.
+	Checks []CrossChecksMonthCheck `json:"checks"`
+}
+
+// CrossChecksMonthCheck: CrossChecksMonthCheck.
+type CrossChecksMonthCheck struct {
+	// Qué cifra: vat_charged (IVA trasladado), vat_creditable (IVA acreditable), vat_withheld (IVA que le retuvieron) o isr_income (ingresos para ISR: nominales en persona moral, cobrados en los demás).
+	//
+	// Valores: vat_charged, vat_creditable, vat_withheld, isr_income.
+	Key string `json:"key"`
+	// matches (hasta $2 de diferencia), differs, not_filed (no hay declaración del mes) o unreadable (la declaración no trae la cifra en un renglón reconocible).
+	//
+	// Valores: matches, differs, not_filed, unreadable.
+	Status string `json:"status"`
+	// Lo declarado, en pesos; null si no hay declaración o no se pudo leer.
+	Declared *float64 `json:"declared,omitempty"`
+	// Lo que dicen los CFDI del mes, con los mismos cálculos de Impuestos.
+	Invoiced float64 `json:"invoiced"`
+	// declared menos invoiced; null si declared es null.
+	Difference *float64 `json:"difference,omitempty"`
+	// El número de operación de la declaración de donde salió la cifra.
+	OperationNumber *string `json:"operation_number,omitempty"`
+}
+
+// CrossChecksTaxRegimes: Los regímenes del emisor (registered, de su constancia) y con cuáles facturó en el año.
+type CrossChecksTaxRegimes struct {
+	// Los regímenes de su constancia (c_RegimenFiscal), capturados en la app.
+	Registered []string `json:"registered"`
+	// Cada régimen con que facturó en el año (RegimenFiscal del emisor).
+	Invoiced []CrossChecksTaxRegimesInvoicedItem `json:"invoiced"`
+}
+
+// CrossChecksTaxRegimesInvoicedItem: CrossChecksTaxRegimesInvoicedItem.
+type CrossChecksTaxRegimesInvoicedItem struct {
+	// El régimen (c_RegimenFiscal).
+	TaxRegime string `json:"tax_regime"`
+	// Cuántos CFDI lo llevan (ingreso, egreso y pago, sin cancelados).
+	Invoices int64 `json:"invoices"`
+	// La fecha del primero (AAAA-MM-DD).
+	FirstDate string `json:"first_date"`
+	// La fecha del último (AAAA-MM-DD).
+	LastDate string `json:"last_date"`
+	// Si el régimen está en su constancia; null si no se capturaron los regímenes de la constancia.
+	Registered *bool `json:"registered,omitempty"`
+}
+
+// CrossChecksVatBalanceInFavor: El IVA a favor que muestran las declaraciones del año y lo que meses posteriores acreditaron. Una estimación con las declaraciones leídas, no la cuenta del SAT.
+type CrossChecksVatBalanceInFavor struct {
+	// Cada mes con IVA a favor.
+	Periods []CrossChecksVatBalanceInFavorPeriod `json:"periods"`
+	// La suma del IVA a favor del año.
+	Total float64 `json:"total"`
+	// Lo que las declaraciones del año acreditaron de saldos a favor de periodos anteriores.
+	Credited float64 `json:"credited"`
+	// total menos credited, nunca menos de 0: lo que quedaría por acreditar o pedir en devolución.
+	Remaining float64 `json:"remaining"`
+}
+
+// CrossChecksVatBalanceInFavorPeriod: CrossChecksVatBalanceInFavorPeriod.
+type CrossChecksVatBalanceInFavorPeriod struct {
+	// El mes cuya declaración muestra el IVA a favor.
+	Month string `json:"month"`
+	// El IVA a favor de ese mes.
+	Amount float64 `json:"amount"`
+	// El número de operación de esa declaración.
+	OperationNumber string `json:"operation_number"`
+}
+
 // Customer: Un cliente del catálogo de un emisor.
 type Customer struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
@@ -1603,6 +1697,238 @@ type EventList struct {
 	URL string `json:"url"`
 }
 
+// FinancialStatements: El estado de resultados y el balance general de un mes, leídos de su balanza.
+type FinancialStatements struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El estado de resultados del mes (month) y del año hasta ese mes (year_to_date). Cada sección suma en positivo lo que aumenta la utilidad (ingresos) y en negativo lo que la reduce (costos y gastos).
+	IncomeStatement FinancialStatementsIncomeStatement `json:"income_statement"`
+	// El balance general al cierre del mes, agrupado por el primer nivel del código agrupador. difference es activo menos pasivo y capital: 0 cuando los libros cuadran.
+	BalanceSheet FinancialStatementsBalanceSheet `json:"balance_sheet"`
+	// Cuántas pólizas tuvo el mes.
+	JournalEntries int64 `json:"journal_entries"`
+	// Desde qué fecha cuentan los saldos iniciales capturados en la app; null si no hay.
+	OpeningBalancesDate *string `json:"opening_balances_date,omitempty"`
+	// Pagos que se refieren a facturas que no están en Fiscalisto y no se registraron.
+	MissingInvoices int64 `json:"missing_invoices"`
+}
+
+// FinancialStatementsBalanceSheet: El balance general al cierre del mes, agrupado por el primer nivel del código agrupador. difference es activo menos pasivo y capital: 0 cuando los libros cuadran.
+type FinancialStatementsBalanceSheet struct {
+	// El activo: su total y sus grupos.
+	Assets FinancialStatementsBalanceSheetAssets `json:"assets"`
+	// El pasivo: su total y sus grupos.
+	Liabilities FinancialStatementsBalanceSheetLiabilities `json:"liabilities"`
+	// El capital contable sin el resultado del ejercicio: su total y sus grupos.
+	Equity FinancialStatementsBalanceSheetEquity `json:"equity"`
+	// El resultado del ejercicio hasta el mes, parte del capital.
+	NetIncomeYearToDate float64 `json:"net_income_year_to_date"`
+	// Pasivo más capital más el resultado del ejercicio.
+	LiabilitiesAndEquity float64 `json:"liabilities_and_equity"`
+	// Activo menos pasivo y capital: 0 cuando los libros cuadran.
+	Difference float64 `json:"difference"`
+}
+
+// FinancialStatementsBalanceSheetAssets: El activo: su total y sus grupos.
+type FinancialStatementsBalanceSheetAssets struct {
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []FinancialStatementsBalanceSheetAssetsGroup `json:"groups"`
+}
+
+// FinancialStatementsBalanceSheetAssetsGroup: FinancialStatementsBalanceSheetAssetsGroup.
+type FinancialStatementsBalanceSheetAssetsGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []FinancialStatementsBalanceSheetAssetsGroupAccount `json:"accounts"`
+}
+
+// FinancialStatementsBalanceSheetAssetsGroupAccount: FinancialStatementsBalanceSheetAssetsGroupAccount.
+type FinancialStatementsBalanceSheetAssetsGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// FinancialStatementsBalanceSheetEquity: El capital contable sin el resultado del ejercicio: su total y sus grupos.
+type FinancialStatementsBalanceSheetEquity struct {
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []FinancialStatementsBalanceSheetEquityGroup `json:"groups"`
+}
+
+// FinancialStatementsBalanceSheetEquityGroup: FinancialStatementsBalanceSheetEquityGroup.
+type FinancialStatementsBalanceSheetEquityGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []FinancialStatementsBalanceSheetEquityGroupAccount `json:"accounts"`
+}
+
+// FinancialStatementsBalanceSheetEquityGroupAccount: FinancialStatementsBalanceSheetEquityGroupAccount.
+type FinancialStatementsBalanceSheetEquityGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// FinancialStatementsBalanceSheetLiabilities: El pasivo: su total y sus grupos.
+type FinancialStatementsBalanceSheetLiabilities struct {
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []FinancialStatementsBalanceSheetLiabilitiesGroup `json:"groups"`
+}
+
+// FinancialStatementsBalanceSheetLiabilitiesGroup: FinancialStatementsBalanceSheetLiabilitiesGroup.
+type FinancialStatementsBalanceSheetLiabilitiesGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []FinancialStatementsBalanceSheetLiabilitiesGroupAccount `json:"accounts"`
+}
+
+// FinancialStatementsBalanceSheetLiabilitiesGroupAccount: FinancialStatementsBalanceSheetLiabilitiesGroupAccount.
+type FinancialStatementsBalanceSheetLiabilitiesGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// FinancialStatementsIncomeStatement: El estado de resultados del mes (month) y del año hasta ese mes (year_to_date). Cada sección suma en positivo lo que aumenta la utilidad (ingresos) y en negativo lo que la reduce (costos y gastos).
+type FinancialStatementsIncomeStatement struct {
+	// El estado de resultados del mes.
+	Month FinancialStatementsIncomeStatementMonth `json:"month"`
+	// El estado de resultados de enero al mes.
+	YearToDate FinancialStatementsIncomeStatementYearToDate `json:"year_to_date"`
+}
+
+// FinancialStatementsIncomeStatementMonth: El estado de resultados del mes.
+type FinancialStatementsIncomeStatementMonth struct {
+	// Ingresos, costos, gastos, financiamiento y otros, cada uno con su total.
+	Sections []FinancialStatementsIncomeStatementMonthSection `json:"sections"`
+	// La utilidad (o pérdida, negativa) antes de impuestos del mes.
+	NetIncome float64 `json:"net_income"`
+}
+
+// FinancialStatementsIncomeStatementMonthSection: FinancialStatementsIncomeStatementMonthSection.
+type FinancialStatementsIncomeStatementMonthSection struct {
+	// El archivo .key en base64 (puede traer el prefijo data:).
+	//
+	// Valores: ingresos, costos, gastos, financiamiento, otros.
+	Key string `json:"key"`
+	// Nombre.
+	Name string `json:"name"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []FinancialStatementsIncomeStatementMonthSectionGroup `json:"groups"`
+}
+
+// FinancialStatementsIncomeStatementMonthSectionGroup: FinancialStatementsIncomeStatementMonthSectionGroup.
+type FinancialStatementsIncomeStatementMonthSectionGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []FinancialStatementsIncomeStatementMonthSectionGroupAccount `json:"accounts"`
+}
+
+// FinancialStatementsIncomeStatementMonthSectionGroupAccount: FinancialStatementsIncomeStatementMonthSectionGroupAccount.
+type FinancialStatementsIncomeStatementMonthSectionGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// FinancialStatementsIncomeStatementYearToDate: El estado de resultados de enero al mes.
+type FinancialStatementsIncomeStatementYearToDate struct {
+	// Ingresos, costos, gastos, financiamiento y otros, cada uno con su total.
+	Sections []FinancialStatementsIncomeStatementYearToDateSection `json:"sections"`
+	// La utilidad (o pérdida, negativa) antes de impuestos de enero al mes.
+	NetIncome float64 `json:"net_income"`
+}
+
+// FinancialStatementsIncomeStatementYearToDateSection: FinancialStatementsIncomeStatementYearToDateSection.
+type FinancialStatementsIncomeStatementYearToDateSection struct {
+	// El archivo .key en base64 (puede traer el prefijo data:).
+	//
+	// Valores: ingresos, costos, gastos, financiamiento, otros.
+	Key string `json:"key"`
+	// Nombre.
+	Name string `json:"name"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []FinancialStatementsIncomeStatementYearToDateSectionGroup `json:"groups"`
+}
+
+// FinancialStatementsIncomeStatementYearToDateSectionGroup: FinancialStatementsIncomeStatementYearToDateSectionGroup.
+type FinancialStatementsIncomeStatementYearToDateSectionGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []FinancialStatementsIncomeStatementYearToDateSectionGroupAccount `json:"accounts"`
+}
+
+// FinancialStatementsIncomeStatementYearToDateSectionGroupAccount: FinancialStatementsIncomeStatementYearToDateSectionGroupAccount.
+type FinancialStatementsIncomeStatementYearToDateSectionGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// GetCrossChecksParams: los campos de «Cruzar lo declarado con lo facturado».
+type GetCrossChecksParams struct {
+	// El ejercicio. Por omisión, el actual.
+	Year *int64 `json:"year,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetDiotFileParams: los campos de «Descargar la DIOT para el SAT».
 type GetDiotFileParams struct {
 	// El mes (AAAA-MM).
@@ -1639,6 +1965,14 @@ type GetElectronicAccountingParams struct {
 	OrderNumber *string `json:"order_number,omitempty"`
 	// DE y CO: el número de trámite (AB123456789012).
 	ProcedureNumber *string `json:"procedure_number,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetFinancialStatementsParams: los campos de «Ver los estados financieros».
+type GetFinancialStatementsParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -3227,7 +3561,7 @@ type IssuerTestClock struct {
 	FrozenTime string `json:"frozen_time"`
 }
 
-// JournalEntry: La póliza de diario de un CFDI: sus cargos y abonos, que siempre cuadran.
+// JournalEntry: Una póliza de diario (de un CFDI, un pago, un recibo de nómina o la depreciación del mes): sus cargos y abonos, que siempre cuadran.
 type JournalEntry struct {
 	// El número de la póliza: D-AAAAMM-NNNNN, en orden de fecha dentro del mes.
 	ID string `json:"id"`
@@ -3237,19 +3571,23 @@ type JournalEntry struct {
 	Object string `json:"object"`
 	// El emisor.
 	Issuer string `json:"issuer"`
-	// La fecha del CFDI.
+	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina) o depreciation (la depreciación del mes de los activos fijos).
+	//
+	// Valores: invoice, payment_received, payment_made, payroll, depreciation.
+	Type string `json:"type"`
+	// La fecha del CFDI o del pago; en la depreciación, el último día del mes.
 	Date string `json:"date"`
-	// Factura o nota de crédito, su folio y la contraparte.
+	// El documento, su folio y la contraparte.
 	Description string `json:"description"`
-	// La factura (inv_…) si la timbró este emisor; null si la recibió.
+	// La factura (inv_…) si es la póliza de un CFDI que timbró este emisor; null en los demás casos.
 	Invoice *string `json:"invoice,omitempty"`
-	// El folio fiscal del CFDI.
-	UUID string `json:"uuid"`
-	// El RFC de la contraparte (cliente o proveedor).
-	TaxID string `json:"tax_id"`
-	// El total del CFDI, en su moneda.
+	// El folio fiscal del CFDI (o del complemento de pago); null en la depreciación.
+	UUID *string `json:"uuid,omitempty"`
+	// El RFC de la contraparte (cliente, proveedor o empleado); null en la depreciación.
+	TaxID *string `json:"tax_id,omitempty"`
+	// El total del documento, en su moneda.
 	Total float64 `json:"total"`
-	// La moneda del CFDI.
+	// La moneda del documento.
 	Currency string `json:"currency"`
 	// El tipo de cambio, si no es en pesos; null si es en pesos.
 	ExchangeRate *float64 `json:"exchange_rate,omitempty"`

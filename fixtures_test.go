@@ -12,9 +12,16 @@ import (
 )
 
 // The fixtures every SDK's tests share (sdk/fixtures): the routes and a signed webhook.
+// In the published repository they sit in fixtures/ next to the code.
+func readFixture(name string) ([]byte, error) {
+	if b, err := os.ReadFile("fixtures/" + name); err == nil {
+		return b, nil
+	}
+	return os.ReadFile("../fixtures/" + name)
+}
 
 func TestEveryRouteHasAMethod(t *testing.T) {
-	b, err := os.ReadFile("../fixtures/calls.json")
+	b, err := readFixture("calls.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +42,7 @@ func TestEveryRouteHasAMethod(t *testing.T) {
 }
 
 func TestSharedWebhookVector(t *testing.T) {
-	b, err := os.ReadFile("../fixtures/webhook.json")
+	b, err := readFixture("webhook.json")
 	if err != nil {
 		t.Fatal(err)
 	}
