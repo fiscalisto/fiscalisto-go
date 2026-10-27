@@ -1453,7 +1453,7 @@ type CreateTicketParams struct {
 type CreateWebhookEndpointParams struct {
 	// Dirección https de su servidor que recibe los avisos.
 	URL string `json:"url"`
-	// Eventos que quiere recibir, o ["*"] para todos (por omisión). Ver la lista en Webhooks.
+	// Eventos que quiere recibir, o ["*"] para todos (por omisión). La lista con cuándo llega cada uno: [Tipos de evento](https://fiscalisto.com/docs/api/webhooks#tipos-de-evento).
 	Events []string `json:"events,omitempty"`
 	// Para qué es, para usted (no se manda en los eventos).
 	Description *string `json:"description,omitempty"`
@@ -1481,9 +1481,11 @@ type CrossCheckCFDI struct {
 	Status string `json:"status"`
 	// Lo declarado, en pesos; null si no hay declaración o no se pudo leer.
 	Declared *float64 `json:"declared,omitempty"`
+	// De declared, lo que la propia declaración dice que no salió de facturas (ingresos nominales adicionales en isr_income, IVA al 16% sobre la precarga del SAT en vat_charged); 0 si no hay.
+	DeclaredWithoutCFDI float64 `json:"declared_without_cfdi"`
 	// Lo que dicen los CFDI del mes: la suma de cfdi más adjustment.
 	Invoiced float64 `json:"invoiced"`
-	// declared menos invoiced; null si declared es null.
+	// declared menos declared_without_cfdi menos invoiced; null si declared es null.
 	Difference *float64 `json:"difference,omitempty"`
 	// El número de operación de la declaración de donde salió la cifra.
 	OperationNumber *string `json:"operation_number,omitempty"`
@@ -1553,9 +1555,11 @@ type CrossChecksMonthCheck struct {
 	Status string `json:"status"`
 	// Lo declarado, en pesos; null si no hay declaración o no se pudo leer.
 	Declared *float64 `json:"declared,omitempty"`
+	// De declared, lo que la propia declaración dice que no salió de facturas: en isr_income los ingresos nominales adicionales (cobrado sin factura, intereses) y en vat_charged el IVA al 16% por encima de la precarga del SAT. Se compara aparte; 0 si no hay.
+	DeclaredWithoutCFDI float64 `json:"declared_without_cfdi"`
 	// Lo que dicen los CFDI del mes, con los mismos cálculos de Impuestos.
 	Invoiced float64 `json:"invoiced"`
-	// declared menos invoiced; null si declared es null.
+	// declared menos declared_without_cfdi menos invoiced; null si declared es null.
 	Difference *float64 `json:"difference,omitempty"`
 	// El número de operación de la declaración de donde salió la cifra.
 	OperationNumber *string `json:"operation_number,omitempty"`
@@ -6611,7 +6615,7 @@ type UpdateStoreConnectionParamsSettings struct {
 type UpdateWebhookEndpointParams struct {
 	// Dirección https de su servidor que recibe los avisos.
 	URL *string `json:"url,omitempty"`
-	// Eventos que quiere recibir, o ["*"] para todos (por omisión). Ver la lista en Webhooks.
+	// Eventos que quiere recibir, o ["*"] para todos (por omisión). La lista con cuándo llega cada uno: [Tipos de evento](https://fiscalisto.com/docs/api/webhooks#tipos-de-evento).
 	Events []string `json:"events,omitempty"`
 	// Para qué es, para usted (no se manda en los eventos).
 	Description *string `json:"description,omitempty"`
@@ -6701,7 +6705,7 @@ type WebhookEndpoint struct {
 	URL string `json:"url"`
 	// Para qué es, para usted.
 	Description *string `json:"description,omitempty"`
-	// Eventos que quiere recibir, o ["*"] para todos (por omisión). Ver la lista en Webhooks.
+	// Eventos que quiere recibir, o ["*"] para todos (por omisión). La lista con cuándo llega cada uno: [Tipos de evento](https://fiscalisto.com/docs/api/webhooks#tipos-de-evento).
 	Events []string `json:"events"`
 	// enabled: entregando. failing: sus entregas fallan (se apaga tras 5 días así). disabled: apagado.
 	//
