@@ -1499,7 +1499,7 @@ type CrossCheckCFDICFDIItem struct {
 	UUID *string `json:"uuid,omitempty"`
 	// invoice (factura de ingreso, PUE), credit_note (nota de crédito: resta) o payment (lo pagado en el mes de una factura PPD).
 	//
-	// Valores: invoice, credit_note, payment.
+	// Valores: invoice, credit_note, payment, withholding_certificate.
 	Type string `json:"type"`
 	// La fecha del CFDI, o la del pago (AAAA-MM-DD).
 	Date *string `json:"date,omitempty"`
