@@ -1179,7 +1179,7 @@ type CreateRecurringInvoiceParamsSchedule struct {
 type CreateRetentionParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero…
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) aún no se puede emitir.
 	Code string `json:"code"`
 	// Descripción de la retención (DescRetenc); obligatoria con la clave 25 (otro tipo).
 	Description *string `json:"description,omitempty"`
@@ -1197,6 +1197,20 @@ type CreateRetentionParams struct {
 	Interest *CreateRetentionParamsInterest `json:"interest,omitempty"`
 	// Complemento de pagos a extranjeros.
 	ForeignPayment *CreateRetentionParamsForeignPayment `json:"foreign_payment,omitempty"`
+	// Complemento de arrendamiento en fideicomiso (Arrendamientoenfideicomiso 1.0), obligatorio con code 17.
+	TrustLease *CreateRetentionParamsTrustLease `json:"trust_lease,omitempty"`
+	// Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 19.
+	ShareSale *CreateRetentionParamsShareSale `json:"share_sale,omitempty"`
+	// Complemento de premios (Premios 1.0), obligatorio con code 20. Sus montos son los de totals.
+	Prize *CreateRetentionParamsPrize `json:"prize,omitempty"`
+	// Complemento de fideicomisos que no realizan actividades empresariales (Fideicomisonoempresarial 1.0), obligatorio con code 21.
+	Trust *CreateRetentionParamsTrust `json:"trust,omitempty"`
+	// Complemento de planes personales de retiro (Planesderetiro 1.1), obligatorio con code 22: lo del año anterior.
+	RetirementPlan *CreateRetentionParamsRetirementPlan `json:"retirement_plan,omitempty"`
+	// Complemento de intereses reales deducibles por créditos hipotecarios (Intereseshipotecarios 1.0), obligatorio con code 23.
+	MortgageInterest *CreateRetentionParamsMortgageInterest `json:"mortgage_interest,omitempty"`
+	// Complemento de operaciones financieras derivadas de capital (Operacionesconderivados 1.0), obligatorio con code 24.
+	FinancialDerivatives *CreateRetentionParamsFinancialDerivatives `json:"financial_derivatives,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
@@ -1227,6 +1241,14 @@ type CreateRetentionParamsDividends struct {
 	AccumulatedNational *float64 `json:"accumulated_national,omitempty"`
 	// Dividendo acumulable extranjero (MontDivAcumExt).
 	AccumulatedForeign *float64 `json:"accumulated_foreign,omitempty"`
+}
+
+// CreateRetentionParamsFinancialDerivatives: Complemento de operaciones financieras derivadas de capital (Operacionesconderivados 1.0), obligatorio con code 24.
+type CreateRetentionParamsFinancialDerivatives struct {
+	// Ganancia acumulable (MontGanAcum).
+	Gain float64 `json:"gain"`
+	// Pérdida deducible (MontPerdDed).
+	Loss float64 `json:"loss"`
 }
 
 // CreateRetentionParamsForeignPayment: Complemento de pagos a extranjeros.
@@ -1265,6 +1287,24 @@ type CreateRetentionParamsInterest struct {
 	Loss float64 `json:"loss"`
 }
 
+// CreateRetentionParamsMortgageInterest: Complemento de intereses reales deducibles por créditos hipotecarios (Intereseshipotecarios 1.0), obligatorio con code 23.
+type CreateRetentionParamsMortgageInterest struct {
+	// true si el crédito lo otorgó una institución financiera (CreditoDeInstFinanc).
+	FinancialInstitution bool `json:"financial_institution"`
+	// Saldo insoluto al 31 de diciembre del año anterior, o a la fecha del contrato si es de este año (SaldoInsoluto).
+	OutstandingBalance float64 `json:"outstanding_balance"`
+	// Proporción deducible del crédito sobre los intereses reales devengados y pagados (PropDeducDelCredit).
+	DeductibleProportion *float64 `json:"deductible_proportion,omitempty"`
+	// Intereses nominales devengados (MontTotIntNominalesDev).
+	NominalAccrued *float64 `json:"nominal_accrued,omitempty"`
+	// Intereses nominales devengados y pagados (MontTotIntNominalesDevYPag).
+	NominalAccruedPaid *float64 `json:"nominal_accrued_paid,omitempty"`
+	// Intereses reales pagados deducibles (MontTotIntRealPagDeduc).
+	RealDeductible *float64 `json:"real_deductible,omitempty"`
+	// Número de contrato del crédito hipotecario (NumContrato).
+	Contract *string `json:"contract,omitempty"`
+}
+
 // CreateRetentionParamsPeriod: Periodo (Periodo): mes inicial, mes final y año.
 type CreateRetentionParamsPeriod struct {
 	// Año (Ejercicio).
@@ -1275,6 +1315,12 @@ type CreateRetentionParamsPeriod struct {
 	FromMonth *int64 `json:"from_month,omitempty"`
 	// Mes final (MesFin), 1 a 12, del mismo año.
 	ToMonth *int64 `json:"to_month,omitempty"`
+}
+
+// CreateRetentionParamsPrize: Complemento de premios (Premios 1.0), obligatorio con code 20. Sus montos son los de totals.
+type CreateRetentionParamsPrize struct {
+	// Entidad federativa donde se paga el premio (EntidadFederativa), c_EntidadesFederativas de catRetenciones: 01 Aguascalientes … 09 Ciudad de México … 32 Zacatecas.
+	State string `json:"state"`
 }
 
 // CreateRetentionParamsRecipient: Receptor de la constancia (Receptor): nacional con RFC y código postal, o extranjero.
@@ -1289,6 +1335,54 @@ type CreateRetentionParamsRecipient struct {
 	Zip *string `json:"zip,omitempty"`
 	// CURP, 18 caracteres.
 	CURP *string `json:"curp,omitempty"`
+}
+
+// CreateRetentionParamsRetirementPlan: Complemento de planes personales de retiro (Planesderetiro 1.1), obligatorio con code 22: lo del año anterior.
+type CreateRetentionParamsRetirementPlan struct {
+	// true si el plan es del sistema financiero (SistemaFinanc).
+	FinancialSystem bool `json:"financial_system"`
+	// Aportaciones actualizadas del año anterior (MontTotAportAnioInmAnterior).
+	ContributionsLastYear *float64 `json:"contributions_last_year,omitempty"`
+	// Intereses reales devengados o percibidos el año anterior (MontIntRealesDevengAniooInmAnt).
+	RealInterest float64 `json:"real_interest"`
+	// true si hubo retiros antes de cumplir los requisitos de permanencia (HuboRetirosAnioInmAntPer).
+	EarlyWithdrawals bool `json:"early_withdrawals"`
+	// Monto retirado antes de cumplir la permanencia (MontTotRetiradoAnioInmAntPer); obligatorio con early_withdrawals.
+	EarlyWithdrawn *float64 `json:"early_withdrawn,omitempty"`
+	// Monto exento de lo retirado el año anterior (MontTotExentRetiradoAnioInmAnt).
+	ExemptWithdrawn *float64 `json:"exempt_withdrawn,omitempty"`
+	// Excedente del monto exento de lo retirado el año anterior (MontTotExedenteAnioInmAnt).
+	ExcessWithdrawn *float64 `json:"excess_withdrawn,omitempty"`
+	// true si hubo retiros el año anterior (HuboRetirosAnioInmAnt).
+	Withdrawals bool `json:"withdrawals"`
+	// Monto retirado el año anterior (MontTotRetiradoAnioInmAnt); obligatorio con withdrawals.
+	Withdrawn *float64 `json:"withdrawn,omitempty"`
+	// Número de referencia, contrato o cuenta del cliente (NumReferencia).
+	Reference *string `json:"reference,omitempty"`
+	// Aportaciones o depósitos (AportacionesODepositos), uno por tipo y hasta tres.
+	Contributions []CreateRetentionParamsRetirementPlanContribution `json:"contributions,omitempty"`
+}
+
+// CreateRetentionParamsRetirementPlanContribution: CreateRetentionParamsRetirementPlanContribution.
+type CreateRetentionParamsRetirementPlanContribution struct {
+	// Tipo de aportación (TipoAportacionODeposito): a (art. 151 fracc. V LISR), b (art. 185 LISR) o c (art. 258 RLISR, con trustee_rfc).
+	//
+	// Valores: a, b, c.
+	Type string `json:"type"`
+	// Monto de la aportación o depósito (MontAportODep).
+	Amount float64 `json:"amount"`
+	// RFC de la fiduciaria que administra el plan (RFCFiduciaria); obligatorio con el tipo c.
+	TrusteeRFC *string `json:"trustee_rfc,omitempty"`
+}
+
+// CreateRetentionParamsShareSale: Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 19.
+type CreateRetentionParamsShareSale struct {
+	// Descripción del contrato de intermediación (ContratoIntermediacion).
+	Contract string `json:"contract"`
+	// Ganancia obtenida (Ganancia).
+	Gain float64 `json:"gain"`
+	// Pérdida (Perdida).
+	Loss float64 `json:"loss"`
 }
 
 // CreateRetentionParamsTax: CreateRetentionParamsTax.
@@ -1311,6 +1405,66 @@ type CreateRetentionParamsTotals struct {
 	Taxed *float64 `json:"taxed,omitempty"`
 	// Monto exento (MontoTotExent). Por omisión 0.
 	Exempt *float64 `json:"exempt,omitempty"`
+}
+
+// CreateRetentionParamsTrust: Complemento de fideicomisos que no realizan actividades empresariales (Fideicomisonoempresarial 1.0), obligatorio con code 21.
+type CreateRetentionParamsTrust struct {
+	// Ingresos o entradas del fideicomiso en el periodo (IngresosOEntradas) y la parte del receptor.
+	Income CreateRetentionParamsTrustIncome `json:"income"`
+	// Deducciones o salidas del fideicomiso en el periodo (DeduccOSalidas) y la parte del receptor.
+	Deductions CreateRetentionParamsTrustDeductions `json:"deductions"`
+	// Retención efectuada al fideicomiso (RetEfectFideicomiso).
+	Withholding CreateRetentionParamsTrustWithholding `json:"withholding"`
+}
+
+// CreateRetentionParamsTrustDeductions: Deducciones o salidas del fideicomiso en el periodo (DeduccOSalidas) y la parte del receptor.
+type CreateRetentionParamsTrustDeductions struct {
+	// Concepto de los egresos (IntegracEgresos/ConceptoS), hasta 100 caracteres.
+	Concept string `json:"concept"`
+	// Egresos totales del fideicomiso en el periodo (MontTotEgresPeriodo).
+	Total float64 `json:"total"`
+	// Parte proporcional de las deducciones autorizadas del receptor (PartPropDelFideicom).
+	Share float64 `json:"share"`
+	// Proporción de participación del receptor según el contrato (PropDelMontTot).
+	Proportion float64 `json:"proportion"`
+}
+
+// CreateRetentionParamsTrustIncome: Ingresos o entradas del fideicomiso en el periodo (IngresosOEntradas) y la parte del receptor.
+type CreateRetentionParamsTrustIncome struct {
+	// Concepto de los ingresos (IntegracIngresos/Concepto), hasta 100 caracteres.
+	Concept string `json:"concept"`
+	// Ingresos totales del fideicomiso en el periodo (MontTotEntradasPeriodo).
+	Total float64 `json:"total"`
+	// Parte proporcional de los ingresos acumulables del receptor (PartPropAcumDelFideicom).
+	Share float64 `json:"share"`
+	// Proporción de participación del receptor según el contrato (PropDelMontTot).
+	Proportion float64 `json:"proportion"`
+}
+
+// CreateRetentionParamsTrustLease: Complemento de arrendamiento en fideicomiso (Arrendamientoenfideicomiso 1.0), obligatorio con code 17.
+type CreateRetentionParamsTrustLease struct {
+	// Pago provisional que el fiduciario efectuó al arrendador en el periodo (PagProvEfecPorFiduc).
+	TrusteePayment float64 `json:"trustee_payment"`
+	// Rendimientos del periodo por el arrendamiento de los bienes (RendimFideicom).
+	Income float64 `json:"income"`
+	// Deducciones del arrendamiento en el periodo (DeduccCorresp).
+	Deductions float64 `json:"deductions"`
+	// Monto total retenido del arrendamiento en el periodo (MontTotRet).
+	WithheldTotal *float64 `json:"withheld_total,omitempty"`
+	// Resultado fiscal distribuido por FIBRAS (MontResFiscDistFibras).
+	FibraResult *float64 `json:"fibra_result,omitempty"`
+	// Monto de otros conceptos distribuidos (MontOtrosConceptDistr).
+	OtherAmount *float64 `json:"other_amount,omitempty"`
+	// Qué son los otros conceptos distribuidos (DescrMontOtrosConceptDistr); obligatoria con other_amount.
+	OtherDescription *string `json:"other_description,omitempty"`
+}
+
+// CreateRetentionParamsTrustWithholding: Retención efectuada al fideicomiso (RetEfectFideicomiso).
+type CreateRetentionParamsTrustWithholding struct {
+	// Monto de la retención (MontRetRelPagFideic).
+	Amount float64 `json:"amount"`
+	// Descripción de la retención (DescRetRelPagFideic), hasta 100 caracteres.
+	Description string `json:"description"`
 }
 
 // CreateSandboxParams: los campos de «Crear un entorno de prueba».
@@ -4817,7 +4971,7 @@ type Retention struct {
 	InternalFolio *string `json:"internal_folio,omitempty"`
 	// Fecha de emisión (Fecha), hora de la Ciudad de México.
 	Date *string `json:"date,omitempty"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero…
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) aún no se puede emitir.
 	Code string `json:"code"`
 	// Descripción de la retención (DescRetenc).
 	Description *string `json:"description,omitempty"`
@@ -4835,6 +4989,20 @@ type Retention struct {
 	Interest map[string]any `json:"interest,omitempty"`
 	// Complemento de pagos a extranjeros.
 	ForeignPayment map[string]any `json:"foreign_payment,omitempty"`
+	// Complemento de arrendamiento en fideicomiso (Arrendamientoenfideicomiso 1.0), obligatorio con code 17.
+	TrustLease map[string]any `json:"trust_lease,omitempty"`
+	// Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 19.
+	ShareSale map[string]any `json:"share_sale,omitempty"`
+	// Complemento de premios (Premios 1.0), obligatorio con code 20. Sus montos son los de totals.
+	Prize map[string]any `json:"prize,omitempty"`
+	// Complemento de fideicomisos que no realizan actividades empresariales (Fideicomisonoempresarial 1.0), obligatorio con code 21.
+	Trust map[string]any `json:"trust,omitempty"`
+	// Complemento de planes personales de retiro (Planesderetiro 1.1), obligatorio con code 22: lo del año anterior.
+	RetirementPlan map[string]any `json:"retirement_plan,omitempty"`
+	// Complemento de intereses reales deducibles por créditos hipotecarios (Intereseshipotecarios 1.0), obligatorio con code 23.
+	MortgageInterest map[string]any `json:"mortgage_interest,omitempty"`
+	// Complemento de operaciones financieras derivadas de capital (Operacionesconderivados 1.0), obligatorio con code 24.
+	FinancialDerivatives map[string]any `json:"financial_derivatives,omitempty"`
 	// La cancelación, si se pidió: estado, motivo, sustituto y cuándo.
 	Cancellation *RetentionCancellation `json:"cancellation,omitempty"`
 	// El envío por correo: a quién, con copia a quién y cuándo (null si no se ha enviado).
@@ -5929,9 +6097,9 @@ type TaxStatusCertificate struct {
 
 // TaxStatusCertificateTaxSystem: TaxStatusCertificateTaxSystem.
 type TaxStatusCertificateTaxSystem struct {
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero…
+	// Clave del régimen fiscal (c_RegimenFiscal): 601, 612, 626…
 	Code string `json:"code"`
-	// Nombre.
+	// Nombre del régimen fiscal, como lo escribe el SAT.
 	Name string `json:"name"`
 }
 
