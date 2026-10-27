@@ -706,6 +706,13 @@
 		"go": "Accounting.CrossChecks",
 		"java": "accounting.crossChecks"
 	},
+	"GET /v1/accounting/cross_checks/cfdi": {
+		"python": "accounting.cross_check_cfdi",
+		"php": "accounting->crossCheckCfdi",
+		"dotnet": "Accounting.CrossCheckCfdiAsync",
+		"go": "Accounting.CrossCheckCFDI",
+		"java": "accounting.crossCheckCfdi"
+	},
 	"GET /v1/accounting/accounts": {
 		"python": "accounting.accounts",
 		"php": "accounting->accounts",

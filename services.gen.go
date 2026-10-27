@@ -1700,6 +1700,21 @@ func (s *AccountingService) CrossChecks(ctx context.Context, params *GetCrossChe
 	return out, nil
 }
 
+// CrossCheckCfdi: Ver los CFDI de una cifra del cruce
+//
+// Los CFDI que forman lo facturado (invoiced) de una cifra del cruce de un mes, con los mismos cálculos de Impuestos: cada factura PUE o nota de crédito en su mes y cada factura PPD por lo que se pagó en el mes, con lo que aporta. La suma de cfdi más adjustment es invoiced. Sirve para ver por qué una cifra differs. Gratis: no consulta al SAT.
+//
+// GET /v1/accounting/cross_checks/cfdi
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-cross-check-cfdi
+func (s *AccountingService) CrossCheckCFDI(ctx context.Context, params *GetCrossCheckCfdiParams, opts ...RequestOption) (*CrossCheckCFDI, error) {
+	out := new(CrossCheckCFDI)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/cross_checks/cfdi", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Accounts: Ver el catálogo de cuentas
 //
 // Las cuentas que usan las pólizas, con su código agrupador del SAT.

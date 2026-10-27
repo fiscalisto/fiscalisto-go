@@ -1269,6 +1269,56 @@ type CreateWebhookEndpointParams struct {
 	APIVersion *string `json:"api_version,omitempty"`
 }
 
+// CrossCheckCFDI: Los CFDI que forman una cifra del cruce de un mes (invoiced): cada uno con lo que aporta, y el ajuste que Impuestos agrega encima.
+type CrossCheckCFDI struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// La cifra: vat_charged (IVA trasladado), vat_creditable (IVA acreditable), vat_withheld (IVA que le retuvieron), isr_income (ingresos para ISR), isr_withheld_salaries (ISR retenido en sus recibos de nómina), isr_withheld_suppliers o vat_withheld_suppliers (ISR o IVA que retuvo a proveedores).
+	//
+	// Valores: vat_charged, vat_creditable, vat_withheld, isr_income, isr_withheld_salaries, isr_withheld_suppliers, vat_withheld_suppliers.
+	Key string `json:"key"`
+	// El cruce de esa cifra, como en GET /v1/accounting/cross_checks: matches, differs, not_filed o unreadable.
+	//
+	// Valores: matches, differs, not_filed, unreadable.
+	Status string `json:"status"`
+	// Lo declarado, en pesos; null si no hay declaración o no se pudo leer.
+	Declared *float64 `json:"declared,omitempty"`
+	// Lo que dicen los CFDI del mes: la suma de cfdi más adjustment.
+	Invoiced float64 `json:"invoiced"`
+	// declared menos invoiced; null si declared es null.
+	Difference *float64 `json:"difference,omitempty"`
+	// El número de operación de la declaración de donde salió la cifra.
+	OperationNumber *string `json:"operation_number,omitempty"`
+	// Cada CFDI que suma en el mes, de mayor a menor: los PUE y las notas de crédito en su mes, las facturas PPD por lo que se pagó en el mes.
+	CFDI []CrossCheckCFDICFDIItem `json:"cfdi"`
+	// Lo que Impuestos agrega sobre los CFDI: en vat_creditable, la proporción de gastos comunes, el IVA retenido enterado del mes anterior y las importaciones; 0 en las demás.
+	Adjustment float64 `json:"adjustment"`
+}
+
+// CrossCheckCFDICFDIItem: CrossCheckCFDICFDIItem.
+type CrossCheckCFDICFDIItem struct {
+	// El folio fiscal (UUID) del CFDI; el de la factura PPD en un pago.
+	UUID *string `json:"uuid,omitempty"`
+	// invoice (factura de ingreso, PUE), credit_note (nota de crédito: resta) o payment (lo pagado en el mes de una factura PPD).
+	//
+	// Valores: invoice, credit_note, payment.
+	Type string `json:"type"`
+	// La fecha del CFDI, o la del pago (AAAA-MM-DD).
+	Date *string `json:"date,omitempty"`
+	// El RFC de la contraparte: el cliente en lo emitido, el proveedor en lo recibido.
+	TaxID *string `json:"tax_id,omitempty"`
+	// El nombre de la contraparte, como viene en el CFDI.
+	Name *string `json:"name,omitempty"`
+	// Lo que aporta a la cifra, en pesos; negativo en una nota de crédito.
+	Amount float64 `json:"amount"`
+}
+
 // CrossChecks: Lo que el emisor declaró cada mes contra lo que dicen sus CFDI, el IVA a favor y el régimen con que factura.
 type CrossChecks struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -1919,6 +1969,18 @@ type FinancialStatementsIncomeStatementYearToDateSectionGroupAccount struct {
 	Name string `json:"name"`
 	// Importe.
 	Amount float64 `json:"amount"`
+}
+
+// GetCrossCheckCfdiParams: los campos de «Ver los CFDI de una cifra del cruce».
+type GetCrossCheckCfdiParams struct {
+	// El mes (AAAA-MM), cuya declaración ya venció.
+	Month string `json:"month"`
+	// La cifra: vat_charged, vat_creditable, vat_withheld, isr_income, isr_withheld_salaries, isr_withheld_suppliers o vat_withheld_suppliers.
+	//
+	// Valores: vat_charged, vat_creditable, vat_withheld, isr_income, isr_withheld_salaries, isr_withheld_suppliers, vat_withheld_suppliers.
+	Key string `json:"key"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCrossChecksParams: los campos de «Cruzar lo declarado con lo facturado».
@@ -3717,12 +3779,14 @@ type ListEventsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// Solo de este tipo.
+	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
+	// false: los que algún webhook no recibió (su último intento falló). true: los que recibieron todos los webhooks a los que se mandaron.
+	DeliverySuccess *bool `json:"delivery_success,omitempty"`
 }
 
 // ListInvoiceBatchesParams: los campos de «Listar lotes».
