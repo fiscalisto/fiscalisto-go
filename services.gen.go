@@ -50,12 +50,24 @@ type services struct {
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
 	TaxIds *TaxIdsService
+	// Sucursales.
+	Branches *BranchesService
 	// Clientes.
 	Customers *CustomersService
 	// Clientes.
 	CustomerDataRequests *CustomerDataRequestsService
 	// Productos.
 	Products *ProductsService
+	// Cumplimiento SAT.
+	SatMailboxMessages *SatMailboxMessagesService
+	// Cumplimiento SAT.
+	SatFindings *SatFindingsService
+	// Inventario.
+	Warehouses *WarehousesService
+	// Inventario.
+	StockMovements *StockMovementsService
+	// Inventario.
+	StockAdjustments *StockAdjustmentsService
 	// Catálogos del SAT.
 	SatCatalogs *SatCatalogsService
 	// Listas del SAT.
@@ -100,9 +112,15 @@ func (s *services) init(c *Client) {
 	s.PayrollReceipts = &PayrollReceiptsService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
+	s.Branches = &BranchesService{c}
 	s.Customers = &CustomersService{c}
 	s.CustomerDataRequests = &CustomerDataRequestsService{c}
 	s.Products = &ProductsService{c}
+	s.SatMailboxMessages = &SatMailboxMessagesService{c}
+	s.SatFindings = &SatFindingsService{c}
+	s.Warehouses = &WarehousesService{c}
+	s.StockMovements = &StockMovementsService{c}
+	s.StockAdjustments = &StockAdjustmentsService{c}
 	s.SatCatalogs = &SatCatalogsService{c}
 	s.SatLists = &SatListsService{c}
 	s.SatDownloads = &SatDownloadsService{c}
@@ -446,6 +464,103 @@ func (s *IssuersService) DeleteEfirma(ctx context.Context, id string, opts ...Re
 func (s *IssuersService) CreateOnboardingLink(ctx context.Context, id string, params *CreateIssuerOnboardingLinkParams, opts ...RequestOption) (*IssuerOnboardingLink, error) {
 	out := new(IssuerOnboardingLink)
 	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/onboarding_links", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ComplianceOpinion: Ver la opinión de cumplimiento (32-D)
+//
+// La última opinión que trajo del SAT: positiva, negativa (con sus motivos), sin obligaciones o en suspensión. result es null hasta la primera consulta. No usa timbres.
+//
+// GET /v1/issuers/{id}/compliance_opinion
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-compliance-opinion
+func (s *IssuersService) ComplianceOpinion(ctx context.Context, id string, opts ...RequestOption) (*ComplianceOpinion, error) {
+	out := new(ComplianceOpinion)
+	if err := s.c.do(ctx, "GET", "/v1/issuers/"+url.PathEscape(id)+"/compliance_opinion", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RefreshComplianceOpinion: Pedir la opinión de cumplimiento al SAT
+//
+// La pide al SAT ahora con la e.firma guardada del emisor (POST /v1/issuers/{id}/efirma con keep_for_downloads: true). 1 timbre en producción, una vez cada 10 minutos; regresa si el SAT no contesta. Si el SAT tarda, contesta status processing y el resultado llega a GET /v1/issuers/{id}/compliance_opinion. En pruebas da una positiva de ejemplo.
+//
+// POST /v1/issuers/{id}/compliance_opinion/refresh
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/refresh-compliance-opinion
+func (s *IssuersService) RefreshComplianceOpinion(ctx context.Context, id string, opts ...RequestOption) (*SATRefresh, error) {
+	out := new(SATRefresh)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/compliance_opinion/refresh", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ComplianceOpinionPdf: Descargar el PDF de la opinión de cumplimiento
+//
+// El PDF de la última opinión, como lo da el SAT. No usa timbres.
+//
+// GET /v1/issuers/{id}/compliance_opinion/pdf
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-compliance-opinion-pdf
+func (s *IssuersService) ComplianceOpinionPDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/issuers/"+url.PathEscape(id)+"/compliance_opinion/pdf", nil, nil, false, opts)
+}
+
+// TaxStatusCertificate: Ver la constancia de situación fiscal
+//
+// Lo que dice la última constancia generada: razón social, regímenes, código postal, estatus en el padrón e idCIF. No usa timbres.
+//
+// GET /v1/issuers/{id}/tax_status_certificate
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-tax-status-certificate
+func (s *IssuersService) TaxStatusCertificate(ctx context.Context, id string, opts ...RequestOption) (*TaxStatusCertificate, error) {
+	out := new(TaxStatusCertificate)
+	if err := s.c.do(ctx, "GET", "/v1/issuers/"+url.PathEscape(id)+"/tax_status_certificate", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RefreshTaxStatusCertificate: Generar la constancia de situación fiscal en el SAT
+//
+// Genera una constancia nueva con la e.firma guardada del emisor. 1 timbre en producción, una vez cada 10 minutos; regresa si el SAT no contesta. En pruebas hace una con los datos del emisor.
+//
+// POST /v1/issuers/{id}/tax_status_certificate/refresh
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/refresh-tax-status-certificate
+func (s *IssuersService) RefreshTaxStatusCertificate(ctx context.Context, id string, opts ...RequestOption) (*SATRefresh, error) {
+	out := new(SATRefresh)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/tax_status_certificate/refresh", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TaxStatusCertificatePdf: Descargar el PDF de la constancia
+//
+// El PDF de la última constancia, como lo da el SAT. No usa timbres.
+//
+// GET /v1/issuers/{id}/tax_status_certificate/pdf
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-tax-status-certificate-pdf
+func (s *IssuersService) TaxStatusCertificatePDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/issuers/"+url.PathEscape(id)+"/tax_status_certificate/pdf", nil, nil, false, opts)
+}
+
+// RefreshSatMailbox: Revisar el buzón tributario en el SAT
+//
+// Lee los avisos del buzón tributario del emisor ahora, con su e.firma guardada; nunca abre notificaciones (abrirlas firma el acuse y corren los plazos). 1 timbre en producción, una vez cada 10 minutos. En pruebas deja dos avisos de ejemplo.
+//
+// POST /v1/issuers/{id}/sat_mailbox/refresh
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/refresh-sat-mailbox
+func (s *IssuersService) RefreshSATMailbox(ctx context.Context, id string, opts ...RequestOption) (*SATRefresh, error) {
+	out := new(SATRefresh)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/sat_mailbox/refresh", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1106,6 +1221,85 @@ func (s *TaxIdsService) Validate(ctx context.Context, params *ValidateTaxIdParam
 	return out, nil
 }
 
+// BranchesService: Sucursales (client.Branches).
+type BranchesService struct{ c *Client }
+
+// Create: Crear una sucursal
+//
+// Otro lugar desde donde factura el emisor, con su propio código postal: sus facturas llevan ese CP en LugarExpedicion (y su zona horaria en la Fecha, y el IVA 8 % si es de la franja fronteriza), su dirección en el PDF y, si las da, sus propias series. Un CP que ya tiene otra sucursal contesta branch_exists; el del domicilio fiscal del emisor no es sucursal (es la Matriz). Hasta 200 por emisor.
+//
+// POST /v1/branches
+//
+// https://fiscalisto.com/docs/api/referencia/sucursales/create-branch
+func (s *BranchesService) Create(ctx context.Context, params *CreateBranchParams, opts ...RequestOption) (*Branch, error) {
+	out := new(Branch)
+	if err := s.c.do(ctx, "POST", "/v1/branches", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar sucursales
+//
+// Las sucursales del emisor, las más recientes primero. Las archivadas solo con include_archived=true.
+//
+// GET /v1/branches
+//
+// https://fiscalisto.com/docs/api/referencia/sucursales/list-branches
+func (s *BranchesService) List(ctx context.Context, params *ListBranchesParams, opts ...RequestOption) (*Page[Branch], error) {
+	return list[Branch](ctx, s.c, "/v1/branches", params, "", opts)
+}
+
+// ListAutoPaging: Listar sucursales, todos, página por página: for x, err := range …
+func (s *BranchesService) ListAutoPaging(ctx context.Context, params *ListBranchesParams, opts ...RequestOption) iter.Seq2[Branch, error] {
+	return listAll[Branch](ctx, s.c, "/v1/branches", params, opts)
+}
+
+// Get: Ver una sucursal
+//
+// Una sucursal del emisor.
+//
+// GET /v1/branches/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/sucursales/get-branch
+func (s *BranchesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Branch, error) {
+	out := new(Branch)
+	if err := s.c.do(ctx, "GET", "/v1/branches/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar una sucursal
+//
+// Cambia solo los campos que manda; una serie en null vuelve a la del emisor. archived: true la archiva (ya no se factura desde ella y sus facturas la siguen nombrando), false la restaura. El código postal de una sucursal que ya facturó no cambia: si se mudó, archívela y cree otra.
+//
+// POST /v1/branches/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/sucursales/update-branch
+func (s *BranchesService) Update(ctx context.Context, id string, params *UpdateBranchParams, opts ...RequestOption) (*Branch, error) {
+	out := new(Branch)
+	if err := s.c.do(ctx, "POST", "/v1/branches/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una sucursal
+//
+// Solo una que nunca facturó; con facturas contesta branch_has_invoices: archívela con archived: true.
+//
+// DELETE /v1/branches/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/sucursales/delete-branch
+func (s *BranchesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/branches/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CustomersService: Clientes (client.Customers).
 type CustomersService struct{ c *Client }
 
@@ -1323,6 +1517,205 @@ func (s *ProductsService) Update(ctx context.Context, id string, params *UpdateP
 func (s *ProductsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
 	if err := s.c.do(ctx, "DELETE", "/v1/products/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Stock: Ver las existencias de un producto
+//
+// Lo que hay del producto en cada almacén del emisor (también en 0), apartado por cotizaciones y disponible.
+//
+// GET /v1/products/{id}/stock
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/get-product-stock
+func (s *ProductsService) Stock(ctx context.Context, id string, opts ...RequestOption) (*StockLevelList, error) {
+	out := new(StockLevelList)
+	if err := s.c.do(ctx, "GET", "/v1/products/"+url.PathEscape(id)+"/stock", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SatMailboxMessagesService: Cumplimiento SAT (client.SatMailboxMessages).
+type SatMailboxMessagesService struct{ c *Client }
+
+// List: Listar avisos del buzón tributario
+//
+// Los avisos que trajo del buzón del emisor, los más recientes primero. No usa timbres.
+//
+// GET /v1/sat_mailbox_messages
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/list-sat-mailbox-messages
+func (s *SatMailboxMessagesService) List(ctx context.Context, params *ListSatMailboxMessagesParams, opts ...RequestOption) (*Page[SATMailboxMessage], error) {
+	return list[SATMailboxMessage](ctx, s.c, "/v1/sat_mailbox_messages", params, "", opts)
+}
+
+// ListAutoPaging: Listar avisos del buzón tributario, todos, página por página: for x, err := range …
+func (s *SatMailboxMessagesService) ListAutoPaging(ctx context.Context, params *ListSatMailboxMessagesParams, opts ...RequestOption) iter.Seq2[SATMailboxMessage, error] {
+	return listAll[SATMailboxMessage](ctx, s.c, "/v1/sat_mailbox_messages", params, opts)
+}
+
+// Get: Ver un aviso del buzón tributario
+//
+// Un aviso del buzón, con su urgencia y si pide hacer algo.
+//
+// GET /v1/sat_mailbox_messages/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-sat-mailbox-message
+func (s *SatMailboxMessagesService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATMailboxMessage, error) {
+	out := new(SATMailboxMessage)
+	if err := s.c.do(ctx, "GET", "/v1/sat_mailbox_messages/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SatFindingsService: Cumplimiento SAT (client.SatFindings).
+type SatFindingsService struct{ c *Client }
+
+// List: Listar hallazgos en los CFDI
+//
+// Lo que Fiscalisto encontró en los CFDI del emisor (los suyos y los descargados del SAT) y nadie ha revisado, por tipo y del más grave al más leve: proveedores en la lista 69-B, CFDI cancelados, pagos en efectivo de más de $2,000, errores de CFDI 4.0. Todos en una página. No usa timbres.
+//
+// GET /v1/sat_findings
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/list-sat-findings
+func (s *SatFindingsService) List(ctx context.Context, params *ListSatFindingsParams, opts ...RequestOption) (*SATFindingList, error) {
+	out := new(SATFindingList)
+	if err := s.c.do(ctx, "GET", "/v1/sat_findings", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// WarehousesService: Inventario (client.Warehouses).
+type WarehousesService struct{ c *Client }
+
+// List: Listar almacenes
+//
+// Los almacenes del emisor, los más recientes primero: el de la Matriz y uno por sucursal se crean solos. Todos en una página.
+//
+// GET /v1/warehouses
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/list-warehouses
+func (s *WarehousesService) List(ctx context.Context, params *ListWarehousesParams, opts ...RequestOption) (*WarehouseList, error) {
+	out := new(WarehouseList)
+	if err := s.c.do(ctx, "GET", "/v1/warehouses", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un almacén
+//
+// Un almacén del emisor.
+//
+// GET /v1/warehouses/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/get-warehouse
+func (s *WarehousesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Warehouse, error) {
+	out := new(Warehouse)
+	if err := s.c.do(ctx, "GET", "/v1/warehouses/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Stock: Ver las existencias de un almacén
+//
+// Lo que hay de cada producto en el almacén, el producto más reciente primero. Solo los que tienen existencias, salvo con include_empty=true (todos los que llevan track_stock).
+//
+// GET /v1/warehouses/{id}/stock
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/list-warehouse-stock
+func (s *WarehousesService) Stock(ctx context.Context, id string, params *ListWarehouseStockParams, opts ...RequestOption) (*Page[StockLevel], error) {
+	return list[StockLevel](ctx, s.c, "/v1/warehouses/"+url.PathEscape(id)+"/stock", params, "", opts)
+}
+
+// StockAutoPaging: Ver las existencias de un almacén, todos, página por página: for x, err := range …
+func (s *WarehousesService) StockAutoPaging(ctx context.Context, id string, params *ListWarehouseStockParams, opts ...RequestOption) iter.Seq2[StockLevel, error] {
+	return listAll[StockLevel](ctx, s.c, "/v1/warehouses/"+url.PathEscape(id)+"/stock", params, opts)
+}
+
+// StockMovementsService: Inventario (client.StockMovements).
+type StockMovementsService struct{ c *Client }
+
+// List: Listar movimientos (kárdex)
+//
+// Cada entrada y salida de existencias, la más reciente primero: ventas (de sus facturas), compras, ajustes, traspasos y lo que deshizo una cancelación.
+//
+// GET /v1/stock_movements
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/list-stock-movements
+func (s *StockMovementsService) List(ctx context.Context, params *ListStockMovementsParams, opts ...RequestOption) (*Page[StockMovement], error) {
+	return list[StockMovement](ctx, s.c, "/v1/stock_movements", params, "", opts)
+}
+
+// ListAutoPaging: Listar movimientos (kárdex), todos, página por página: for x, err := range …
+func (s *StockMovementsService) ListAutoPaging(ctx context.Context, params *ListStockMovementsParams, opts ...RequestOption) iter.Seq2[StockMovement, error] {
+	return listAll[StockMovement](ctx, s.c, "/v1/stock_movements", params, opts)
+}
+
+// Get: Ver un movimiento
+//
+// Una entrada o salida de existencias, con lo que la causó (source).
+//
+// GET /v1/stock_movements/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/get-stock-movement
+func (s *StockMovementsService) Get(ctx context.Context, id string, opts ...RequestOption) (*StockMovement, error) {
+	out := new(StockMovement)
+	if err := s.c.do(ctx, "GET", "/v1/stock_movements/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// StockAdjustmentsService: Inventario (client.StockAdjustments).
+type StockAdjustmentsService struct{ c *Client }
+
+// Create: Ajustar existencias
+//
+// Mete o saca existencias de un almacén con su motivo: el inventario inicial, una merma, un robo, un sobrante. Las entradas valen su unit_cost (o el costo promedio), las salidas el costo del emisor (promedio o PEPS). Los productos deben llevar track_stock: true. Se aplica al momento (status applied).
+//
+// POST /v1/stock_adjustments
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/create-stock-adjustment
+func (s *StockAdjustmentsService) Create(ctx context.Context, params *CreateStockAdjustmentParams, opts ...RequestOption) (*StockAdjustment, error) {
+	out := new(StockAdjustment)
+	if err := s.c.do(ctx, "POST", "/v1/stock_adjustments", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar ajustes
+//
+// Los ajustes del emisor, los más recientes primero.
+//
+// GET /v1/stock_adjustments
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/list-stock-adjustments
+func (s *StockAdjustmentsService) List(ctx context.Context, params *ListStockAdjustmentsParams, opts ...RequestOption) (*Page[StockAdjustment], error) {
+	return list[StockAdjustment](ctx, s.c, "/v1/stock_adjustments", params, "", opts)
+}
+
+// ListAutoPaging: Listar ajustes, todos, página por página: for x, err := range …
+func (s *StockAdjustmentsService) ListAutoPaging(ctx context.Context, params *ListStockAdjustmentsParams, opts ...RequestOption) iter.Seq2[StockAdjustment, error] {
+	return listAll[StockAdjustment](ctx, s.c, "/v1/stock_adjustments", params, opts)
+}
+
+// Get: Ver un ajuste
+//
+// Un ajuste de existencias, con sus líneas.
+//
+// GET /v1/stock_adjustments/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/get-stock-adjustment
+func (s *StockAdjustmentsService) Get(ctx context.Context, id string, opts ...RequestOption) (*StockAdjustment, error) {
+	out := new(StockAdjustment)
+	if err := s.c.do(ctx, "GET", "/v1/stock_adjustments/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

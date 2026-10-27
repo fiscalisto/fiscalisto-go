@@ -426,6 +426,41 @@
 		"go": "TaxIds.Validate",
 		"java": "taxIds.validate"
 	},
+	"POST /v1/branches": {
+		"python": "branches.create",
+		"php": "branches->create",
+		"dotnet": "Branches.CreateAsync",
+		"go": "Branches.Create",
+		"java": "branches.create"
+	},
+	"GET /v1/branches": {
+		"python": "branches.list",
+		"php": "branches->list",
+		"dotnet": "Branches.ListAsync",
+		"go": "Branches.List",
+		"java": "branches.list"
+	},
+	"GET /v1/branches/{id}": {
+		"python": "branches.get",
+		"php": "branches->get",
+		"dotnet": "Branches.GetAsync",
+		"go": "Branches.Get",
+		"java": "branches.get"
+	},
+	"POST /v1/branches/{id}": {
+		"python": "branches.update",
+		"php": "branches->update",
+		"dotnet": "Branches.UpdateAsync",
+		"go": "Branches.Update",
+		"java": "branches.update"
+	},
+	"DELETE /v1/branches/{id}": {
+		"python": "branches.delete",
+		"php": "branches->delete",
+		"dotnet": "Branches.DeleteAsync",
+		"go": "Branches.Delete",
+		"java": "branches.delete"
+	},
 	"POST /v1/customers": {
 		"python": "customers.create",
 		"php": "customers->create",
@@ -523,6 +558,139 @@
 		"dotnet": "Products.DeleteAsync",
 		"go": "Products.Delete",
 		"java": "products.delete"
+	},
+	"GET /v1/issuers/{id}/compliance_opinion": {
+		"python": "issuers.compliance_opinion",
+		"php": "issuers->complianceOpinion",
+		"dotnet": "Issuers.ComplianceOpinionAsync",
+		"go": "Issuers.ComplianceOpinion",
+		"java": "issuers.complianceOpinion"
+	},
+	"POST /v1/issuers/{id}/compliance_opinion/refresh": {
+		"python": "issuers.refresh_compliance_opinion",
+		"php": "issuers->refreshComplianceOpinion",
+		"dotnet": "Issuers.RefreshComplianceOpinionAsync",
+		"go": "Issuers.RefreshComplianceOpinion",
+		"java": "issuers.refreshComplianceOpinion"
+	},
+	"GET /v1/issuers/{id}/compliance_opinion/pdf": {
+		"python": "issuers.compliance_opinion_pdf",
+		"php": "issuers->complianceOpinionPdf",
+		"dotnet": "Issuers.ComplianceOpinionPdfAsync",
+		"go": "Issuers.ComplianceOpinionPDF",
+		"java": "issuers.complianceOpinionPdf"
+	},
+	"GET /v1/issuers/{id}/tax_status_certificate": {
+		"python": "issuers.tax_status_certificate",
+		"php": "issuers->taxStatusCertificate",
+		"dotnet": "Issuers.TaxStatusCertificateAsync",
+		"go": "Issuers.TaxStatusCertificate",
+		"java": "issuers.taxStatusCertificate"
+	},
+	"POST /v1/issuers/{id}/tax_status_certificate/refresh": {
+		"python": "issuers.refresh_tax_status_certificate",
+		"php": "issuers->refreshTaxStatusCertificate",
+		"dotnet": "Issuers.RefreshTaxStatusCertificateAsync",
+		"go": "Issuers.RefreshTaxStatusCertificate",
+		"java": "issuers.refreshTaxStatusCertificate"
+	},
+	"GET /v1/issuers/{id}/tax_status_certificate/pdf": {
+		"python": "issuers.tax_status_certificate_pdf",
+		"php": "issuers->taxStatusCertificatePdf",
+		"dotnet": "Issuers.TaxStatusCertificatePdfAsync",
+		"go": "Issuers.TaxStatusCertificatePDF",
+		"java": "issuers.taxStatusCertificatePdf"
+	},
+	"POST /v1/issuers/{id}/sat_mailbox/refresh": {
+		"python": "issuers.refresh_sat_mailbox",
+		"php": "issuers->refreshSatMailbox",
+		"dotnet": "Issuers.RefreshSatMailboxAsync",
+		"go": "Issuers.RefreshSATMailbox",
+		"java": "issuers.refreshSatMailbox"
+	},
+	"GET /v1/sat_mailbox_messages": {
+		"python": "sat_mailbox_messages.list",
+		"php": "satMailboxMessages->list",
+		"dotnet": "SatMailboxMessages.ListAsync",
+		"go": "SatMailboxMessages.List",
+		"java": "satMailboxMessages.list"
+	},
+	"GET /v1/sat_mailbox_messages/{id}": {
+		"python": "sat_mailbox_messages.get",
+		"php": "satMailboxMessages->get",
+		"dotnet": "SatMailboxMessages.GetAsync",
+		"go": "SatMailboxMessages.Get",
+		"java": "satMailboxMessages.get"
+	},
+	"GET /v1/sat_findings": {
+		"python": "sat_findings.list",
+		"php": "satFindings->list",
+		"dotnet": "SatFindings.ListAsync",
+		"go": "SatFindings.List",
+		"java": "satFindings.list"
+	},
+	"GET /v1/warehouses": {
+		"python": "warehouses.list",
+		"php": "warehouses->list",
+		"dotnet": "Warehouses.ListAsync",
+		"go": "Warehouses.List",
+		"java": "warehouses.list"
+	},
+	"GET /v1/warehouses/{id}": {
+		"python": "warehouses.get",
+		"php": "warehouses->get",
+		"dotnet": "Warehouses.GetAsync",
+		"go": "Warehouses.Get",
+		"java": "warehouses.get"
+	},
+	"GET /v1/warehouses/{id}/stock": {
+		"python": "warehouses.stock",
+		"php": "warehouses->stock",
+		"dotnet": "Warehouses.StockAsync",
+		"go": "Warehouses.Stock",
+		"java": "warehouses.stock"
+	},
+	"GET /v1/products/{id}/stock": {
+		"python": "products.stock",
+		"php": "products->stock",
+		"dotnet": "Products.StockAsync",
+		"go": "Products.Stock",
+		"java": "products.stock"
+	},
+	"GET /v1/stock_movements": {
+		"python": "stock_movements.list",
+		"php": "stockMovements->list",
+		"dotnet": "StockMovements.ListAsync",
+		"go": "StockMovements.List",
+		"java": "stockMovements.list"
+	},
+	"GET /v1/stock_movements/{id}": {
+		"python": "stock_movements.get",
+		"php": "stockMovements->get",
+		"dotnet": "StockMovements.GetAsync",
+		"go": "StockMovements.Get",
+		"java": "stockMovements.get"
+	},
+	"POST /v1/stock_adjustments": {
+		"python": "stock_adjustments.create",
+		"php": "stockAdjustments->create",
+		"dotnet": "StockAdjustments.CreateAsync",
+		"go": "StockAdjustments.Create",
+		"java": "stockAdjustments.create"
+	},
+	"GET /v1/stock_adjustments": {
+		"python": "stock_adjustments.list",
+		"php": "stockAdjustments->list",
+		"dotnet": "StockAdjustments.ListAsync",
+		"go": "StockAdjustments.List",
+		"java": "stockAdjustments.list"
+	},
+	"GET /v1/stock_adjustments/{id}": {
+		"python": "stock_adjustments.get",
+		"php": "stockAdjustments->get",
+		"dotnet": "StockAdjustments.GetAsync",
+		"go": "StockAdjustments.Get",
+		"java": "stockAdjustments.get"
 	},
 	"GET /v1/sat_catalogs/{name}": {
 		"python": "sat_catalogs.get",

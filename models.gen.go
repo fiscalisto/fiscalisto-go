@@ -7,7 +7,7 @@ import "encoding/json"
 
 // Account: La cuenta API de la llave que hizo la solicitud.
 type Account struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -99,6 +99,10 @@ type ApplyAdvanceParams struct {
 	Remainder *ApplyAdvanceParamsRemainder `json:"remainder,omitempty"`
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
+	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
 	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
 	// Conceptos (Conceptos), al menos uno.
@@ -231,7 +235,7 @@ type BankImport struct {
 
 // BankTransaction: Un depósito de la cuenta del emisor, y las facturas que pagó.
 type BankTransaction struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -301,6 +305,76 @@ type BankTransactionSuggestedMatch struct {
 	Reasons []string `json:"reasons"`
 }
 
+// Branch: Una sucursal del emisor: otro lugar desde donde factura, con su código postal (LugarExpedicion), su dirección en el PDF y sus series.
+type Branch struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor de la sucursal.
+	Issuer string `json:"issuer"`
+	// Cómo la llama su equipo; va en el PDF.
+	Name string `json:"name"`
+	// Su código postal: el LugarExpedicion de sus CFDI.
+	Zip string `json:"zip"`
+	// Su dirección, en el PDF de sus facturas.
+	Address BranchAddress `json:"address"`
+	// Teléfono, en el PDF, o null.
+	Phone *string `json:"phone,omitempty"`
+	// Correo, en el PDF, o null.
+	Email *string `json:"email,omitempty"`
+	// La serie de cada tipo de CFDI que se timbra desde ella; null usa la del emisor.
+	Series BranchSeries `json:"series"`
+	// true si está archivada: ya no se factura desde ella.
+	Archived bool `json:"archived"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// BranchAddress: Su dirección, en el PDF de sus facturas.
+type BranchAddress struct {
+	// Calle (Calle).
+	Street *string `json:"street,omitempty"`
+	// Número exterior (NumeroExterior).
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior (NumeroInterior).
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Municipio o alcaldía.
+	City *string `json:"city,omitempty"`
+	// Estado (Estado): en el extranjero c_Estado para USA y CAN, o texto.
+	State *string `json:"state,omitempty"`
+}
+
+// BranchList: Una página de la lista.
+type BranchList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Branch `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// BranchSeries: La serie de cada tipo de CFDI que se timbra desde ella; null usa la del emisor.
+type BranchSeries struct {
+	// Serie de sus facturas (tipo I); null, la del emisor.
+	Invoice *string `json:"invoice,omitempty"`
+	// Serie de sus notas de crédito (tipo E); null, la del emisor.
+	CreditNote *string `json:"credit_note,omitempty"`
+	// Serie de sus complementos de pago (tipo P); null, la del emisor.
+	Payment *string `json:"payment,omitempty"`
+	// Serie de sus traslados (tipo T); null, la del emisor.
+	Transfer *string `json:"transfer,omitempty"`
+}
+
 // CancelInvoiceParams: los campos de «Cancelar una factura».
 type CancelInvoiceParams struct {
 	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
@@ -335,6 +409,32 @@ type ClassifyBankTransactionParams struct {
 	Classification string `json:"classification"`
 	// Una nota para su equipo (de dónde vino, por qué).
 	Note *string `json:"note,omitempty"`
+}
+
+// ComplianceOpinion: La opinión de cumplimiento de obligaciones fiscales (32-D) más reciente del emisor, como la dio el SAT.
+type ComplianceOpinion struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// positive, negative, no_obligations (inscrito sin obligaciones) o suspended (en suspensión de actividades); null si no se ha consultado.
+	//
+	// Valores: positive, negative, no_obligations, suspended.
+	Result *string `json:"result,omitempty"`
+	// El día que la emitió el SAT (AAAA-MM-DD), o null.
+	Date *string `json:"date,omitempty"`
+	// Su folio, o null.
+	Folio *string `json:"folio,omitempty"`
+	// Si es negativa, lo que el SAT marca como pendiente.
+	Reasons []string `json:"reasons"`
+	// true si su PDF está en GET /v1/issuers/{id}/compliance_opinion/pdf.
+	PDF bool `json:"pdf"`
+	// Cuándo se consultó por última vez, o null.
+	CheckedAt *string `json:"checked_at,omitempty"`
+	// Por qué falló la última consulta, o null.
+	LastError *string `json:"last_error,omitempty"`
 }
 
 // CreateAdvanceParams: los campos de «Timbrar un anticipo».
@@ -417,6 +517,52 @@ type CreateBankTransactionsParamsTransaction struct {
 	Reference *string `json:"reference,omitempty"`
 	// El RFC de quien depositó, si lo sabe (ayuda a sugerir la factura).
 	PayerTaxID *string `json:"payer_tax_id,omitempty"`
+}
+
+// CreateBranchParams: los campos de «Crear una sucursal».
+type CreateBranchParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cómo la llama su equipo, por ejemplo «Sucursal Monterrey». Va en el PDF.
+	Name string `json:"name"`
+	// Su código postal (LugarExpedicion de sus CFDI): uno por sucursal, distinto del domicilio fiscal del emisor.
+	Zip string `json:"zip"`
+	// La dirección que va en el PDF de sus facturas.
+	Address *CreateBranchParamsAddress `json:"address,omitempty"`
+	// Teléfono, para el PDF.
+	Phone *string `json:"phone,omitempty"`
+	// Correo, para el PDF.
+	Email *string `json:"email,omitempty"`
+	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	Series *CreateBranchParamsSeries `json:"series,omitempty"`
+}
+
+// CreateBranchParamsAddress: La dirección que va en el PDF de sus facturas.
+type CreateBranchParamsAddress struct {
+	// Calle.
+	Street *string `json:"street,omitempty"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Municipio o alcaldía.
+	City *string `json:"city,omitempty"`
+	// Estado; por omisión, el de su código postal.
+	State *string `json:"state,omitempty"`
+}
+
+// CreateBranchParamsSeries: Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+type CreateBranchParamsSeries struct {
+	// Serie de sus facturas (tipo I); sin ella, la del emisor.
+	Invoice *string `json:"invoice,omitempty"`
+	// Serie de sus notas de crédito (tipo E); sin ella, la del emisor.
+	CreditNote *string `json:"credit_note,omitempty"`
+	// Serie de sus complementos de pago (tipo P); sin ella, la del emisor.
+	Payment *string `json:"payment,omitempty"`
+	// Serie de sus traslados (tipo T); sin ella, la del emisor.
+	Transfer *string `json:"transfer,omitempty"`
 }
 
 // CreateCreditNoteParams: los campos de «Timbrar una nota de crédito».
@@ -547,6 +693,10 @@ type CreateInvoiceBatchParams struct {
 type CreateInvoiceBatchParamsInvoice struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
+	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
 	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
 	// Conceptos (Conceptos), al menos uno.
@@ -745,6 +895,14 @@ type CreateProductParams struct {
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
 	LocalTaxes []CreateProductParamsLocalTax `json:"local_taxes,omitempty"`
+	// Lleva existencias (Inventario): cada factura que lo vende las saca del almacén de su sucursal, y una cancelada las regresa. Ver GET /v1/products/{id}/stock.
+	TrackStock *bool `json:"track_stock,omitempty"`
+	// Su costo por unidad en pesos sin IVA, hasta que sus compras den otro: vale las existencias que entran sin unit_cost.
+	Cost *float64 `json:"cost,omitempty"`
+	// Código de barras (EAN, UPC o el suyo). Una factura cuyo concepto lo trae como NoIdentificacion saca existencias de este producto.
+	Barcode *string `json:"barcode,omitempty"`
+	// Existencia mínima: por debajo, el aviso de existencias bajas lo incluye.
+	MinStock *float64 `json:"min_stock,omitempty"`
 }
 
 // CreateProductParamsLocalTax: CreateProductParamsLocalTax.
@@ -927,6 +1085,10 @@ type CreateRecurringInvoiceParams struct {
 type CreateRecurringInvoiceParamsInvoice struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
+	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
 	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
 	// Conceptos (Conceptos), al menos uno.
@@ -1179,6 +1341,36 @@ type CreateSatDownloadParams struct {
 	UUID *string `json:"uuid,omitempty"`
 }
 
+// CreateStockAdjustmentParams: los campos de «Ajustar existencias».
+type CreateStockAdjustmentParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El almacén (whs_…). Por omisión, el de la Matriz.
+	Warehouse *string `json:"warehouse,omitempty"`
+	// Por qué: shrinkage (merma), theft (robo o extravío), damage (daño), expiration (caducidad), internal_use (uso interno), gift (muestra o regalo), initial (inventario inicial), surplus (sobrante), count (conteo físico) u other.
+	//
+	// Valores: shrinkage, theft, damage, expiration, internal_use, gift, initial, surplus, count, other.
+	Reason string `json:"reason"`
+	// Una nota, para el kárdex.
+	Note *string `json:"note,omitempty"`
+	// Lo que entra o sale de cada producto, hasta 500 líneas.
+	Lines []CreateStockAdjustmentParamsLine `json:"lines"`
+}
+
+// CreateStockAdjustmentParamsLine: CreateStockAdjustmentParamsLine.
+type CreateStockAdjustmentParamsLine struct {
+	// El producto (prd_…), con track_stock: true.
+	Product string `json:"product"`
+	// Cuánto entra (positivo) o sale (negativo), en la unidad del producto.
+	Quantity float64 `json:"quantity"`
+	// Lo que costó cada unidad que entra, en pesos sin IVA; sin él, el costo promedio de hoy.
+	UnitCost *float64 `json:"unit_cost,omitempty"`
+	// El lote o número de serie, si el producto los lleva.
+	Lot *string `json:"lot,omitempty"`
+	// La caducidad de un lote nuevo (AAAA-MM-DD).
+	ExpiresOn *string `json:"expires_on,omitempty"`
+}
+
 // CreateStoreConnectionParams: los campos de «Conectar una tienda».
 type CreateStoreConnectionParams struct {
 	// El emisor (iss_…) dueño de la tienda. Por omisión, su único emisor.
@@ -1415,7 +1607,7 @@ type CrossChecksVatBalanceInFavorPeriod struct {
 
 // Customer: Un cliente del catálogo de un emisor.
 type Customer struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -1447,7 +1639,7 @@ type Customer struct {
 
 // CustomerDataRequest: Una liga para que un cliente dé sus datos fiscales.
 type CustomerDataRequest struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -1533,7 +1725,7 @@ type CustomerList struct {
 
 // Deleted: Confirmación de que se borró.
 type Deleted struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
@@ -1615,7 +1807,7 @@ type DiotLineReturns struct {
 
 // Employee: Un empleado de un emisor, para sus recibos de nómina.
 type Employee struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -1713,7 +1905,7 @@ type ErrorBodyError struct {
 
 // Event: Algo que pasó en su cuenta: el objeto completo como quedó. Se manda a sus webhooks firmado (Standard Webhooks).
 type Event struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
@@ -2111,7 +2303,7 @@ type ImportStoreOrdersParams struct {
 
 // Invoice: Un CFDI 4.0 emitido: factura de ingreso o global, traslado, nota de crédito (E), complemento de pago (P) o recibo de nómina (N).
 type Invoice struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -2119,6 +2311,8 @@ type Invoice struct {
 	Object string `json:"object"`
 	// El emisor (iss_…).
 	Issuer string `json:"issuer"`
+	// La sucursal (brn_…) desde donde se timbró, o null (el domicilio fiscal del emisor). Sus pagos y notas de crédito la siguen.
+	Branch *string `json:"branch,omitempty"`
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
 	// Valores: I, E, P, T, N.
@@ -2217,7 +2411,7 @@ type InvoiceAdvanceApplication struct {
 
 // InvoiceBatch: Un lote de hasta 1,000 facturas timbradas en segundo plano.
 type InvoiceBatch struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -2295,6 +2489,10 @@ type InvoiceCancellation struct {
 type InvoiceCreate struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
+	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
 	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
 	// Conceptos (Conceptos), al menos uno.
@@ -3429,7 +3627,7 @@ type InvoicePayrollDeduction struct {
 
 // InvoicePayrollEmployee: El empleado (emp_…).
 type InvoicePayrollEmployee struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID *string `json:"id,omitempty"`
 	// Número de empleado (NumEmpleado).
 	Number string `json:"number"`
@@ -3537,7 +3735,7 @@ type InvoiceTaxes struct {
 
 // Issuer: Un emisor: un RFC que timbra desde su cuenta API.
 type Issuer struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -3739,6 +3937,20 @@ type ListBankTransactionsParams struct {
 	//
 	// Valores: open, matched, classified.
 	Status *string `json:"status,omitempty"`
+}
+
+// ListBranchesParams: los campos de «Listar sucursales».
+type ListBranchesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// true para incluir las archivadas.
+	IncludeArchived *bool `json:"include_archived,omitempty"`
+	// Solo la de este código postal.
+	Zip *string `json:"zip,omitempty"`
 }
 
 // ListCustomerDataRequestsParams: los campos de «Listar solicitudes de datos».
@@ -3961,6 +4173,20 @@ type ListSatDownloadsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListSatFindingsParams: los campos de «Listar hallazgos en los CFDI».
+type ListSatFindingsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// issued (emitidos) o received (recibidos); sin él, los dos.
+	//
+	// Valores: issued, received.
+	Direction *string `json:"direction,omitempty"`
+	// CFDI desde este día (AAAA-MM-DD).
+	DateGte *string `json:"date_gte,omitempty"`
+	// CFDI hasta este día (AAAA-MM-DD, completo).
+	DateLte *string `json:"date_lte,omitempty"`
+}
+
 // ListSatInvoicesParams: los campos de «Listar facturas del SAT».
 type ListSatInvoicesParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -3982,6 +4208,56 @@ type ListSatInvoicesParams struct {
 	// Con fecha desde este día (AAAA-MM-DD).
 	DateGte *string `json:"date_gte,omitempty"`
 	// Con fecha hasta este día (AAAA-MM-DD), incluido.
+	DateLte *string `json:"date_lte,omitempty"`
+}
+
+// ListSatMailboxMessagesParams: los campos de «Listar avisos del buzón tributario».
+type ListSatMailboxMessagesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// true para solo los no leídos en el SAT, false para los leídos.
+	Unread *bool `json:"unread,omitempty"`
+}
+
+// ListStockAdjustmentsParams: los campos de «Listar ajustes».
+type ListStockAdjustmentsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo los de este almacén (whs_…).
+	Warehouse *string `json:"warehouse,omitempty"`
+	// applied, pending, rejected o reversed.
+	//
+	// Valores: applied, pending, rejected, reversed.
+	Status *string `json:"status,omitempty"`
+}
+
+// ListStockMovementsParams: los campos de «Listar movimientos (kárdex)».
+type ListStockMovementsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo los de este producto (prd_…).
+	Product *string `json:"product,omitempty"`
+	// Solo los de este almacén (whs_…).
+	Warehouse *string `json:"warehouse,omitempty"`
+	// Solo los de este tipo.
+	//
+	// Valores: sale, purchase, customer_return, supplier_return, adjustment, count, transfer_out, transfer_in, initial, cost, reversal.
+	Type *string `json:"type,omitempty"`
+	// Desde este día (AAAA-MM-DD) u hora (AAAA-MM-DDTHH:MM:SS) de la Ciudad de México.
+	DateGte *string `json:"date_gte,omitempty"`
+	// Hasta este día (completo) u hora de la Ciudad de México.
 	DateLte *string `json:"date_lte,omitempty"`
 }
 
@@ -4011,6 +4287,24 @@ type ListTicketsParams struct {
 	SoldAtGte *string `json:"sold_at_gte,omitempty"`
 	// Vendidos hasta (ISO 8601 o AAAA-MM-DD, el día completo).
 	SoldAtLte *string `json:"sold_at_lte,omitempty"`
+}
+
+// ListWarehouseStockParams: los campos de «Ver las existencias de un almacén».
+type ListWarehouseStockParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// true para incluir los productos con track_stock que están en 0.
+	IncludeEmpty *bool `json:"include_empty,omitempty"`
+}
+
+// ListWarehousesParams: los campos de «Listar almacenes».
+type ListWarehousesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// true para incluir los archivados.
+	IncludeArchived *bool `json:"include_archived,omitempty"`
 }
 
 // ListWebhookEndpointsParams: los campos de «Listar webhooks».
@@ -4177,7 +4471,7 @@ type PreviewPayrollReceiptParamsPeriod struct {
 
 // Product: Un producto o servicio del catálogo de un emisor.
 type Product struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -4215,6 +4509,14 @@ type Product struct {
 	ISRRetention float64 `json:"isr_retention"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []ProductLocalTax `json:"local_taxes"`
+	// true si lleva existencias (Inventario).
+	TrackStock bool `json:"track_stock"`
+	// Su costo por unidad en pesos sin IVA, o null.
+	Cost *float64 `json:"cost,omitempty"`
+	// Su código de barras, o null.
+	Barcode *string `json:"barcode,omitempty"`
+	// Su existencia mínima, o null.
+	MinStock *float64 `json:"min_stock,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
@@ -4245,7 +4547,7 @@ type ProductLocalTax struct {
 
 // Quote: Una cotización: su cliente la ve en una liga, la acepta, pide cambios o la rechaza, y se factura.
 type Quote struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -4379,7 +4681,7 @@ type ReceivableList struct {
 
 // RecurringInvoice: Una factura que el emisor timbra solo, cada mes, semana o día.
 type RecurringInvoice struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -4491,7 +4793,7 @@ type ResetTestDataParams struct {
 
 // Retention: Una constancia de retenciones e información de pagos (CFDI de retenciones 2.0).
 type Retention struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -4661,7 +4963,7 @@ type SATCatalogEntryList struct {
 
 // SATDeclaration: Una declaración que el emisor presentó ante el SAT (provisional o definitiva, anual o del servicio anterior Declaraciones y pagos), con sus cifras y sus archivos.
 type SATDeclaration struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -4871,7 +5173,7 @@ type SATDeclarationsRefresh struct {
 
 // SATDownload: Una solicitud al SAT de las facturas emitidas o recibidas de un emisor en un periodo.
 type SATDownload struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -4921,9 +5223,47 @@ type SATDownloadList struct {
 	URL string `json:"url"`
 }
 
+// SATFinding: Un tipo de hallazgo en los CFDI del emisor (un proveedor en la lista 69-B, un CFDI cancelado, un pago en efectivo de más de $2,000…), con cuántos CFDI lo tienen.
+type SATFinding struct {
+	// El código del hallazgo (el mismo que code).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El código del hallazgo, estable (por ejemplo efos_definitivo).
+	Code string `json:"code"`
+	// critical (grave), warning (revisar) o info.
+	//
+	// Valores: critical, warning, info.
+	Severity string `json:"severity"`
+	// Qué es, en palabras.
+	Title string `json:"title"`
+	// Por qué importa y qué hacer, o null.
+	Explanation *string `json:"explanation,omitempty"`
+	// Cuántos CFDI lo tienen, sin revisar.
+	Invoices int64 `json:"invoices"`
+	// La suma de sus totales.
+	Amount float64 `json:"amount"`
+}
+
+// SATFindingList: Una página de la lista.
+type SATFindingList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATFinding `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // SATInvoice: Una factura que el SAT tiene del emisor, emitida o recibida, traída con una descarga.
 type SATInvoice struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -5073,9 +5413,79 @@ type SATListCheckList2 struct {
 	Details map[string]string `json:"details,omitempty"`
 }
 
+// SATMailboxMessage: Un aviso del buzón tributario del SAT del emisor.
+type SATMailboxMessage struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Su asunto.
+	Subject string `json:"subject"`
+	// Su texto, resumido, o null.
+	Summary *string `json:"summary,omitempty"`
+	// mailbox (el buzón del portal) o email (un aviso que el SAT mandó por correo).
+	//
+	// Valores: mailbox, email.
+	Source string `json:"source"`
+	// true si no se ha leído en el SAT.
+	Unread bool `json:"unread"`
+	// urgent (un requerimiento, un plazo), attention o informational.
+	//
+	// Valores: urgent, attention, informational.
+	Urgency string `json:"urgency"`
+	// Qué es: requerimiento, carta invitación, informativo…
+	Kind string `json:"kind"`
+	// true si pide hacer algo.
+	ActionRequired bool `json:"action_required"`
+	// Cuándo llegó, como lo dice el SAT.
+	ReceivedAt *string `json:"received_at,omitempty"`
+	// Cuándo lo trajo Fiscalisto.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// SATMailboxMessageList: Una página de la lista.
+type SATMailboxMessageList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATMailboxMessage `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// SATRefresh: Una consulta al SAT de un documento del emisor: si ya terminó y dónde leerlo.
+type SATRefresh struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Qué se consultó.
+	//
+	// Valores: compliance_opinion, tax_status_certificate, sat_mailbox.
+	Document string `json:"document"`
+	// completed (ya está en url) o processing (el SAT tarda; llega a url en unos minutos).
+	//
+	// Valores: completed, processing.
+	Status string `json:"status"`
+	// Cuándo se pidió.
+	RefreshedAt *string `json:"refreshed_at,omitempty"`
+	// Desde cuándo se puede pedir otra vez.
+	NextRefreshAt *string `json:"next_refresh_at,omitempty"`
+	// Dónde leer lo que trajo.
+	URL string `json:"url"`
+}
+
 // Sandbox: Un entorno de prueba: el modo de pruebas propio de una persona, con su emisor, llaves, webhooks y eventos aparte.
 type Sandbox struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
@@ -5175,9 +5585,157 @@ type SignEfirmaParams struct {
 	KeepForDownloads *bool `json:"keep_for_downloads,omitempty"`
 }
 
+// StockAdjustment: Un ajuste de existencias: lo que entró o salió de un almacén por inventario inicial, merma, robo, conteo…
+type StockAdjustment struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El almacén (whs_…).
+	Warehouse string `json:"warehouse"`
+	// El motivo (ver POST /v1/stock_adjustments).
+	//
+	// Valores: shrinkage, theft, damage, expiration, internal_use, gift, initial, surplus, count, other.
+	Reason string `json:"reason"`
+	// Su nota, o null.
+	Note *string `json:"note,omitempty"`
+	// applied (ya movió existencias), pending (espera aprobación en la app), rejected o reversed (se deshizo).
+	//
+	// Valores: applied, pending, rejected, reversed.
+	Status string `json:"status"`
+	// Lo que vale lo que movió, en pesos sin IVA.
+	Value float64 `json:"value"`
+	// Lo que entró o salió de cada producto.
+	Lines []StockAdjustmentLine `json:"lines"`
+	// Cuándo se hizo.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// StockAdjustmentLine: StockAdjustmentLine.
+type StockAdjustmentLine struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product string `json:"product"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity float64 `json:"quantity"`
+	// El costo por unidad que se dio al ajuste, en pesos sin IVA, o null (el costo promedio).
+	UnitCost *float64 `json:"unit_cost,omitempty"`
+	// Lote del medicamento (LoteMedicamento).
+	Lot *string `json:"lot,omitempty"`
+}
+
+// StockAdjustmentList: Una página de la lista.
+type StockAdjustmentList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []StockAdjustment `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// StockLevel: Lo que hay de un producto en un almacén, y lo que vale.
+type StockLevel struct {
+	// Su id (stl_…): el producto en ese almacén. Sirve como starting_after.
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El producto (prd_…).
+	Product string `json:"product"`
+	// El almacén (whs_…).
+	Warehouse string `json:"warehouse"`
+	// Lo que hay, en la unidad del producto (todos sus lotes).
+	OnHand float64 `json:"on_hand"`
+	// Lo apartado por cotizaciones aceptadas que no se han facturado.
+	Reserved float64 `json:"reserved"`
+	// on_hand menos reserved: lo que se puede vender.
+	Available float64 `json:"available"`
+	// Lo que valen esas existencias a su costo, en pesos sin IVA.
+	Value float64 `json:"value"`
+	// value / on_hand: el costo por unidad, o null sin existencias.
+	AverageCost *float64 `json:"average_cost,omitempty"`
+}
+
+// StockLevelList: Una página de la lista.
+type StockLevelList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []StockLevel `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// StockMovement: Una entrada o salida de existencias (el kárdex): una venta, una compra, un ajuste, un traspaso…
+type StockMovement struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El producto (prd_…).
+	Product string `json:"product"`
+	// El almacén (whs_…).
+	Warehouse string `json:"warehouse"`
+	// sale (una factura), purchase (una compra), customer_return, supplier_return, adjustment, count (conteo físico), transfer_out, transfer_in, initial, cost (un ajuste de costo) o reversal (deshace otro, como una factura cancelada).
+	//
+	// Valores: sale, purchase, customer_return, supplier_return, adjustment, count, transfer_out, transfer_in, initial, cost, reversal.
+	Type string `json:"type"`
+	// Cuánto entró (positivo) o salió (negativo).
+	Quantity float64 `json:"quantity"`
+	// El costo por unidad con que entró o salió, en pesos sin IVA.
+	UnitCost float64 `json:"unit_cost"`
+	// quantity × unit_cost: lo que cambió el valor del inventario.
+	Value float64 `json:"value"`
+	// El lote o número de serie, o null.
+	Lot *string `json:"lot,omitempty"`
+	// Lo que lo causó: type invoice (id es el UUID del CFDI), adjustment (adj_…), receipt, transfer, count o ticket.
+	Source StockMovementSource `json:"source"`
+	// El motivo de un ajuste, o null.
+	Reason *string `json:"reason,omitempty"`
+	// Cuándo pasó, hora de la Ciudad de México (la Fecha del CFDI en una venta).
+	Date *string `json:"date,omitempty"`
+	// true si un movimiento posterior lo deshizo.
+	Reversed bool `json:"reversed"`
+	// Cuándo se registró.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// StockMovementList: Una página de la lista.
+type StockMovementList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []StockMovement `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// StockMovementSource: Lo que lo causó: type invoice (id es el UUID del CFDI), adjustment (adj_…), receipt, transfer, count o ticket.
+type StockMovementSource struct {
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	Type string `json:"type"`
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+}
+
 // StoreConnection: Una tienda de Shopify o Mercado Libre cuyos pedidos pagados se vuelven tickets de autofactura del emisor.
 type StoreConnection struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -5337,6 +5895,42 @@ type TaxIDValidationWarning struct {
 	Suggestion *string `json:"suggestion,omitempty"`
 }
 
+// TaxStatusCertificate: La constancia de situación fiscal más reciente del emisor, generada en el SAT con su e.firma.
+type TaxStatusCertificate struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El día que la emitió el SAT (AAAA-MM-DD), o null.
+	IssuedOn *string `json:"issued_on,omitempty"`
+	// Su idCIF, o null.
+	IDCif *string `json:"id_cif,omitempty"`
+	// El RFC.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social como la tiene el SAT, o null.
+	LegalName *string `json:"legal_name,omitempty"`
+	// Sus regímenes fiscales (clave de c_RegimenFiscal y nombre).
+	TaxSystems []TaxStatusCertificateTaxSystem `json:"tax_systems"`
+	// El código postal de su domicilio fiscal, o null.
+	Zip *string `json:"zip,omitempty"`
+	// Estatus en el padrón (ACTIVO, SUSPENDIDO…), o null.
+	Status *string `json:"status,omitempty"`
+	// true si su PDF está en GET /v1/issuers/{id}/tax_status_certificate/pdf.
+	PDF bool `json:"pdf"`
+	// Cuándo se generó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// TaxStatusCertificateTaxSystem: TaxStatusCertificateTaxSystem.
+type TaxStatusCertificateTaxSystem struct {
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero…
+	Code string `json:"code"`
+	// Nombre.
+	Name string `json:"name"`
+}
+
 // TestClock: El reloj de prueba de un emisor de pruebas: su «hoy», que solo avanza cuando usted lo adelanta, haciendo día por día lo que toca.
 type TestClock struct {
 	// clk_ y la clave del emisor.
@@ -5403,7 +5997,7 @@ type TestWebhookEndpointParams struct {
 
 // Ticket: Una venta que su comprador puede facturar él mismo en el portal del emisor (autofactura).
 type Ticket struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
@@ -5519,6 +6113,52 @@ type TrialBalanceTotals struct {
 type UpdateAccountParams struct {
 	// La versión de la API de la cuenta: la que reciben sus solicitudes sin Fiscalisto-Version y sus webhooks sin api_version propio. Pruebe antes la nueva con el encabezado.
 	APIVersion string `json:"api_version"`
+}
+
+// UpdateBranchParams: los campos de «Actualizar una sucursal».
+type UpdateBranchParams struct {
+	// Cómo la llama su equipo, por ejemplo «Sucursal Monterrey». Va en el PDF.
+	Name *string `json:"name,omitempty"`
+	// Su código postal (LugarExpedicion de sus CFDI): uno por sucursal, distinto del domicilio fiscal del emisor.
+	Zip *string `json:"zip,omitempty"`
+	// La dirección que va en el PDF de sus facturas.
+	Address *UpdateBranchParamsAddress `json:"address,omitempty"`
+	// Teléfono, para el PDF.
+	Phone *string `json:"phone,omitempty"`
+	// Correo, para el PDF.
+	Email *string `json:"email,omitempty"`
+	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	Series *UpdateBranchParamsSeries `json:"series,omitempty"`
+	// true la archiva: ya no se puede facturar desde ella, y sus facturas la siguen nombrando. false la restaura.
+	Archived *bool `json:"archived,omitempty"`
+}
+
+// UpdateBranchParamsAddress: La dirección que va en el PDF de sus facturas.
+type UpdateBranchParamsAddress struct {
+	// Calle.
+	Street *string `json:"street,omitempty"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Municipio o alcaldía.
+	City *string `json:"city,omitempty"`
+	// Estado; por omisión, el de su código postal.
+	State *string `json:"state,omitempty"`
+}
+
+// UpdateBranchParamsSeries: Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+type UpdateBranchParamsSeries struct {
+	// Serie de sus facturas (tipo I); sin ella, la del emisor.
+	Invoice *string `json:"invoice,omitempty"`
+	// Serie de sus notas de crédito (tipo E); sin ella, la del emisor.
+	CreditNote *string `json:"credit_note,omitempty"`
+	// Serie de sus complementos de pago (tipo P); sin ella, la del emisor.
+	Payment *string `json:"payment,omitempty"`
+	// Serie de sus traslados (tipo T); sin ella, la del emisor.
+	Transfer *string `json:"transfer,omitempty"`
 }
 
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
@@ -5649,6 +6289,14 @@ type UpdateProductParams struct {
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
 	LocalTaxes []UpdateProductParamsLocalTax `json:"local_taxes,omitempty"`
+	// Lleva existencias (Inventario): cada factura que lo vende las saca del almacén de su sucursal, y una cancelada las regresa. Ver GET /v1/products/{id}/stock.
+	TrackStock *bool `json:"track_stock,omitempty"`
+	// Su costo por unidad en pesos sin IVA, hasta que sus compras den otro: vale las existencias que entran sin unit_cost.
+	Cost *float64 `json:"cost,omitempty"`
+	// Código de barras (EAN, UPC o el suyo). Una factura cuyo concepto lo trae como NoIdentificacion saca existencias de este producto.
+	Barcode *string `json:"barcode,omitempty"`
+	// Existencia mínima: por debajo, el aviso de existencias bajas lo incluye.
+	MinStock *float64 `json:"min_stock,omitempty"`
 }
 
 // UpdateProductParamsLocalTax: UpdateProductParamsLocalTax.
@@ -5827,6 +6475,10 @@ type UpdateRecurringInvoiceParams struct {
 type UpdateRecurringInvoiceParamsInvoice struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
+	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
 	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
 	// Conceptos (Conceptos), al menos uno.
@@ -5995,9 +6647,49 @@ type ValidateTaxIdParams struct {
 	CifID *string `json:"cif_id,omitempty"`
 }
 
+// Warehouse: Un almacén del emisor: el de la Matriz y uno por sucursal se crean solos; cada factura saca existencias del de su sucursal.
+type Warehouse struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor del almacén.
+	Issuer string `json:"issuer"`
+	// Su nombre («Matriz», el de su sucursal, o el que le dieron en la app).
+	Name string `json:"name"`
+	// Su clave corta, o null.
+	Code *string `json:"code,omitempty"`
+	// warehouse (almacén propio) o consignment (mercancía en consignación con un cliente, todavía suya).
+	//
+	// Valores: warehouse, consignment.
+	Type string `json:"type"`
+	// Su sucursal (brn_…), o null si es de la Matriz.
+	Branch *string `json:"branch,omitempty"`
+	// true si es el almacén del que vende y recibe su sucursal.
+	Default bool `json:"default"`
+	// true si está archivado.
+	Archived bool `json:"archived"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// WarehouseList: Una página de la lista.
+type WarehouseList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Warehouse `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // WebhookEndpoint: Una dirección de su servidor que recibe eventos.
 type WebhookEndpoint struct {
-	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, evt_, whe_).
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
