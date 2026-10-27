@@ -77,6 +77,16 @@ if event.Type == "invoice.stamped" {
 
 La guía completa está en [fiscalisto.com/docs/api/sdk](https://fiscalisto.com/docs/api/sdk).
 
+## Con agentes de IA
+
+Para que Claude Code, Cursor, Codex u otro agente integre Fiscalisto, conecte el servidor MCP de la documentación (sin llave) y pídale que empiece con `get_started`:
+
+```bash
+claude mcp add --transport http fiscalisto-docs https://fiscalisto.com/docs/api/mcp
+```
+
+La guía de integración en una página está en [fiscalisto.com/docs/api/SKILL.md](https://fiscalisto.com/docs/api/SKILL.md) y el índice de la documentación para agentes en [llms.txt](https://fiscalisto.com/docs/api/llms.txt). Otros clientes y más: [fiscalisto.com/docs/api/agentes](https://fiscalisto.com/docs/api/agentes).
+
 ## Desarrollo
 
 `*.gen.go` se genera desde la especificación OpenAPI con `bun run openapi` en la raíz del repositorio; no lo edite. Lo demás se escribe a mano.
