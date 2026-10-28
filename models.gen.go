@@ -4101,6 +4101,32 @@ type InvoiceEmail struct {
 	Cc *string `json:"cc,omitempty"`
 	// Cuándo se envió.
 	SentAt *string `json:"sent_at,omitempty"`
+	// Lo que pasó con el último envío: el peor de sus destinatarios (bounced o complained pesan más que opened o delivered). sent hasta que el servidor del cliente conteste.
+	//
+	// Valores: sent, delayed, delivered, opened, bounced, complained.
+	Status string `json:"status"`
+	// Cada dirección del envío (para y copia), con su entrega.
+	Recipients []InvoiceEmailRecipient `json:"recipients"`
+}
+
+// InvoiceEmailRecipient: InvoiceEmailRecipient.
+type InvoiceEmailRecipient struct {
+	// La dirección de correo del destinatario.
+	Address string `json:"address"`
+	// Estado del objeto.
+	//
+	// Valores: sent, delayed, delivered, opened, bounced, complained.
+	Status string `json:"status"`
+	// Cuando el servidor del destinatario lo aceptó.
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+	// La primera vez que se abrió (aproximado: algunos correos cargan las imágenes solos o no las cargan).
+	OpenedAt *string `json:"opened_at,omitempty"`
+	// Cuando rebotó.
+	BouncedAt *string `json:"bounced_at,omitempty"`
+	// Por qué rebotó, en español: «buzón no existe», «buzón lleno»…
+	BounceReason *string `json:"bounce_reason,omitempty"`
+	// Cuando el destinatario lo marcó como spam.
+	ComplainedAt *string `json:"complained_at,omitempty"`
 }
 
 // InvoiceError: InvoiceError.
@@ -4723,7 +4749,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -6883,7 +6909,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
