@@ -1071,7 +1071,7 @@ type CreateRecurringInvoiceParams struct {
 	Name string `json:"name"`
 	// Cada cuánto y a qué hora se timbra.
 	Schedule CreateRecurringInvoiceParamsSchedule `json:"schedule"`
-	// La factura que se repite: el cuerpo de POST /v1/invoices, sin issuer, folio, date, global ni metadata. En description puede usar {mes}, {mes anterior}, {mes siguiente}, {año}, {año anterior}, {año siguiente} y {periodo}: cada factura los llena con su fecha.
+	// La factura que se repite: el cuerpo de POST /v1/invoices, sin issuer, folio, date, global ni metadata. En description puede usar {mes}, {mes anterior}, {mes siguiente}, {año}, {año anterior}, {año siguiente} y {periodo}: cada factura los llena con su fecha. Como se escriben es como salen: {mes} «noviembre», {Mes} «Noviembre», {MES} «NOVIEMBRE».
 	Invoice CreateRecurringInvoiceParamsInvoice `json:"invoice"`
 	// Mandar cada factura al correo del cliente (customer.email o el del catálogo). Por omisión true.
 	SendEmail *bool `json:"send_email,omitempty"`
@@ -1081,7 +1081,7 @@ type CreateRecurringInvoiceParams struct {
 	CatchUp *string `json:"catch_up,omitempty"`
 }
 
-// CreateRecurringInvoiceParamsInvoice: La factura que se repite: el cuerpo de POST /v1/invoices, sin issuer, folio, date, global ni metadata. En description puede usar {mes}, {mes anterior}, {mes siguiente}, {año}, {año anterior}, {año siguiente} y {periodo}: cada factura los llena con su fecha.
+// CreateRecurringInvoiceParamsInvoice: La factura que se repite: el cuerpo de POST /v1/invoices, sin issuer, folio, date, global ni metadata. En description puede usar {mes}, {mes anterior}, {mes siguiente}, {año}, {año anterior}, {año siguiente} y {periodo}: cada factura los llena con su fecha. Como se escriben es como salen: {mes} «noviembre», {Mes} «Noviembre», {MES} «NOVIEMBRE».
 type CreateRecurringInvoiceParamsInvoice struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
@@ -5545,14 +5545,18 @@ type SATListCheck struct {
 	Name *string `json:"name,omitempty"`
 	// true si el RFC aparece en alguna lista, aunque haya desvirtuado.
 	Listed bool `json:"listed"`
-	// high: 69-B o 69-B Bis como presunto o definitivo (el SAT dice que simula operaciones; sus facturas no se pueden deducir). medium: una lista del art. 69 (no localizado, créditos firmes o exigibles, cancelados, sentencias, CSD sin efectos). none: no aparece, o ya desvirtuó o tiene sentencia favorable.
+	// high: 69-B o 69-B Bis como presunto o definitivo (el SAT dice que simula operaciones; sus facturas no se pueden deducir). medium: una lista del art. 69 (no localizado, créditos firmes o exigibles, cancelados, sentencias, CSD sin efectos). none: no aparece en ninguna, con todas las listas al día, o ya desvirtuó o tiene sentencia favorable. unknown: no aparece, pero alguna lista no se pudo actualizar (vea lists_unavailable): no lo dé por limpio.
 	//
-	// Valores: high, medium, none.
+	// Valores: high, medium, none, unknown.
 	Risk string `json:"risk"`
+	// true si todas las listas se leyeron con éxito en los últimos dos días. Con false, que no aparezca no significa que esté limpio.
+	Verified bool `json:"verified"`
 	// Cada lista en que aparece; vacía si no aparece en ninguna.
 	Lists []SATListCheckList2 `json:"lists"`
 	// Cuándo se actualizaron las listas por última vez (cada día a las 00:00 de la Ciudad de México).
 	ListsUpdatedAt *string `json:"lists_updated_at,omitempty"`
+	// Las listas que no se pudieron confirmar (su última actualización falló, falta o tiene más de dos días). Vacía si todas están al día.
+	ListsUnavailable []string `json:"lists_unavailable"`
 }
 
 // SATListCheckList: Una página de la lista.
