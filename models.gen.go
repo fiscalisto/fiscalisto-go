@@ -843,6 +843,8 @@ type CreatePayrollReceiptParams struct {
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// El confirmation_token de POST /v1/payroll_receipts/preview: timbra solo si el recibo calculado ahora es exactamente el que revisó (si no, 409 payroll_calculation_changed y no timbra). Sin él, timbra el que calcule en ese momento.
+	ConfirmationToken *string `json:"confirmation_token,omitempty"`
 }
 
 // CreatePayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
@@ -4959,6 +4961,10 @@ type MatchBankTransactionParams struct {
 type PayrollReceiptPreview struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Mándelo en POST /v1/payroll_receipts para timbrar exactamente este recibo: si al timbrar se calcula otro, contesta 409 payroll_calculation_changed sin timbrar.
+	ConfirmationToken string `json:"confirmation_token"`
+	// Lo que el recibo no incluye o pronto no se podrá calcular; no impide timbrar.
+	Warnings []PayrollReceiptPreviewWarning `json:"warnings"`
 	// El empleado (emp_…).
 	Employee string `json:"employee"`
 	// Periodicidad del pago (PeriodicidadPago): 02 semanal, 03 catorcenal, 04 quincenal (por omisión), 05 mensual.
@@ -5117,6 +5123,14 @@ type PayrollReceiptPreviewTotals struct {
 	Subtotal float64 `json:"subtotal"`
 	// Neto a pagar al empleado.
 	Net float64 `json:"net"`
+}
+
+// PayrollReceiptPreviewWarning: PayrollReceiptPreviewWarning.
+type PayrollReceiptPreviewWarning struct {
+	// finiquito_not_included: el empleado se fue en el periodo y el recibo no trae su finiquito; payroll_rates_pending: aún no se cargan los valores (ISR, subsidio, salario mínimo, UMA) de una fecha próxima.
+	Code string `json:"code"`
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message string `json:"message"`
 }
 
 // PreviewPayrollReceiptParams: los campos de «Calcular un recibo sin timbrar».
@@ -5461,7 +5475,7 @@ type RefreshSatDeclarationsParams struct {
 
 // ResetTestDataParams: los campos de «Reiniciar los datos de prueba».
 type ResetTestDataParams struct {
-	// true (por omisión) para dejarle a cada emisor de pruebas 3 clientes y 3 productos de ejemplo. false para dejarlo vacío.
+	// true (por omisión) para dejarle a cada emisor de pruebas 2 clientes y 3 productos de ejemplo. false para dejarlo vacío.
 	Seed *bool `json:"seed,omitempty"`
 }
 

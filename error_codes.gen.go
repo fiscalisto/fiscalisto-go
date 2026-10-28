@@ -112,6 +112,10 @@ const (
 	CodeParameterMissing = "parameter_missing"
 	// Mandó un campo o un parámetro de la URL que no existe (casi siempre un nombre mal escrito, como legalName en vez de legal_name, o ?statuss= en vez de ?status=). Nunca se ignora en silencio.
 	CodeParameterUnknown = "parameter_unknown"
+	// Mandó el confirmation_token de una vista previa, pero el recibo que se calcularía ahora es otro (se timbró otro recibo del empleado ese mes, cambió su salario o se actualizaron las tablas). No se timbró: pida la vista previa otra vez y mande su token nuevo.
+	CodePayrollCalculationChanged = "payroll_calculation_changed"
+	// Fiscalisto calcula solo la nómina ordinaria (sueldo, ISR con el subsidio para el empleo y cuotas obreras del IMSS). Aguinaldo, PTU, finiquitos, liquidaciones, pensiones y demás los calcula su sistema de nómina: timbre esos importes con POST /v1/payroll_receipts/external. param dice qué campo lo pidió.
+	CodePayrollCalculationUnsupported = "payroll_calculation_unsupported"
 	// El recibo de nómina no se puede calcular o timbrar con esos datos (periodo, días, registro patronal del emisor…). En un recibo calculado por su sistema (/v1/payroll_receipts/external), errors trae todos los problemas, cada uno con su param, code (missing, not_allowed, invalid, catalog, totals_mismatch, rule) y message. No se usó ningún timbre.
 	CodePayrollInvalid = "payroll_invalid"
 	// El empleado ya tiene un recibo ordinario cuyo periodo se cruza con este (invoice). Un pago adicional del periodo va como recibo extraordinario (type E); para corregir aquel, use replaces.
