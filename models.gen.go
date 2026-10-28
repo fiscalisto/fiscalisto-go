@@ -47,11 +47,11 @@ type Advance struct {
 	UUID string `json:"uuid"`
 	// Fecha de emisión (Fecha), hora de la Ciudad de México.
 	Date string `json:"date"`
-	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	// La serie (Serie) del anticipo, o null.
 	Series *string `json:"series,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// El folio (Folio) del anticipo, o null.
 	Folio *string `json:"folio,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+	// El cliente del anticipo: RFC y nombre.
 	Customer AdvanceCustomer `json:"customer"`
 	// El anticipo antes de impuestos.
 	Amount float64 `json:"amount"`
@@ -63,7 +63,7 @@ type Advance struct {
 	Currency string `json:"currency"`
 }
 
-// AdvanceCustomer: Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+// AdvanceCustomer: El cliente del anticipo: RFC y nombre.
 type AdvanceCustomer struct {
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
 	TaxID string `json:"tax_id"`
@@ -293,7 +293,7 @@ type BankTransactionSuggestedMatch struct {
 	Invoices []string `json:"invoices"`
 	// Lo que el depósito pagaría de cada factura (por inv_…).
 	Amounts map[string]any `json:"amounts"`
-	// egreso (la factura completa y después una nota de crédito por el anticipo, opción A) o remanente (la factura solo por lo que falta, opción B).
+	// PUE: facturas por cobrar que quedan pagadas al conciliar; PPD: se pagan con su complemento de pago (POST /v1/payments).
 	//
 	// Valores: PPD, PUE.
 	Method string `json:"method"`
@@ -533,7 +533,7 @@ type CreateBranchParams struct {
 	Phone *string `json:"phone,omitempty"`
 	// Correo, para el PDF.
 	Email *string `json:"email,omitempty"`
-	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	// La serie de cada tipo de CFDI que se timbra desde ella (invoice, credit_note, payment, transfer), hasta 25 caracteres cada una; la que no mande usa la del emisor.
 	Series *CreateBranchParamsSeries `json:"series,omitempty"`
 }
 
@@ -553,7 +553,7 @@ type CreateBranchParamsAddress struct {
 	State *string `json:"state,omitempty"`
 }
 
-// CreateBranchParamsSeries: Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+// CreateBranchParamsSeries: La serie de cada tipo de CFDI que se timbra desde ella (invoice, credit_note, payment, transfer), hasta 25 caracteres cada una; la que no mande usa la del emisor.
 type CreateBranchParamsSeries struct {
 	// Serie de sus facturas (tipo I); sin ella, la del emisor.
 	Invoice *string `json:"invoice,omitempty"`
@@ -575,7 +575,7 @@ type CreateCreditNoteParams struct {
 	Description *string `json:"description,omitempty"`
 	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
 	PaymentForm string `json:"payment_form"`
-	// Tipo de relación (TipoRelacion): 01 nota de crédito, 03 devolución, 04 sustitución, 07 anticipo…
+	// Tipo de relación (TipoRelacion) con la factura: 01 nota de crédito (por omisión) o 03 devolución de mercancía.
 	//
 	// Valores: 01, 03.
 	Relationship *string `json:"relationship,omitempty"`
@@ -835,7 +835,7 @@ type CreatePaymentParamsDocument struct {
 type CreatePayrollReceiptParams struct {
 	// El empleado (emp_…).
 	Employee string `json:"employee"`
-	// Periodo (Periodo): mes inicial, mes final y año.
+	// El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
 	Period CreatePayrollReceiptParamsPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days *float64 `json:"days,omitempty"`
@@ -845,7 +845,7 @@ type CreatePayrollReceiptParams struct {
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
-// CreatePayrollReceiptParamsPeriod: Periodo (Periodo): mes inicial, mes final y año.
+// CreatePayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
 type CreatePayrollReceiptParamsPeriod struct {
 	// Primer día del periodo (FechaInicialPago), AAAA-MM-DD.
 	Start string `json:"start"`
@@ -2035,11 +2035,11 @@ type EmployeeList struct {
 
 // ErrorBody: Todos los errores tienen esta forma.
 type ErrorBody struct {
-	// Por qué el SAT o el PAC no lo aceptaron: mensaje, código del SAT y texto original.
+	// El error: type, code, message (en el idioma pedido), param (el campo a corregir), doc_url y request_id.
 	Error ErrorBodyError `json:"error"`
 }
 
-// ErrorBodyError: Por qué el SAT o el PAC no lo aceptaron: mensaje, código del SAT y texto original.
+// ErrorBodyError: El error: type, code, message (en el idioma pedido), param (el campo a corregir), doc_url y request_id.
 type ErrorBodyError struct {
 	// La familia del error: invalid_request_error, authentication_error, permission_error, not_found_error, idempotency_error, rate_limit_error, invoice_error, balance_error o api_error.
 	//
@@ -2095,6 +2095,326 @@ type EventList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// ExternalPayrollReceiptCreate: Un recibo de nómina que calculó su sistema, con todos sus conceptos e importes: se timbra tal cual.
+type ExternalPayrollReceiptCreate struct {
+	// El emisor (patrón) del recibo; sin él, el único emisor de su cuenta en este modo.
+	Issuer *string `json:"issuer,omitempty"`
+	// TipoNomina: O ordinaria (periodicidad 01–10) o E extraordinaria (periodicidad 99).
+	//
+	// Valores: O, E.
+	Type string `json:"type"`
+	// PeriodicidadPago (c_PeriodicidadPago).
+	Periodicity string `json:"periodicity"`
+	// FechaInicialPago, FechaFinalPago y FechaPago.
+	Period ExternalPayrollReceiptCreatePeriod `json:"period"`
+	// NumDiasPagados: de 0.001 a 36160, hasta 3 decimales.
+	Days float64 `json:"days"`
+	// El patrón (Emisor del complemento): registro patronal y CURP si es persona física.
+	Employer *ExternalPayrollReceiptCreateEmployer `json:"employer,omitempty"`
+	// El empleado (Receptor y Nomina/Receptor) con los datos de su sistema de nómina; no usa ni cambia los empleados de Fiscalisto.
+	Employee ExternalPayrollReceiptCreateEmployee `json:"employee"`
+	// Percepciones (Percepcion): sueldo y demás, gravado y exento.
+	Perceptions []ExternalPayrollReceiptCreatePerception `json:"perceptions,omitempty"`
+	// SeparacionIndemnizacion: con las percepciones 022, 023 o 025.
+	Separation *ExternalPayrollReceiptCreateSeparation `json:"separation,omitempty"`
+	// JubilacionPensionRetiro: con las percepciones 039 o 044.
+	Retirement *ExternalPayrollReceiptCreateRetirement `json:"retirement,omitempty"`
+	// Deducciones (Deduccion): ISR, cuotas IMSS y demás.
+	Deductions []ExternalPayrollReceiptCreateDeduction `json:"deductions,omitempty"`
+	// Otros pagos (OtroPago): subsidio para el empleo.
+	OtherPayments []ExternalPayrollReceiptCreateOtherPayment `json:"other_payments,omitempty"`
+	// Incapacidades: con la percepción 014 o la deducción 006.
+	Disabilities []ExternalPayrollReceiptCreateDisability `json:"disabilities,omitempty"`
+	// Los totales que calculó su sistema: Fiscalisto los compara al centavo con las líneas y rechaza el recibo si no cuadran.
+	Totals ExternalPayrollReceiptCreateTotals `json:"totals"`
+	// Sus ids: el empleado y la corrida de nómina. payroll_run_id es obligatorio en un recibo extraordinario.
+	References *ExternalPayrollReceiptCreateReferences `json:"references,omitempty"`
+	// El recibo vigente (inv_… o UUID) que este sustituye: relación 04 y se cancela con motivo 01.
+	Replaces *string `json:"replaces,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// ExternalPayrollReceiptCreateDeduction: ExternalPayrollReceiptCreateDeduction.
+type ExternalPayrollReceiptCreateDeduction struct {
+	// TipoDeduccion (c_TipoDeduccion): 001 IMSS, 002 ISR, 010 Infonavit…
+	Type string `json:"type"`
+	// El archivo .key en base64 (puede traer el prefijo data:).
+	Key string `json:"key"`
+	// Concepto de los egresos (IntegracEgresos/ConceptoS), hasta 100 caracteres.
+	Concept string `json:"concept"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Amount float64 `json:"amount"`
+}
+
+// ExternalPayrollReceiptCreateDisability: ExternalPayrollReceiptCreateDisability.
+type ExternalPayrollReceiptCreateDisability struct {
+	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
+	Days float64 `json:"days"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	Type string `json:"type"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Amount *float64 `json:"amount,omitempty"`
+}
+
+// ExternalPayrollReceiptCreateEmployee: El empleado (Receptor y Nomina/Receptor) con los datos de su sistema de nómina; no usa ni cambia los empleados de Fiscalisto.
+type ExternalPayrollReceiptCreateEmployee struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name string `json:"name"`
+	// Código postal del domicilio fiscal, 5 dígitos, como en la constancia de situación fiscal. El de un emisor es el lugar de expedición (LugarExpedicion) de sus comprobantes.
+	Zip string `json:"zip"`
+	// CURP, 18 caracteres.
+	CURP string `json:"curp"`
+	// NumEmpleado.
+	Number string `json:"number"`
+	// Para send_email; no va en el XML.
+	Email *string `json:"email,omitempty"`
+	// Número de seguridad social (NumSeguridadSocial), 11 dígitos.
+	SocialSecurityNumber *string `json:"social_security_number,omitempty"`
+	// FechaInicioRelLaboral.
+	StartDate *string `json:"start_date,omitempty"`
+	// Antigüedad (P52W o P1Y2M3D). Sin el campo y con registro patronal: semanas desde start_date hasta el fin del periodo.
+	Seniority *string `json:"seniority,omitempty"`
+	// Tipo de contrato (TipoContrato), c_TipoContrato. Por omisión 01, por tiempo indeterminado.
+	ContractType string `json:"contract_type"`
+	// Tipo de régimen (TipoRegimen): 02 sueldos y salarios.
+	RegimeType string `json:"regime_type"`
+	// true si es sindicalizado (Sindicalizado).
+	Unionized *bool `json:"unionized,omitempty"`
+	// Tipo de jornada (TipoJornada), c_TipoJornada. Por omisión 01, diurna.
+	WorkdayType *string `json:"workday_type,omitempty"`
+	// Clase de riesgo del puesto ante el IMSS (RiesgoPuesto), 1 a 5. Por omisión 1.
+	RiskClass *string `json:"risk_class,omitempty"`
+	// Departamento (Departamento).
+	Department *string `json:"department,omitempty"`
+	// Puesto (Puesto).
+	Position *string `json:"position,omitempty"`
+	// SalarioBaseCotApor.
+	ContributionBaseSalary *float64 `json:"contribution_base_salary,omitempty"`
+	// SalarioDiarioIntegrado.
+	IntegratedDailySalary *float64 `json:"integrated_daily_salary,omitempty"`
+	// ClaveEntFed (c_Estado): JAL, CMX, NLE…
+	State string `json:"state"`
+	// Banco (c_Banco); no va con una CLABE.
+	Bank *string `json:"bank,omitempty"`
+	// CuentaBancaria: CLABE de 18 dígitos, tarjeta o cuenta.
+	BankAccount *string `json:"bank_account,omitempty"`
+	// SubContratacion: el porcentaje suma 100.
+	Subcontracting []ExternalPayrollReceiptCreateEmployeeSubcontractingItem `json:"subcontracting,omitempty"`
+}
+
+// ExternalPayrollReceiptCreateEmployeeSubcontractingItem: ExternalPayrollReceiptCreateEmployeeSubcontractingItem.
+type ExternalPayrollReceiptCreateEmployeeSubcontractingItem struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// PorcentajeTiempo.
+	Percentage float64 `json:"percentage"`
+}
+
+// ExternalPayrollReceiptCreateEmployer: El patrón (Emisor del complemento): registro patronal y CURP si es persona física.
+type ExternalPayrollReceiptCreateEmployer struct {
+	// Registro patronal. Sin el campo: el del emisor cuando el contrato es 01–08. null: sin registro patronal.
+	Registration *string `json:"registration,omitempty"`
+	// CURP del patrón persona física. Sin el campo: la guardada en el emisor.
+	CURP *string `json:"curp,omitempty"`
+	// RfcPatronOrigen.
+	OriginTaxID *string `json:"origin_tax_id,omitempty"`
+	// EntidadSNCF, solo para entidades adheridas al SNCF.
+	Sncf *ExternalPayrollReceiptCreateEmployerSncf `json:"sncf,omitempty"`
+}
+
+// ExternalPayrollReceiptCreateEmployerSncf: EntidadSNCF, solo para entidades adheridas al SNCF.
+type ExternalPayrollReceiptCreateEmployerSncf struct {
+	// OrigenRecurso: IP, IF o IM.
+	ResourceOrigin string `json:"resource_origin"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	OwnResourceAmount *float64 `json:"own_resource_amount,omitempty"`
+}
+
+// ExternalPayrollReceiptCreateOtherPayment: ExternalPayrollReceiptCreateOtherPayment.
+type ExternalPayrollReceiptCreateOtherPayment struct {
+	// TipoOtroPago (c_TipoOtroPago): 002 subsidio para el empleo…
+	Type string `json:"type"`
+	// El archivo .key en base64 (puede traer el prefijo data:).
+	Key string `json:"key"`
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept string `json:"concept"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Amount float64 `json:"amount"`
+	// SubsidioCausado: solo con el 002.
+	SubsidyCaused *float64 `json:"subsidy_caused,omitempty"`
+	// CompensacionSaldosAFavor: solo con el 004.
+	BalanceCompensation *ExternalPayrollReceiptCreateOtherPaymentBalanceCompensation `json:"balance_compensation,omitempty"`
+}
+
+// ExternalPayrollReceiptCreateOtherPaymentBalanceCompensation: CompensacionSaldosAFavor: solo con el 004.
+type ExternalPayrollReceiptCreateOtherPaymentBalanceCompensation struct {
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Balance float64 `json:"balance"`
+	// Año (Ejercicio).
+	Year float64 `json:"year"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Remaining float64 `json:"remaining"`
+}
+
+// ExternalPayrollReceiptCreatePerception: ExternalPayrollReceiptCreatePerception.
+type ExternalPayrollReceiptCreatePerception struct {
+	// TipoPercepcion (c_TipoPercepcion): 001 sueldos, 002 aguinaldo…
+	Type string `json:"type"`
+	// Clave del patrón (3 a 15 caracteres).
+	Key string `json:"key"`
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept string `json:"concept"`
+	// ImporteGravado.
+	Taxed float64 `json:"taxed"`
+	// ImporteExento.
+	Exempt float64 `json:"exempt"`
+	// HorasExtra: solo con la percepción 019.
+	Overtime []ExternalPayrollReceiptCreatePerceptionOvertimeItem `json:"overtime,omitempty"`
+	// AccionesOTitulos: solo con la percepción 045.
+	StockOptions *ExternalPayrollReceiptCreatePerceptionStockOptions `json:"stock_options,omitempty"`
+}
+
+// ExternalPayrollReceiptCreatePerceptionOvertimeItem: ExternalPayrollReceiptCreatePerceptionOvertimeItem.
+type ExternalPayrollReceiptCreatePerceptionOvertimeItem struct {
+	// Días con horas extra (Dias).
+	Days float64 `json:"days"`
+	// c_TipoHoras: 01 dobles, 02 triples, 03 simples.
+	HoursType string `json:"hours_type"`
+	// Horas extra (HorasExtra).
+	Hours float64 `json:"hours"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	AmountPaid float64 `json:"amount_paid"`
+}
+
+// ExternalPayrollReceiptCreatePerceptionStockOptions: AccionesOTitulos: solo con la percepción 045.
+type ExternalPayrollReceiptCreatePerceptionStockOptions struct {
+	// Valor de mercado (ValorMercado).
+	MarketValue float64 `json:"market_value"`
+	// Precio al otorgarse (PrecioAlOtorgarse).
+	GrantPrice float64 `json:"grant_price"`
+}
+
+// ExternalPayrollReceiptCreatePeriod: FechaInicialPago, FechaFinalPago y FechaPago.
+type ExternalPayrollReceiptCreatePeriod struct {
+	// Primer día del periodo (FechaInicialPago), AAAA-MM-DD.
+	Start string `json:"start"`
+	// Último día del periodo (FechaFinalPago), AAAA-MM-DD.
+	End string `json:"end"`
+	// Fecha de pago (FechaPago), AAAA-MM-DD. Por omisión el último día del periodo.
+	PaymentDate string `json:"payment_date"`
+}
+
+// ExternalPayrollReceiptCreateReferences: Sus ids: el empleado y la corrida de nómina. payroll_run_id es obligatorio en un recibo extraordinario.
+type ExternalPayrollReceiptCreateReferences struct {
+	// El id del empleado en su sistema.
+	EmployeeID *string `json:"employee_id,omitempty"`
+	// El id de la corrida de nómina en su sistema.
+	PayrollRunID *string `json:"payroll_run_id,omitempty"`
+}
+
+// ExternalPayrollReceiptCreateRetirement: JubilacionPensionRetiro: con las percepciones 039 o 044.
+type ExternalPayrollReceiptCreateRetirement struct {
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	TotalOnePayment *float64 `json:"total_one_payment,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	TotalInstallment *float64 `json:"total_installment,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	DailyAmount *float64 `json:"daily_amount,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	AccumulableIncome float64 `json:"accumulable_income"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	NonAccumulableIncome float64 `json:"non_accumulable_income"`
+}
+
+// ExternalPayrollReceiptCreateSeparation: SeparacionIndemnizacion: con las percepciones 022, 023 o 025.
+type ExternalPayrollReceiptCreateSeparation struct {
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	TotalPaid float64 `json:"total_paid"`
+	// NumAñosServicio.
+	YearsOfService float64 `json:"years_of_service"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	LastMonthlySalary float64 `json:"last_monthly_salary"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	AccumulableIncome float64 `json:"accumulable_income"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	NonAccumulableIncome float64 `json:"non_accumulable_income"`
+}
+
+// ExternalPayrollReceiptCreateTotals: Los totales que calculó su sistema: Fiscalisto los compara al centavo con las líneas y rechaza el recibo si no cuadran.
+type ExternalPayrollReceiptCreateTotals struct {
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Perceptions float64 `json:"perceptions"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Deductions float64 `json:"deductions"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	OtherPayments float64 `json:"other_payments"`
+	// Neto: percepciones más otros pagos menos deducciones.
+	Net float64 `json:"net"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Salaries *float64 `json:"salaries,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Separation *float64 `json:"separation,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Retirement *float64 `json:"retirement,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Taxed *float64 `json:"taxed,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	Exempt *float64 `json:"exempt,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	TaxesWithheld *float64 `json:"taxes_withheld,omitempty"`
+	// Pesos con hasta 2 decimales, como se timbran: Fiscalisto no los redondea.
+	OtherDeductions *float64 `json:"other_deductions,omitempty"`
+}
+
+// ExternalPayrollReceiptPreview: Un recibo calculado por su sistema, revisado y sin timbrar: lo que se timbraría, tal cual.
+type ExternalPayrollReceiptPreview struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// external: los importes son los que calculó su sistema.
+	Calculation string `json:"calculation"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El empleado como receptor del CFDI (Receptor).
+	Customer ExternalPayrollReceiptPreviewCustomer `json:"customer"`
+	// El recibo de nómina 1.2: empleado, periodo, percepciones, deducciones y otros pagos.
+	Payroll InvoicePayroll `json:"payroll"`
+	// SubTotal: percepciones más otros pagos.
+	Subtotal float64 `json:"subtotal"`
+	// Descuento: las deducciones.
+	Discount float64 `json:"discount"`
+	// Total: el neto a pagar.
+	Total float64 `json:"total"`
+	// Lo que el SAT podría observar; no impide timbrar.
+	Warnings []ExternalPayrollReceiptPreviewWarning `json:"warnings"`
+	// El XML que se mandaría al PAC, sin sello ni timbre: sus importes son exactamente los que mandó.
+	UnsignedXML string `json:"unsigned_xml"`
+}
+
+// ExternalPayrollReceiptPreviewCustomer: El empleado como receptor del CFDI (Receptor).
+type ExternalPayrollReceiptPreviewCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName string `json:"legal_name"`
+	// Código postal del domicilio fiscal del cliente (DomicilioFiscalReceptor), 5 dígitos.
+	Zip string `json:"zip"`
+}
+
+// ExternalPayrollReceiptPreviewWarning: ExternalPayrollReceiptPreviewWarning.
+type ExternalPayrollReceiptPreviewWarning struct {
+	// El campo de la solicitud.
+	Param string `json:"param"`
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) aún no se puede emitir.
+	Code string `json:"code"`
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message string `json:"message"`
 }
 
 // FinancialStatements: El estado de resultados y el balance general de un mes, leídos de su balanza.
@@ -2243,7 +2563,7 @@ type FinancialStatementsIncomeStatementMonth struct {
 
 // FinancialStatementsIncomeStatementMonthSection: FinancialStatementsIncomeStatementMonthSection.
 type FinancialStatementsIncomeStatementMonthSection struct {
-	// El archivo .key en base64 (puede traer el prefijo data:).
+	// La sección: ingresos, costos, gastos, financiamiento u otros.
 	//
 	// Valores: ingresos, costos, gastos, financiamiento, otros.
 	Key string `json:"key"`
@@ -2287,7 +2607,7 @@ type FinancialStatementsIncomeStatementYearToDate struct {
 
 // FinancialStatementsIncomeStatementYearToDateSection: FinancialStatementsIncomeStatementYearToDateSection.
 type FinancialStatementsIncomeStatementYearToDateSection struct {
-	// El archivo .key en base64 (puede traer el prefijo data:).
+	// La sección: ingresos, costos, gastos, financiamiento u otros.
 	//
 	// Valores: ingresos, costos, gastos, financiamiento, otros.
 	Key string `json:"key"`
@@ -2481,13 +2801,13 @@ type Invoice struct {
 	Status string `json:"status"`
 	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
 	UUID *string `json:"uuid,omitempty"`
-	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	// La serie (Serie) con que se timbró, o null.
 	Series *string `json:"series,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// El folio (Folio) que se le asignó, o null.
 	Folio *string `json:"folio,omitempty"`
 	// Fecha de emisión (Fecha), hora de la Ciudad de México.
 	Date *string `json:"date,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+	// El cliente (Receptor) como quedó en el CFDI: RFC, nombre, régimen fiscal y código postal (y foreign si es extranjero).
 	Customer InvoiceCustomer `json:"customer"`
 	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
 	Use *string `json:"use,omitempty"`
@@ -2505,7 +2825,7 @@ type Invoice struct {
 	Subtotal *float64 `json:"subtotal,omitempty"`
 	// Descuento (Descuento).
 	Discount *float64 `json:"discount,omitempty"`
-	// Impuestos del comprobante, por tipo.
+	// Los impuestos del comprobante sumados por tipo: IVA e IEPS trasladados, IVA e ISR retenidos e impuestos locales; null en un complemento de pago.
 	Taxes *InvoiceTaxes `json:"taxes,omitempty"`
 	// Total en la moneda del comprobante (Total).
 	Total *float64 `json:"total,omitempty"`
@@ -3663,7 +3983,7 @@ type InvoiceCreateRelated struct {
 	Uuids []string `json:"uuids"`
 }
 
-// InvoiceCustomer: Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+// InvoiceCustomer: El cliente (Receptor) como quedó en el CFDI: RFC, nombre, régimen fiscal y código postal (y foreign si es extranjero).
 type InvoiceCustomer struct {
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
 	TaxID *string `json:"tax_id,omitempty"`
@@ -3751,17 +4071,27 @@ type InvoicePaymentDocument struct {
 	Remaining float64 `json:"remaining"`
 }
 
-// InvoicePayroll: Solo en un recibo de nómina (type N).
+// InvoicePayroll: El complemento de nómina 1.2 como se timbró: tipo, periodo, patrón, empleado, percepciones, deducciones, otros pagos, sus nodos y los totales.
 type InvoicePayroll struct {
+	// TipoNomina: O ordinaria, E extraordinaria.
+	//
+	// Valores: O, E.
+	Type string `json:"type"`
+	// fiscalisto: lo calculó Fiscalisto (POST /v1/payroll_receipts); external: lo calculó su sistema de nómina y se timbró tal cual (POST /v1/payroll_receipts/external).
+	//
+	// Valores: fiscalisto, external.
+	Calculation string `json:"calculation"`
 	// Periodicidad del pago (PeriodicidadPago): 02 semanal, 03 catorcenal, 04 quincenal (por omisión), 05 mensual.
 	Periodicity string `json:"periodicity"`
-	// Periodo (Periodo): mes inicial, mes final y año.
+	// Periodo pagado: FechaInicialPago, FechaFinalPago y FechaPago.
 	Period InvoicePayrollPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days float64 `json:"days"`
+	// Los ids de su sistema de nómina (solo en recibos external).
+	References *InvoicePayrollReferences `json:"references,omitempty"`
 	// El patrón (Emisor del complemento): registro patronal y CURP si es persona física.
 	Employer InvoicePayrollEmployer `json:"employer"`
-	// El empleado (emp_…).
+	// El empleado (Nomina/Receptor), como se timbró.
 	Employee InvoicePayrollEmployee `json:"employee"`
 	// Percepciones (Percepcion): sueldo y demás, gravado y exento.
 	Perceptions []InvoicePayrollPerception `json:"perceptions"`
@@ -3769,6 +4099,14 @@ type InvoicePayroll struct {
 	Deductions []InvoicePayrollDeduction `json:"deductions"`
 	// Otros pagos (OtroPago): subsidio para el empleo.
 	OtherPayments []InvoicePayrollOtherPayment `json:"other_payments"`
+	// SeparacionIndemnizacion (percepciones 022, 023, 025).
+	Separation *InvoicePayrollSeparation `json:"separation,omitempty"`
+	// JubilacionPensionRetiro (percepciones 039, 044).
+	Retirement *InvoicePayrollRetirement `json:"retirement,omitempty"`
+	// Incapacidades (percepción 014 o deducción 006).
+	Disabilities []InvoicePayrollDisability `json:"disabilities,omitempty"`
+	// Totales: percepciones, deducciones, otros pagos y el neto a pagar.
+	Totals InvoicePayrollTotals `json:"totals"`
 }
 
 // InvoicePayrollDeduction: InvoicePayrollDeduction.
@@ -3783,7 +4121,17 @@ type InvoicePayrollDeduction struct {
 	Amount float64 `json:"amount"`
 }
 
-// InvoicePayrollEmployee: El empleado (emp_…).
+// InvoicePayrollDisability: InvoicePayrollDisability.
+type InvoicePayrollDisability struct {
+	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
+	Days int64 `json:"days"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	Type string `json:"type"`
+	// Importe.
+	Amount *float64 `json:"amount,omitempty"`
+}
+
+// InvoicePayrollEmployee: El empleado (Nomina/Receptor), como se timbró.
 type InvoicePayrollEmployee struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID *string `json:"id,omitempty"`
@@ -3794,13 +4142,15 @@ type InvoicePayrollEmployee struct {
 	// Número de seguridad social (NumSeguridadSocial), 11 dígitos.
 	SocialSecurityNumber *string `json:"social_security_number,omitempty"`
 	// Fecha de inicio de la relación laboral (FechaInicioRelLaboral), AAAA-MM-DD.
-	StartDate string `json:"start_date"`
+	StartDate *string `json:"start_date,omitempty"`
+	// Antigüedad (P52W, P1Y2M3D).
+	Seniority *string `json:"seniority,omitempty"`
 	// Tipo de contrato (TipoContrato), c_TipoContrato. Por omisión 01, por tiempo indeterminado.
 	ContractType string `json:"contract_type"`
 	// true si es sindicalizado (Sindicalizado).
-	Unionized bool `json:"unionized"`
+	Unionized *bool `json:"unionized,omitempty"`
 	// Tipo de jornada (TipoJornada), c_TipoJornada. Por omisión 01, diurna.
-	WorkdayType string `json:"workday_type"`
+	WorkdayType *string `json:"workday_type,omitempty"`
 	// Tipo de régimen (TipoRegimen): 02 sueldos y salarios.
 	RegimeType string `json:"regime_type"`
 	// Departamento (Departamento).
@@ -3815,6 +4165,20 @@ type InvoicePayrollEmployee struct {
 	IntegratedDailySalary *float64 `json:"integrated_daily_salary,omitempty"`
 	// Entidad federativa donde trabaja (ClaveEntFed): JAL, CMX, NLE…
 	State string `json:"state"`
+	// Banco (Banco), c_Banco.
+	Bank *string `json:"bank,omitempty"`
+	// Cuenta bancaria o CLABE (CuentaBancaria).
+	BankAccount *string `json:"bank_account,omitempty"`
+	// Subcontratación (SubContratacion).
+	Subcontracting []InvoicePayrollEmployeeSubcontractingItem `json:"subcontracting,omitempty"`
+}
+
+// InvoicePayrollEmployeeSubcontractingItem: InvoicePayrollEmployeeSubcontractingItem.
+type InvoicePayrollEmployeeSubcontractingItem struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Porcentaje de tiempo (PorcentajeTiempo).
+	Percentage float64 `json:"percentage"`
 }
 
 // InvoicePayrollEmployer: El patrón (Emisor del complemento): registro patronal y CURP si es persona física.
@@ -3823,6 +4187,18 @@ type InvoicePayrollEmployer struct {
 	EmployerRegistration *string `json:"employer_registration,omitempty"`
 	// CURP, 18 caracteres.
 	CURP *string `json:"curp,omitempty"`
+	// RFC del patrón de origen (RfcPatronOrigen).
+	OriginTaxID *string `json:"origin_tax_id,omitempty"`
+	// Entidad del SNCF (EntidadSNCF).
+	Sncf *InvoicePayrollEmployerSncf `json:"sncf,omitempty"`
+}
+
+// InvoicePayrollEmployerSncf: Entidad del SNCF (EntidadSNCF).
+type InvoicePayrollEmployerSncf struct {
+	// Origen del recurso (OrigenRecurso): IP, IF o IM.
+	ResourceOrigin string `json:"resource_origin"`
+	// Monto de recursos propios (MontoRecursoPropio), con IM.
+	OwnResourceAmount *float64 `json:"own_resource_amount,omitempty"`
 }
 
 // InvoicePayrollOtherPayment: InvoicePayrollOtherPayment.
@@ -3839,6 +4215,18 @@ type InvoicePayrollOtherPayment struct {
 	SubsidyCaused *float64 `json:"subsidy_caused,omitempty"`
 	// Del subsidio causado, el ISR que evitó (no va en el XML).
 	SubsidyApplied *float64 `json:"subsidy_applied,omitempty"`
+	// Compensación del saldo a favor (CompensacionSaldosAFavor), con el 004.
+	BalanceCompensation *InvoicePayrollOtherPaymentBalanceCompensation `json:"balance_compensation,omitempty"`
+}
+
+// InvoicePayrollOtherPaymentBalanceCompensation: Compensación del saldo a favor (CompensacionSaldosAFavor), con el 004.
+type InvoicePayrollOtherPaymentBalanceCompensation struct {
+	// Saldo a favor (SaldoAFavor).
+	Balance float64 `json:"balance"`
+	// Año del saldo a favor (Año).
+	Year int64 `json:"year"`
+	// Remanente del saldo a favor (RemanenteSalFav).
+	Remaining float64 `json:"remaining"`
 }
 
 // InvoicePayrollPerception: InvoicePayrollPerception.
@@ -3853,9 +4241,33 @@ type InvoicePayrollPerception struct {
 	Taxed float64 `json:"taxed"`
 	// Importe exento (ImporteExento).
 	Exempt float64 `json:"exempt"`
+	// Horas extra (HorasExtra), con la percepción 019.
+	Overtime []InvoicePayrollPerceptionOvertimeItem `json:"overtime,omitempty"`
+	// Acciones o títulos (AccionesOTitulos), con la percepción 045.
+	StockOptions *InvoicePayrollPerceptionStockOptions `json:"stock_options,omitempty"`
 }
 
-// InvoicePayrollPeriod: Periodo (Periodo): mes inicial, mes final y año.
+// InvoicePayrollPerceptionOvertimeItem: InvoicePayrollPerceptionOvertimeItem.
+type InvoicePayrollPerceptionOvertimeItem struct {
+	// Días con horas extra (Dias).
+	Days int64 `json:"days"`
+	// c_TipoHoras: 01 dobles, 02 triples, 03 simples.
+	HoursType string `json:"hours_type"`
+	// Horas extra (HorasExtra).
+	Hours int64 `json:"hours"`
+	// Importe pagado (ImportePagado).
+	AmountPaid float64 `json:"amount_paid"`
+}
+
+// InvoicePayrollPerceptionStockOptions: Acciones o títulos (AccionesOTitulos), con la percepción 045.
+type InvoicePayrollPerceptionStockOptions struct {
+	// Valor de mercado (ValorMercado).
+	MarketValue float64 `json:"market_value"`
+	// Precio al otorgarse (PrecioAlOtorgarse).
+	GrantPrice float64 `json:"grant_price"`
+}
+
+// InvoicePayrollPeriod: Periodo pagado: FechaInicialPago, FechaFinalPago y FechaPago.
 type InvoicePayrollPeriod struct {
 	// Primer día del periodo (FechaInicialPago), AAAA-MM-DD.
 	Start string `json:"start"`
@@ -3863,6 +4275,70 @@ type InvoicePayrollPeriod struct {
 	End string `json:"end"`
 	// Fecha de pago (FechaPago), AAAA-MM-DD. Por omisión el último día del periodo.
 	PaymentDate string `json:"payment_date"`
+}
+
+// InvoicePayrollReferences: InvoicePayrollReferences.
+type InvoicePayrollReferences struct {
+	// El id del empleado en su sistema de nómina.
+	EmployeeID *string `json:"employee_id,omitempty"`
+	// El id de la corrida de nómina en su sistema.
+	PayrollRunID *string `json:"payroll_run_id,omitempty"`
+}
+
+// InvoicePayrollRetirement: JubilacionPensionRetiro (percepciones 039, 044).
+type InvoicePayrollRetirement struct {
+	// Total en una exhibición (TotalUnaExhibicion).
+	TotalOnePayment *float64 `json:"total_one_payment,omitempty"`
+	// Total en parcialidades (TotalParcialidad).
+	TotalInstallment *float64 `json:"total_installment,omitempty"`
+	// Monto diario (MontoDiario).
+	DailyAmount *float64 `json:"daily_amount,omitempty"`
+	// Ingreso acumulable (IngresoAcumulable).
+	AccumulableIncome float64 `json:"accumulable_income"`
+	// Ingreso no acumulable (IngresoNoAcumulable).
+	NonAccumulableIncome float64 `json:"non_accumulable_income"`
+}
+
+// InvoicePayrollSeparation: SeparacionIndemnizacion (percepciones 022, 023, 025).
+type InvoicePayrollSeparation struct {
+	// Total pagado (TotalPagado).
+	TotalPaid float64 `json:"total_paid"`
+	// Años de servicio (NumAñosServicio).
+	YearsOfService int64 `json:"years_of_service"`
+	// Último sueldo mensual ordinario (UltimoSueldoMensOrd).
+	LastMonthlySalary float64 `json:"last_monthly_salary"`
+	// Ingreso acumulable (IngresoAcumulable).
+	AccumulableIncome float64 `json:"accumulable_income"`
+	// Ingreso no acumulable (IngresoNoAcumulable).
+	NonAccumulableIncome float64 `json:"non_accumulable_income"`
+}
+
+// InvoicePayrollTotals: Totales: percepciones, deducciones, otros pagos y el neto a pagar.
+type InvoicePayrollTotals struct {
+	// Total de sueldos, salarios y asimilados (TotalSueldos).
+	Salaries float64 `json:"salaries"`
+	// Total gravado (TotalGravado).
+	Taxed float64 `json:"taxed"`
+	// Total exento (TotalExento).
+	Exempt float64 `json:"exempt"`
+	// Total de separación e indemnización (TotalSeparacionIndemnizacion).
+	Separation float64 `json:"separation"`
+	// Total de jubilación, pensión o retiro (TotalJubilacionPensionRetiro).
+	Retirement float64 `json:"retirement"`
+	// Total de percepciones (TotalPercepciones).
+	Perceptions float64 `json:"perceptions"`
+	// Otras deducciones (TotalOtrasDeducciones).
+	OtherDeductions float64 `json:"other_deductions"`
+	// Impuestos retenidos (TotalImpuestosRetenidos).
+	TaxesWithheld float64 `json:"taxes_withheld"`
+	// Total de deducciones (TotalDeducciones).
+	Deductions float64 `json:"deductions"`
+	// Total de otros pagos (TotalOtrosPagos).
+	OtherPayments float64 `json:"other_payments"`
+	// Subtotal del comprobante: percepciones más otros pagos.
+	Subtotal float64 `json:"subtotal"`
+	// Neto a pagar al empleado.
+	Net float64 `json:"net"`
 }
 
 // InvoiceSubstitutes: La factura que esta sustituyó y si quedó cancelada.
@@ -4487,7 +4963,7 @@ type PayrollReceiptPreview struct {
 	Employee string `json:"employee"`
 	// Periodicidad del pago (PeriodicidadPago): 02 semanal, 03 catorcenal, 04 quincenal (por omisión), 05 mensual.
 	Periodicity string `json:"periodicity"`
-	// Periodo (Periodo): mes inicial, mes final y año.
+	// El periodo de pago: primer y último día y el día de pago (FechaInicialPago, FechaFinalPago y FechaPago).
 	Period PayrollReceiptPreviewPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days float64 `json:"days"`
@@ -4533,9 +5009,9 @@ type PayrollReceiptPreviewISR struct {
 
 // PayrollReceiptPreviewISRAdjustment: El ajuste de fin de mes: subsidio revertido y el ISR que retiene.
 type PayrollReceiptPreviewISRAdjustment struct {
-	// Subsidio causado antes en el mes que se revierte.
+	// El subsidio para el empleo que se revierte en el ajuste.
 	Reversed float64 `json:"reversed"`
-	// El cálculo del ISR del periodo: base, tarifa, subsidio y resultado.
+	// El ISR que se retiene después del ajuste.
 	ISR float64 `json:"isr"`
 }
 
@@ -4553,6 +5029,18 @@ type PayrollReceiptPreviewOtherPayment struct {
 	SubsidyCaused *float64 `json:"subsidy_caused,omitempty"`
 	// Del subsidio causado, el ISR que evitó (no va en el XML).
 	SubsidyApplied *float64 `json:"subsidy_applied,omitempty"`
+	// Compensación del saldo a favor (CompensacionSaldosAFavor), con el 004.
+	BalanceCompensation *PayrollReceiptPreviewOtherPaymentBalanceCompensation `json:"balance_compensation,omitempty"`
+}
+
+// PayrollReceiptPreviewOtherPaymentBalanceCompensation: Compensación del saldo a favor (CompensacionSaldosAFavor), con el 004.
+type PayrollReceiptPreviewOtherPaymentBalanceCompensation struct {
+	// Saldo a favor (SaldoAFavor).
+	Balance float64 `json:"balance"`
+	// Año del saldo a favor (Año).
+	Year int64 `json:"year"`
+	// Remanente del saldo a favor (RemanenteSalFav).
+	Remaining float64 `json:"remaining"`
 }
 
 // PayrollReceiptPreviewPerception: PayrollReceiptPreviewPerception.
@@ -4567,9 +5055,33 @@ type PayrollReceiptPreviewPerception struct {
 	Taxed float64 `json:"taxed"`
 	// Importe exento (ImporteExento).
 	Exempt float64 `json:"exempt"`
+	// Horas extra (HorasExtra), con la percepción 019.
+	Overtime []PayrollReceiptPreviewPerceptionOvertimeItem `json:"overtime,omitempty"`
+	// Acciones o títulos (AccionesOTitulos), con la percepción 045.
+	StockOptions *PayrollReceiptPreviewPerceptionStockOptions `json:"stock_options,omitempty"`
 }
 
-// PayrollReceiptPreviewPeriod: Periodo (Periodo): mes inicial, mes final y año.
+// PayrollReceiptPreviewPerceptionOvertimeItem: PayrollReceiptPreviewPerceptionOvertimeItem.
+type PayrollReceiptPreviewPerceptionOvertimeItem struct {
+	// Días con horas extra (Dias).
+	Days int64 `json:"days"`
+	// c_TipoHoras: 01 dobles, 02 triples, 03 simples.
+	HoursType string `json:"hours_type"`
+	// Horas extra (HorasExtra).
+	Hours int64 `json:"hours"`
+	// Importe pagado (ImportePagado).
+	AmountPaid float64 `json:"amount_paid"`
+}
+
+// PayrollReceiptPreviewPerceptionStockOptions: Acciones o títulos (AccionesOTitulos), con la percepción 045.
+type PayrollReceiptPreviewPerceptionStockOptions struct {
+	// Valor de mercado (ValorMercado).
+	MarketValue float64 `json:"market_value"`
+	// Precio al otorgarse (PrecioAlOtorgarse).
+	GrantPrice float64 `json:"grant_price"`
+}
+
+// PayrollReceiptPreviewPeriod: El periodo de pago: primer y último día y el día de pago (FechaInicialPago, FechaFinalPago y FechaPago).
 type PayrollReceiptPreviewPeriod struct {
 	// Primer día del periodo (FechaInicialPago), AAAA-MM-DD.
 	Start string `json:"start"`
@@ -4587,6 +5099,10 @@ type PayrollReceiptPreviewTotals struct {
 	Taxed float64 `json:"taxed"`
 	// Total exento (TotalExento).
 	Exempt float64 `json:"exempt"`
+	// Total de separación e indemnización (TotalSeparacionIndemnizacion).
+	Separation float64 `json:"separation"`
+	// Total de jubilación, pensión o retiro (TotalJubilacionPensionRetiro).
+	Retirement float64 `json:"retirement"`
 	// Total de percepciones (TotalPercepciones).
 	Perceptions float64 `json:"perceptions"`
 	// Otras deducciones (TotalOtrasDeducciones).
@@ -4607,7 +5123,7 @@ type PayrollReceiptPreviewTotals struct {
 type PreviewPayrollReceiptParams struct {
 	// El empleado (emp_…).
 	Employee string `json:"employee"`
-	// Periodo (Periodo): mes inicial, mes final y año.
+	// El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
 	Period PreviewPayrollReceiptParamsPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days *float64 `json:"days,omitempty"`
@@ -4617,7 +5133,7 @@ type PreviewPayrollReceiptParams struct {
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
-// PreviewPayrollReceiptParamsPeriod: Periodo (Periodo): mes inicial, mes final y año.
+// PreviewPayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
 type PreviewPayrollReceiptParamsPeriod struct {
 	// Primer día del periodo (FechaInicialPago), AAAA-MM-DD.
 	Start string `json:"start"`
@@ -4965,7 +5481,7 @@ type Retention struct {
 	Status string `json:"status"`
 	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
 	UUID *string `json:"uuid,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// El número de la constancia en la serie del emisor (internal_folio es el que se imprime, RET1…).
 	Folio *int64 `json:"folio,omitempty"`
 	// Folio interno (FolioInt): RET1, RET2…
 	InternalFolio *string `json:"internal_folio,omitempty"`
@@ -5265,7 +5781,7 @@ type SATDeclarationReceipt struct {
 
 // SATDeclarationReceiptConcept: SATDeclarationReceiptConcept.
 type SATDeclarationReceiptConcept struct {
-	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	// El concepto de la línea de captura (ISR, IVA…) como lo da el SAT.
 	Concept string `json:"concept"`
 	// Lo que resultó a cargo.
 	Due *float64 `json:"due,omitempty"`
@@ -5287,7 +5803,7 @@ type SATDeclarationSection struct {
 type SATDeclarationSectionField struct {
 	// El renglón como lo imprime el SAT.
 	Label string `json:"label"`
-	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	// El valor del renglón como lo trae la declaración (número o texto).
 	Value json.RawMessage `json:"value,omitempty"`
 }
 
@@ -5903,7 +6419,7 @@ type StockMovementList struct {
 
 // StockMovementSource: Lo que lo causó: type invoice (id es el UUID del CFDI), adjustment (adj_…), receipt, transfer, count o ticket.
 type StockMovementSource struct {
-	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	// Qué lo movió: invoice (una factura; id es su UUID), adjustment (un ajuste, adj_…), count (un conteo) u otro origen.
 	Type string `json:"type"`
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
@@ -6303,7 +6819,7 @@ type UpdateBranchParams struct {
 	Phone *string `json:"phone,omitempty"`
 	// Correo, para el PDF.
 	Email *string `json:"email,omitempty"`
-	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	// La serie de cada tipo de CFDI que se timbra desde ella (invoice, credit_note, payment, transfer), hasta 25 caracteres cada una; la que no mande usa la del emisor.
 	Series *UpdateBranchParamsSeries `json:"series,omitempty"`
 	// true la archiva: ya no se puede facturar desde ella, y sus facturas la siguen nombrando. false la restaura.
 	Archived *bool `json:"archived,omitempty"`
@@ -6325,7 +6841,7 @@ type UpdateBranchParamsAddress struct {
 	State *string `json:"state,omitempty"`
 }
 
-// UpdateBranchParamsSeries: Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+// UpdateBranchParamsSeries: La serie de cada tipo de CFDI que se timbra desde ella (invoice, credit_note, payment, transfer), hasta 25 caracteres cada una; la que no mande usa la del emisor.
 type UpdateBranchParamsSeries struct {
 	// Serie de sus facturas (tipo I); sin ella, la del emisor.
 	Invoice *string `json:"invoice,omitempty"`

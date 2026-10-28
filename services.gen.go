@@ -1154,6 +1154,36 @@ func (s *PayrollReceiptsService) Preview(ctx context.Context, params *PreviewPay
 	return out, nil
 }
 
+// CreateExternal: Timbrar un recibo calculado por su sistema
+//
+// Para un sistema de nómina que ya calculó el recibo: timbra exactamente sus percepciones (gravado y exento), deducciones, otros pagos, horas extra, incapacidades, separación o jubilación, ordinario (type O) o extraordinario (type E: aguinaldo, PTU, finiquito). Fiscalisto no recalcula ni redondea nada: revisa el XSD, los catálogos del SAT, la Matriz de errores y que sus totales cuadren, y si algo falla responde payroll_invalid con todos los problemas en errors[] (cada uno con su param). Un recibo ordinario por empleado (RFC) y periodo; uno extraordinario por empleado y payroll_run_id. Repetirlo con los mismos importes devuelve el mismo recibo; con otros importes, 409 payroll_receipt_exists (corríjalo con replaces). Queda como factura tipo N.
+//
+// POST /v1/payroll_receipts/external
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-external-payroll-receipt
+func (s *PayrollReceiptsService) CreateExternal(ctx context.Context, params *ExternalPayrollReceiptCreate, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/external", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PreviewExternal: Revisar un recibo calculado por su sistema, sin timbrar
+//
+// Las mismas revisiones que al timbrar, sin timbrar ni usar timbres: devuelve el recibo como se timbraría, los avisos y el XML sin sellar (unsigned_xml), con sus importes tal cual. Si algo falla, payroll_invalid con errors[].
+//
+// POST /v1/payroll_receipts/external/preview
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/preview-external-payroll-receipt
+func (s *PayrollReceiptsService) PreviewExternal(ctx context.Context, params *ExternalPayrollReceiptCreate, opts ...RequestOption) (*ExternalPayrollReceiptPreview, error) {
+	out := new(ExternalPayrollReceiptPreview)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/external/preview", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // InvoiceBatchesService: Lotes (client.InvoiceBatches).
 type InvoiceBatchesService struct{ c *Client }
 

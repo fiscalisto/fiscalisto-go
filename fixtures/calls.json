@@ -398,6 +398,20 @@
 		"go": "PayrollReceipts.Preview",
 		"java": "payrollReceipts.preview"
 	},
+	"POST /v1/payroll_receipts/external": {
+		"python": "payroll_receipts.create_external",
+		"php": "payrollReceipts->createExternal",
+		"dotnet": "PayrollReceipts.CreateExternalAsync",
+		"go": "PayrollReceipts.CreateExternal",
+		"java": "payrollReceipts.createExternal"
+	},
+	"POST /v1/payroll_receipts/external/preview": {
+		"python": "payroll_receipts.preview_external",
+		"php": "payrollReceipts->previewExternal",
+		"dotnet": "PayrollReceipts.PreviewExternalAsync",
+		"go": "PayrollReceipts.PreviewExternal",
+		"java": "payrollReceipts.previewExternal"
+	},
 	"POST /v1/invoice_batches": {
 		"python": "invoice_batches.create",
 		"php": "invoiceBatches->create",
