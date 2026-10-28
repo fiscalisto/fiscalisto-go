@@ -831,6 +831,100 @@ type CreatePaymentParamsDocument struct {
 	Received *float64 `json:"received,omitempty"`
 }
 
+// CreatePayrollBatchParams: los campos de «Timbrar una nómina completa (lote)».
+type CreatePayrollBatchParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Nombre del lote, para usted (Quincena 20).
+	Name *string `json:"name,omitempty"`
+	// El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago). Va para todos los recibos de receipts que no traen el suyo.
+	Period *CreatePayrollBatchParamsPeriod `json:"period,omitempty"`
+	// Mandar a cada empleado su recibo por correo (a los que tienen correo). Solo con receipts.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Los recibos que Fiscalisto calcula: un empleado (emp_…) en cada uno, como en POST /v1/payroll_receipts.
+	Receipts []CreatePayrollBatchParamsReceipt `json:"receipts,omitempty"`
+	// Los recibos que calculó su sistema de nómina, timbrados tal cual. En lugar de receipts.
+	ExternalReceipts []CreatePayrollBatchParamsExternalReceipt `json:"external_receipts,omitempty"`
+}
+
+// CreatePayrollBatchParamsExternalReceipt: Un recibo que calculó su sistema: el cuerpo de POST /v1/payroll_receipts/external, sin issuer, metadata ni replaces, con su reference.
+type CreatePayrollBatchParamsExternalReceipt struct {
+	// El emisor (patrón) del recibo; sin él, el único emisor de su cuenta en este modo.
+	Issuer *string `json:"issuer,omitempty"`
+	// TipoNomina: O ordinaria (periodicidad 01–10) o E extraordinaria (periodicidad 99).
+	//
+	// Valores: O, E.
+	Type string `json:"type"`
+	// PeriodicidadPago (c_PeriodicidadPago).
+	Periodicity string `json:"periodicity"`
+	// FechaInicialPago, FechaFinalPago y FechaPago.
+	Period ExternalPayrollReceiptCreatePeriod `json:"period"`
+	// NumDiasPagados: de 0.001 a 36160, hasta 3 decimales.
+	Days float64 `json:"days"`
+	// El patrón (Emisor del complemento): registro patronal y CURP si es persona física.
+	Employer *ExternalPayrollReceiptCreateEmployer `json:"employer,omitempty"`
+	// El empleado (Receptor y Nomina/Receptor) con los datos de su sistema de nómina; no usa ni cambia los empleados de Fiscalisto.
+	Employee ExternalPayrollReceiptCreateEmployee `json:"employee"`
+	// Percepciones (Percepcion): sueldo y demás, gravado y exento.
+	Perceptions []ExternalPayrollReceiptCreatePerception `json:"perceptions,omitempty"`
+	// SeparacionIndemnizacion: con las percepciones 022, 023 o 025.
+	Separation *ExternalPayrollReceiptCreateSeparation `json:"separation,omitempty"`
+	// JubilacionPensionRetiro: con las percepciones 039 o 044.
+	Retirement *ExternalPayrollReceiptCreateRetirement `json:"retirement,omitempty"`
+	// Deducciones (Deduccion): ISR, cuotas IMSS y demás.
+	Deductions []ExternalPayrollReceiptCreateDeduction `json:"deductions,omitempty"`
+	// Otros pagos (OtroPago): subsidio para el empleo.
+	OtherPayments []ExternalPayrollReceiptCreateOtherPayment `json:"other_payments,omitempty"`
+	// Incapacidades: con la percepción 014 o la deducción 006.
+	Disabilities []ExternalPayrollReceiptCreateDisability `json:"disabilities,omitempty"`
+	// Los totales que calculó su sistema: Fiscalisto los compara al centavo con las líneas y rechaza el recibo si no cuadran.
+	Totals ExternalPayrollReceiptCreateTotals `json:"totals"`
+	// Sus ids: el empleado y la corrida de nómina. payroll_run_id es obligatorio en un recibo extraordinario.
+	References *ExternalPayrollReceiptCreateReferences `json:"references,omitempty"`
+	// El recibo vigente (inv_… o UUID) que este sustituye: relación 04 y se cancela con motivo 01.
+	Replaces *string `json:"replaces,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// Su identificador de este recibo, hasta 100 caracteres.
+	Reference *string `json:"reference,omitempty"`
+}
+
+// CreatePayrollBatchParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago). Va para todos los recibos de receipts que no traen el suyo.
+type CreatePayrollBatchParamsPeriod struct {
+	// Primer día pagado (FechaInicialPago).
+	Start string `json:"start"`
+	// Último día pagado (FechaFinalPago).
+	End string `json:"end"`
+	// Día de pago (FechaPago); sin él, el último día del periodo.
+	PaymentDate *string `json:"payment_date,omitempty"`
+}
+
+// CreatePayrollBatchParamsReceipt: CreatePayrollBatchParamsReceipt.
+type CreatePayrollBatchParamsReceipt struct {
+	// El empleado (emp_…) del emisor del lote.
+	Employee string `json:"employee"`
+	// Su periodo de pago (FechaInicialPago, FechaFinalPago y FechaPago), si no es el del lote (period).
+	Period *CreatePayrollBatchParamsReceiptPeriod `json:"period,omitempty"`
+	// Días pagados; sin él, todos los días que le tocan del periodo.
+	Days *float64 `json:"days,omitempty"`
+	// Mandarle su recibo por correo; sin él, lo que diga send_email del lote. Con true el empleado debe tener correo.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Su identificador de este recibo, hasta 100 caracteres.
+	Reference *string `json:"reference,omitempty"`
+}
+
+// CreatePayrollBatchParamsReceiptPeriod: Su periodo de pago (FechaInicialPago, FechaFinalPago y FechaPago), si no es el del lote (period).
+type CreatePayrollBatchParamsReceiptPeriod struct {
+	// Primer día pagado (FechaInicialPago).
+	Start string `json:"start"`
+	// Último día pagado (FechaFinalPago).
+	End string `json:"end"`
+	// Día de pago (FechaPago); sin él, el último día del periodo.
+	PaymentDate *string `json:"payment_date,omitempty"`
+}
+
 // CreatePayrollReceiptParams: los campos de «Timbrar un recibo de nómina».
 type CreatePayrollReceiptParams struct {
 	// El empleado (emp_…).
@@ -2069,7 +2163,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -4629,7 +4723,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -4701,6 +4795,16 @@ type ListJournalEntriesParams struct {
 
 // ListLedgerAccountsParams: los campos de «Ver el catálogo de cuentas».
 type ListLedgerAccountsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListPayrollBatchesParams: los campos de «Listar lotes de nómina».
+type ListPayrollBatchesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -4955,6 +5059,88 @@ type ListWebhookEndpointsParams struct {
 type MatchBankTransactionParams struct {
 	// Las facturas (inv_… o UUID) que pagó este depósito, de un mismo cliente. Sin ellas, las de suggested_match.
 	Invoices []string `json:"invoices,omitempty"`
+}
+
+// PayrollBatch: Una nómina completa (hasta 1,000 recibos) timbrada en segundo plano.
+type PayrollBatch struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Nombre del lote, para usted.
+	Name string `json:"name"`
+	// fiscalisto: Fiscalisto calculó cada recibo (receipts); external: se timbraron los importes de su sistema (external_receipts).
+	//
+	// Valores: fiscalisto, external.
+	Calculation string `json:"calculation"`
+	// processing: timbrando. completed: ya no queda ningún recibo por timbrar.
+	//
+	// Valores: processing, completed.
+	Status string `json:"status"`
+	// Cuántos recibos tiene el lote.
+	Total int64 `json:"total"`
+	// Cuántos recibos se timbraron.
+	Stamped int64 `json:"stamped"`
+	// Cuántos no se timbraron (cada uno con su error).
+	Failed int64 `json:"failed"`
+	// Cuántos faltan por timbrar.
+	Processing int64 `json:"processing"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo terminó.
+	CompletedAt *string `json:"completed_at,omitempty"`
+	// El recibo de cada empleado, en el orden en que los mandó (no viene en listas).
+	Receipts []PayrollBatchReceipt `json:"receipts,omitempty"`
+}
+
+// PayrollBatchList: Una página de la lista.
+type PayrollBatchList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PayrollBatch `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PayrollBatchReceipt: PayrollBatchReceipt.
+type PayrollBatchReceipt struct {
+	// Su posición en receipts (o external_receipts), desde 0.
+	Index int64 `json:"index"`
+	// Su identificador de esta factura (su número de pedido), hasta 100 caracteres.
+	Reference *string `json:"reference,omitempty"`
+	// El empleado (emp_…), cuando Fiscalisto calculó el recibo.
+	Employee *string `json:"employee,omitempty"`
+	// El RFC del empleado.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Estado del objeto.
+	//
+	// Valores: processing, valid, failed.
+	Status string `json:"status"`
+	// El recibo (inv_…, una factura tipo N); también el que el SAT rechazó.
+	Invoice *string `json:"invoice,omitempty"`
+	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
+	UUID *string `json:"uuid,omitempty"`
+	// El neto del recibo timbrado.
+	Total *float64 `json:"total,omitempty"`
+	// Por qué no se timbró este recibo: su código y su mensaje.
+	Error *PayrollBatchReceiptError `json:"error,omitempty"`
+}
+
+// PayrollBatchReceiptError: PayrollBatchReceiptError.
+type PayrollBatchReceiptError struct {
+	// payroll_invalid, payroll_period_overlap, payroll_receipt_exists, invoice_rejected, invoice_invalid, insufficient_balance…
+	Code string `json:"code"`
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message string `json:"message"`
 }
 
 // PayrollReceiptPreview: El recibo como se timbraría: percepciones, deducciones (ISR, IMSS), otros pagos (subsidio) y el neto.
@@ -6697,7 +6883,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 

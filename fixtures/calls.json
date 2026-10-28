@@ -412,6 +412,27 @@
 		"go": "PayrollReceipts.PreviewExternal",
 		"java": "payrollReceipts.previewExternal"
 	},
+	"POST /v1/payroll_batches": {
+		"python": "payroll_batches.create",
+		"php": "payrollBatches->create",
+		"dotnet": "PayrollBatches.CreateAsync",
+		"go": "PayrollBatches.Create",
+		"java": "payrollBatches.create"
+	},
+	"GET /v1/payroll_batches": {
+		"python": "payroll_batches.list",
+		"php": "payrollBatches->list",
+		"dotnet": "PayrollBatches.ListAsync",
+		"go": "PayrollBatches.List",
+		"java": "payrollBatches.list"
+	},
+	"GET /v1/payroll_batches/{id}": {
+		"python": "payroll_batches.get",
+		"php": "payrollBatches->get",
+		"dotnet": "PayrollBatches.GetAsync",
+		"go": "PayrollBatches.Get",
+		"java": "payrollBatches.get"
+	},
 	"POST /v1/invoice_batches": {
 		"python": "invoice_batches.create",
 		"php": "invoiceBatches->create",

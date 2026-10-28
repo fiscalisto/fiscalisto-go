@@ -46,6 +46,8 @@ type services struct {
 	Employees *EmployeesService
 	// Nómina.
 	PayrollReceipts *PayrollReceiptsService
+	// Nómina.
+	PayrollBatches *PayrollBatchesService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -110,6 +112,7 @@ func (s *services) init(c *Client) {
 	s.Retentions = &RetentionsService{c}
 	s.Employees = &EmployeesService{c}
 	s.PayrollReceipts = &PayrollReceiptsService{c}
+	s.PayrollBatches = &PayrollBatchesService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -1179,6 +1182,55 @@ func (s *PayrollReceiptsService) CreateExternal(ctx context.Context, params *Ext
 func (s *PayrollReceiptsService) PreviewExternal(ctx context.Context, params *ExternalPayrollReceiptCreate, opts ...RequestOption) (*ExternalPayrollReceiptPreview, error) {
 	out := new(ExternalPayrollReceiptPreview)
 	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/external/preview", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayrollBatchesService: Nómina (client.PayrollBatches).
+type PayrollBatchesService struct{ c *Client }
+
+// Create: Timbrar una nómina completa (lote)
+//
+// Toda una corrida de nómina en una solicitud: hasta 1,000 recibos de un emisor, timbrados en segundo plano uno tras otro, sin el límite de timbres por segundo de una sola solicitud. De una de dos formas, nunca mezcladas: receipts (ids de empleado; Fiscalisto calcula cada recibo con el periodo del lote) o external_receipts (los recibos que calculó su sistema, como en POST /v1/payroll_receipts/external, con reference en lugar de metadata). Todo lo que se puede revisar antes se revisa antes: si algo falla, no se timbra ninguno y el error dice qué recibo (param receipts.3.employee). Lo que solo se sabe al timbrar (un periodo ya pagado, el SAT que rechaza un RFC) queda en ese recibo, con su error. Un recibo por empleado y periodo: mandar la corrida otra vez, aun con otra Idempotency-Key, devuelve los recibos que ya tiene. Responde 202; escuche payroll_batch.completed o consulte el lote.
+//
+// POST /v1/payroll_batches
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-payroll-batch
+func (s *PayrollBatchesService) Create(ctx context.Context, params *CreatePayrollBatchParams, opts ...RequestOption) (*PayrollBatch, error) {
+	out := new(PayrollBatch)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_batches", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar lotes de nómina
+//
+// Los lotes de nómina, los más recientes primero, con cuántos recibos se timbraron y cuántos no.
+//
+// GET /v1/payroll_batches
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-payroll-batches
+func (s *PayrollBatchesService) List(ctx context.Context, params *ListPayrollBatchesParams, opts ...RequestOption) (*Page[PayrollBatch], error) {
+	return list[PayrollBatch](ctx, s.c, "/v1/payroll_batches", params, "", opts)
+}
+
+// ListAutoPaging: Listar lotes de nómina, todos, página por página: for x, err := range …
+func (s *PayrollBatchesService) ListAutoPaging(ctx context.Context, params *ListPayrollBatchesParams, opts ...RequestOption) iter.Seq2[PayrollBatch, error] {
+	return listAll[PayrollBatch](ctx, s.c, "/v1/payroll_batches", params, opts)
+}
+
+// Get: Ver un lote de nómina
+//
+// Con el recibo de cada empleado: timbrado (su factura y UUID) o por qué no (error.code y error.message).
+//
+// GET /v1/payroll_batches/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-payroll-batch
+func (s *PayrollBatchesService) Get(ctx context.Context, id string, opts ...RequestOption) (*PayrollBatch, error) {
+	out := new(PayrollBatch)
+	if err := s.c.do(ctx, "GET", "/v1/payroll_batches/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
