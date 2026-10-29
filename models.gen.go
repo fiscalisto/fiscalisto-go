@@ -1677,8 +1677,8 @@ type CreateTicketParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El folio de la venta en su sistema, único por emisor: letras, números, - _ / y punto. Registrar el mismo folio con el mismo total responde el ticket que ya existe.
 	Folio string `json:"folio"`
-	// Lo que se cobró, impuestos incluidos y sin propina.
-	Total float64 `json:"total"`
+	// Lo que se cobró, impuestos incluidos y sin propina. Con `lines` puede omitirlo (es su suma); si lo manda, debe ser igual.
+	Total *float64 `json:"total,omitempty"`
 	// Propina: no va en la factura. El cliente puede escribir el total con ella o sin ella.
 	Tip *float64 `json:"tip,omitempty"`
 	// c_FormaPago de la venta: 01 efectivo, 04 tarjeta de crédito…
@@ -1697,6 +1697,28 @@ type CreateTicketParams struct {
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
+	// Una venta de varios conceptos (el folio de un hotel: noches, desayunos, lavandería), cada uno con su producto o sus claves, sus impuestos y lo que se cobró por él; hasta 200. En lugar de `product`, `description`, `product_key`, `unit_key` e `iva`. La factura del cliente lleva un concepto por línea; la factura global, uno por cada combinación de impuestos del ticket.
+	Lines []CreateTicketParamsLine `json:"lines,omitempty"`
+}
+
+// CreateTicketParamsLine: CreateTicketParamsLine.
+type CreateTicketParamsLine struct {
+	// Un producto (prd_…) de su catálogo: sus claves, IVA e impuestos locales.
+	Product *string `json:"product,omitempty"`
+	// El concepto. Con `product`, reemplaza su descripción; sin él, va con `product_key`.
+	Description *string `json:"description,omitempty"`
+	// c_ClaveProdServ (8 dígitos), si no usa `product`.
+	ProductKey *string `json:"product_key,omitempty"`
+	// c_ClaveUnidad. Por omisión, la de la clave del producto.
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Tasa de IVA incluida en su total. Por omisión 0.16.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// Unidades (noches, piezas). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Lo que se cobró por este concepto, impuestos incluidos.
+	Total float64 `json:"total"`
 }
 
 // CreateWebhookEndpointParams: los campos de «Crear un webhook».
@@ -6463,6 +6485,14 @@ type SelfInvoicing struct {
 	//
 	// Valores: 01, 02, 03, 04.
 	GlobalPeriodicity string `json:"global_periodicity"`
+	// Si el portal pide el total para encontrar el ticket (true) o solo su código (false).
+	AskTotal bool `json:"ask_total"`
+	// El título del portal, o null para «Facture su ticket».
+	PortalTitle *string `json:"portal_title,omitempty"`
+	// El mensaje bajo el título, o null.
+	PortalMessage *string `json:"portal_message,omitempty"`
+	// Dónde encuentra el comprador su código, bajo el campo; null para el texto de Fiscalisto.
+	CodeHint *string `json:"code_hint,omitempty"`
 }
 
 // SendInvoiceParams: los campos de «Enviar por correo».
@@ -6939,10 +6969,12 @@ type Ticket struct {
 	Tip float64 `json:"tip"`
 	// c_FormaPago de la venta.
 	PaymentForm string `json:"payment_form"`
-	// El concepto de la factura.
+	// El concepto de la factura (el primero, si lleva varios).
 	Description string `json:"description"`
-	// c_ClaveProdServ del concepto.
+	// c_ClaveProdServ del concepto (el primero, si lleva varios).
 	ProductKey string `json:"product_key"`
+	// Sus conceptos, en orden: uno solo si se registró sin lines. Cada uno con su producto (prd_… o null), descripción, claves del SAT, IVA (null si no es objeto de impuesto), unidades y lo que se cobró por él, impuestos incluidos.
+	Lines []TicketLine `json:"lines"`
 	// Cuándo se vendió.
 	SoldAt string `json:"sold_at"`
 	// El último día (AAAA-MM-DD) en que el comprador puede facturarlo; después entra en la factura global.
@@ -6963,6 +6995,24 @@ type TicketCustomer struct {
 	TaxID string `json:"tax_id"`
 	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
 	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// TicketLine: TicketLine.
+type TicketLine struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product *string `json:"product,omitempty"`
+	// Descripción.
+	Description string `json:"description"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey string `json:"product_key"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	UnitKey string `json:"unit_key"`
+	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	IVA *string `json:"iva,omitempty"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity float64 `json:"quantity"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
 }
 
 // TicketList: Una página de la lista.
@@ -7495,6 +7545,14 @@ type UpdateSelfInvoicingParams struct {
 	//
 	// Valores: 01, 02, 03, 04.
 	GlobalPeriodicity *string `json:"global_periodicity,omitempty"`
+	// `true` (por omisión): el comprador busca su ticket con el código y el total. `false`: solo con el código (sus 4 caracteres al azar; cada ticket se bloquea tras varios intentos fallidos).
+	AskTotal *bool `json:"ask_total,omitempty"`
+	// El título del portal, en lugar de «Facture su ticket». `null` lo quita.
+	PortalTitle *string `json:"portal_title,omitempty"`
+	// Un mensaje bajo el título (instrucciones, horario, a quién escribir). `null` lo quita.
+	PortalMessage *string `json:"portal_message,omitempty"`
+	// Dónde encuentra el comprador su código, bajo el campo («Viene en su correo de salida»). `null` pone el de Fiscalisto.
+	CodeHint *string `json:"code_hint,omitempty"`
 }
 
 // UpdateStoreConnectionParams: los campos de «Cambiar cómo se vuelven tickets sus pedidos».
