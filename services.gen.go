@@ -2498,7 +2498,7 @@ func (s *QuotesService) Get(ctx context.Context, id string, opts ...RequestOptio
 
 // Update: Cambiar una cotización
 //
-// Solo lo que mande cambia. Un borrador cambia ahí mismo; una que ya se envió se vuelve una versión nueva en borrador (mismo número, version + 1) que el cliente ve al mandarla; mientras, su liga muestra la anterior. Una aceptada, rechazada o facturada ya no cambia.
+// Solo lo que mande cambia. Un borrador cambia ahí mismo; una que ya se envió (también si venció, se rechazó o se retiró) se vuelve una versión nueva en borrador (mismo número, version + 1) que el cliente ve al mandarla; mientras, su liga muestra la anterior. Una aceptada o facturada ya no cambia.
 //
 // POST /v1/quotes/{id}
 //
@@ -2513,7 +2513,7 @@ func (s *QuotesService) Update(ctx context.Context, id string, params *UpdateQuo
 
 // Delete: Borrar una cotización
 //
-// Solo una que nunca se envió; si no, 400 quote_not_draft.
+// Borra la cotización con todas sus versiones; si ya se envió, su url deja de funcionar. Una aceptada o facturada no se borra: 400 quote_not_deletable. Para cerrarla sin borrarla, POST /v1/quotes/{id}/withdraw.
 //
 // DELETE /v1/quotes/{id}
 //
@@ -2551,6 +2551,36 @@ func (s *QuotesService) Send(ctx context.Context, id string, params *SendQuotePa
 func (s *QuotesService) Accept(ctx context.Context, id string, opts ...RequestOption) (*Quote, error) {
 	out := new(Quote)
 	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/accept", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Withdraw: Retirar una cotización
+//
+// Usted ya no la ofrece: su liga dice que se retiró y el cliente ya no la puede aceptar (status withdrawn, decided_by user). Llega quote.withdrawn. Para ofrecerla de nuevo, cámbiela con POST /v1/quotes/{id} (una versión nueva) y mándela. Una que nunca se envió se borra: 400 quote_not_sent.
+//
+// POST /v1/quotes/{id}/withdraw
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/withdraw-quote
+func (s *QuotesService) Withdraw(ctx context.Context, id string, params *WithdrawQuoteParams, opts ...RequestOption) (*Quote, error) {
+	out := new(Quote)
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/withdraw", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reject: Marcar rechazada
+//
+// El cliente le dijo que no por teléfono, en persona… (status rejected, decided_by user; su nota en customer_comment). Llega quote.rejected. También para una vencida que ya no va a seguir.
+//
+// POST /v1/quotes/{id}/reject
+//
+// https://fiscalisto.com/docs/api/referencia/cotizaciones/reject-quote
+func (s *QuotesService) Reject(ctx context.Context, id string, params *RejectQuoteParams, opts ...RequestOption) (*Quote, error) {
+	out := new(Quote)
+	if err := s.c.do(ctx, "POST", "/v1/quotes/"+url.PathEscape(id)+"/reject", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

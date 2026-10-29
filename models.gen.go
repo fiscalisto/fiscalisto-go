@@ -2185,7 +2185,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, issuer.ready, balance.low o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -4771,7 +4771,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -4881,7 +4881,7 @@ type ListQuotesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las que estén en este estado.
 	//
-	// Valores: draft, sent, viewed, accepted, rejected, expired, invoiced.
+	// Valores: draft, sent, viewed, accepted, rejected, withdrawn, expired, invoiced.
 	Status *string `json:"status,omitempty"`
 }
 
@@ -5481,9 +5481,9 @@ type Quote struct {
 	Number string `json:"number"`
 	// Cambiar una ya enviada hace una versión nueva con el mismo número; el id contesta siempre la última.
 	Version int64 `json:"version"`
-	// draft, sent, viewed (el cliente abrió la liga), accepted, rejected, expired (pasó valid_until) o invoiced.
+	// draft, sent, viewed (el cliente abrió la liga), accepted, rejected, withdrawn (usted la retiró), expired (pasó valid_until) o invoiced.
 	//
-	// Valores: draft, sent, viewed, accepted, rejected, expired, invoiced.
+	// Valores: draft, sent, viewed, accepted, rejected, withdrawn, expired, invoiced.
 	Status string `json:"status"`
 	// La liga donde el cliente la ve, descarga su PDF, la acepta, pide cambios o la rechaza; null mientras sea borrador.
 	URL *string `json:"url,omitempty"`
@@ -5503,15 +5503,19 @@ type Quote struct {
 	Notes *string `json:"notes,omitempty"`
 	// Si al aceptarla se timbra la factura sola.
 	AutoInvoice bool `json:"auto_invoice"`
-	// Lo que escribió el cliente al pedir cambios o al rechazarla, o null.
+	// Si se le manda un recordatorio por correo 3 días antes de su último día mientras no responda (remind en POST /v1/quotes/{id}/send).
+	Remind bool `json:"remind"`
+	// Cuándo se mandó el recordatorio, o null.
+	RemindedAt *string `json:"reminded_at,omitempty"`
+	// Lo que escribió el cliente al pedir cambios o al rechazarla, la nota de usted al retirarla o marcarla rechazada, o null.
 	CustomerComment *string `json:"customer_comment,omitempty"`
 	// Cuándo se envió.
 	SentAt *string `json:"sent_at,omitempty"`
 	// Cuándo el cliente abrió la liga por primera vez.
 	ViewedAt *string `json:"viewed_at,omitempty"`
-	// Cuándo se aceptó o rechazó.
+	// Cuándo se aceptó, se rechazó o se retiró.
 	DecidedAt *string `json:"decided_at,omitempty"`
-	// customer (en su liga) o user (usted, con POST /v1/quotes/{id}/accept o desde la app).
+	// customer (en su liga) o user (usted: POST /v1/quotes/{id}/accept, /reject o /withdraw, o desde la app).
 	//
 	// Valores: customer, user.
 	DecidedBy *string `json:"decided_by,omitempty"`
@@ -5705,6 +5709,12 @@ type RecurringInvoiceSchedule struct {
 type RefreshSatDeclarationsParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// RejectQuoteParams: los campos de «Marcar rechazada».
+type RejectQuoteParams struct {
+	// Por qué (queda en customer_comment; el cliente no la ve).
+	Note *string `json:"note,omitempty"`
 }
 
 // ResetTestDataParams: los campos de «Reiniciar los datos de prueba».
@@ -6513,6 +6523,8 @@ type SendQuoteParams struct {
 	Message *string `json:"message,omitempty"`
 	// Al aceptarla, timbrar la factura sola (con los datos fiscales del cliente; si no los tiene, la página se los pide primero). Por omisión false: la factura se timbra con POST /v1/quotes/{id}/invoice.
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+	// Recordarle por correo, a los mismos destinatarios, 3 días antes de su último día si no ha respondido (una vez). Solo al mandarla por correo; por omisión false.
+	Remind *bool `json:"remind,omitempty"`
 }
 
 // SendRetentionParams: los campos de «Enviar por correo».
@@ -6939,7 +6951,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -6961,7 +6973,7 @@ type Ticket struct {
 	//
 	// Valores: pending, invoiced, global, cancelled.
 	Status string `json:"status"`
-	// La página del portal con el código ya escrito: el comprador pone el total y sus datos. Puede incrustarla con fiscalisto.js. null si ya no está pendiente.
+	// La página del portal con el código (c) y el total (t) del ticket: el portal lo encuentra solo y el comprador solo da sus datos. Quien tenga la liga puede facturar el ticket: désela solo al comprador (como el ticket impreso). Puede incrustarla con fiscalisto.js. null si ya no está pendiente.
 	URL *string `json:"url,omitempty"`
 	// Lo que se cobró, impuestos incluidos y sin propina.
 	Total float64 `json:"total"`
@@ -7731,4 +7743,10 @@ type WebhookTestDelivery struct {
 	ResponseBody *string `json:"response_body,omitempty"`
 	// Cuánto tardó su servidor, en milisegundos.
 	DurationMs int64 `json:"duration_ms"`
+}
+
+// WithdrawQuoteParams: los campos de «Retirar una cotización».
+type WithdrawQuoteParams struct {
+	// Por qué (queda en customer_comment; el cliente no la ve).
+	Note *string `json:"note,omitempty"`
 }

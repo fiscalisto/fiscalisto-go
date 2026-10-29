@@ -1084,6 +1084,20 @@
 		"go": "Quotes.Accept",
 		"java": "quotes.accept"
 	},
+	"POST /v1/quotes/{id}/withdraw": {
+		"python": "quotes.withdraw",
+		"php": "quotes->withdraw",
+		"dotnet": "Quotes.WithdrawAsync",
+		"go": "Quotes.Withdraw",
+		"java": "quotes.withdraw"
+	},
+	"POST /v1/quotes/{id}/reject": {
+		"python": "quotes.reject",
+		"php": "quotes->reject",
+		"dotnet": "Quotes.RejectAsync",
+		"go": "Quotes.Reject",
+		"java": "quotes.reject"
+	},
 	"POST /v1/quotes/{id}/invoice": {
 		"python": "quotes.invoice",
 		"php": "quotes->invoice",
