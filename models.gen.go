@@ -4961,6 +4961,30 @@ type ListSatDownloadsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListSatFindingCounterpartiesParams: los campos de «Listar proveedores y clientes con hallazgos».
+type ListSatFindingCounterpartiesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// issued (emitidos: clientes) o received (recibidos: proveedores); sin él, los dos.
+	//
+	// Valores: issued, received.
+	Direction *string `json:"direction,omitempty"`
+	// CFDI desde este día (AAAA-MM-DD).
+	DateGte *string `json:"date_gte,omitempty"`
+	// CFDI hasta este día (AAAA-MM-DD, completo).
+	DateLte *string `json:"date_lte,omitempty"`
+	// Solo los de esta gravedad: critical, warning o info.
+	//
+	// Valores: critical, warning, info.
+	Severity *string `json:"severity,omitempty"`
+	// Solo quienes tienen este hallazgo (efos_definitivo, cancelado, regla_12…; el code de GET /v1/sat_findings).
+	Code *string `json:"code,omitempty"`
+}
+
 // ListSatFindingsParams: los campos de «Listar hallazgos en los CFDI».
 type ListSatFindingsParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -4973,6 +4997,12 @@ type ListSatFindingsParams struct {
 	DateGte *string `json:"date_gte,omitempty"`
 	// CFDI hasta este día (AAAA-MM-DD, completo).
 	DateLte *string `json:"date_lte,omitempty"`
+	// Solo los de esta gravedad: critical, warning o info.
+	//
+	// Valores: critical, warning, info.
+	Severity *string `json:"severity,omitempty"`
+	// Solo los CFDI de este proveedor o cliente (su RFC): qué hallazgos tiene.
+	Counterparty *string `json:"counterparty,omitempty"`
 }
 
 // ListSatInvoicesParams: los campos de «Listar facturas del SAT».
@@ -6191,8 +6221,66 @@ type SATFinding struct {
 	Explanation *string `json:"explanation,omitempty"`
 	// Cuántos CFDI lo tienen, sin revisar.
 	Invoices int64 `json:"invoices"`
-	// La suma de sus totales.
+	// De cuántos proveedores o clientes son esos CFDI.
+	Counterparties int64 `json:"counterparties"`
+	// La suma de sus totales, en pesos (los de otra moneda, a su tipo de cambio).
 	Amount float64 `json:"amount"`
+	// La fecha del CFDI más reciente que lo tiene (AAAA-MM-DD).
+	LastDate *string `json:"last_date,omitempty"`
+}
+
+// SATFindingCounterparty: Un proveedor o cliente con hallazgos sin revisar en los CFDI del emisor: cuántos CFDI, cuánto suman y qué tipos de hallazgo tiene.
+type SATFindingCounterparty struct {
+	// Su RFC (el mismo que rfc). Sirve como starting_after.
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El RFC del proveedor (en recibidos) o del cliente (en emitidos).
+	RFC string `json:"rfc"`
+	// Su nombre como viene en el CFDI, o null.
+	Name *string `json:"name,omitempty"`
+	// Su hallazgo más grave: critical, warning o info.
+	//
+	// Valores: critical, warning, info.
+	Severity string `json:"severity"`
+	// Cuántos de sus CFDI tienen algún hallazgo sin revisar.
+	Invoices int64 `json:"invoices"`
+	// La suma de los totales de esos CFDI, en pesos, cada uno una vez aunque tenga varios hallazgos.
+	Amount float64 `json:"amount"`
+	// La fecha del más reciente de esos CFDI (AAAA-MM-DD).
+	LastDate *string `json:"last_date,omitempty"`
+	// Sus tipos de hallazgo, del más grave al más leve.
+	Findings []SATFindingCounterpartyFinding `json:"findings"`
+}
+
+// SATFindingCounterpartyFinding: SATFindingCounterpartyFinding.
+type SATFindingCounterpartyFinding struct {
+	// El código del hallazgo (el code de GET /v1/sat_findings).
+	Code string `json:"code"`
+	// critical (grave), warning (revisar) o info.
+	//
+	// Valores: critical, warning, info.
+	Severity string `json:"severity"`
+	// Qué es, en palabras.
+	Title string `json:"title"`
+	// En cuántos de sus CFDI está, sin revisar.
+	Invoices int64 `json:"invoices"`
+}
+
+// SATFindingCounterpartyList: Una página de la lista.
+type SATFindingCounterpartyList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATFindingCounterparty `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // SATFindingList: Una página de la lista.

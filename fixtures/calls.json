@@ -664,6 +664,13 @@
 		"go": "SatFindings.List",
 		"java": "satFindings.list"
 	},
+	"GET /v1/sat_finding_counterparties": {
+		"python": "sat_finding_counterparties.list",
+		"php": "satFindingCounterparties->list",
+		"dotnet": "SatFindingCounterparties.ListAsync",
+		"go": "SatFindingCounterparties.List",
+		"java": "satFindingCounterparties.list"
+	},
 	"GET /v1/warehouses": {
 		"python": "warehouses.list",
 		"php": "warehouses->list",

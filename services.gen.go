@@ -64,6 +64,8 @@ type services struct {
 	SatMailboxMessages *SatMailboxMessagesService
 	// Cumplimiento SAT.
 	SatFindings *SatFindingsService
+	// Cumplimiento SAT.
+	SatFindingCounterparties *SatFindingCounterpartiesService
 	// Inventario.
 	Warehouses *WarehousesService
 	// Inventario.
@@ -121,6 +123,7 @@ func (s *services) init(c *Client) {
 	s.Products = &ProductsService{c}
 	s.SatMailboxMessages = &SatMailboxMessagesService{c}
 	s.SatFindings = &SatFindingsService{c}
+	s.SatFindingCounterparties = &SatFindingCounterpartiesService{c}
 	s.Warehouses = &WarehousesService{c}
 	s.StockMovements = &StockMovementsService{c}
 	s.StockAdjustments = &StockAdjustmentsService{c}
@@ -1669,6 +1672,25 @@ func (s *SatFindingsService) List(ctx context.Context, params *ListSatFindingsPa
 		return nil, err
 	}
 	return out, nil
+}
+
+// SatFindingCounterpartiesService: Cumplimiento SAT (client.SatFindingCounterparties).
+type SatFindingCounterpartiesService struct{ c *Client }
+
+// List: Listar proveedores y clientes con hallazgos
+//
+// Los proveedores (en recibidos) y clientes (en emitidos) con hallazgos sin revisar en los CFDI del emisor, del más grave al más leve y después por cuántos CFDI, cada uno con sus tipos de hallazgo. Con code, quién tiene ese hallazgo. No usa timbres.
+//
+// GET /v1/sat_finding_counterparties
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/list-sat-finding-counterparties
+func (s *SatFindingCounterpartiesService) List(ctx context.Context, params *ListSatFindingCounterpartiesParams, opts ...RequestOption) (*Page[SATFindingCounterparty], error) {
+	return list[SATFindingCounterparty](ctx, s.c, "/v1/sat_finding_counterparties", params, "", opts)
+}
+
+// ListAutoPaging: Listar proveedores y clientes con hallazgos, todos, página por página: for x, err := range …
+func (s *SatFindingCounterpartiesService) ListAutoPaging(ctx context.Context, params *ListSatFindingCounterpartiesParams, opts ...RequestOption) iter.Seq2[SATFindingCounterparty, error] {
+	return listAll[SATFindingCounterparty](ctx, s.c, "/v1/sat_finding_counterparties", params, opts)
 }
 
 // WarehousesService: Inventario (client.Warehouses).
