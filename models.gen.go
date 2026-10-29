@@ -6495,6 +6495,10 @@ type SelfInvoicing struct {
 	//
 	// Valores: 01, 02, 03, 04.
 	GlobalPeriodicity string `json:"global_periodicity"`
+	// auto: los tickets que nadie facturó van solos a la factura global de su periodo. off: Fiscalisto no hace factura global de estos tickets (la hace usted en otro lado).
+	//
+	// Valores: auto, off.
+	GlobalInvoice string `json:"global_invoice"`
 	// Si el portal pide el total para encontrar el ticket (true) o solo su código (false).
 	AskTotal bool `json:"ask_total"`
 	// El título del portal, o null para «Facture su ticket».
@@ -7557,6 +7561,10 @@ type UpdateSelfInvoicingParams struct {
 	//
 	// Valores: 01, 02, 03, 04.
 	GlobalPeriodicity *string `json:"global_periodicity,omitempty"`
+	// `auto` (por omisión): los tickets que nadie facturó van solos a la factura global al terminar su periodo. `off`: Fiscalisto no hace factura global de los tickets (por ejemplo, porque su punto de venta ya la hace); quedan pendientes y usted responde por ellos ante el SAT.
+	//
+	// Valores: auto, off.
+	GlobalInvoice *string `json:"global_invoice,omitempty"`
 	// `true` (por omisión): el comprador busca su ticket con el código y el total. `false`: solo con el código (sus 4 caracteres al azar; cada ticket se bloquea tras varios intentos fallidos).
 	AskTotal *bool `json:"ask_total,omitempty"`
 	// El título del portal, en lugar de «Facture su ticket». `null` lo quita.
