@@ -797,6 +797,13 @@
 		"go": "SatInvoices.XML",
 		"java": "satInvoices.xml"
 	},
+	"GET /v1/sat_invoices/{id}/pdf": {
+		"python": "sat_invoices.pdf",
+		"php": "satInvoices->pdf",
+		"dotnet": "SatInvoices.PdfAsync",
+		"go": "SatInvoices.PDF",
+		"java": "satInvoices.pdf"
+	},
 	"POST /v1/sat_declarations/refresh": {
 		"python": "sat_declarations.refresh",
 		"php": "satDeclarations->refresh",
