@@ -1323,7 +1323,7 @@ type CreateRecurringInvoiceParamsSchedule struct {
 type CreateRetentionParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) aún no se puede emitir.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
 	Code string `json:"code"`
 	// Descripción de la retención (DescRetenc); obligatoria con la clave 25 (otro tipo).
 	Description *string `json:"description,omitempty"`
@@ -1332,9 +1332,11 @@ type CreateRetentionParams struct {
 	// Periodo (Periodo): mes inicial, mes final y año.
 	Period CreateRetentionParamsPeriod `json:"period"`
 	// Totales (Totales).
-	Totals CreateRetentionParamsTotals `json:"totals"`
+	Totals *CreateRetentionParamsTotals `json:"totals,omitempty"`
 	// Impuestos del comprobante, por tipo.
-	Taxes []CreateRetentionParamsTax `json:"taxes"`
+	Taxes []CreateRetentionParamsTax `json:"taxes,omitempty"`
+	// Complemento de servicios de plataformas tecnológicas (ServiciosPlataformasTecnologicas 1.0), obligatorio con code 26: una constancia por mes, receptor y tipo de servicio. totals y taxes se calculan de services con las tasas del SAT (ISR de LISR 113-A y LIF 2026 art. 25; IVA 50% o 100%; IEPS en apuestas); si los manda, deben coincidir.
+	Platform *CreateRetentionParamsPlatform `json:"platform,omitempty"`
 	// Complemento de dividendos.
 	Dividends *CreateRetentionParamsDividends `json:"dividends,omitempty"`
 	// Complemento de intereses.
@@ -1459,6 +1461,56 @@ type CreateRetentionParamsPeriod struct {
 	FromMonth *int64 `json:"from_month,omitempty"`
 	// Mes final (MesFin), 1 a 12, del mismo año.
 	ToMonth *int64 `json:"to_month,omitempty"`
+}
+
+// CreateRetentionParamsPlatform: Complemento de servicios de plataformas tecnológicas (ServiciosPlataformasTecnologicas 1.0), obligatorio con code 26: una constancia por mes, receptor y tipo de servicio. totals y taxes se calculan de services con las tasas del SAT (ISR de LISR 113-A y LIF 2026 art. 25; IVA 50% o 100%; IEPS en apuestas); si los manda, deben coincidir.
+type CreateRetentionParamsPlatform struct {
+	// Tipo de servicio (TipoDeServ), c_TipoDeServ: 01 transporte de pasajeros, 02 entrega de alimentos, 03 entrega de bienes, 04 hospedaje, 05 comercio de bienes, 06 otros servicios, 07 a 09 servicios digitales de extranjeros, 11 apuestas y sorteos (desde 2026).
+	Type string `json:"type"`
+	// Cada cuánto paga la plataforma (Periodicidad): 01 semanal, 02 mensual (por omisión), 03 diaria, 04 quincenal, 05 otra.
+	Periodicity *string `json:"periodicity,omitempty"`
+	// true si la persona física optó por que el ISR retenido sea pago definitivo (LISR 113-B): TipoPagoRet 03 en lugar de 04.
+	ISRDefinitive *bool `json:"isr_definitive,omitempty"`
+	// true si se le deposita en una cuenta en el extranjero: se retiene el 100% del IVA (LIF 2026 art. 25-IX-c).
+	ForeignAccount *bool `json:"foreign_account,omitempty"`
+	// Cada operación (DetallesDelServicio), hasta 5,000. Lo pagado en efectivo (payment_form 01) va en la constancia pero no en las bases.
+	Services []CreateRetentionParamsPlatformService `json:"services"`
+}
+
+// CreateRetentionParamsPlatformService: CreateRetentionParamsPlatformService.
+type CreateRetentionParamsPlatformService struct {
+	// Fecha en que el cliente pagó (FechaServ), AAAA-MM-DD, dentro del mes del periodo.
+	Date string `json:"date"`
+	// Forma de pago de la operación (FormaPagoServ), c_FormaPagoServ: 01 efectivo, 02 transferencia, 03 tarjeta de crédito, 04 monedero, 05 dinero electrónico, 06 débito, 07 tarjeta de servicios, 08 intermediario de pagos, 09 premios o bonificaciones.
+	PaymentForm string `json:"payment_form"`
+	// Precio sin IVA (PrecioServSinIVA).
+	Price float64 `json:"price"`
+	// Tasa del impuesto trasladado (TasaCuota): 0.16 (por omisión), 0.08 o 0 de IVA; 0.5 de IEPS solo con type 11, donde cada jugada va dos veces: una operación con su IVA y otra con su IEPS (el SAT pide un impuesto por operación). Sin tasa en premios (09), que desde 2026 no suman en totals.
+	Rate json.RawMessage `json:"rate,omitempty"`
+	// Subtipo (SubTipServ), c_SubTipoServ: con type 01, 01 personal (por omisión), 02 compartido, 03 plus o 04 cancelación; con type 11, 08 apuestas (por omisión) o 09 sorteos.
+	Subtype *string `json:"subtype,omitempty"`
+	// RFC (persona física) del tercero autorizado que prestó el servicio (RFCTerceroAutorizado).
+	AuthorizedTaxID *string `json:"authorized_tax_id,omitempty"`
+	// Comisión de la plataforma por la operación (ComisionDelServicio): amount mayor que cero y percent opcional (0.001 a 1). Obligatoria en cada operación con IVA; no va en premios ni en las de IEPS.
+	Commission *CreateRetentionParamsPlatformServiceCommission `json:"commission,omitempty"`
+	// Contribución gubernamental pagada, como el impuesto sobre hospedaje (ContribucionGubernamental): amount de al menos 1.00 y state (01 a 32).
+	Contribution *CreateRetentionParamsPlatformServiceContribution `json:"contribution,omitempty"`
+}
+
+// CreateRetentionParamsPlatformServiceCommission: CreateRetentionParamsPlatformServiceCommission.
+type CreateRetentionParamsPlatformServiceCommission struct {
+	// Importe.
+	Amount float64 `json:"amount"`
+	// El porcentaje de la comisión sobre el precio, de 0.001 a 1 (0.25 es 25%). Opcional.
+	Percent *float64 `json:"percent,omitempty"`
+}
+
+// CreateRetentionParamsPlatformServiceContribution: CreateRetentionParamsPlatformServiceContribution.
+type CreateRetentionParamsPlatformServiceContribution struct {
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Entidad federativa donde trabaja (ClaveEntFed): JAL, CMX, NLE…
+	State string `json:"state"`
 }
 
 // CreateRetentionParamsPrize: Complemento de premios (Premios 1.0), obligatorio con code 20. Sus montos son los de totals.
@@ -2585,7 +2637,7 @@ type ExternalPayrollReceiptPreviewCustomer struct {
 type ExternalPayrollReceiptPreviewWarning struct {
 	// El campo de la solicitud.
 	Param string `json:"param"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) aún no se puede emitir.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
@@ -5967,7 +6019,7 @@ type Retention struct {
 	InternalFolio *string `json:"internal_folio,omitempty"`
 	// Fecha de emisión (Fecha), hora de la Ciudad de México.
 	Date *string `json:"date,omitempty"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) aún no se puede emitir.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
 	Code string `json:"code"`
 	// Descripción de la retención (DescRetenc).
 	Description *string `json:"description,omitempty"`
@@ -5999,6 +6051,8 @@ type Retention struct {
 	MortgageInterest map[string]any `json:"mortgage_interest,omitempty"`
 	// Complemento de operaciones financieras derivadas de capital (Operacionesconderivados 1.0), obligatorio con code 24.
 	FinancialDerivatives map[string]any `json:"financial_derivatives,omitempty"`
+	// Complemento de servicios de plataformas tecnológicas (ServiciosPlataformasTecnologicas 1.0), obligatorio con code 26: una constancia por mes, receptor y tipo de servicio. totals y taxes se calculan de services con las tasas del SAT (ISR de LISR 113-A y LIF 2026 art. 25; IVA 50% o 100%; IEPS en apuestas); si los manda, deben coincidir.
+	Platform map[string]any `json:"platform,omitempty"`
 	// La cancelación, si se pidió: estado, motivo, sustituto y cuándo.
 	Cancellation *RetentionCancellation `json:"cancellation,omitempty"`
 	// El envío por correo: a quién, con copia a quién y cuándo (null si no se ha enviado).
