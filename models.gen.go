@@ -1011,6 +1011,54 @@ type CreateProductParamsLocalTax struct {
 	Rate float64 `json:"rate"`
 }
 
+// CreatePurchaseReceiptParams: los campos de «Guardar un ticket de compra».
+type CreatePurchaseReceiptParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// La foto (JPG, PNG o WebP) o el PDF, en base64; hasta 8 MB.
+	File string `json:"file"`
+	// image/jpeg, image/png, image/webp o application/pdf.
+	//
+	// Valores: image/jpeg, image/png, image/webp, application/pdf.
+	FileType string `json:"file_type"`
+	// Lo que dice el código QR del ticket, si ya lo leyó (suele ser la liga del portal).
+	QrText *string `json:"qr_text,omitempty"`
+	// false para no leerlo con IA y mandar los datos usted. Por omisión se lee y se llena lo que no mandó.
+	Read *bool `json:"read,omitempty"`
+	// El nombre de la tienda.
+	StoreName *string `json:"store_name,omitempty"`
+	// El RFC de la tienda (el que factura).
+	StoreTaxID *string `json:"store_tax_id,omitempty"`
+	// El día de la compra (AAAA-MM-DD).
+	Date *string `json:"date,omitempty"`
+	// El total pagado, en pesos.
+	Total *float64 `json:"total,omitempty"`
+	// efectivo, tarjeta u otro.
+	//
+	// Valores: efectivo, tarjeta, otro.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// El folio o número de ticket.
+	Folio *string `json:"folio,omitempty"`
+	// Otros datos que pide el portal de la tienda (Web ID, sucursal, caja…), hasta 8.
+	Fields []CreatePurchaseReceiptParamsField `json:"fields,omitempty"`
+	// La dirección del portal de facturación de la tienda (o la liga de autofactura de su QR).
+	PortalURL *string `json:"portal_url,omitempty"`
+	// El correo de facturación de la tienda.
+	StoreEmail *string `json:"store_email,omitempty"`
+	// El uso de la factura (G03, I01…). Por omisión G03 si el régimen del emisor lo permite.
+	Use *string `json:"use,omitempty"`
+	// Una nota para su equipo.
+	Note *string `json:"note,omitempty"`
+}
+
+// CreatePurchaseReceiptParamsField: CreatePurchaseReceiptParamsField.
+type CreatePurchaseReceiptParamsField struct {
+	// Cómo lo llama el ticket (Web ID, Sucursal…).
+	Label string `json:"label"`
+	// Lo que dice el ticket en ese dato.
+	Value string `json:"value"`
+}
+
 // CreateQuoteParams: los campos de «Crear una cotización».
 type CreateQuoteParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -1625,9 +1673,9 @@ type CreateStockAdjustmentParamsLine struct {
 type CreateStoreConnectionParams struct {
 	// El emisor (iss_…) dueño de la tienda. Por omisión, su único emisor.
 	Issuer *string `json:"issuer,omitempty"`
-	// shopify o mercadolibre.
+	// shopify, woocommerce, mercadolibre, tiendanube o amazon.
 	//
-	// Valores: shopify, mercadolibre.
+	// Valores: shopify, mercadolibre, amazon, tiendanube, woocommerce.
 	Platform string `json:"platform"`
 	// Shopify: el dominio de la tienda (mi-tienda.myshopify.com).
 	Shop *string `json:"shop,omitempty"`
@@ -1637,7 +1685,13 @@ type CreateStoreConnectionParams struct {
 	ClientSecret *string `json:"client_secret,omitempty"`
 	// Shopify, solo apps personalizadas antiguas: su token de la Admin API (shpat_…); client_secret es entonces su API secret key.
 	AccessToken *string `json:"access_token,omitempty"`
-	// Mercado Libre: a dónde volver después de autorizar (se agregan store_connection y status).
+	// WooCommerce: la dirección de la tienda (https://mitienda.com).
+	Site *string `json:"site,omitempty"`
+	// WooCommerce: la Clave de cliente (ck_…) de una llave de la API REST con permisos de Lectura/Escritura.
+	ConsumerKey *string `json:"consumer_key,omitempty"`
+	// WooCommerce: la Clave secreta de cliente (cs_…) de esa llave. Se guarda cifrada y nunca se muestra.
+	ConsumerSecret *string `json:"consumer_secret,omitempty"`
+	// Mercado Libre, Tiendanube y Amazon: a dónde volver después de autorizar (se agregan store_connection y status).
 	ReturnURL *string `json:"return_url,omitempty"`
 	// Cómo se vuelve ticket cada pedido.
 	Settings *CreateStoreConnectionParamsSettings `json:"settings,omitempty"`
@@ -1663,6 +1717,8 @@ type CreateStoreConnectionParamsSettings struct {
 	PaymentForms map[string]string `json:"payment_forms,omitempty"`
 	// Mercado Libre: timbrar en cuanto se paga si el comprador dejó sus datos fiscales completos. Por omisión true.
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+	// WooCommerce y Tiendanube: mandar al comprador el enlace para facturar (WooCommerce, como nota al cliente del pedido; Tiendanube, por correo). Por omisión true.
+	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
 }
 
 // CreateTestClockParams: los campos de «Crear un reloj de prueba».
@@ -4871,6 +4927,20 @@ type ListProductsParams struct {
 	ProductKey *string `json:"product_key,omitempty"`
 }
 
+// ListPurchaseReceiptsParams: los campos de «Listar tickets de compra».
+type ListPurchaseReceiptsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// pending, requested, invoiced o non_deductible.
+	//
+	// Valores: pending, requested, invoiced, non_deductible.
+	Status *string `json:"status,omitempty"`
+}
+
 // ListQuotesParams: los campos de «Listar cotizaciones».
 type ListQuotesParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -5131,6 +5201,12 @@ type ListWebhookEndpointsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
+}
+
+// MarkPurchaseReceiptInvoicedParams: los campos de «Ya llegó la factura».
+type MarkPurchaseReceiptInvoicedParams struct {
+	// La factura recibida que lo cubre: su id (sat_…) o su folio fiscal (UUID). Sin ella, solo se marca facturado.
+	Invoice *string `json:"invoice,omitempty"`
 }
 
 // MatchBankTransactionParams: los campos de «Conciliar un depósito».
@@ -5497,6 +5573,108 @@ type ProductLocalTax struct {
 	Rate float64 `json:"rate"`
 }
 
+// PurchaseReceipt: Un ticket de compra del emisor sin factura: lo que se leyó de su foto y si ya se pidió, llegó o no es deducible.
+type PurchaseReceipt struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (el que compró).
+	Issuer string `json:"issuer"`
+	// pending (por pedir), requested (pedida a la tienda), invoiced (ya tiene factura) o non_deductible (no hubo factura).
+	//
+	// Valores: pending, requested, invoiced, non_deductible.
+	Status string `json:"status"`
+	// La tienda: name, tax_id (su RFC), email, portal_url (su portal o la liga del QR) y on_fiscalisto (factura con Fiscalisto: method fiscalisto la timbra al momento).
+	Store PurchaseReceiptStore `json:"store"`
+	// El día de la compra (AAAA-MM-DD), o null.
+	Date *string `json:"date,omitempty"`
+	// El total pagado, en pesos, o null.
+	Total *float64 `json:"total,omitempty"`
+	// efectivo, tarjeta u otro, o null.
+	//
+	// Valores: efectivo, tarjeta, otro.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// El folio o número de ticket, o null.
+	Folio *string `json:"folio,omitempty"`
+	// Otros datos que pide el portal de la tienda para facturar (Web ID, sucursal, caja…).
+	Fields []PurchaseReceiptField `json:"fields"`
+	// El uso de la factura que se pide, o null: G03 si el régimen del emisor lo permite, si no S01.
+	Use *string `json:"use,omitempty"`
+	// Una nota, o null.
+	Note *string `json:"note,omitempty"`
+	// ai (lo leyó la IA), manual (se mandaron los datos) o null.
+	//
+	// Valores: ai, manual.
+	ReadBy *string `json:"read_by,omitempty"`
+	// Por qué no se leyó o qué revisar (foto borrosa, no parece un ticket…), o null.
+	ReadNote *string `json:"read_note,omitempty"`
+	// El tipo del archivo guardado (image/jpeg, application/pdf…).
+	FileType *string `json:"file_type,omitempty"`
+	// true si se pagó en efectivo más de $2,000: aunque tenga factura, no es deducible (LISR art. 27 fr. III).
+	CashOverLimit bool `json:"cash_over_limit"`
+	// Por pedir: los días que le quedan al mes de la compra, en hora de México (muchas tiendas solo facturan dentro del mes); si no, null.
+	DaysLeftInMonth *int64 `json:"days_left_in_month,omitempty"`
+	// Cuándo y cómo se pidió (method: fiscalisto, email, portal o manual; to: la tienda o su correo), o null.
+	Requested *PurchaseReceiptRequested `json:"requested,omitempty"`
+	// El folio fiscal de la factura que lo cubre, o null.
+	InvoiceUUID *string `json:"invoice_uuid,omitempty"`
+	// La factura recibida (sat_…) que lo cubre, si ya llegó con las descargas del SAT, o null.
+	Invoice *string `json:"invoice,omitempty"`
+	// Cuándo quedó facturado, o null.
+	InvoicedAt *string `json:"invoiced_at,omitempty"`
+	// Cuándo se marcó no deducible, o null.
+	NonDeductibleAt *string `json:"non_deductible_at,omitempty"`
+	// Cuándo se guardó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// PurchaseReceiptField: PurchaseReceiptField.
+type PurchaseReceiptField struct {
+	// Cómo lo llama el ticket (Web ID, Sucursal…).
+	Label string `json:"label"`
+	// Lo que dice el ticket en ese dato.
+	Value string `json:"value"`
+}
+
+// PurchaseReceiptList: Una página de la lista.
+type PurchaseReceiptList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PurchaseReceipt `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PurchaseReceiptRequested: PurchaseReceiptRequested.
+type PurchaseReceiptRequested struct {
+	// egreso (la factura completa y después una nota de crédito por el anticipo, opción A) o remanente (la factura solo por lo que falta, opción B).
+	Method *string `json:"method,omitempty"`
+	// A quién (correos separados por comas).
+	To *string `json:"to,omitempty"`
+	// Cuándo se pidió.
+	At *string `json:"at,omitempty"`
+}
+
+// PurchaseReceiptStore: La tienda: name, tax_id (su RFC), email, portal_url (su portal o la liga del QR) y on_fiscalisto (factura con Fiscalisto: method fiscalisto la timbra al momento).
+type PurchaseReceiptStore struct {
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email *string `json:"email,omitempty"`
+	// Su portal de facturación o la liga del QR, o null.
+	PortalURL *string `json:"portal_url,omitempty"`
+	// true si factura con Fiscalisto: method fiscalisto timbra la factura al momento.
+	OnFiscalisto bool `json:"on_fiscalisto"`
+}
+
 // Quote: Una cotización: su cliente la ve en una liga, la acepta, pide cambios o la rechaza, y se factura.
 type Quote struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -5745,6 +5923,20 @@ type RefreshSatDeclarationsParams struct {
 type RejectQuoteParams struct {
 	// Por qué (queda en customer_comment; el cliente no la ve).
 	Note *string `json:"note,omitempty"`
+}
+
+// RequestPurchaseReceiptInvoiceParams: los campos de «Pedir la factura a la tienda».
+type RequestPurchaseReceiptInvoiceParams struct {
+	// fiscalisto (la tienda factura con Fiscalisto: se timbra al momento), email (le mandamos a la tienda sus datos y la foto), portal o manual (usted la pidió; solo se marca pedida).
+	//
+	// Valores: fiscalisto, email, portal, manual.
+	Method string `json:"method"`
+	// email: el correo de la tienda. Por omisión, store_email.
+	To *string `json:"to,omitempty"`
+	// email: unas líneas para la tienda.
+	Message *string `json:"message,omitempty"`
+	// email y fiscalisto: el correo al que la tienda manda la factura. Por omisión, el correo de respuesta del emisor.
+	ReplyTo *string `json:"reply_to,omitempty"`
 }
 
 // ResetTestDataParams: los campos de «Reiniciar los datos de prueba».
@@ -6785,7 +6977,7 @@ type StockMovementSource struct {
 	ID string `json:"id"`
 }
 
-// StoreConnection: Una tienda de Shopify o Mercado Libre cuyos pedidos pagados se vuelven tickets de autofactura del emisor.
+// StoreConnection: Una tienda de Shopify, WooCommerce, Tiendanube, Mercado Libre o Amazon cuyos pedidos pagados se vuelven tickets de autofactura del emisor.
 type StoreConnection struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
@@ -6795,17 +6987,19 @@ type StoreConnection struct {
 	Object string `json:"object"`
 	// El emisor dueño de la tienda.
 	Issuer string `json:"issuer"`
-	// shopify o mercadolibre.
+	// shopify, woocommerce, tiendanube, mercadolibre o amazon.
 	//
-	// Valores: shopify, mercadolibre.
+	// Valores: shopify, mercadolibre, amazon, tiendanube, woocommerce.
 	Platform string `json:"platform"`
-	// El dominio de la tienda de Shopify, o el id del vendedor en Mercado Libre (al autorizar).
+	// El dominio de la tienda (Shopify, WooCommerce), o el id de la tienda en Tiendanube o del vendedor en Mercado Libre y Amazon (al autorizar).
 	Shop *string `json:"shop,omitempty"`
-	// pending (Mercado Libre espera que el vendedor autorice en authorize_url), active o disconnected.
+	// El nombre de la tienda según su plataforma, o null.
+	Name *string `json:"name,omitempty"`
+	// pending (Mercado Libre, Tiendanube o Amazon esperan que se autorice en authorize_url), active o disconnected.
 	//
 	// Valores: pending, active, disconnected.
 	Status string `json:"status"`
-	// Si está pending: la página de Mercado Libre donde el vendedor autoriza (vale un día; cada consulta da una nueva). Si no, null.
+	// Si está pending: la página de la plataforma donde el vendedor autoriza (vale un día; cada consulta da una nueva). Si no, null.
 	AuthorizeURL *string `json:"authorize_url,omitempty"`
 	// Cómo se vuelve ticket cada pedido.
 	Settings StoreConnectionSettings `json:"settings"`
@@ -6857,8 +7051,10 @@ type StoreConnectionSettings struct {
 	PaymentForm *string `json:"payment_form,omitempty"`
 	// c_FormaPago por pasarela o tipo de pago.
 	PaymentForms map[string]string `json:"payment_forms"`
-	// Mercado Libre: si se timbra al momento con los datos fiscales del comprador; null en Shopify.
+	// Mercado Libre: si se timbra al momento con los datos fiscales del comprador; null en las demás plataformas.
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+	// WooCommerce y Tiendanube: si el comprador recibe su enlace para facturar (nota del pedido o correo); null en las demás plataformas.
+	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
 }
 
 // StoreImport: Los pedidos pagados que se trajeron.
@@ -7381,6 +7577,42 @@ type UpdateProductParamsLocalTax struct {
 	Rate float64 `json:"rate"`
 }
 
+// UpdatePurchaseReceiptParams: los campos de «Corregir un ticket de compra».
+type UpdatePurchaseReceiptParams struct {
+	// El nombre de la tienda.
+	StoreName *string `json:"store_name,omitempty"`
+	// El RFC de la tienda (el que factura).
+	StoreTaxID *string `json:"store_tax_id,omitempty"`
+	// El día de la compra (AAAA-MM-DD).
+	Date *string `json:"date,omitempty"`
+	// El total pagado, en pesos.
+	Total *float64 `json:"total,omitempty"`
+	// efectivo, tarjeta u otro.
+	//
+	// Valores: efectivo, tarjeta, otro.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// El folio o número de ticket.
+	Folio *string `json:"folio,omitempty"`
+	// Otros datos que pide el portal de la tienda (Web ID, sucursal, caja…), hasta 8.
+	Fields []UpdatePurchaseReceiptParamsField `json:"fields,omitempty"`
+	// La dirección del portal de facturación de la tienda (o la liga de autofactura de su QR).
+	PortalURL *string `json:"portal_url,omitempty"`
+	// El correo de facturación de la tienda.
+	StoreEmail *string `json:"store_email,omitempty"`
+	// El uso de la factura (G03, I01…). Por omisión G03 si el régimen del emisor lo permite.
+	Use *string `json:"use,omitempty"`
+	// Una nota para su equipo.
+	Note *string `json:"note,omitempty"`
+}
+
+// UpdatePurchaseReceiptParamsField: UpdatePurchaseReceiptParamsField.
+type UpdatePurchaseReceiptParamsField struct {
+	// Cómo lo llama el ticket (Web ID, Sucursal…).
+	Label string `json:"label"`
+	// Lo que dice el ticket en ese dato.
+	Value string `json:"value"`
+}
+
 // UpdateQuoteParams: los campos de «Cambiar una cotización».
 type UpdateQuoteParams struct {
 	// Un cliente de su catálogo (cus_…), uno con sus datos fiscales (como en POST /v1/invoices: se agrega a sus clientes) o solo name y email si aún no los tiene.
@@ -7689,6 +7921,8 @@ type UpdateStoreConnectionParamsSettings struct {
 	PaymentForms map[string]string `json:"payment_forms,omitempty"`
 	// Mercado Libre: timbrar en cuanto se paga si el comprador dejó sus datos fiscales completos. Por omisión true.
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
+	// WooCommerce y Tiendanube: mandar al comprador el enlace para facturar (WooCommerce, como nota al cliente del pedido; Tiendanube, por correo). Por omisión true.
+	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
 }
 
 // UpdateWebhookEndpointParams: los campos de «Actualizar un webhook».

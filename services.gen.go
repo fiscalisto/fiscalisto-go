@@ -34,6 +34,8 @@ type services struct {
 	Receivables *ReceivablesService
 	// Conciliación bancaria.
 	BankTransactions *BankTransactionsService
+	// Tickets de compra.
+	PurchaseReceipts *PurchaseReceiptsService
 	// Pagos y notas de crédito.
 	Payments *PaymentsService
 	// Pagos y notas de crédito.
@@ -108,6 +110,7 @@ func (s *services) init(c *Client) {
 	s.Invoices = &InvoicesService{c}
 	s.Receivables = &ReceivablesService{c}
 	s.BankTransactions = &BankTransactionsService{c}
+	s.PurchaseReceipts = &PurchaseReceiptsService{c}
 	s.Payments = &PaymentsService{c}
 	s.CreditNotes = &CreditNotesService{c}
 	s.Advances = &AdvancesService{c}
@@ -857,6 +860,160 @@ func (s *BankTransactionsService) Classify(ctx context.Context, id string, param
 func (s *BankTransactionsService) Reopen(ctx context.Context, id string, opts ...RequestOption) (*BankTransaction, error) {
 	out := new(BankTransaction)
 	if err := s.c.do(ctx, "POST", "/v1/bank_transactions/"+url.PathEscape(id)+"/reopen", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PurchaseReceiptsService: Tickets de compra (client.PurchaseReceipts).
+type PurchaseReceiptsService struct{ c *Client }
+
+// Create: Guardar un ticket de compra
+//
+// La foto o el PDF de un ticket que el emisor pagó sin factura, en base64. La IA lee la tienda, su RFC, la fecha, el total, la forma de pago, el folio, los datos que pide su portal y la liga de facturación; lo que usted mande gana a lo que se lea. El mismo archivo dos veces devuelve el ticket que ya estaba, sin leerlo otra vez. Si llega una factura de esa tienda por el mismo total con las descargas del SAT, el ticket queda invoiced solo.
+//
+// POST /v1/purchase_receipts
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/create-purchase-receipt
+func (s *PurchaseReceiptsService) Create(ctx context.Context, params *CreatePurchaseReceiptParams, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar tickets de compra
+//
+// Los más recientes primero.
+//
+// GET /v1/purchase_receipts
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/list-purchase-receipts
+func (s *PurchaseReceiptsService) List(ctx context.Context, params *ListPurchaseReceiptsParams, opts ...RequestOption) (*Page[PurchaseReceipt], error) {
+	return list[PurchaseReceipt](ctx, s.c, "/v1/purchase_receipts", params, "", opts)
+}
+
+// ListAutoPaging: Listar tickets de compra, todos, página por página: for x, err := range …
+func (s *PurchaseReceiptsService) ListAutoPaging(ctx context.Context, params *ListPurchaseReceiptsParams, opts ...RequestOption) iter.Seq2[PurchaseReceipt, error] {
+	return listAll[PurchaseReceipt](ctx, s.c, "/v1/purchase_receipts", params, opts)
+}
+
+// Get: Ver un ticket de compra
+//
+// Con la factura recibida que lo cubre, si ya llegó.
+//
+// GET /v1/purchase_receipts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/get-purchase-receipt
+func (s *PurchaseReceiptsService) Get(ctx context.Context, id string, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "GET", "/v1/purchase_receipts/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Corregir un ticket de compra
+//
+// Corrige o llena sus datos; solo cambia lo que mande (null borra un dato). Con store_tax_id y total corregidos se vuelve a buscar su factura.
+//
+// POST /v1/purchase_receipts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/update-purchase-receipt
+func (s *PurchaseReceiptsService) Update(ctx context.Context, id string, params *UpdatePurchaseReceiptParams, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un ticket de compra
+//
+// El ticket y su archivo, para siempre.
+//
+// DELETE /v1/purchase_receipts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/delete-purchase-receipt
+func (s *PurchaseReceiptsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/purchase_receipts/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Read: Leer el ticket de nuevo
+//
+// La IA vuelve a leer el archivo y llena solo los datos que siguen vacíos. Cuenta en el límite diario de tickets de compra.
+//
+// POST /v1/purchase_receipts/{id}/read
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/read-purchase-receipt
+func (s *PurchaseReceiptsService) Read(ctx context.Context, id string, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts/"+url.PathEscape(id)+"/read", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RequestInvoice: Pedir la factura a la tienda
+//
+// fiscalisto: la tienda factura con Fiscalisto (store.on_fiscalisto), se timbra al momento con los datos fiscales del emisor y el ticket queda invoiced. email: le manda a la tienda los datos fiscales y la foto; las respuestas van a reply_to. portal o manual: usted la pidió, solo queda requested. Pide el uso de use (G03 por omisión).
+//
+// POST /v1/purchase_receipts/{id}/request
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/request-purchase-receipt-invoice
+func (s *PurchaseReceiptsService) RequestInvoice(ctx context.Context, id string, params *RequestPurchaseReceiptInvoiceParams, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts/"+url.PathEscape(id)+"/request", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MarkInvoiced: Ya llegó la factura
+//
+// Para una factura que llegó por otro lado. Con invoice (sat_… o UUID), la factura recibida que lo cubre; una factura cubre un solo ticket.
+//
+// POST /v1/purchase_receipts/{id}/mark_invoiced
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/mark-purchase-receipt-invoiced
+func (s *PurchaseReceiptsService) MarkInvoiced(ctx context.Context, id string, params *MarkPurchaseReceiptInvoicedParams, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts/"+url.PathEscape(id)+"/mark_invoiced", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MarkNonDeductible: Marcar como no deducible
+//
+// La tienda no dio factura: el gasto queda como no deducible.
+//
+// POST /v1/purchase_receipts/{id}/mark_non_deductible
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/mark-purchase-receipt-non-deductible
+func (s *PurchaseReceiptsService) MarkNonDeductible(ctx context.Context, id string, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts/"+url.PathEscape(id)+"/mark_non_deductible", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reopen: Volver a pedir la factura
+//
+// Deshace mark_non_deductible o mark_invoiced: vuelve a requested si ya se había pedido, si no a pending.
+//
+// POST /v1/purchase_receipts/{id}/reopen
+//
+// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/reopen-purchase-receipt
+func (s *PurchaseReceiptsService) Reopen(ctx context.Context, id string, opts ...RequestOption) (*PurchaseReceipt, error) {
+	out := new(PurchaseReceipt)
+	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts/"+url.PathEscape(id)+"/reopen", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -2282,7 +2439,7 @@ type StoreConnectionsService struct{ c *Client }
 
 // Create: Conectar una tienda
 //
-// Shopify: con el dominio y las llaves de la app de la tienda (Dev Dashboard, permisos read_orders y write_orders) registra los webhooks y queda active. Mercado Libre: queda pending hasta que el vendedor autorice en authorize_url. Desde entonces cada pedido pagado es un ticket (folio SHOP-1001 o ML-…), que su comprador factura en el portal o entra en la factura global; un pedido cancelado o reembolsado completo cancela su ticket.
+// Shopify: con el dominio y las llaves de la app de la tienda (Dev Dashboard, permisos read_orders y write_orders) registra los webhooks y queda active. WooCommerce: con la dirección de la tienda y una llave de su API REST de Lectura/Escritura, igual. Mercado Libre, Tiendanube y Amazon: queda pending hasta que el vendedor autorice en authorize_url (Amazon no tiene webhooks: sus pedidos se leen cada hora). Desde entonces cada pedido pagado es un ticket (folio SHOP-1001, WEB-1001, TN-1001, ML-… o AMZ-…), que su comprador factura en el portal o entra en la factura global; un pedido cancelado o reembolsado completo cancela su ticket.
 //
 // POST /v1/store_connections
 //

@@ -265,6 +265,76 @@
 		"go": "BankTransactions.Reopen",
 		"java": "bankTransactions.reopen"
 	},
+	"POST /v1/purchase_receipts": {
+		"python": "purchase_receipts.create",
+		"php": "purchaseReceipts->create",
+		"dotnet": "PurchaseReceipts.CreateAsync",
+		"go": "PurchaseReceipts.Create",
+		"java": "purchaseReceipts.create"
+	},
+	"GET /v1/purchase_receipts": {
+		"python": "purchase_receipts.list",
+		"php": "purchaseReceipts->list",
+		"dotnet": "PurchaseReceipts.ListAsync",
+		"go": "PurchaseReceipts.List",
+		"java": "purchaseReceipts.list"
+	},
+	"GET /v1/purchase_receipts/{id}": {
+		"python": "purchase_receipts.get",
+		"php": "purchaseReceipts->get",
+		"dotnet": "PurchaseReceipts.GetAsync",
+		"go": "PurchaseReceipts.Get",
+		"java": "purchaseReceipts.get"
+	},
+	"POST /v1/purchase_receipts/{id}": {
+		"python": "purchase_receipts.update",
+		"php": "purchaseReceipts->update",
+		"dotnet": "PurchaseReceipts.UpdateAsync",
+		"go": "PurchaseReceipts.Update",
+		"java": "purchaseReceipts.update"
+	},
+	"DELETE /v1/purchase_receipts/{id}": {
+		"python": "purchase_receipts.delete",
+		"php": "purchaseReceipts->delete",
+		"dotnet": "PurchaseReceipts.DeleteAsync",
+		"go": "PurchaseReceipts.Delete",
+		"java": "purchaseReceipts.delete"
+	},
+	"POST /v1/purchase_receipts/{id}/read": {
+		"python": "purchase_receipts.read",
+		"php": "purchaseReceipts->read",
+		"dotnet": "PurchaseReceipts.ReadAsync",
+		"go": "PurchaseReceipts.Read",
+		"java": "purchaseReceipts.read"
+	},
+	"POST /v1/purchase_receipts/{id}/request": {
+		"python": "purchase_receipts.request_invoice",
+		"php": "purchaseReceipts->requestInvoice",
+		"dotnet": "PurchaseReceipts.RequestInvoiceAsync",
+		"go": "PurchaseReceipts.RequestInvoice",
+		"java": "purchaseReceipts.requestInvoice"
+	},
+	"POST /v1/purchase_receipts/{id}/mark_invoiced": {
+		"python": "purchase_receipts.mark_invoiced",
+		"php": "purchaseReceipts->markInvoiced",
+		"dotnet": "PurchaseReceipts.MarkInvoicedAsync",
+		"go": "PurchaseReceipts.MarkInvoiced",
+		"java": "purchaseReceipts.markInvoiced"
+	},
+	"POST /v1/purchase_receipts/{id}/mark_non_deductible": {
+		"python": "purchase_receipts.mark_non_deductible",
+		"php": "purchaseReceipts->markNonDeductible",
+		"dotnet": "PurchaseReceipts.MarkNonDeductibleAsync",
+		"go": "PurchaseReceipts.MarkNonDeductible",
+		"java": "purchaseReceipts.markNonDeductible"
+	},
+	"POST /v1/purchase_receipts/{id}/reopen": {
+		"python": "purchase_receipts.reopen",
+		"php": "purchaseReceipts->reopen",
+		"dotnet": "PurchaseReceipts.ReopenAsync",
+		"go": "PurchaseReceipts.Reopen",
+		"java": "purchaseReceipts.reopen"
+	},
 	"POST /v1/payments": {
 		"python": "payments.create",
 		"php": "payments->create",
