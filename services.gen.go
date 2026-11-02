@@ -897,7 +897,7 @@ type PurchaseReceiptsService struct{ c *Client }
 
 // Create: Guardar un ticket de compra
 //
-// La foto o el PDF de un ticket que el emisor pagó sin factura, en base64. La IA lee la tienda, su RFC, la fecha, el total, la forma de pago, el folio, los datos que pide su portal y la liga de facturación; lo que usted mande gana a lo que se lea. El mismo archivo dos veces devuelve el ticket que ya estaba, sin leerlo otra vez. Si llega una factura de esa tienda por el mismo total con las descargas del SAT, el ticket queda invoiced solo.
+// La foto o el PDF de un ticket que el emisor pagó sin factura, en base64, con los datos que usted tenga: la tienda, su RFC, la fecha, el total, la forma de pago, el folio, los datos que pide su portal y la liga de facturación. Si qr_text es la liga de una tienda que factura con Fiscalisto, el folio y el total se llenan solos. El mismo archivo dos veces devuelve el ticket que ya estaba. Si llega una factura de esa tienda por el mismo total con las descargas del SAT, el ticket queda invoiced solo.
 //
 // POST /v1/purchase_receipts
 //
@@ -966,21 +966,6 @@ func (s *PurchaseReceiptsService) Update(ctx context.Context, id string, params 
 func (s *PurchaseReceiptsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
 	if err := s.c.do(ctx, "DELETE", "/v1/purchase_receipts/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Read: Leer el ticket de nuevo
-//
-// La IA vuelve a leer el archivo y llena solo los datos que siguen vacíos. Cuenta en el límite diario de tickets de compra.
-//
-// POST /v1/purchase_receipts/{id}/read
-//
-// https://fiscalisto.com/docs/api/referencia/tickets-de-compra/read-purchase-receipt
-func (s *PurchaseReceiptsService) Read(ctx context.Context, id string, opts ...RequestOption) (*PurchaseReceipt, error) {
-	out := new(PurchaseReceipt)
-	if err := s.c.do(ctx, "POST", "/v1/purchase_receipts/"+url.PathEscape(id)+"/read", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

@@ -1151,8 +1151,6 @@ type CreatePurchaseReceiptParams struct {
 	FileType string `json:"file_type"`
 	// Lo que dice el código QR del ticket, si ya lo leyó (suele ser la liga del portal).
 	QrText *string `json:"qr_text,omitempty"`
-	// false para no leerlo con IA y mandar los datos usted. Por omisión se lee y se llena lo que no mandó.
-	Read *bool `json:"read,omitempty"`
 	// El nombre de la tienda.
 	StoreName *string `json:"store_name,omitempty"`
 	// El RFC de la tienda (el que factura).
@@ -6019,12 +6017,6 @@ type PurchaseReceipt struct {
 	Use *string `json:"use,omitempty"`
 	// Una nota, o null.
 	Note *string `json:"note,omitempty"`
-	// ai (lo leyó la IA), manual (se mandaron los datos) o null.
-	//
-	// Valores: ai, manual.
-	ReadBy *string `json:"read_by,omitempty"`
-	// Por qué no se leyó o qué revisar (foto borrosa, no parece un ticket…), o null.
-	ReadNote *string `json:"read_note,omitempty"`
 	// El tipo del archivo guardado (image/jpeg, application/pdf…).
 	FileType *string `json:"file_type,omitempty"`
 	// true si se pagó en efectivo más de $2,000: aunque tenga factura, no es deducible (LISR art. 27 fr. III).

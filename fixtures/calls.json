@@ -307,13 +307,6 @@
 		"go": "PurchaseReceipts.Delete",
 		"java": "purchaseReceipts.delete"
 	},
-	"POST /v1/purchase_receipts/{id}/read": {
-		"python": "purchase_receipts.read",
-		"php": "purchaseReceipts->read",
-		"dotnet": "PurchaseReceipts.ReadAsync",
-		"go": "PurchaseReceipts.Read",
-		"java": "purchaseReceipts.read"
-	},
 	"POST /v1/purchase_receipts/{id}/request": {
 		"python": "purchase_receipts.request_invoice",
 		"php": "purchaseReceipts->requestInvoice",
