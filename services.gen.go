@@ -50,6 +50,12 @@ type services struct {
 	PayrollReceipts *PayrollReceiptsService
 	// Nómina.
 	PayrollBatches *PayrollBatchesService
+	// Nómina.
+	PayrollBankFiles *PayrollBankFilesService
+	// Nómina.
+	ImssMovements *ImssMovementsService
+	// Nómina.
+	ImssFiles *ImssFilesService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -118,6 +124,9 @@ func (s *services) init(c *Client) {
 	s.Employees = &EmployeesService{c}
 	s.PayrollReceipts = &PayrollReceiptsService{c}
 	s.PayrollBatches = &PayrollBatchesService{c}
+	s.PayrollBankFiles = &PayrollBankFilesService{c}
+	s.ImssMovements = &ImssMovementsService{c}
+	s.ImssFiles = &ImssFilesService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -1391,6 +1400,136 @@ func (s *PayrollBatchesService) ListAutoPaging(ctx context.Context, params *List
 func (s *PayrollBatchesService) Get(ctx context.Context, id string, opts ...RequestOption) (*PayrollBatch, error) {
 	out := new(PayrollBatch)
 	if err := s.c.do(ctx, "GET", "/v1/payroll_batches/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayrollBankFilesService: Nómina (client.PayrollBankFiles).
+type PayrollBankFilesService struct{ c *Client }
+
+// Create: Archivo para pagar la nómina en el banco
+//
+// El archivo de dispersión que paga el neto de cada empleado desde el portal de su banco: BBVA (Net Cash), Banamex (BancaNet, layout D), Banorte (Banorte en su Empresa), Santander (Enlace) o un CSV de SPEI para cualquier banco. Toma los recibos de nómina timbrados (y no cancelados) con esa fecha de pago, los suma por empleado y le paga a la CLABE de su ficha (clabe en el empleado): a la misma institución por cuenta, a otra por SPEI. No cobra ni mueve dinero: usted lo sube al banco y lo autoriza ahí. Quien no se puede pagar (sin CLABE, otro banco en Santander) va en excluded con su razón. Suba el primero como prueba: cada portal lo valida antes de cargar nada.
+//
+// POST /v1/payroll_bank_files
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-payroll-bank-file
+func (s *PayrollBankFilesService) Create(ctx context.Context, params *CreatePayrollBankFileParams, opts ...RequestOption) (*PayrollBankFile, error) {
+	out := new(PayrollBankFile)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_bank_files", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ImssMovementsService: Nómina (client.ImssMovements).
+type ImssMovementsService struct{ c *Client }
+
+// Create: Agregar un movimiento del IMSS
+//
+// Un movimiento afiliatorio a mano. Casi nunca hace falta: al crear un empleado se registra su alta, al cambiar su integrated_daily_salary la modificación (con fecha de hoy), al ponerle end_date su baja y al volver a contratarlo su reingreso. Queda pendiente de presentar.
+//
+// POST /v1/imss_movements
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-imss-movement
+func (s *ImssMovementsService) Create(ctx context.Context, params *CreateImssMovementParams, opts ...RequestOption) (*ImssMovement, error) {
+	out := new(ImssMovement)
+	if err := s.c.do(ctx, "POST", "/v1/imss_movements", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar movimientos del IMSS
+//
+// Los movimientos del emisor por presentar (status=pending, por omisión: todos, del más antiguo al más reciente, como van en los archivos) o ya presentados (status=reported: los 500 más recientes).
+//
+// GET /v1/imss_movements
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-imss-movements
+func (s *ImssMovementsService) List(ctx context.Context, params *ListImssMovementsParams, opts ...RequestOption) (*Page[ImssMovement], error) {
+	return list[ImssMovement](ctx, s.c, "/v1/imss_movements", params, "", opts)
+}
+
+// ListAutoPaging: Listar movimientos del IMSS, todos, página por página: for x, err := range …
+func (s *ImssMovementsService) ListAutoPaging(ctx context.Context, params *ListImssMovementsParams, opts ...RequestOption) iter.Seq2[ImssMovement, error] {
+	return listAll[ImssMovement](ctx, s.c, "/v1/imss_movements", params, opts)
+}
+
+// Report: Marcar movimientos como presentados
+//
+// Cuando el IMSS ya los recibió (el acuse de IDSE o la importación en SUA): pasan a reported y ya no cambian ni se borran. Con reported false vuelven a pendientes. Devuelve los movimientos como quedaron.
+//
+// POST /v1/imss_movements/report
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/report-imss-movements
+func (s *ImssMovementsService) Report(ctx context.Context, params *ReportImssMovementsParams, opts ...RequestOption) (*ImssMovementList, error) {
+	out := new(ImssMovementList)
+	if err := s.c.do(ctx, "POST", "/v1/imss_movements/report", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un movimiento del IMSS
+//
+// El movimiento con lo que el IMSS rechazaría en problems.
+//
+// GET /v1/imss_movements/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-imss-movement
+func (s *ImssMovementsService) Get(ctx context.Context, id string, opts ...RequestOption) (*ImssMovement, error) {
+	out := new(ImssMovement)
+	if err := s.c.do(ctx, "GET", "/v1/imss_movements/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un movimiento del IMSS
+//
+// Solo uno pendiente: uno ya presentado se queda como lo tiene el IMSS.
+//
+// POST /v1/imss_movements/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-imss-movement
+func (s *ImssMovementsService) Update(ctx context.Context, id string, params *UpdateImssMovementParams, opts ...RequestOption) (*ImssMovement, error) {
+	out := new(ImssMovement)
+	if err := s.c.do(ctx, "POST", "/v1/imss_movements/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un movimiento del IMSS
+//
+// Solo uno pendiente (por ejemplo, un alta registrada por error).
+//
+// DELETE /v1/imss_movements/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-imss-movement
+func (s *ImssMovementsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/imss_movements/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ImssFilesService: Nómina (client.ImssFiles).
+type ImssFilesService struct{ c *Client }
+
+// Create: Archivos para IDSE o SUA
+//
+// Los archivos de los movimientos pendientes: para IDSE (formato de 168 posiciones, un archivo por tipo: reingresos, modificaciones de salario y bajas; necesita la guía de su subdelegación) o para importar en SUA (ASEG.TXT con las altas y MOVT.TXT con los demás). El salario se declara topado a 25 UMA y nunca abajo del mínimo. El emisor necesita employer_registration. Los que el IMSS rechazaría van en refused con su razón. No los marca como presentados: hágalo con POST /v1/imss_movements/report cuando el IMSS los reciba.
+//
+// POST /v1/imss_files
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-imss-files
+func (s *ImssFilesService) Create(ctx context.Context, params *CreateImssFilesParams, opts ...RequestOption) (*ImssFiles, error) {
+	out := new(ImssFiles)
+	if err := s.c.do(ctx, "POST", "/v1/imss_files", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

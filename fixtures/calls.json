@@ -503,6 +503,62 @@
 		"go": "PayrollBatches.Get",
 		"java": "payrollBatches.get"
 	},
+	"POST /v1/payroll_bank_files": {
+		"python": "payroll_bank_files.create",
+		"php": "payrollBankFiles->create",
+		"dotnet": "PayrollBankFiles.CreateAsync",
+		"go": "PayrollBankFiles.Create",
+		"java": "payrollBankFiles.create"
+	},
+	"POST /v1/imss_movements": {
+		"python": "imss_movements.create",
+		"php": "imssMovements->create",
+		"dotnet": "ImssMovements.CreateAsync",
+		"go": "ImssMovements.Create",
+		"java": "imssMovements.create"
+	},
+	"GET /v1/imss_movements": {
+		"python": "imss_movements.list",
+		"php": "imssMovements->list",
+		"dotnet": "ImssMovements.ListAsync",
+		"go": "ImssMovements.List",
+		"java": "imssMovements.list"
+	},
+	"POST /v1/imss_movements/report": {
+		"python": "imss_movements.report",
+		"php": "imssMovements->report",
+		"dotnet": "ImssMovements.ReportAsync",
+		"go": "ImssMovements.Report",
+		"java": "imssMovements.report"
+	},
+	"GET /v1/imss_movements/{id}": {
+		"python": "imss_movements.get",
+		"php": "imssMovements->get",
+		"dotnet": "ImssMovements.GetAsync",
+		"go": "ImssMovements.Get",
+		"java": "imssMovements.get"
+	},
+	"POST /v1/imss_movements/{id}": {
+		"python": "imss_movements.update",
+		"php": "imssMovements->update",
+		"dotnet": "ImssMovements.UpdateAsync",
+		"go": "ImssMovements.Update",
+		"java": "imssMovements.update"
+	},
+	"DELETE /v1/imss_movements/{id}": {
+		"python": "imss_movements.delete",
+		"php": "imssMovements->delete",
+		"dotnet": "ImssMovements.DeleteAsync",
+		"go": "ImssMovements.Delete",
+		"java": "imssMovements.delete"
+	},
+	"POST /v1/imss_files": {
+		"python": "imss_files.create",
+		"php": "imssFiles->create",
+		"dotnet": "ImssFiles.CreateAsync",
+		"go": "ImssFiles.Create",
+		"java": "imssFiles.create"
+	},
 	"POST /v1/invoice_batches": {
 		"python": "invoice_batches.create",
 		"php": "invoiceBatches->create",

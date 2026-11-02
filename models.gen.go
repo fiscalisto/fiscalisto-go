@@ -677,6 +677,64 @@ type CreateEmployeeParams struct {
 	Department *string `json:"department,omitempty"`
 	// Puesto (Puesto).
 	Position *string `json:"position,omitempty"`
+	// CLABE de 18 dígitos de la cuenta del empleado: a donde le paga el archivo para el banco (POST /v1/payroll_bank_files).
+	CLABE *string `json:"clabe,omitempty"`
+	// Nombre(s), como en su CURP. Con first_surname y second_surname, los archivos del IMSS (IDSE y SUA) escriben el nombre en sus tres partes; sin ellos, Fiscalisto lo separa con la CURP.
+	GivenNames *string `json:"given_names,omitempty"`
+	// Primer apellido, como en su CURP.
+	FirstSurname *string `json:"first_surname,omitempty"`
+	// Segundo apellido (vacío si tiene uno).
+	SecondSurname *string `json:"second_surname,omitempty"`
+	// Tipo de trabajador del IMSS: 1 permanente, 2 eventual de la ciudad, 3 eventual de la construcción, 4 eventual del campo. Por omisión 1.
+	//
+	// Valores: 1, 2, 3, 4.
+	ImssWorkerType *string `json:"imss_worker_type,omitempty"`
+	// Tipo de salario del IMSS: 0 fijo, 1 variable, 2 mixto. Por omisión 0.
+	//
+	// Valores: 0, 1, 2.
+	ImssSalaryType *string `json:"imss_salary_type,omitempty"`
+	// Semana o jornada reducida: 0 normal, 1 a 5 los días que trabaja a la semana, 6 jornada de menos de 8 horas. Por omisión 0.
+	//
+	// Valores: 0, 1, 2, 3, 4, 5, 6.
+	ImssReducedWeek *string `json:"imss_reduced_week,omitempty"`
+	// Unidad de medicina familiar (UMF) del IMSS, opcional.
+	FamilyMedicineUnit *string `json:"family_medicine_unit,omitempty"`
+	// Causa de la baja ante el IMSS, con end_date: 1 término de contrato, 2 separación voluntaria (la usual), 3 abandono, 4 defunción, 5 clausura, 6 otras, 7 ausentismo, 8 rescisión, 9 jubilación, A pensión.
+	//
+	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
+	ExitReason *string `json:"exit_reason,omitempty"`
+}
+
+// CreateImssFilesParams: los campos de «Archivos para IDSE o SUA».
+type CreateImssFilesParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// idse: los archivos de IDSE (uno por tipo: reingresos, modificaciones, bajas); sua: ASEG.TXT (altas) y MOVT.TXT (los demás) para importar en SUA.
+	//
+	// Valores: idse, sua.
+	Format string `json:"format"`
+	// Los movimientos (imv_…) pendientes que van en los archivos. Por omisión, todos los pendientes.
+	Movements []string `json:"movements,omitempty"`
+	// IDSE: la guía de 5 dígitos de su subdelegación. Por omisión, la que se guardó en la app.
+	Guide *string `json:"guide,omitempty"`
+}
+
+// CreateImssMovementParams: los campos de «Agregar un movimiento del IMSS».
+type CreateImssMovementParams struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// alta (o reingreso): tipo 08; modificacion: cambio de salario, tipo 07; baja: tipo 02.
+	//
+	// Valores: alta, reingreso, modificacion, baja.
+	Kind string `json:"kind"`
+	// El día en que surte efecto (AAAA-MM-DD, hora de México). El IMSS no acepta más de unos días de anticipación.
+	Date string `json:"date"`
+	// El salario diario integrado que se declara (en altas, reingresos y modificaciones). El archivo lo topa a 25 UMA y nunca baja del salario mínimo.
+	IntegratedDailySalary *float64 `json:"integrated_daily_salary,omitempty"`
+	// Solo en bajas: 1 término de contrato, 2 separación voluntaria, 3 abandono, 4 defunción, 5 clausura, 6 otras, 7 ausentismo, 8 rescisión, 9 jubilación, A pensión.
+	//
+	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
+	ExitReason *string `json:"exit_reason,omitempty"`
 }
 
 // CreateInvoiceBatchParams: los campos de «Timbrar un lote de facturas».
@@ -829,6 +887,26 @@ type CreatePaymentParamsDocument struct {
 	Amount float64 `json:"amount"`
 	// Solo si la factura es de otra moneda que el pago: lo que recibió por ella en la moneda del pago. Fiscalisto calcula la equivalencia (EquivalenciaDR).
 	Received *float64 `json:"received,omitempty"`
+}
+
+// CreatePayrollBankFileParams: los campos de «Archivo para pagar la nómina en el banco».
+type CreatePayrollBankFileParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// La fecha de pago de los recibos (FechaPago): se pagan los recibos de nómina timbrados con esa fecha, sumados por empleado. También es el día en que el banco aplica el archivo.
+	PaymentDate string `json:"payment_date"`
+	// El formato del banco: bbva (Net Cash), banamex (BancaNet, layout D), banorte (Banorte en su Empresa), santander (Enlace, solo cuentas Santander) o spei (CSV para cualquier banco). Por omisión, el del banco de account.
+	//
+	// Valores: bbva, banamex, banorte, santander, spei.
+	Layout *string `json:"layout,omitempty"`
+	// La CLABE de la cuenta de cargo del emisor. Por omisión, la que se usó la última vez en la app, o su primera cuenta bancaria.
+	Account *string `json:"account,omitempty"`
+	// El archivo del día (1 a 99): un segundo archivo el mismo día lleva otro número. Por omisión 1.
+	Sequence *int64 `json:"sequence,omitempty"`
+	// Banamex: su número de cliente de BancaNet (12 dígitos).
+	ClientNumber *string `json:"client_number,omitempty"`
+	// Banorte: su número de emisora (5 dígitos).
+	IssuerNumber *string `json:"issuer_number,omitempty"`
 }
 
 // CreatePayrollBatchParams: los campos de «Timbrar una nómina completa (lote)».
@@ -2241,6 +2319,24 @@ type Employee struct {
 	Department *string `json:"department,omitempty"`
 	// Puesto (Puesto).
 	Position *string `json:"position,omitempty"`
+	// CLABE de su cuenta, a donde le paga el archivo para el banco, o null.
+	CLABE *string `json:"clabe,omitempty"`
+	// Nombre(s) como en su CURP, o null (los archivos del IMSS lo separan con la CURP).
+	GivenNames *string `json:"given_names,omitempty"`
+	// Primer apellido como en su CURP, o null.
+	FirstSurname *string `json:"first_surname,omitempty"`
+	// Segundo apellido, o null.
+	SecondSurname *string `json:"second_surname,omitempty"`
+	// Tipo de trabajador del IMSS: 1 permanente, 2 eventual de la ciudad, 3 eventual de la construcción, 4 eventual del campo.
+	ImssWorkerType string `json:"imss_worker_type"`
+	// Tipo de salario del IMSS: 0 fijo, 1 variable, 2 mixto.
+	ImssSalaryType string `json:"imss_salary_type"`
+	// Semana o jornada reducida: 0 normal, 1 a 5 días a la semana, 6 jornada de menos de 8 horas.
+	ImssReducedWeek string `json:"imss_reduced_week"`
+	// Unidad de medicina familiar del IMSS, o null.
+	FamilyMedicineUnit *string `json:"family_medicine_unit,omitempty"`
+	// Causa de la baja ante el IMSS cuando tiene end_date (2 separación voluntaria por omisión), o null.
+	ExitReason *string `json:"exit_reason,omitempty"`
 	// Lo que el SAT podría observar de sus datos, antes de timbrar.
 	Warnings []string `json:"warnings"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
@@ -3003,6 +3099,108 @@ type GetTrialBalanceParams struct {
 type ImportStoreOrdersParams struct {
 	// Desde qué día (AAAA-MM-DD, hasta 31 días atrás). Por omisión, hace 7 días.
 	Since *string `json:"since,omitempty"`
+}
+
+// ImssFiles: Los archivos para presentar movimientos en IDSE o importarlos en SUA.
+type ImssFiles struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// idse o sua.
+	//
+	// Valores: idse, sua.
+	Format string `json:"format"`
+	// Los archivos: en IDSE uno por tipo de movimiento; en SUA ASEG.TXT y MOVT.TXT.
+	Files []ImssFilesFile `json:"files"`
+	// Los movimientos que van en los archivos.
+	Movements []string `json:"movements"`
+	// Los que se quedaron fuera y por qué (un NSS inválido…).
+	Refused []ImssFilesRefusedItem `json:"refused"`
+}
+
+// ImssFilesFile: ImssFilesFile.
+type ImssFilesFile struct {
+	// El nombre del archivo.
+	FileName string `json:"file_name"`
+	// Qué lleva, en palabras.
+	Description string `json:"description"`
+	// Cuántos movimientos lleva.
+	Count int64 `json:"count"`
+	// El archivo como texto, renglones terminados en CR LF.
+	Content string `json:"content"`
+	// El archivo en Windows-1252 (ANSI, como lo leen IDSE y SUA), en base64.
+	ContentBase64 string `json:"content_base64"`
+}
+
+// ImssFilesRefusedItem: ImssFilesRefusedItem.
+type ImssFilesRefusedItem struct {
+	// El movimiento (imv_…).
+	Movement string `json:"movement"`
+	// El nombre del empleado.
+	EmployeeName string `json:"employee_name"`
+	// Lo que el IMSS rechazaría en su renglón.
+	Problems []string `json:"problems"`
+}
+
+// ImssMovement: Un movimiento afiliatorio del IMSS de un empleado: alta, modificación de salario, baja o reingreso.
+type ImssMovement struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su número de empleado.
+	EmployeeNumber string `json:"employee_number"`
+	// Su nombre completo.
+	EmployeeName string `json:"employee_name"`
+	// Número de seguridad social (NumSeguridadSocial), 11 dígitos.
+	SocialSecurityNumber string `json:"social_security_number"`
+	// alta, reingreso, modificacion (de salario) o baja.
+	//
+	// Valores: alta, reingreso, modificacion, baja.
+	Kind string `json:"kind"`
+	// El tipo de movimiento del IMSS: 08 alta o reingreso, 07 modificación, 02 baja.
+	//
+	// Valores: 08, 07, 02.
+	MovementType string `json:"movement_type"`
+	// Fecha de emisión (Fecha), hora de la Ciudad de México.
+	Date string `json:"date"`
+	// Salario diario integrado (SalarioDiarioIntegrado): no menor al salario diario.
+	IntegratedDailySalary *float64 `json:"integrated_daily_salary,omitempty"`
+	// En bajas, la causa (1 a 9 o A); null en los demás.
+	ExitReason *string `json:"exit_reason,omitempty"`
+	// automatic: lo registró el alta o el cambio del empleado; manual: se agregó a mano.
+	//
+	// Valores: automatic, manual.
+	Source string `json:"source"`
+	// pending: falta presentarlo al IMSS; reported: ya se presentó (ya no cambia).
+	//
+	// Valores: pending, reported.
+	Status string `json:"status"`
+	// Cuándo se marcó como presentado, o null.
+	ReportedAt *string `json:"reported_at,omitempty"`
+	// Lo que el IMSS rechazaría en su renglón (vacío: listo para el archivo).
+	Problems []string `json:"problems"`
+}
+
+// ImssMovementList: Una página de la lista.
+type ImssMovementList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ImssMovement `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // Invoice: Un CFDI 4.0 emitido: factura de ingreso o global, traslado, nota de crédito (E), complemento de pago (P) o recibo de nómina (N).
@@ -4887,6 +5085,20 @@ type ListEventsParams struct {
 	DeliverySuccess *bool `json:"delivery_success,omitempty"`
 }
 
+// ListImssMovementsParams: los campos de «Listar movimientos del IMSS».
+type ListImssMovementsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// pending (por omisión) o reported.
+	//
+	// Valores: pending, reported.
+	Status *string `json:"status,omitempty"`
+}
+
 // ListInvoiceBatchesParams: los campos de «Listar lotes».
 type ListInvoiceBatchesParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -5265,6 +5477,78 @@ type MarkPurchaseReceiptInvoicedParams struct {
 type MatchBankTransactionParams struct {
 	// Las facturas (inv_… o UUID) que pagó este depósito, de un mismo cliente. Sin ellas, las de suggested_match.
 	Invoices []string `json:"invoices,omitempty"`
+}
+
+// PayrollBankFile: El archivo para pagar la nómina desde el portal del banco (no cobra nada).
+type PayrollBankFile struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El formato del banco: bbva, banamex, banorte, santander o spei (CSV).
+	//
+	// Valores: bbva, banamex, banorte, santander, spei.
+	Layout string `json:"layout"`
+	// Fecha de pago (FechaPago), AAAA-MM-DD. Por omisión el último día del periodo.
+	PaymentDate string `json:"payment_date"`
+	// La CLABE de la cuenta de cargo.
+	Account *string `json:"account,omitempty"`
+	// El nombre con que el portal del banco lo espera.
+	FileName string `json:"file_name"`
+	// text/plain para los portales de los bancos, text/csv para spei.
+	//
+	// Valores: text/plain, text/csv.
+	ContentType string `json:"content_type"`
+	// El archivo como texto, con renglones terminados en CR LF.
+	Content string `json:"content"`
+	// El mismo archivo en Windows-1252 (ANSI), en base64: guárdelo tal cual para subirlo.
+	ContentBase64 string `json:"content_base64"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Cuántos pagos lleva.
+	Count int64 `json:"count"`
+	// Cada pago del archivo, en el orden en que va.
+	Payments []PayrollBankFilePayment `json:"payments"`
+	// Quién no va en el archivo y por qué (sin CLABE, otro banco…).
+	Excluded []PayrollBankFileExcludedItem `json:"excluded"`
+}
+
+// PayrollBankFileExcludedItem: PayrollBankFileExcludedItem.
+type PayrollBankFileExcludedItem struct {
+	// El empleado (emp_…); null si el recibo lo timbró otro sistema y no hay empleado con ese RFC.
+	Employee *string `json:"employee,omitempty"`
+	// Número de empleado (NumEmpleado).
+	Number *string `json:"number,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// El neto a pagar: la suma de sus recibos con esa fecha de pago.
+	Amount float64 `json:"amount"`
+	// Por qué no va en el archivo.
+	Reason string `json:"reason"`
+}
+
+// PayrollBankFilePayment: PayrollBankFilePayment.
+type PayrollBankFilePayment struct {
+	// El empleado (emp_…); null si el recibo lo timbró otro sistema y no hay empleado con ese RFC.
+	Employee *string `json:"employee,omitempty"`
+	// Número de empleado (NumEmpleado).
+	Number *string `json:"number,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// El neto a pagar: la suma de sus recibos con esa fecha de pago.
+	Amount float64 `json:"amount"`
+	// La CLABE a donde se paga.
+	CLABE string `json:"clabe"`
+	// true: a otro banco por SPEI; false: a una cuenta del mismo banco.
+	Spei bool `json:"spei"`
+	// Serie y folio de los recibos que paga.
+	Receipts []string `json:"receipts"`
 }
 
 // PayrollBatch: Una nómina completa (hasta 1,000 recibos) timbrada en segundo plano.
@@ -5975,6 +6259,16 @@ type RefreshSatDeclarationsParams struct {
 type RejectQuoteParams struct {
 	// Por qué (queda en customer_comment; el cliente no la ve).
 	Note *string `json:"note,omitempty"`
+}
+
+// ReportImssMovementsParams: los campos de «Marcar movimientos como presentados».
+type ReportImssMovementsParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Los movimientos (imv_…) que el IMSS ya recibió, hasta 1,000.
+	Movements []string `json:"movements"`
+	// true (por omisión): marcarlos como presentados; false: devolverlos a pendientes (si los marcó por error).
+	Reported *bool `json:"reported,omitempty"`
 }
 
 // RequestPurchaseReceiptInvoiceParams: los campos de «Pedir la factura a la tienda».
@@ -7555,6 +7849,48 @@ type UpdateEmployeeParams struct {
 	Department *string `json:"department,omitempty"`
 	// Puesto (Puesto).
 	Position *string `json:"position,omitempty"`
+	// CLABE de 18 dígitos de la cuenta del empleado: a donde le paga el archivo para el banco (POST /v1/payroll_bank_files).
+	CLABE *string `json:"clabe,omitempty"`
+	// Nombre(s), como en su CURP. Con first_surname y second_surname, los archivos del IMSS (IDSE y SUA) escriben el nombre en sus tres partes; sin ellos, Fiscalisto lo separa con la CURP.
+	GivenNames *string `json:"given_names,omitempty"`
+	// Primer apellido, como en su CURP.
+	FirstSurname *string `json:"first_surname,omitempty"`
+	// Segundo apellido (vacío si tiene uno).
+	SecondSurname *string `json:"second_surname,omitempty"`
+	// Tipo de trabajador del IMSS: 1 permanente, 2 eventual de la ciudad, 3 eventual de la construcción, 4 eventual del campo. Por omisión 1.
+	//
+	// Valores: 1, 2, 3, 4.
+	ImssWorkerType *string `json:"imss_worker_type,omitempty"`
+	// Tipo de salario del IMSS: 0 fijo, 1 variable, 2 mixto. Por omisión 0.
+	//
+	// Valores: 0, 1, 2.
+	ImssSalaryType *string `json:"imss_salary_type,omitempty"`
+	// Semana o jornada reducida: 0 normal, 1 a 5 los días que trabaja a la semana, 6 jornada de menos de 8 horas. Por omisión 0.
+	//
+	// Valores: 0, 1, 2, 3, 4, 5, 6.
+	ImssReducedWeek *string `json:"imss_reduced_week,omitempty"`
+	// Unidad de medicina familiar (UMF) del IMSS, opcional.
+	FamilyMedicineUnit *string `json:"family_medicine_unit,omitempty"`
+	// Causa de la baja ante el IMSS, con end_date: 1 término de contrato, 2 separación voluntaria (la usual), 3 abandono, 4 defunción, 5 clausura, 6 otras, 7 ausentismo, 8 rescisión, 9 jubilación, A pensión.
+	//
+	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
+	ExitReason *string `json:"exit_reason,omitempty"`
+}
+
+// UpdateImssMovementParams: los campos de «Cambiar un movimiento del IMSS».
+type UpdateImssMovementParams struct {
+	// alta (o reingreso): tipo 08; modificacion: cambio de salario, tipo 07; baja: tipo 02.
+	//
+	// Valores: alta, reingreso, modificacion, baja.
+	Kind *string `json:"kind,omitempty"`
+	// El día en que surte efecto (AAAA-MM-DD, hora de México). El IMSS no acepta más de unos días de anticipación.
+	Date *string `json:"date,omitempty"`
+	// El salario diario integrado que se declara (en altas, reingresos y modificaciones). El archivo lo topa a 25 UMA y nunca baja del salario mínimo.
+	IntegratedDailySalary *float64 `json:"integrated_daily_salary,omitempty"`
+	// Solo en bajas: 1 término de contrato, 2 separación voluntaria, 3 abandono, 4 defunción, 5 clausura, 6 otras, 7 ausentismo, 8 rescisión, 9 jubilación, A pensión.
+	//
+	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
+	ExitReason *string `json:"exit_reason,omitempty"`
 }
 
 // UpdateIssuerParams: los campos de «Actualizar un emisor».
