@@ -167,6 +167,13 @@
 		"go": "Invoices.Get",
 		"java": "invoices.get"
 	},
+	"POST /v1/invoices/{id}": {
+		"python": "invoices.update",
+		"php": "invoices->update",
+		"dotnet": "Invoices.UpdateAsync",
+		"go": "Invoices.Update",
+		"java": "invoices.update"
+	},
 	"GET /v1/invoices/{id}/pdf": {
 		"python": "invoices.pdf",
 		"php": "invoices->pdf",
@@ -622,6 +629,41 @@
 		"go": "Branches.Delete",
 		"java": "branches.delete"
 	},
+	"POST /v1/cost_centers": {
+		"python": "cost_centers.create",
+		"php": "costCenters->create",
+		"dotnet": "CostCenters.CreateAsync",
+		"go": "CostCenters.Create",
+		"java": "costCenters.create"
+	},
+	"GET /v1/cost_centers": {
+		"python": "cost_centers.list",
+		"php": "costCenters->list",
+		"dotnet": "CostCenters.ListAsync",
+		"go": "CostCenters.List",
+		"java": "costCenters.list"
+	},
+	"GET /v1/cost_centers/{id}": {
+		"python": "cost_centers.get",
+		"php": "costCenters->get",
+		"dotnet": "CostCenters.GetAsync",
+		"go": "CostCenters.Get",
+		"java": "costCenters.get"
+	},
+	"POST /v1/cost_centers/{id}": {
+		"python": "cost_centers.update",
+		"php": "costCenters->update",
+		"dotnet": "CostCenters.UpdateAsync",
+		"go": "CostCenters.Update",
+		"java": "costCenters.update"
+	},
+	"DELETE /v1/cost_centers/{id}": {
+		"python": "cost_centers.delete",
+		"php": "costCenters->delete",
+		"dotnet": "CostCenters.DeleteAsync",
+		"go": "CostCenters.Delete",
+		"java": "costCenters.delete"
+	},
 	"POST /v1/customers": {
 		"python": "customers.create",
 		"php": "customers->create",
@@ -915,6 +957,13 @@
 		"dotnet": "SatInvoices.GetAsync",
 		"go": "SatInvoices.Get",
 		"java": "satInvoices.get"
+	},
+	"POST /v1/sat_invoices/{id}": {
+		"python": "sat_invoices.update",
+		"php": "satInvoices->update",
+		"dotnet": "SatInvoices.UpdateAsync",
+		"go": "SatInvoices.Update",
+		"java": "satInvoices.update"
 	},
 	"GET /v1/sat_invoices/{id}/xml": {
 		"python": "sat_invoices.xml",

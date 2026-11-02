@@ -101,6 +101,8 @@ type ApplyAdvanceParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
 	Branch *string `json:"branch,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
@@ -437,6 +439,42 @@ type ComplianceOpinion struct {
 	LastError *string `json:"last_error,omitempty"`
 }
 
+// CostCenter: Un centro de costo del emisor: una obra, proyecto, sucursal o área por la que separa sus ingresos y gastos.
+type CostCenter struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor del centro de costo.
+	Issuer string `json:"issuer"`
+	// Cómo lo llama su equipo, por ejemplo «Obra Norte».
+	Name string `json:"name"`
+	// Su clave (por ejemplo «CC-01»), o null.
+	Code *string `json:"code,omitempty"`
+	// true si está archivado: ya no se ponen facturas en él, pero las suyas lo conservan.
+	Archived bool `json:"archived"`
+	// Cuántas facturas tiene, emitidas y recibidas.
+	Invoices int64 `json:"invoices"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// CostCenterList: Una página de la lista.
+type CostCenterList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []CostCenter `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // CreateAdvanceParams: los campos de «Timbrar un anticipo».
 type CreateAdvanceParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -563,6 +601,16 @@ type CreateBranchParamsSeries struct {
 	Payment *string `json:"payment,omitempty"`
 	// Serie de sus traslados (tipo T); sin ella, la del emisor.
 	Transfer *string `json:"transfer,omitempty"`
+}
+
+// CreateCostCenterParams: los campos de «Crear un centro de costo».
+type CreateCostCenterParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cómo lo llama su equipo, por ejemplo «Obra Norte». No se repite en el emisor (sin importar mayúsculas).
+	Name string `json:"name"`
+	// Su clave, si su contabilidad usa claves (por ejemplo «CC-01»).
+	Code *string `json:"code,omitempty"`
 }
 
 // CreateCreditNoteParams: los campos de «Timbrar una nota de crédito».
@@ -753,6 +801,8 @@ type CreateInvoiceBatchParamsInvoice struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
 	Branch *string `json:"branch,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
@@ -1309,6 +1359,8 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
 	Branch *string `json:"branch,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
@@ -2183,6 +2235,12 @@ type CustomerList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// DeleteCostCenterParams: los campos de «Borrar un centro de costo».
+type DeleteCostCenterParams struct {
+	// Otro centro de costo (ccn_…) que se queda con sus facturas.
+	MoveTo *string `json:"move_to,omitempty"`
 }
 
 // Deleted: Confirmación de que se borró.
@@ -3215,6 +3273,8 @@ type Invoice struct {
 	Issuer string `json:"issuer"`
 	// La sucursal (brn_…) desde donde se timbró, o null (el domicilio fiscal del emisor). Sus pagos y notas de crédito la siguen.
 	Branch *string `json:"branch,omitempty"`
+	// Su centro de costo (ccn_…), o null. El que mandó al crearla, o el que le puso o cambió después con POST /v1/invoices/{id}.
+	CostCenter *string `json:"cost_center,omitempty"`
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
 	// Valores: I, E, P, T, N.
@@ -3393,6 +3453,8 @@ type InvoiceCreate struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
 	Branch *string `json:"branch,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
@@ -5037,6 +5099,18 @@ type ListBranchesParams struct {
 	Zip *string `json:"zip,omitempty"`
 }
 
+// ListCostCentersParams: los campos de «Listar centros de costo».
+type ListCostCentersParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// true para incluir los archivados.
+	IncludeArchived *bool `json:"include_archived,omitempty"`
+}
+
 // ListCustomerDataRequestsParams: los campos de «Listar solicitudes de datos».
 type ListCustomerDataRequestsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -5135,6 +5209,8 @@ type ListInvoicesParams struct {
 	CreatedGte *string `json:"created_gte,omitempty"`
 	// Creadas hasta, en ISO 8601. Un día solo (2026-10-31) incluye el día completo en hora de la Ciudad de México.
 	CreatedLte *string `json:"created_lte,omitempty"`
+	// Solo las de este centro de costo (ccn_…), o none para las que no tienen.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // ListIssuersParams: los campos de «Listar emisores».
@@ -5361,6 +5437,8 @@ type ListSatInvoicesParams struct {
 	DateGte *string `json:"date_gte,omitempty"`
 	// Con fecha hasta este día (AAAA-MM-DD), incluido.
 	DateLte *string `json:"date_lte,omitempty"`
+	// Solo las de este centro de costo (ccn_…), o none para las que no tienen.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // ListSatMailboxMessagesParams: los campos de «Listar avisos del buzón tributario».
@@ -6885,6 +6963,8 @@ type SATInvoice struct {
 	//
 	// Valores: active, canceled.
 	SATStatus *string `json:"sat_status,omitempty"`
+	// Su centro de costo (ccn_…), o null. Póngalo o cámbielo con POST /v1/sat_invoices/{id}.
+	CostCenter *string `json:"cost_center,omitempty"`
 	// La descarga (sdl_…) que la trajo, o null.
 	SATDownload *string `json:"sat_download,omitempty"`
 	// Cuándo llegó.
@@ -7777,6 +7857,16 @@ type UpdateBranchParamsSeries struct {
 	Transfer *string `json:"transfer,omitempty"`
 }
 
+// UpdateCostCenterParams: los campos de «Actualizar un centro de costo».
+type UpdateCostCenterParams struct {
+	// Cómo lo llama su equipo, por ejemplo «Obra Norte». No se repite en el emisor (sin importar mayúsculas).
+	Name *string `json:"name,omitempty"`
+	// Su clave, si su contabilidad usa claves (por ejemplo «CC-01»).
+	Code *string `json:"code,omitempty"`
+	// true lo archiva: ya no se pueden poner facturas en él, pero las suyas lo conservan. false lo restaura.
+	Archived *bool `json:"archived,omitempty"`
+}
+
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
 type UpdateCustomerParams struct {
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
@@ -7891,6 +7981,12 @@ type UpdateImssMovementParams struct {
 	//
 	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
 	ExitReason *string `json:"exit_reason,omitempty"`
+}
+
+// UpdateInvoiceParams: los campos de «Actualizar una factura».
+type UpdateInvoiceParams struct {
+	// Su centro de costo (ccn_…), o null para quitárselo. Solo facturas, notas de crédito y recibos de nómina timbrados.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // UpdateIssuerParams: los campos de «Actualizar un emisor».
@@ -8171,6 +8267,8 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
 	Branch *string `json:"branch,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
@@ -8257,6 +8355,12 @@ type UpdateRecurringInvoiceParamsSchedule struct {
 	//
 	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
+}
+
+// UpdateSatInvoiceParams: los campos de «Actualizar una factura del SAT».
+type UpdateSatInvoiceParams struct {
+	// Su centro de costo (ccn_…), o null para quitárselo. Los complementos de pago y los traslados no llevan.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // UpdateSelfInvoicingParams: los campos de «Cambiar las reglas de autofactura».

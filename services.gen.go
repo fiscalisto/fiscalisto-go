@@ -62,6 +62,8 @@ type services struct {
 	TaxIds *TaxIdsService
 	// Sucursales.
 	Branches *BranchesService
+	// Centros de costo.
+	CostCenters *CostCentersService
 	// Clientes.
 	Customers *CustomersService
 	// Clientes.
@@ -130,6 +132,7 @@ func (s *services) init(c *Client) {
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
+	s.CostCenters = &CostCentersService{c}
 	s.Customers = &CustomersService{c}
 	s.CustomerDataRequests = &CustomerDataRequestsService{c}
 	s.Products = &ProductsService{c}
@@ -658,6 +661,21 @@ func (s *InvoicesService) ListAutoPaging(ctx context.Context, params *ListInvoic
 func (s *InvoicesService) Get(ctx context.Context, id string, params *GetInvoiceParams, opts ...RequestOption) (*Invoice, error) {
 	out := new(Invoice)
 	if err := s.c.do(ctx, "GET", "/v1/invoices/"+url.PathEscape(id), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar una factura
+//
+// Lo que se puede cambiar de una factura timbrada sin tocar el CFDI: su centro de costo (cost_center, o null para quitárselo). Los complementos de pago y los traslados no llevan.
+//
+// POST /v1/invoices/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/facturas/update-invoice
+func (s *InvoicesService) Update(ctx context.Context, id string, params *UpdateInvoiceParams, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/invoices/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -1681,6 +1699,85 @@ func (s *BranchesService) Delete(ctx context.Context, id string, opts ...Request
 	return out, nil
 }
 
+// CostCentersService: Centros de costo (client.CostCenters).
+type CostCentersService struct{ c *Client }
+
+// Create: Crear un centro de costo
+//
+// Una parte del negocio del emisor que quiere ver por separado: una obra, un proyecto, una sucursal, un área. Sus facturas lo toman con cost_center al crearlas, o después con POST /v1/invoices/{id} y POST /v1/sat_invoices/{id}. Un nombre que ya existe contesta cost_center_exists. Hasta 500 por emisor.
+//
+// POST /v1/cost_centers
+//
+// https://fiscalisto.com/docs/api/referencia/centros-de-costo/create-cost-center
+func (s *CostCentersService) Create(ctx context.Context, params *CreateCostCenterParams, opts ...RequestOption) (*CostCenter, error) {
+	out := new(CostCenter)
+	if err := s.c.do(ctx, "POST", "/v1/cost_centers", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar centros de costo
+//
+// Los centros de costo del emisor, los más recientes primero, con cuántas facturas tiene cada uno. Los archivados solo con include_archived=true.
+//
+// GET /v1/cost_centers
+//
+// https://fiscalisto.com/docs/api/referencia/centros-de-costo/list-cost-centers
+func (s *CostCentersService) List(ctx context.Context, params *ListCostCentersParams, opts ...RequestOption) (*Page[CostCenter], error) {
+	return list[CostCenter](ctx, s.c, "/v1/cost_centers", params, "", opts)
+}
+
+// ListAutoPaging: Listar centros de costo, todos, página por página: for x, err := range …
+func (s *CostCentersService) ListAutoPaging(ctx context.Context, params *ListCostCentersParams, opts ...RequestOption) iter.Seq2[CostCenter, error] {
+	return listAll[CostCenter](ctx, s.c, "/v1/cost_centers", params, opts)
+}
+
+// Get: Ver un centro de costo
+//
+// Un centro de costo del emisor.
+//
+// GET /v1/cost_centers/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/centros-de-costo/get-cost-center
+func (s *CostCentersService) Get(ctx context.Context, id string, opts ...RequestOption) (*CostCenter, error) {
+	out := new(CostCenter)
+	if err := s.c.do(ctx, "GET", "/v1/cost_centers/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar un centro de costo
+//
+// Cambia solo lo que manda. archived: true lo archiva (ya no se ponen facturas en él y las suyas lo conservan), false lo restaura.
+//
+// POST /v1/cost_centers/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/centros-de-costo/update-cost-center
+func (s *CostCentersService) Update(ctx context.Context, id string, params *UpdateCostCenterParams, opts ...RequestOption) (*CostCenter, error) {
+	out := new(CostCenter)
+	if err := s.c.do(ctx, "POST", "/v1/cost_centers/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un centro de costo
+//
+// Sus facturas pasan a move_to (así junta dos en uno) o se quedan sin centro de costo. No se puede deshacer; para dejar de usarlo sin tocar sus facturas, archívelo.
+//
+// DELETE /v1/cost_centers/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/centros-de-costo/delete-cost-center
+func (s *CostCentersService) Delete(ctx context.Context, id string, params *DeleteCostCenterParams, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/cost_centers/"+url.PathEscape(id), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CustomersService: Clientes (client.Customers).
 type CustomersService struct{ c *Client }
 
@@ -2250,6 +2347,21 @@ func (s *SatInvoicesService) ListAutoPaging(ctx context.Context, params *ListSat
 func (s *SatInvoicesService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATInvoice, error) {
 	out := new(SATInvoice)
 	if err := s.c.do(ctx, "GET", "/v1/sat_invoices/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar una factura del SAT
+//
+// Lo que se puede cambiar de un CFDI del SAT sin tocarlo: su centro de costo (cost_center, o null para quitárselo), para ver sus gastos por obra, proyecto o área.
+//
+// POST /v1/sat_invoices/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/update-sat-invoice
+func (s *SatInvoicesService) Update(ctx context.Context, id string, params *UpdateSatInvoiceParams, opts ...RequestOption) (*SATInvoice, error) {
+	out := new(SATInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/sat_invoices/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
