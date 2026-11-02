@@ -7207,6 +7207,14 @@ type SelfInvoicing struct {
 	PortalMessage *string `json:"portal_message,omitempty"`
 	// Dónde encuentra el comprador su código, bajo el campo; null para el texto de Fiscalisto.
 	CodeHint *string `json:"code_hint,omitempty"`
+	// auto: el tema del dispositivo del comprador, que puede cambiarlo. light o dark: siempre ese, en la página del portal, sus QR y dentro de su sitio.
+	//
+	// Valores: auto, light, dark.
+	PortalTheme string `json:"portal_theme"`
+	// El color de los botones del portal («#rrggbb»), o null para el de Fiscalisto.
+	PortalAccent *string `json:"portal_accent,omitempty"`
+	// Las esquinas del portal en píxeles (0 a 24), o null para las de Fiscalisto.
+	PortalRadius *int64 `json:"portal_radius,omitempty"`
 }
 
 // SendInvoiceParams: los campos de «Enviar por correo».
@@ -8379,6 +8387,14 @@ type UpdateSelfInvoicingParams struct {
 	PortalMessage *string `json:"portal_message,omitempty"`
 	// Dónde encuentra el comprador su código, bajo el campo («Viene en su correo de salida»). `null` pone el de Fiscalisto.
 	CodeHint *string `json:"code_hint,omitempty"`
+	// El tema del portal: `auto` (por omisión), el del dispositivo del comprador, que puede cambiarlo; `light` o `dark`, siempre ese. Vale en su página, sus QR y dentro de su sitio (salvo que el código para incrustarlo elija otro).
+	//
+	// Valores: auto, light, dark.
+	PortalTheme *string `json:"portal_theme,omitempty"`
+	// El color de los botones del portal, como `#0b7c77`. `null` pone el de Fiscalisto.
+	PortalAccent *string `json:"portal_accent,omitempty"`
+	// Lo redondo de las esquinas del portal, en píxeles (0 a 24). `null` pone el de Fiscalisto (10).
+	PortalRadius *int64 `json:"portal_radius,omitempty"`
 }
 
 // UpdateStoreConnectionParams: los campos de «Cambiar cómo se vuelven tickets sus pedidos».
