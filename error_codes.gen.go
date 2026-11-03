@@ -88,7 +88,7 @@ const (
 	CodeInvoiceRejected = "invoice_rejected"
 	// El emisor está archivado: ya no timbra. Sus comprobantes se pueden consultar y cancelar.
 	CodeIssuerArchived = "issuer_archived"
-	// Se crearon 500 emisores en 24 horas. Escríbanos si necesita más.
+	// Se crearon 500 emisores en 24 horas. Mañana puede crear más.
 	CodeIssuerCreationLimit = "issuer_creation_limit"
 	// Ese RFC ya es un emisor de la cuenta en este modo.
 	CodeIssuerExists = "issuer_exists"
