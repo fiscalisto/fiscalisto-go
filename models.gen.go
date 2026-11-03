@@ -307,7 +307,7 @@ type BankTransactionSuggestedMatch struct {
 	Reasons []string `json:"reasons"`
 }
 
-// Branch: Una sucursal del emisor: otro lugar desde donde factura, con su código postal (LugarExpedicion), su dirección en el PDF y sus series.
+// Branch: Una sucursal del emisor: otro lugar desde donde factura, con su código postal (LugarExpedicion), su dirección en el PDF, sus series y, si quiere, su propia marca (nombre comercial, logo, color y estilo del PDF).
 type Branch struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
@@ -329,6 +329,16 @@ type Branch struct {
 	Email *string `json:"email,omitempty"`
 	// La serie de cada tipo de CFDI que se timbra desde ella; null usa la del emisor.
 	Series BranchSeries `json:"series"`
+	// Su nombre comercial propio (PDF, correo y página de la factura); null: el del emisor.
+	TradeName *string `json:"trade_name,omitempty"`
+	// Su logo propio, para el PDF (se sube en Ajustes › Sucursales); null: el del emisor.
+	LogoURL *string `json:"logo_url,omitempty"`
+	// Color de su PDF, como #2563EB; null: el del emisor.
+	PDFColor *string `json:"pdf_color,omitempty"`
+	// Estilo de su PDF; null: el del emisor.
+	//
+	// Valores: clasico, moderno, compacto, minimalista.
+	PDFStyle *string `json:"pdf_style,omitempty"`
 	// true si está archivada: ya no se factura desde ella.
 	Archived bool `json:"archived"`
 	// Cuándo se creó.
@@ -573,6 +583,14 @@ type CreateBranchParams struct {
 	Email *string `json:"email,omitempty"`
 	// La serie de cada tipo de CFDI que se timbra desde ella (invoice, credit_note, payment, transfer), hasta 25 caracteres cada una; la que no mande usa la del emisor.
 	Series *CreateBranchParamsSeries `json:"series,omitempty"`
+	// Su nombre comercial, si se presenta con otra marca: va en grande en el PDF de lo que se factura desde ella, en el correo y en la página de la factura. null toma el del emisor.
+	TradeName *string `json:"trade_name,omitempty"`
+	// Color del PDF de sus facturas, como #2563EB. null toma el del emisor.
+	PDFColor *string `json:"pdf_color,omitempty"`
+	// Estilo del PDF de sus facturas: clasico, moderno, compacto o minimalista. null toma el del emisor.
+	//
+	// Valores: clasico, moderno, compacto, minimalista.
+	PDFStyle *string `json:"pdf_style,omitempty"`
 }
 
 // CreateBranchParamsAddress: La dirección que va en el PDF de sus facturas.
@@ -7825,6 +7843,14 @@ type UpdateBranchParams struct {
 	Email *string `json:"email,omitempty"`
 	// La serie de cada tipo de CFDI que se timbra desde ella (invoice, credit_note, payment, transfer), hasta 25 caracteres cada una; la que no mande usa la del emisor.
 	Series *UpdateBranchParamsSeries `json:"series,omitempty"`
+	// Su nombre comercial, si se presenta con otra marca: va en grande en el PDF de lo que se factura desde ella, en el correo y en la página de la factura. null toma el del emisor.
+	TradeName *string `json:"trade_name,omitempty"`
+	// Color del PDF de sus facturas, como #2563EB. null toma el del emisor.
+	PDFColor *string `json:"pdf_color,omitempty"`
+	// Estilo del PDF de sus facturas: clasico, moderno, compacto o minimalista. null toma el del emisor.
+	//
+	// Valores: clasico, moderno, compacto, minimalista.
+	PDFStyle *string `json:"pdf_style,omitempty"`
 	// true la archiva: ya no se puede facturar desde ella, y sus facturas la siguen nombrando. false la restaura.
 	Archived *bool `json:"archived,omitempty"`
 }
