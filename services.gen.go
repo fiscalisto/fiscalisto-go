@@ -1610,7 +1610,7 @@ type BranchesService struct{ c *Client }
 
 // Create: Crear una sucursal
 //
-// Otro lugar desde donde factura el emisor, con su propio código postal: sus facturas llevan ese CP en LugarExpedicion (y su zona horaria en la Fecha, y el IVA 8 % si es de la franja fronteriza), su dirección en el PDF y, si las da, sus propias series. Un CP que ya tiene otra sucursal contesta branch_exists; el del domicilio fiscal del emisor no es sucursal (es la Matriz). Hasta 200 por emisor.
+// Otro lugar desde donde factura el emisor, con su propio código postal: sus facturas llevan ese CP en LugarExpedicion (y su zona horaria en la Fecha, y el IVA 8 % si es de la franja fronteriza), su dirección en el PDF y, si las da, sus propias series. Varias sucursales pueden tener el mismo CP (dos locales en una plaza), incluso el del domicilio fiscal del emisor: cada factura recuerda de cuál salió. Hasta 200 por emisor.
 //
 // POST /v1/branches
 //

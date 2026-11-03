@@ -573,7 +573,7 @@ type CreateBranchParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Cómo la llama su equipo, por ejemplo «Sucursal Monterrey». Va en el PDF.
 	Name string `json:"name"`
-	// Su código postal (LugarExpedicion de sus CFDI): uno por sucursal, distinto del domicilio fiscal del emisor.
+	// Su código postal (LugarExpedicion de sus CFDI). Varias sucursales pueden compartirlo, y también el del domicilio fiscal del emisor.
 	Zip string `json:"zip"`
 	// La dirección que va en el PDF de sus facturas.
 	Address *CreateBranchParamsAddress `json:"address,omitempty"`
@@ -7833,7 +7833,7 @@ type UpdateAccountParams struct {
 type UpdateBranchParams struct {
 	// Cómo la llama su equipo, por ejemplo «Sucursal Monterrey». Va en el PDF.
 	Name *string `json:"name,omitempty"`
-	// Su código postal (LugarExpedicion de sus CFDI): uno por sucursal, distinto del domicilio fiscal del emisor.
+	// Su código postal (LugarExpedicion de sus CFDI). Varias sucursales pueden compartirlo, y también el del domicilio fiscal del emisor.
 	Zip *string `json:"zip,omitempty"`
 	// La dirección que va en el PDF de sus facturas.
 	Address *UpdateBranchParamsAddress `json:"address,omitempty"`
