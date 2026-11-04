@@ -4181,10 +4181,10 @@ type InvoiceCreateComercioExterior struct {
 type InvoiceCreateComercioExteriorGood struct {
 	// Número de identificación de la mercancía (NoIdentificacion): el sku de su concepto.
 	ID *string `json:"id,omitempty"`
-	// Fracción arancelaria (FraccionArancelaria), 10 dígitos. Transporte internacional.
+	// Fracción arancelaria (FraccionArancelaria), 10 dígitos con el NICO, vigente en c_FraccionArancelaria (búsquela en `GET /v1/sat_catalogs/customs_tariffs`); una que no lo esté se rechaza antes de timbrar.
 	Tariff *string `json:"tariff,omitempty"`
-	// Unidad aduana (UnidadAduana), c_UnidadAduana.
-	Unit string `json:"unit"`
+	// Unidad aduana (UnidadAduana), c_UnidadAduana; 99 en un servicio. Con `tariff` puede omitirse: va la UMT de la fracción en el catálogo del SAT (otra la rechaza el SAT con CCE161).
+	Unit *string `json:"unit,omitempty"`
 	// Cantidad en la unidad aduana (CantidadAduana).
 	Quantity *float64 `json:"quantity,omitempty"`
 	// Valor unitario en dólares (ValorUnitarioAduana).

@@ -2208,7 +2208,7 @@ type SatCatalogsService struct{ c *Client }
 
 // Get: Consultar un catálogo del SAT
 //
-// product_keys y unit_keys se buscan con q (texto o clave). Los demás vienen completos: tax_systems, cfdi_uses, payment_forms, payment_methods, relationship_types, cancellation_motives, export_types, tax_objects, retention_codes.
+// product_keys, unit_keys y customs_tariffs (fracciones arancelarias de Comercio Exterior, con su customs_unit) se buscan con q (texto o clave). Los demás vienen completos: tax_systems, cfdi_uses, payment_forms, payment_methods, relationship_types, cancellation_motives, export_types, tax_objects, retention_codes.
 //
 // GET /v1/sat_catalogs/{name}
 //
