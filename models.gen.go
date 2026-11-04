@@ -633,6 +633,8 @@ type CreateCostCenterParams struct {
 
 // CreateCreditNoteParams: los campos de «Timbrar una nota de crédito».
 type CreateCreditNoteParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
 	// La factura (inv_… o su UUID).
 	Invoice string `json:"invoice"`
 	// Importe de la nota antes de impuestos: Fiscalisto agrega el IVA y las retenciones de la factura en la misma proporción.
