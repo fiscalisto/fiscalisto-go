@@ -413,6 +413,18 @@ type CancelRetentionParams struct {
 	Substitution *string `json:"substitution,omitempty"`
 }
 
+// CancelSalesOrderDeliveryParams: los campos de «Cancelar una entrega».
+type CancelSalesOrderDeliveryParams struct {
+	// Por qué (queda en el historial).
+	Reason *string `json:"reason,omitempty"`
+}
+
+// CancelSalesOrderParams: los campos de «Cancelar un pedido».
+type CancelSalesOrderParams struct {
+	// Por qué (queda en el historial).
+	Reason *string `json:"reason,omitempty"`
+}
+
 // CheckSatListsParams: los campos de «Revisar varios RFC en las listas del SAT».
 type CheckSatListsParams struct {
 	// Los RFC a revisar, hasta 1000.
@@ -427,6 +439,12 @@ type ClassifyBankTransactionParams struct {
 	Classification string `json:"classification"`
 	// Una nota para su equipo (de dónde vino, por qué).
 	Note *string `json:"note,omitempty"`
+}
+
+// CloseSalesOrderParams: los campos de «Cerrar un pedido».
+type CloseSalesOrderParams struct {
+	// Por qué (queda en el historial).
+	Reason *string `json:"reason,omitempty"`
 }
 
 // ComplianceOpinion: La opinión de cumplimiento de obligaciones fiscales (32-D) más reciente del emisor, como la dio el SAT.
@@ -1919,6 +1937,220 @@ type CreateRetentionParamsTrustWithholding struct {
 	Description string `json:"description"`
 }
 
+// CreateSalesOrderDeliveryParams: los campos de «Registrar una entrega».
+type CreateSalesOrderDeliveryParams struct {
+	// Cuánto sale de cada concepto. Por omisión, todo lo que falta por entregar.
+	Items []CreateSalesOrderDeliveryParamsItem `json:"items,omitempty"`
+	// Por omisión, hoy.
+	DeliveredOn *string `json:"delivered_on,omitempty"`
+	// Transporte.
+	Carrier *string `json:"carrier,omitempty"`
+	// Número de guía.
+	Tracking *string `json:"tracking,omitempty"`
+	// Una nota en la remisión.
+	Note *string `json:"note,omitempty"`
+	// Quién recibió, si ya lo sabe (si no, su cliente lo firma en url).
+	ReceivedBy *string `json:"received_by,omitempty"`
+}
+
+// CreateSalesOrderDeliveryParamsItem: CreateSalesOrderDeliveryParamsItem.
+type CreateSalesOrderDeliveryParamsItem struct {
+	// El id del concepto (items[].id).
+	Line int64 `json:"line"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity float64 `json:"quantity"`
+}
+
+// CreateSalesOrderParams: los campos de «Crear un pedido».
+type CreateSalesOrderParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Hacerlo de una cotización (quo_…): toma su cliente y sus conceptos, y la cotización queda aceptada. Sin customer ni items.
+	Quote *string `json:"quote,omitempty"`
+	// Un cliente de su catálogo (cus_…) o uno con sus datos fiscales (como en POST /v1/invoices: se agrega a sus clientes).
+	Customer *StringOr[CreateSalesOrderParamsCustomer] `json:"customer,omitempty"`
+	// Los conceptos, como en POST /v1/invoices (hasta 200).
+	Items []CreateSalesOrderParamsItem `json:"items,omitempty"`
+	// Confirmarlo en el mismo paso (por omisión false: queda en draft). Confirmado, aparta lo pedido en el almacén.
+	Confirm *bool `json:"confirm,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	//
+	// Valores: PUE, PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Observaciones que aparecen en el PDF (no van en el XML).
+	Notes *string `json:"notes,omitempty"`
+	// El número de orden de compra de su cliente (va en la nota de cada factura).
+	CustomerPo *string `json:"customer_po,omitempty"`
+	// A dónde mandarle el pedido y sus remisiones (hasta 5 correos, separados por comas). Por omisión, el del cliente.
+	Email *string `json:"email,omitempty"`
+	// Entrega estimada (AAAA-MM-DD).
+	ExpectedOn *string `json:"expected_on,omitempty"`
+	// Días de crédito (0: de contado).
+	PaymentDays *int64 `json:"payment_days,omitempty"`
+	// Qué se factura: delivered (por omisión), lo ya entregado; ordered, todo lo pedido desde el inicio (por ejemplo con pago por adelantado).
+	//
+	// Valores: delivered, ordered.
+	InvoicePolicy *string `json:"invoice_policy,omitempty"`
+	// Dónde se entrega.
+	ShipTo *string `json:"ship_to,omitempty"`
+	// Condiciones del pedido.
+	Terms *string `json:"terms,omitempty"`
+	// Nota interna (su cliente no la ve).
+	InternalNote *string `json:"internal_note,omitempty"`
+}
+
+// CreateSalesOrderParamsCustomer: CreateSalesOrderParamsCustomer.
+type CreateSalesOrderParamsCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName string `json:"legal_name"`
+	// Régimen fiscal (RegimenFiscal), clave de c_RegimenFiscal: 601, 612, 626…
+	TaxSystem string `json:"tax_system"`
+	// Código postal del domicilio fiscal del cliente (DomicilioFiscalReceptor), 5 dígitos.
+	Zip string `json:"zip"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email *string `json:"email,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *CreateSalesOrderParamsCustomerForeign `json:"foreign,omitempty"`
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
+}
+
+// CreateSalesOrderParamsCustomerForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type CreateSalesOrderParamsCustomerForeign struct {
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+}
+
+// CreateSalesOrderParamsItem: Un concepto. description, product_key y unit_price son obligatorios, salvo que mande product (prd_…): entonces vienen de su catálogo y lo que mande encima gana.
+type CreateSalesOrderParamsItem struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product *string `json:"product,omitempty"`
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description *string `json:"description,omitempty"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey *string `json:"product_key,omitempty"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Nombre de la unidad (Unidad), hasta 20 caracteres.
+	UnitName *string `json:"unit_name,omitempty"`
+	// Número de identificación o SKU (NoIdentificacion).
+	SKU *string `json:"sku,omitempty"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Descuento (Descuento).
+	Discount *float64 `json:"discount,omitempty"`
+	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
+	//
+	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
+	Taxability *string `json:"taxability,omitempty"`
+	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// IEPS trasladado: tasa (0.265…) o cuota en pesos por unidad, según ieps_factor.
+	IEPS *float64 `json:"ieps,omitempty"`
+	// Tasa o Cuota (TipoFactor del IEPS).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
+	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
+	IEPSUnits *float64 `json:"ieps_units,omitempty"`
+	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	IVARetention *float64 `json:"iva_retention,omitempty"`
+	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	ISRRetention *float64 `json:"isr_retention,omitempty"`
+	// Números de cuenta predial (CuentaPredial) en arrendamiento.
+	Predial []string `json:"predial,omitempty"`
+	// Números de pedimento (InformacionAduanera) de mercancía importada.
+	Pedimentos []string `json:"pedimentos,omitempty"`
+	// A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+	ThirdParty *CreateSalesOrderParamsItemThirdParty `json:"third_party,omitempty"`
+	// Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+	Iedu *CreateSalesOrderParamsItemIedu `json:"iedu,omitempty"`
+	// Complemento de vehículo usado.
+	UsedVehicle *CreateSalesOrderParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// CreateSalesOrderParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+type CreateSalesOrderParamsItemIedu struct {
+	// Nombre del alumno (nombreAlumno).
+	StudentName string `json:"student_name"`
+	// CURP, 18 caracteres.
+	CURP string `json:"curp"`
+	// Nivel educativo (nivelEducativo).
+	//
+	// Valores: Preescolar, Primaria, Secundaria, Profesional técnico, Bachillerato o su equivalente.
+	Level string `json:"level"`
+	// Reconocimiento de validez oficial de estudios (autRVOE).
+	Rvoe string `json:"rvoe"`
+	// RFC de quien paga, si no es el receptor (rfcPago).
+	PayerTaxID *string `json:"payer_tax_id,omitempty"`
+}
+
+// CreateSalesOrderParamsItemThirdParty: A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+type CreateSalesOrderParamsItemThirdParty struct {
+	// RFC de a cuenta de quién (RfcACuentaTerceros).
+	TaxID string `json:"tax_id"`
+	// Nombre (NombreACuentaTerceros).
+	Name string `json:"name"`
+	// Régimen fiscal (RegimenFiscalACuentaTerceros), c_RegimenFiscal.
+	TaxSystem string `json:"tax_system"`
+	// Código postal de su domicilio fiscal (DomicilioFiscalACuentaTerceros).
+	Zip string `json:"zip"`
+}
+
+// CreateSalesOrderParamsItemUsedVehicle: Complemento de vehículo usado.
+type CreateSalesOrderParamsItemUsedVehicle struct {
+	// Monto de adquisición (montoAdquisicion).
+	PurchaseAmount float64 `json:"purchase_amount"`
+	// Monto de enajenación (montoEnajenacion).
+	SaleAmount float64 `json:"sale_amount"`
+	// Clave vehicular (claveVehicular).
+	VehicleKey string `json:"vehicle_key"`
+	// Marca (marca).
+	Make string `json:"make"`
+	// Tipo o versión (tipo).
+	Type string `json:"type"`
+	// Año del modelo (modelo), 4 dígitos.
+	Model string `json:"model"`
+	// Número de motor (numeroMotor).
+	EngineNumber *string `json:"engine_number,omitempty"`
+	// Número de serie (numeroSerie).
+	SerialNumber *string `json:"serial_number,omitempty"`
+	// Número de identificación vehicular (NIV).
+	Niv *string `json:"niv,omitempty"`
+	// Valor según la guía EBC o Libro Azul (valor).
+	GuideValue float64 `json:"guide_value"`
+	// Información aduanera de la importación del vehículo (InformacionAduanera).
+	Customs []CreateSalesOrderParamsItemUsedVehicleCustom `json:"customs,omitempty"`
+}
+
+// CreateSalesOrderParamsItemUsedVehicleCustom: CreateSalesOrderParamsItemUsedVehicleCustom.
+type CreateSalesOrderParamsItemUsedVehicleCustom struct {
+	// Número del documento de importación (numero).
+	Number string `json:"number"`
+	// Fecha del documento (fecha), AAAA-MM-DD.
+	Date string `json:"date"`
+	// Aduana (aduana).
+	Office *string `json:"office,omitempty"`
+}
+
 // CreateSandboxParams: los campos de «Crear un entorno de prueba».
 type CreateSandboxParams struct {
 	// Para quién o para qué es, por ejemplo el nombre de quien lo usa.
@@ -2681,7 +2913,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, issuer.ready, balance.low o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, issuer.ready, balance.low o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -5389,6 +5621,24 @@ type InvoicePayrollTotals struct {
 	Net float64 `json:"net"`
 }
 
+// InvoiceSalesOrderParams: los campos de «Facturar un pedido».
+type InvoiceSalesOrderParams struct {
+	// Cuánto facturar de cada concepto. Por omisión, lo entregado sin facturar (o todo lo pedido con invoice_policy ordered).
+	Items []InvoiceSalesOrderParamsItem `json:"items,omitempty"`
+	// Facturar también lo que aún no se entrega (con invoice_policy delivered).
+	IncludeUndelivered *bool `json:"include_undelivered,omitempty"`
+	// Registrar también la entrega de lo que lleva la factura al timbrarla (venta de mostrador).
+	Deliver *bool `json:"deliver,omitempty"`
+}
+
+// InvoiceSalesOrderParamsItem: InvoiceSalesOrderParamsItem.
+type InvoiceSalesOrderParamsItem struct {
+	// El id del concepto (items[].id).
+	Line int64 `json:"line"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity float64 `json:"quantity"`
+}
+
 // InvoiceSubstitutes: La factura que esta sustituyó y si quedó cancelada.
 type InvoiceSubstitutes struct {
 	// La factura sustituida (inv_…).
@@ -5687,7 +5937,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -5899,6 +6149,22 @@ type ListRetentionsParams struct {
 	Recipient *string `json:"recipient,omitempty"`
 	// Ejercicio, 4 dígitos.
 	Year *string `json:"year,omitempty"`
+}
+
+// ListSalesOrdersParams: los campos de «Listar pedidos».
+type ListSalesOrdersParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo los que estén en este estado.
+	//
+	// Valores: draft, confirmed, partially_delivered, delivered, invoiced, paid, closed, canceled.
+	Status *string `json:"status,omitempty"`
+	// Solo los de este RFC.
+	Customer *string `json:"customer,omitempty"`
 }
 
 // ListSatDeclarationsParams: los campos de «Listar declaraciones del SAT».
@@ -7703,6 +7969,192 @@ type SATRefresh struct {
 	URL string `json:"url"`
 }
 
+// SalesOrder: Un pedido de venta: lo que su cliente pidió, cómo se entrega (remisiones) y cómo se factura y se cobra.
+type SalesOrder struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Su serie y folio (PED-12).
+	Number string `json:"number"`
+	// draft (borrador), confirmed, partially_delivered, delivered (todo entregado), invoiced (todo facturado), paid (sus facturas pagadas), closed (se dio por terminado) o canceled. Cambia solo, con lo que pasa.
+	//
+	// Valores: draft, confirmed, partially_delivered, delivered, invoiced, paid, closed, canceled.
+	Status string `json:"status"`
+	// La etapa del negocio en que va («Por empacar», «En ruta»…), o null. Se elige en la app.
+	Stage *string `json:"stage,omitempty"`
+	// La liga donde su cliente ve el pedido, lo confirma, firma cada entrega y abre sus facturas. null mientras sea borrador o no se haya mandado.
+	URL *string `json:"url,omitempty"`
+	// El cliente: su RFC, nombre, correo y su id en su catálogo.
+	Customer SalesOrderCustomer `json:"customer"`
+	// El número de orden de compra de su cliente, o null.
+	CustomerPo *string `json:"customer_po,omitempty"`
+	// La cotización (quo_…) de donde salió, o null.
+	Quote *string `json:"quote,omitempty"`
+	// La moneda.
+	Currency string `json:"currency"`
+	// Los conceptos: id (para entregar o facturar una parte), lo pedido, lo entregado, lo facturado y lo que ya no se entregará (canceled). goods es true cuando sale del almacén.
+	Items []SalesOrderItem `json:"items"`
+	// El subtotal, sin impuestos.
+	Subtotal float64 `json:"subtotal"`
+	// El total con impuestos.
+	Total float64 `json:"total"`
+	// La suma de sus facturas timbradas (sin las canceladas).
+	InvoicedTotal float64 `json:"invoiced_total"`
+	// Lo que ya se pagó de esas facturas.
+	PaidTotal float64 `json:"paid_total"`
+	// La entrega estimada (AAAA-MM-DD), o null.
+	ExpectedOn *string `json:"expected_on,omitempty"`
+	// Días de crédito: cada factura vence esos días después de su fecha.
+	PaymentDays int64 `json:"payment_days"`
+	// delivered: cada factura lleva lo ya entregado; ordered: se factura lo pedido, entregado o no.
+	//
+	// Valores: delivered, ordered.
+	InvoicePolicy string `json:"invoice_policy"`
+	// Dónde se entrega, o null.
+	ShipTo *string `json:"ship_to,omitempty"`
+	// Las condiciones impresas en el pedido, o null.
+	Terms *string `json:"terms,omitempty"`
+	// Las notas, como las de una factura.
+	Notes *string `json:"notes,omitempty"`
+	// La nota interna (su cliente no la ve), o null.
+	InternalNote *string `json:"internal_note,omitempty"`
+	// Sus entregas, cada una con su remisión.
+	Deliveries []SalesOrderDelivery `json:"deliveries"`
+	// Sus facturas timbradas (inv_…), con lo que falta por pagar de cada una (balance).
+	Invoices []SalesOrderInvoice `json:"invoices"`
+	// Cuándo su cliente lo confirmó en su liga, o null.
+	CustomerConfirmedAt *string `json:"customer_confirmed_at,omitempty"`
+	// Cuándo se mandó, o null.
+	SentAt *string `json:"sent_at,omitempty"`
+	// Cuándo su cliente abrió la liga por primera vez, o null.
+	ViewedAt *string `json:"viewed_at,omitempty"`
+	// Cuándo se confirmó, o null.
+	ConfirmedAt *string `json:"confirmed_at,omitempty"`
+	// Cuándo quedó todo entregado, o null.
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+	// Cuándo quedó todo facturado, o null.
+	InvoicedAt *string `json:"invoiced_at,omitempty"`
+	// Cuándo quedaron pagadas sus facturas, o null.
+	PaidAt *string `json:"paid_at,omitempty"`
+	// Cuándo se cerró, o null.
+	ClosedAt *string `json:"closed_at,omitempty"`
+	// Cuándo se canceló, o null.
+	CanceledAt *string `json:"canceled_at,omitempty"`
+	// Por qué se canceló, o null.
+	CancelReason *string `json:"cancel_reason,omitempty"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// SalesOrderCustomer: El cliente: su RFC, nombre, correo y su id en su catálogo.
+type SalesOrderCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email *string `json:"email,omitempty"`
+	// El cliente (cus_…) en su catálogo, o null si no está en él.
+	CatalogID *string `json:"catalog_id,omitempty"`
+}
+
+// SalesOrderDelivery: Una entrega del pedido, con su remisión (REM-1): lo que salió del almacén.
+type SalesOrderDelivery struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Su remisión (REM-1).
+	Number string `json:"number"`
+	// delivered, o canceled (la mercancía regresó al almacén).
+	//
+	// Valores: delivered, canceled.
+	Status string `json:"status"`
+	// El día en que salió (AAAA-MM-DD).
+	DeliveredOn string `json:"delivered_on"`
+	// El transporte, o null.
+	Carrier *string `json:"carrier,omitempty"`
+	// El número de guía, o null.
+	Tracking *string `json:"tracking,omitempty"`
+	// Una nota, o null.
+	Note *string `json:"note,omitempty"`
+	// Quién recibió (lo firmó en la liga o lo anotó usted), o null.
+	ReceivedBy *string `json:"received_by,omitempty"`
+	// Cuándo se recibió, o null.
+	ReceivedAt *string `json:"received_at,omitempty"`
+	// Cuánto salió de cada concepto (line es items[].id del pedido).
+	Items []SalesOrderDeliveryItem `json:"items"`
+	// Cuándo se registró.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// SalesOrderDeliveryItem: SalesOrderDeliveryItem.
+type SalesOrderDeliveryItem struct {
+	// El concepto del pedido (su items[].id).
+	Line int64 `json:"line"`
+	// Cuánto salió de él.
+	Quantity float64 `json:"quantity"`
+}
+
+// SalesOrderInvoice: SalesOrderInvoice.
+type SalesOrderInvoice struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// stamped, o canceled (lo que llevaba se puede volver a facturar).
+	//
+	// Valores: stamped, canceled.
+	Status string `json:"status"`
+	// El total de la factura.
+	Total float64 `json:"total"`
+	// Lo que falta por pagar de esa factura, o null si aún no se sabe.
+	Balance *float64 `json:"balance,omitempty"`
+}
+
+// SalesOrderItem: SalesOrderItem.
+type SalesOrderItem struct {
+	// El id del concepto en el pedido: con él entrega o factura una parte (line).
+	ID int64 `json:"id"`
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description string `json:"description"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey *string `json:"product_key,omitempty"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity float64 `json:"quantity"`
+	// La unidad, como la ve el cliente.
+	Unit *string `json:"unit,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice float64 `json:"unit_price"`
+	// El descuento del concepto, en dinero.
+	Discount float64 `json:"discount"`
+	// El importe del concepto, sin impuestos.
+	Amount float64 `json:"amount"`
+	// true si sale del almacén con cada entrega; false si es un servicio (solo se factura).
+	Goods bool `json:"goods"`
+	// Cuánto ya se entregó.
+	Delivered float64 `json:"delivered"`
+	// Cuánto ya se facturó.
+	Invoiced float64 `json:"invoiced"`
+	// Cuánto ya no se entregará (POST /v1/sales_orders/{id}/cancel_remaining).
+	Canceled float64 `json:"canceled"`
+}
+
+// SalesOrderList: Una página de la lista.
+type SalesOrderList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SalesOrder `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // Sandbox: Un entorno de prueba: el modo de pruebas propio de una persona, con su emisor, llaves, webhooks y eventos aparte.
 type Sandbox struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -7813,6 +8265,16 @@ type SendQuoteParams struct {
 type SendRetentionParams struct {
 	// A quién (correos separados por comas).
 	To *string `json:"to,omitempty"`
+}
+
+// SendSalesOrderParams: los campos de «Mandar un pedido».
+type SendSalesOrderParams struct {
+	// Mandarlo por correo, con su PDF y url (por omisión true). Con false solo contesta url, para que usted la mande.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// A quién (hasta 5 correos). Por omisión, el correo del pedido.
+	To *string `json:"to,omitempty"`
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message *string `json:"message,omitempty"`
 }
 
 // SignEfirmaParams: los campos de «Firmar el contrato con el PAC».
@@ -8237,7 +8699,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -9025,6 +9487,190 @@ type UpdateRecurringInvoiceParamsSchedule struct {
 	//
 	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
+}
+
+// UpdateSalesOrderParams: los campos de «Cambiar un pedido».
+type UpdateSalesOrderParams struct {
+	// Un cliente de su catálogo (cus_…) o uno con sus datos fiscales (como en POST /v1/invoices: se agrega a sus clientes).
+	Customer *StringOr[UpdateSalesOrderParamsCustomer] `json:"customer,omitempty"`
+	// Los conceptos, como en POST /v1/invoices (hasta 200).
+	Items []UpdateSalesOrderParamsItem `json:"items,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	//
+	// Valores: PUE, PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Observaciones que aparecen en el PDF (no van en el XML).
+	Notes *string `json:"notes,omitempty"`
+	// El número de orden de compra de su cliente (va en la nota de cada factura).
+	CustomerPo *string `json:"customer_po,omitempty"`
+	// A dónde mandarle el pedido y sus remisiones (hasta 5 correos, separados por comas). Por omisión, el del cliente.
+	Email *string `json:"email,omitempty"`
+	// Entrega estimada (AAAA-MM-DD).
+	ExpectedOn *string `json:"expected_on,omitempty"`
+	// Días de crédito (0: de contado).
+	PaymentDays *int64 `json:"payment_days,omitempty"`
+	// Qué se factura: delivered (por omisión), lo ya entregado; ordered, todo lo pedido desde el inicio (por ejemplo con pago por adelantado).
+	//
+	// Valores: delivered, ordered.
+	InvoicePolicy *string `json:"invoice_policy,omitempty"`
+	// Dónde se entrega.
+	ShipTo *string `json:"ship_to,omitempty"`
+	// Condiciones del pedido.
+	Terms *string `json:"terms,omitempty"`
+	// Nota interna (su cliente no la ve).
+	InternalNote *string `json:"internal_note,omitempty"`
+}
+
+// UpdateSalesOrderParamsCustomer: UpdateSalesOrderParamsCustomer.
+type UpdateSalesOrderParamsCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName string `json:"legal_name"`
+	// Régimen fiscal (RegimenFiscal), clave de c_RegimenFiscal: 601, 612, 626…
+	TaxSystem string `json:"tax_system"`
+	// Código postal del domicilio fiscal del cliente (DomicilioFiscalReceptor), 5 dígitos.
+	Zip string `json:"zip"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email *string `json:"email,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *UpdateSalesOrderParamsCustomerForeign `json:"foreign,omitempty"`
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
+}
+
+// UpdateSalesOrderParamsCustomerForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type UpdateSalesOrderParamsCustomerForeign struct {
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+}
+
+// UpdateSalesOrderParamsItem: Un concepto. description, product_key y unit_price son obligatorios, salvo que mande product (prd_…): entonces vienen de su catálogo y lo que mande encima gana.
+type UpdateSalesOrderParamsItem struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product *string `json:"product,omitempty"`
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description *string `json:"description,omitempty"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey *string `json:"product_key,omitempty"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Nombre de la unidad (Unidad), hasta 20 caracteres.
+	UnitName *string `json:"unit_name,omitempty"`
+	// Número de identificación o SKU (NoIdentificacion).
+	SKU *string `json:"sku,omitempty"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Descuento (Descuento).
+	Discount *float64 `json:"discount,omitempty"`
+	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
+	//
+	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
+	Taxability *string `json:"taxability,omitempty"`
+	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// IEPS trasladado: tasa (0.265…) o cuota en pesos por unidad, según ieps_factor.
+	IEPS *float64 `json:"ieps,omitempty"`
+	// Tasa o Cuota (TipoFactor del IEPS).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
+	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
+	IEPSUnits *float64 `json:"ieps_units,omitempty"`
+	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	IVARetention *float64 `json:"iva_retention,omitempty"`
+	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	ISRRetention *float64 `json:"isr_retention,omitempty"`
+	// Números de cuenta predial (CuentaPredial) en arrendamiento.
+	Predial []string `json:"predial,omitempty"`
+	// Números de pedimento (InformacionAduanera) de mercancía importada.
+	Pedimentos []string `json:"pedimentos,omitempty"`
+	// A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+	ThirdParty *UpdateSalesOrderParamsItemThirdParty `json:"third_party,omitempty"`
+	// Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+	Iedu *UpdateSalesOrderParamsItemIedu `json:"iedu,omitempty"`
+	// Complemento de vehículo usado.
+	UsedVehicle *UpdateSalesOrderParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// UpdateSalesOrderParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+type UpdateSalesOrderParamsItemIedu struct {
+	// Nombre del alumno (nombreAlumno).
+	StudentName string `json:"student_name"`
+	// CURP, 18 caracteres.
+	CURP string `json:"curp"`
+	// Nivel educativo (nivelEducativo).
+	//
+	// Valores: Preescolar, Primaria, Secundaria, Profesional técnico, Bachillerato o su equivalente.
+	Level string `json:"level"`
+	// Reconocimiento de validez oficial de estudios (autRVOE).
+	Rvoe string `json:"rvoe"`
+	// RFC de quien paga, si no es el receptor (rfcPago).
+	PayerTaxID *string `json:"payer_tax_id,omitempty"`
+}
+
+// UpdateSalesOrderParamsItemThirdParty: A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+type UpdateSalesOrderParamsItemThirdParty struct {
+	// RFC de a cuenta de quién (RfcACuentaTerceros).
+	TaxID string `json:"tax_id"`
+	// Nombre (NombreACuentaTerceros).
+	Name string `json:"name"`
+	// Régimen fiscal (RegimenFiscalACuentaTerceros), c_RegimenFiscal.
+	TaxSystem string `json:"tax_system"`
+	// Código postal de su domicilio fiscal (DomicilioFiscalACuentaTerceros).
+	Zip string `json:"zip"`
+}
+
+// UpdateSalesOrderParamsItemUsedVehicle: Complemento de vehículo usado.
+type UpdateSalesOrderParamsItemUsedVehicle struct {
+	// Monto de adquisición (montoAdquisicion).
+	PurchaseAmount float64 `json:"purchase_amount"`
+	// Monto de enajenación (montoEnajenacion).
+	SaleAmount float64 `json:"sale_amount"`
+	// Clave vehicular (claveVehicular).
+	VehicleKey string `json:"vehicle_key"`
+	// Marca (marca).
+	Make string `json:"make"`
+	// Tipo o versión (tipo).
+	Type string `json:"type"`
+	// Año del modelo (modelo), 4 dígitos.
+	Model string `json:"model"`
+	// Número de motor (numeroMotor).
+	EngineNumber *string `json:"engine_number,omitempty"`
+	// Número de serie (numeroSerie).
+	SerialNumber *string `json:"serial_number,omitempty"`
+	// Número de identificación vehicular (NIV).
+	Niv *string `json:"niv,omitempty"`
+	// Valor según la guía EBC o Libro Azul (valor).
+	GuideValue float64 `json:"guide_value"`
+	// Información aduanera de la importación del vehículo (InformacionAduanera).
+	Customs []UpdateSalesOrderParamsItemUsedVehicleCustom `json:"customs,omitempty"`
+}
+
+// UpdateSalesOrderParamsItemUsedVehicleCustom: UpdateSalesOrderParamsItemUsedVehicleCustom.
+type UpdateSalesOrderParamsItemUsedVehicleCustom struct {
+	// Número del documento de importación (numero).
+	Number string `json:"number"`
+	// Fecha del documento (fecha), AAAA-MM-DD.
+	Date string `json:"date"`
+	// Aduana (aduana).
+	Office *string `json:"office,omitempty"`
 }
 
 // UpdateSatInvoiceParams: los campos de «Actualizar una factura del SAT».

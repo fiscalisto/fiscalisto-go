@@ -170,6 +170,12 @@ const (
 	CodeRetentionRejected = "retention_rejected"
 	// No existe esa ruta. Revise la dirección y la versión (/v1).
 	CodeRouteNotFound = "route_not_found"
+	// El pedido está en borrador: confírmelo primero con POST /v1/sales_orders/{id}/confirm.
+	CodeSalesOrderDraft = "sales_order_draft"
+	// El pedido no se pudo guardar o no se puede hacer eso en su estado (por ejemplo, ya no queda nada por entregar o facturar, o está cancelado). El mensaje dice por qué.
+	CodeSalesOrderInvalid = "sales_order_invalid"
+	// Solo se borra un pedido en borrador; uno confirmado se cancela con POST /v1/sales_orders/{id}/cancel.
+	CodeSalesOrderNotDeletable = "sales_order_not_deletable"
 	// No se pudo crear el entorno de prueba: falta su nombre o la cuenta ya tiene 25 (borre uno que ya no use).
 	CodeSandboxInvalid = "sandbox_invalid"
 	// Las declaraciones de ese emisor se consultaron en el SAT hace menos de 10 minutos (cada consulta entra al SAT con su e.firma). Retry-After dice cuántos segundos faltan; lo que ya trajo está en GET /v1/sat_declarations.

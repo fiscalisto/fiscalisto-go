@@ -108,6 +108,8 @@ type services struct {
 	RecurringInvoices *RecurringInvoicesService
 	// Cotizaciones.
 	Quotes *QuotesService
+	// Pedidos.
+	SalesOrders *SalesOrdersService
 	// Webhooks.
 	WebhookEndpoints *WebhookEndpointsService
 	// Eventos.
@@ -161,6 +163,7 @@ func (s *services) init(c *Client) {
 	s.StoreConnections = &StoreConnectionsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
 	s.Quotes = &QuotesService{c}
+	s.SalesOrders = &SalesOrdersService{c}
 	s.WebhookEndpoints = &WebhookEndpointsService{c}
 	s.Events = &EventsService{c}
 }
@@ -3416,6 +3419,231 @@ func (s *QuotesService) Invoice(ctx context.Context, id string, opts ...RequestO
 // https://fiscalisto.com/docs/api/referencia/cotizaciones/get-quote-pdf
 func (s *QuotesService) PDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
 	return s.c.raw(ctx, "GET", "/v1/quotes/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
+}
+
+// SalesOrdersService: Pedidos (client.SalesOrders).
+type SalesOrdersService struct{ c *Client }
+
+// Create: Crear un pedido
+//
+// Lo que su cliente le pidió, con los conceptos y las condiciones de pago de una factura (se revisan con las mismas reglas, así que cada factura que sale de él timbra). customer es un cliente de su catálogo o uno con sus datos fiscales (se agrega a sus clientes). Con quote (quo_…) lo hace de una cotización. Queda en draft, o confirmado con confirm: true (llega sales_order.confirmed y se aparta lo pedido en el almacén).
+//
+// POST /v1/sales_orders
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/create-sales-order
+func (s *SalesOrdersService) Create(ctx context.Context, params *CreateSalesOrderParams, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar pedidos
+//
+// Los más recientes primero.
+//
+// GET /v1/sales_orders
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/list-sales-orders
+func (s *SalesOrdersService) List(ctx context.Context, params *ListSalesOrdersParams, opts ...RequestOption) (*Page[SalesOrder], error) {
+	return list[SalesOrder](ctx, s.c, "/v1/sales_orders", params, "", opts)
+}
+
+// ListAutoPaging: Listar pedidos, todos, página por página: for x, err := range …
+func (s *SalesOrdersService) ListAutoPaging(ctx context.Context, params *ListSalesOrdersParams, opts ...RequestOption) iter.Seq2[SalesOrder, error] {
+	return listAll[SalesOrder](ctx, s.c, "/v1/sales_orders", params, opts)
+}
+
+// Get: Ver un pedido
+//
+// Con sus entregas, sus facturas y lo que se ha pagado de ellas.
+//
+// GET /v1/sales_orders/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/get-sales-order
+func (s *SalesOrdersService) Get(ctx context.Context, id string, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "GET", "/v1/sales_orders/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un pedido
+//
+// Solo lo que mande cambia. Los conceptos cambian mientras no tengan entregas ni facturas; si no, 400 sales_order_invalid.
+//
+// POST /v1/sales_orders/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/update-sales-order
+func (s *SalesOrdersService) Update(ctx context.Context, id string, params *UpdateSalesOrderParams, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un pedido
+//
+// Solo un borrador. Uno confirmado se cancela con POST /v1/sales_orders/{id}/cancel: 400 sales_order_not_deletable.
+//
+// DELETE /v1/sales_orders/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/delete-sales-order
+func (s *SalesOrdersService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/sales_orders/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Confirm: Confirmar un pedido
+//
+// Es un pedido en firme: se aparta lo pedido en el almacén y ya se puede entregar y facturar. Llega sales_order.confirmed.
+//
+// POST /v1/sales_orders/{id}/confirm
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/confirm-sales-order
+func (s *SalesOrdersService) Confirm(ctx context.Context, id string, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/confirm", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Deliver: Registrar una entrega
+//
+// Lo que salió, con su remisión (REM-1, REM-2…): la mercancía sale del almacén con la entrega, no con la factura. Por omisión, todo lo que falta. Si el emisor no vende sin existencias, no sale más de lo que hay (400 sales_order_invalid). Cuando ya salió todo llega sales_order.delivered.
+//
+// POST /v1/sales_orders/{id}/deliveries
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/create-sales-order-delivery
+func (s *SalesOrdersService) Deliver(ctx context.Context, id string, params *CreateSalesOrderDeliveryParams, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/deliveries", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CancelDelivery: Cancelar una entrega
+//
+// La mercancía regresa al almacén y lo entregado vuelve a quedar pendiente.
+//
+// POST /v1/sales_orders/{id}/deliveries/{delivery}/cancel
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/cancel-sales-order-delivery
+func (s *SalesOrdersService) CancelDelivery(ctx context.Context, id string, delivery string, params *CancelSalesOrderDeliveryParams, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/deliveries/"+url.PathEscape(delivery)+"/cancel", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Invoice: Facturar un pedido
+//
+// Timbra una factura con lo entregado y no facturado (o lo que diga items; con invoice_policy ordered, lo pedido), con los datos fiscales del cliente de hoy y la nota «Pedido PED-…» con su orden de compra. Se factura en varias partes: cada llamada, con su Idempotency-Key, timbra la que sigue. Si no queda nada, 400 sales_order_invalid. Cuando sus facturas se pagan llega sales_order.paid.
+//
+// POST /v1/sales_orders/{id}/invoice
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/invoice-sales-order
+func (s *SalesOrdersService) Invoice(ctx context.Context, id string, params *InvoiceSalesOrderParams, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/invoice", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Send: Mandar un pedido
+//
+// Por correo, con su PDF y la liga donde su cliente lo confirma (llega sales_order.customer_confirmed), firma cada entrega y abre sus facturas. Con send_email: false solo contesta url. En borrador, 400 sales_order_draft.
+//
+// POST /v1/sales_orders/{id}/send
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/send-sales-order
+func (s *SalesOrdersService) Send(ctx context.Context, id string, params *SendSalesOrderParams, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/send", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CancelRemaining: Ya no entregar lo pendiente
+//
+// El pedido se queda con lo ya entregado (lo demás pasa a canceled en cada concepto) y se libera lo apartado.
+//
+// POST /v1/sales_orders/{id}/cancel_remaining
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/cancel-sales-order-remaining
+func (s *SalesOrdersService) CancelRemaining(ctx context.Context, id string, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/cancel_remaining", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Close: Cerrar un pedido
+//
+// Lo da por terminado aunque quede algo pendiente, y libera lo apartado.
+//
+// POST /v1/sales_orders/{id}/close
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/close-sales-order
+func (s *SalesOrdersService) Close(ctx context.Context, id string, params *CloseSalesOrderParams, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/close", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Cancel: Cancelar un pedido
+//
+// Solo sin entregas ni facturas timbradas (cancele primero las entregas, y las facturas con POST /v1/invoices/{id}/cancel). Borra sus facturas en borrador y libera lo apartado. Llega sales_order.canceled.
+//
+// POST /v1/sales_orders/{id}/cancel
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/cancel-sales-order
+func (s *SalesOrdersService) Cancel(ctx context.Context, id string, params *CancelSalesOrderParams, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/cancel", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reopen: Reabrir un pedido
+//
+// Uno cerrado o cancelado vuelve a estar abierto.
+//
+// POST /v1/sales_orders/{id}/reopen
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/reopen-sales-order
+func (s *SalesOrdersService) Reopen(ctx context.Context, id string, opts ...RequestOption) (*SalesOrder, error) {
+	out := new(SalesOrder)
+	if err := s.c.do(ctx, "POST", "/v1/sales_orders/"+url.PathEscape(id)+"/reopen", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Pdf: Descargar el PDF
+//
+// El PDF del pedido, con el diseño de PDF del emisor.
+//
+// GET /v1/sales_orders/{id}/pdf
+//
+// https://fiscalisto.com/docs/api/referencia/pedidos/get-sales-order-pdf
+func (s *SalesOrdersService) PDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/sales_orders/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
 }
 
 // WebhookEndpointsService: Webhooks (client.WebhookEndpoints).

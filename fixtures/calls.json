@@ -1462,6 +1462,111 @@
 		"go": "Quotes.PDF",
 		"java": "quotes.pdf"
 	},
+	"POST /v1/sales_orders": {
+		"python": "sales_orders.create",
+		"php": "salesOrders->create",
+		"dotnet": "SalesOrders.CreateAsync",
+		"go": "SalesOrders.Create",
+		"java": "salesOrders.create"
+	},
+	"GET /v1/sales_orders": {
+		"python": "sales_orders.list",
+		"php": "salesOrders->list",
+		"dotnet": "SalesOrders.ListAsync",
+		"go": "SalesOrders.List",
+		"java": "salesOrders.list"
+	},
+	"GET /v1/sales_orders/{id}": {
+		"python": "sales_orders.get",
+		"php": "salesOrders->get",
+		"dotnet": "SalesOrders.GetAsync",
+		"go": "SalesOrders.Get",
+		"java": "salesOrders.get"
+	},
+	"POST /v1/sales_orders/{id}": {
+		"python": "sales_orders.update",
+		"php": "salesOrders->update",
+		"dotnet": "SalesOrders.UpdateAsync",
+		"go": "SalesOrders.Update",
+		"java": "salesOrders.update"
+	},
+	"DELETE /v1/sales_orders/{id}": {
+		"python": "sales_orders.delete",
+		"php": "salesOrders->delete",
+		"dotnet": "SalesOrders.DeleteAsync",
+		"go": "SalesOrders.Delete",
+		"java": "salesOrders.delete"
+	},
+	"POST /v1/sales_orders/{id}/confirm": {
+		"python": "sales_orders.confirm",
+		"php": "salesOrders->confirm",
+		"dotnet": "SalesOrders.ConfirmAsync",
+		"go": "SalesOrders.Confirm",
+		"java": "salesOrders.confirm"
+	},
+	"POST /v1/sales_orders/{id}/deliveries": {
+		"python": "sales_orders.deliver",
+		"php": "salesOrders->deliver",
+		"dotnet": "SalesOrders.DeliverAsync",
+		"go": "SalesOrders.Deliver",
+		"java": "salesOrders.deliver"
+	},
+	"POST /v1/sales_orders/{id}/deliveries/{delivery}/cancel": {
+		"python": "sales_orders.cancel_delivery",
+		"php": "salesOrders->cancelDelivery",
+		"dotnet": "SalesOrders.CancelDeliveryAsync",
+		"go": "SalesOrders.CancelDelivery",
+		"java": "salesOrders.cancelDelivery"
+	},
+	"POST /v1/sales_orders/{id}/invoice": {
+		"python": "sales_orders.invoice",
+		"php": "salesOrders->invoice",
+		"dotnet": "SalesOrders.InvoiceAsync",
+		"go": "SalesOrders.Invoice",
+		"java": "salesOrders.invoice"
+	},
+	"POST /v1/sales_orders/{id}/send": {
+		"python": "sales_orders.send",
+		"php": "salesOrders->send",
+		"dotnet": "SalesOrders.SendAsync",
+		"go": "SalesOrders.Send",
+		"java": "salesOrders.send"
+	},
+	"POST /v1/sales_orders/{id}/cancel_remaining": {
+		"python": "sales_orders.cancel_remaining",
+		"php": "salesOrders->cancelRemaining",
+		"dotnet": "SalesOrders.CancelRemainingAsync",
+		"go": "SalesOrders.CancelRemaining",
+		"java": "salesOrders.cancelRemaining"
+	},
+	"POST /v1/sales_orders/{id}/close": {
+		"python": "sales_orders.close",
+		"php": "salesOrders->close",
+		"dotnet": "SalesOrders.CloseAsync",
+		"go": "SalesOrders.Close",
+		"java": "salesOrders.close"
+	},
+	"POST /v1/sales_orders/{id}/cancel": {
+		"python": "sales_orders.cancel",
+		"php": "salesOrders->cancel",
+		"dotnet": "SalesOrders.CancelAsync",
+		"go": "SalesOrders.Cancel",
+		"java": "salesOrders.cancel"
+	},
+	"POST /v1/sales_orders/{id}/reopen": {
+		"python": "sales_orders.reopen",
+		"php": "salesOrders->reopen",
+		"dotnet": "SalesOrders.ReopenAsync",
+		"go": "SalesOrders.Reopen",
+		"java": "salesOrders.reopen"
+	},
+	"GET /v1/sales_orders/{id}/pdf": {
+		"python": "sales_orders.pdf",
+		"php": "salesOrders->pdf",
+		"dotnet": "SalesOrders.PdfAsync",
+		"go": "SalesOrders.PDF",
+		"java": "salesOrders.pdf"
+	},
 	"POST /v1/webhook_endpoints": {
 		"python": "webhook_endpoints.create",
 		"php": "webhookEndpoints->create",
