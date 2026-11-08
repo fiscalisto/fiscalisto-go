@@ -230,6 +230,13 @@
 		"go": "Receivables.List",
 		"java": "receivables.list"
 	},
+	"GET /v1/customers/{id}/payment_behavior": {
+		"python": "customers.payment_behavior",
+		"php": "customers->paymentBehavior",
+		"dotnet": "Customers.PaymentBehaviorAsync",
+		"go": "Customers.PaymentBehavior",
+		"java": "customers.paymentBehavior"
+	},
 	"POST /v1/bank_transactions": {
 		"python": "bank_transactions.create",
 		"php": "bankTransactions->create",
@@ -656,6 +663,160 @@
 		"dotnet": "CostCenters.DeleteAsync",
 		"go": "CostCenters.Delete",
 		"java": "costCenters.delete"
+	},
+	"POST /v1/expense_people": {
+		"python": "expense_people.create",
+		"php": "expensePeople->create",
+		"dotnet": "ExpensePeople.CreateAsync",
+		"go": "ExpensePeople.Create",
+		"java": "expensePeople.create"
+	},
+	"GET /v1/expense_people": {
+		"python": "expense_people.list",
+		"php": "expensePeople->list",
+		"dotnet": "ExpensePeople.ListAsync",
+		"go": "ExpensePeople.List",
+		"java": "expensePeople.list"
+	},
+	"GET /v1/expense_people/{id}": {
+		"python": "expense_people.get",
+		"php": "expensePeople->get",
+		"dotnet": "ExpensePeople.GetAsync",
+		"go": "ExpensePeople.Get",
+		"java": "expensePeople.get"
+	},
+	"POST /v1/expense_people/{id}": {
+		"python": "expense_people.update",
+		"php": "expensePeople->update",
+		"dotnet": "ExpensePeople.UpdateAsync",
+		"go": "ExpensePeople.Update",
+		"java": "expensePeople.update"
+	},
+	"POST /v1/expense_people/{id}/link": {
+		"python": "expense_people.create_link",
+		"php": "expensePeople->createLink",
+		"dotnet": "ExpensePeople.CreateLinkAsync",
+		"go": "ExpensePeople.CreateLink",
+		"java": "expensePeople.createLink"
+	},
+	"DELETE /v1/expense_people/{id}/link": {
+		"python": "expense_people.delete_link",
+		"php": "expensePeople->deleteLink",
+		"dotnet": "ExpensePeople.DeleteLinkAsync",
+		"go": "ExpensePeople.DeleteLink",
+		"java": "expensePeople.deleteLink"
+	},
+	"POST /v1/expense_reports": {
+		"python": "expense_reports.create",
+		"php": "expenseReports->create",
+		"dotnet": "ExpenseReports.CreateAsync",
+		"go": "ExpenseReports.Create",
+		"java": "expenseReports.create"
+	},
+	"GET /v1/expense_reports": {
+		"python": "expense_reports.list",
+		"php": "expenseReports->list",
+		"dotnet": "ExpenseReports.ListAsync",
+		"go": "ExpenseReports.List",
+		"java": "expenseReports.list"
+	},
+	"GET /v1/expense_reports/{id}": {
+		"python": "expense_reports.get",
+		"php": "expenseReports->get",
+		"dotnet": "ExpenseReports.GetAsync",
+		"go": "ExpenseReports.Get",
+		"java": "expenseReports.get"
+	},
+	"POST /v1/expense_reports/{id}": {
+		"python": "expense_reports.update",
+		"php": "expenseReports->update",
+		"dotnet": "ExpenseReports.UpdateAsync",
+		"go": "ExpenseReports.Update",
+		"java": "expenseReports.update"
+	},
+	"DELETE /v1/expense_reports/{id}": {
+		"python": "expense_reports.delete",
+		"php": "expenseReports->delete",
+		"dotnet": "ExpenseReports.DeleteAsync",
+		"go": "ExpenseReports.Delete",
+		"java": "expenseReports.delete"
+	},
+	"POST /v1/expense_reports/{id}/submit": {
+		"python": "expense_reports.submit",
+		"php": "expenseReports->submit",
+		"dotnet": "ExpenseReports.SubmitAsync",
+		"go": "ExpenseReports.Submit",
+		"java": "expenseReports.submit"
+	},
+	"POST /v1/expense_reports/{id}/approve": {
+		"python": "expense_reports.approve",
+		"php": "expenseReports->approve",
+		"dotnet": "ExpenseReports.ApproveAsync",
+		"go": "ExpenseReports.Approve",
+		"java": "expenseReports.approve"
+	},
+	"POST /v1/expense_reports/{id}/return": {
+		"python": "expense_reports.send_back",
+		"php": "expenseReports->sendBack",
+		"dotnet": "ExpenseReports.SendBackAsync",
+		"go": "ExpenseReports.SendBack",
+		"java": "expenseReports.sendBack"
+	},
+	"POST /v1/expense_reports/{id}/reopen": {
+		"python": "expense_reports.reopen",
+		"php": "expenseReports->reopen",
+		"dotnet": "ExpenseReports.ReopenAsync",
+		"go": "ExpenseReports.Reopen",
+		"java": "expenseReports.reopen"
+	},
+	"POST /v1/expense_reports/{id}/items": {
+		"python": "expense_reports.create_item",
+		"php": "expenseReports->createItem",
+		"dotnet": "ExpenseReports.CreateItemAsync",
+		"go": "ExpenseReports.CreateItem",
+		"java": "expenseReports.createItem"
+	},
+	"POST /v1/expense_reports/{id}/items/{item}": {
+		"python": "expense_reports.update_item",
+		"php": "expenseReports->updateItem",
+		"dotnet": "ExpenseReports.UpdateItemAsync",
+		"go": "ExpenseReports.UpdateItem",
+		"java": "expenseReports.updateItem"
+	},
+	"DELETE /v1/expense_reports/{id}/items/{item}": {
+		"python": "expense_reports.delete_item",
+		"php": "expenseReports->deleteItem",
+		"dotnet": "ExpenseReports.DeleteItemAsync",
+		"go": "ExpenseReports.DeleteItem",
+		"java": "expenseReports.deleteItem"
+	},
+	"POST /v1/expense_reports/{id}/movements": {
+		"python": "expense_reports.create_movement",
+		"php": "expenseReports->createMovement",
+		"dotnet": "ExpenseReports.CreateMovementAsync",
+		"go": "ExpenseReports.CreateMovement",
+		"java": "expenseReports.createMovement"
+	},
+	"DELETE /v1/expense_reports/{id}/movements/{movement}": {
+		"python": "expense_reports.delete_movement",
+		"php": "expenseReports->deleteMovement",
+		"dotnet": "ExpenseReports.DeleteMovementAsync",
+		"go": "ExpenseReports.DeleteMovement",
+		"java": "expenseReports.deleteMovement"
+	},
+	"GET /v1/expense_policy": {
+		"python": "expense_policy.get",
+		"php": "expensePolicy->get",
+		"dotnet": "ExpensePolicy.GetAsync",
+		"go": "ExpensePolicy.Get",
+		"java": "expensePolicy.get"
+	},
+	"POST /v1/expense_policy": {
+		"python": "expense_policy.update",
+		"php": "expensePolicy->update",
+		"dotnet": "ExpensePolicy.UpdateAsync",
+		"go": "ExpensePolicy.Update",
+		"java": "expensePolicy.update"
 	},
 	"POST /v1/customers": {
 		"python": "customers.create",
@@ -1090,6 +1251,13 @@
 		"dotnet": "Accounting.CrossChecksAsync",
 		"go": "Accounting.CrossChecks",
 		"java": "accounting.crossChecks"
+	},
+	"GET /v1/accounting/vat_refund": {
+		"python": "accounting.vat_refund",
+		"php": "accounting->vatRefund",
+		"dotnet": "Accounting.VatRefundAsync",
+		"go": "Accounting.VatRefund",
+		"java": "accounting.vatRefund"
 	},
 	"GET /v1/accounting/cross_checks/cfdi": {
 		"python": "accounting.cross_check_cfdi",

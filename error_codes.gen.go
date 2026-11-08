@@ -42,6 +42,8 @@ const (
 	CodeCostCenterLimit = "cost_center_limit"
 	// Ya hay un cliente con ese RFC en el catálogo del emisor (o un producto con ese SKU). Para un cliente, customer es su id (cus_…): úselo, o cámbielo con POST /v1/customers/{id}.
 	CodeCustomerExists = "customer_exists"
+	// Público en general (XAXX010101000) y extranjeros (XEXX010101000) comparten RFC: GET /v1/customers/{id}/payment_behavior no aplica a ellos.
+	CodeCustomerGenericTaxID = "customer_generic_tax_id"
 	// Llegó al tope del día de algo que no se paga con timbres: comprobantes en pruebas (1,000), RFC revisados en las listas del SAT o constancias consultadas. Retry-After dice cuántos segundos faltan para la medianoche de la Ciudad de México.
 	CodeDailyLimit = "daily_limit"
 	// El cliente ya mandó sus datos con esa liga: una solicitud completada no se cancela.
@@ -60,13 +62,15 @@ const (
 	CodeEndpointLimit = "endpoint_limit"
 	// Un campo de expand[] no existe en la respuesta, no es el id de otro objeto, o se pidieron demasiados (hasta 10 campos, 4 niveles). Vea Expandir objetos.
 	CodeExpandInvalid = "expand_invalid"
+	// Viáticos y gastos no lo permite en ese momento: el mensaje dice por qué (un gasto con errores al enviarla, un reembolso antes de aprobarla, aprobar lo que usted mismo envió).
+	CodeExpenseReportInvalid = "expense_report_invalid"
 	// Idempotency-Key es de 1 a 255 caracteres ASCII, sin acentos ni ñ: el id de su pedido o un UUID.
 	CodeIdempotencyKeyInvalid = "idempotency_key_invalid"
 	// Lo que timbra exige el encabezado Idempotency-Key (8 a 255 caracteres, uno nuevo por comprobante). Así un reintento nunca timbra dos veces.
 	CodeIdempotencyKeyMissing = "idempotency_key_missing"
 	// Esa Idempotency-Key ya se usó en las últimas 24 horas con otra solicitud (otra ruta u otro cuerpo). Use una nueva para cada operación distinta.
 	CodeIdempotencyKeyReused = "idempotency_key_reused"
-	// La cuenta no tiene timbres de producción: para timbrar, revisar RFC en las listas, consultar constancias o pedir descargas al SAT. Compre un paquete en Desarrolladores › Timbres. En pruebas nunca pasa. Para enterarse antes, escuche balance.low o active la recarga automática.
+	// La cuenta no tiene timbres de producción: para timbrar, revisar RFC en las listas, consultar constancias, pedir descargas o traer declaraciones, opinión o buzón del SAT. Compre un paquete en Desarrolladores › Timbres. En pruebas nunca pasa. Para enterarse antes, escuche balance.low o active la recarga automática.
 	CodeInsufficientBalance = "insufficient_balance"
 	// Algo falló de nuestro lado. Repita la solicitud con la misma Idempotency-Key: nunca se timbra dos veces. Si sigue, escríbanos con el request_id.
 	CodeInternalError = "internal_error"
@@ -96,6 +100,8 @@ const (
 	CodeIssuerMissing = "issuer_missing"
 	// La llave no puede usar ese emisor.
 	CodeIssuerNotAllowed = "issuer_not_allowed"
+	// Al emisor le falta su RFC (sus datos fiscales): regístrelos antes, con el CSD o la e.firma.
+	CodeIssuerNotReady = "issuer_not_ready"
 	// La cuenta tiene varios emisores y la solicitud no dice cuál: mande issuer (iss_…).
 	CodeIssuerRequired = "issuer_required"
 	// La llave es de un entorno de prueba y la solicitud es de toda la cuenta (como crear o borrar entornos): use una llave de pruebas de la cuenta.

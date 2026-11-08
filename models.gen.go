@@ -179,6 +179,12 @@ type ApplyAdvanceParamsRemainder struct {
 	PaymentForm *string `json:"payment_form,omitempty"`
 }
 
+// ApproveExpenseReportParams: los campos de «Aprobar una comprobación».
+type ApproveExpenseReportParams struct {
+	// Una nota para la persona.
+	Note *string `json:"note,omitempty"`
+}
+
 // Balance: Timbres de producción de la cuenta, por paquete, el que vence antes primero.
 type Balance struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -771,6 +777,108 @@ type CreateEmployeeParams struct {
 	//
 	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
 	ExitReason *string `json:"exit_reason,omitempty"`
+}
+
+// CreateExpenseItemParams: los campos de «Agregar un gasto».
+type CreateExpenseItemParams struct {
+	// El UUID de una factura recibida del emisor (GET /v1/sat_invoices): la fecha, el monto, el proveedor y la forma de pago salen de ella.
+	UUID *string `json:"uuid,omitempty"`
+	// De qué es: hospedaje, alimentos, avion, transporte, auto, combustible (gasolina, casetas y estacionamiento), comidas (en restaurante, fuera de viaje), papeleria, mensajeria, software u otros.
+	//
+	// Valores: hospedaje, alimentos, avion, transporte, auto, combustible, comidas, papeleria, mensajeria, software, otros.
+	Category string `json:"category"`
+	// Cuándo se gastó. Con uuid, la fecha de la factura.
+	Date *string `json:"date,omitempty"`
+	// Qué fue (el proveedor). Con uuid, su emisor.
+	Description *string `json:"description,omitempty"`
+	// En pesos. Con uuid, el total de la factura.
+	Amount *float64 `json:"amount,omitempty"`
+	// En su moneda, si fue en otra.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// La moneda (USD, EUR…).
+	ForeignCurrency *string `json:"foreign_currency,omitempty"`
+	// En alimentos, cuántas personas comieron: el tope es por persona.
+	People *int64 `json:"people,omitempty"`
+	// Cómo se pagó: tarjeta_empresa (no se le reembolsa), tarjeta_propia, efectivo, transferencia u otro.
+	//
+	// Valores: tarjeta_empresa, tarjeta_propia, efectivo, transferencia, otro.
+	Payment *string `json:"payment,omitempty"`
+	// Su comprobante: cfdi, extranjero, ticket o ninguno. Con uuid, cfdi.
+	//
+	// Valores: cfdi, extranjero, ticket, ninguno.
+	Receipt *string `json:"receipt,omitempty"`
+	// Por qué, si pasa la política (la política puede pedirla).
+	Note *string `json:"note,omitempty"`
+}
+
+// CreateExpenseMovementParams: los campos de «Registrar dinero dado o devuelto».
+type CreateExpenseMovementParams struct {
+	// anticipo (dinero que se le da antes o durante; hasta que se aprueba), reembolso (lo que la empresa le debe, ya aprobada) o devolucion (lo que le sobró, ya aprobada).
+	//
+	// Valores: anticipo, reembolso, devolucion.
+	Kind string `json:"kind"`
+	// En pesos.
+	Amount float64 `json:"amount"`
+	// Cuándo se pagó.
+	Date string `json:"date"`
+	// transferencia (por omisión), efectivo, tarjeta o nomina (en el siguiente recibo de nómina del empleado; solo si está en Nómina).
+	//
+	// Valores: transferencia, efectivo, tarjeta, nomina.
+	Method *string `json:"method,omitempty"`
+	// Su referencia (folio de la transferencia).
+	Reference *string `json:"reference,omitempty"`
+}
+
+// CreateExpensePersonLinkParams: los campos de «Dar su enlace a una persona».
+type CreateExpensePersonLinkParams struct {
+	// true le da un enlace nuevo: el anterior deja de funcionar en ese momento (por ejemplo, si se compartió por error).
+	Renew *bool `json:"renew,omitempty"`
+}
+
+// CreateExpensePersonParams: los campos de «Agregar a una persona».
+type CreateExpensePersonParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// empleado (sus viáticos van en su recibo de nómina; sus facturas pueden ir a su nombre en un viaje) o honorarios (sus facturas deben ir a nombre del emisor).
+	//
+	// Valores: empleado, honorarios.
+	Kind string `json:"kind"`
+	// Un empleado de Nómina (emp_…): su nombre, RFC y correo se toman de ahí y sus viáticos van en su recibo. Solo con kind empleado.
+	Employee *string `json:"employee,omitempty"`
+	// Su nombre. Obligatorio sin employee.
+	Name *string `json:"name,omitempty"`
+	// Su RFC.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Su correo: para mandarle su enlace y avisarle cuando se aprueba o se le paga.
+	Email *string `json:"email,omitempty"`
+	// Dónde trabaja (por ejemplo «Guadalajara, Jal.»): un viaje a menos de 50 km no es deducible como viáticos.
+	BaseCity *string `json:"base_city,omitempty"`
+	// Su área.
+	Department *string `json:"department,omitempty"`
+}
+
+// CreateExpenseReportParams: los campos de «Abrir una comprobación».
+type CreateExpenseReportParams struct {
+	// La persona (exp_…).
+	Person string `json:"person"`
+	// viaje (por omisión) o gastos (gastos de oficina de un periodo que la empresa reembolsa).
+	//
+	// Valores: viaje, gastos.
+	Kind *string `json:"kind,omitempty"`
+	// Su nombre. Por omisión, «Viaje a {destination}» o el periodo.
+	Title *string `json:"title,omitempty"`
+	// Para qué fue: el SAT pide que el viaje sea por el negocio.
+	Purpose *string `json:"purpose,omitempty"`
+	// A dónde.
+	Destination *string `json:"destination,omitempty"`
+	// Al extranjero: cambian los topes de alimentos y hospedaje.
+	Abroad *bool `json:"abroad,omitempty"`
+	// A más de 50 km de donde trabaja la persona (por omisión, true). Más cerca, no son viáticos deducibles.
+	Far *bool `json:"far,omitempty"`
+	// La salida (o el inicio del periodo).
+	StartDate *string `json:"start_date,omitempty"`
+	// El regreso (o el fin del periodo).
+	EndDate *string `json:"end_date,omitempty"`
 }
 
 // CreateImssFilesParams: los campos de «Archivos para IDSE o SUA».
@@ -2255,6 +2363,114 @@ type CustomerList struct {
 	URL string `json:"url"`
 }
 
+// CustomerPaymentBehavior: Cómo paga un cliente: de sus facturas a crédito (PPD) de los últimos 12 meses y sus complementos de pago, en pesos.
+type CustomerPaymentBehavior struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El cliente (cus_…).
+	Customer string `json:"customer"`
+	// Su RFC.
+	TaxID string `json:"tax_id"`
+	// Sus días de crédito: los suyos (Clientes) o los de la empresa (Ajustes › Cobranza automática). Contra ellos se mide el atraso.
+	CreditDays int64 `json:"credit_days"`
+	// on_time (80 % o más llega a tiempo y atraso promedio de 5 días o menos), sometimes_late (hasta 15 días), late (hasta 45), very_late (más) o no_history (menos de 2 facturas pagadas y nada vencido).
+	//
+	// Valores: on_time, sometimes_late, late, very_late, no_history.
+	Rating string `json:"rating"`
+	// Facturas PPD con un pago en los últimos 12 meses.
+	PaidInvoices int64 `json:"paid_invoices"`
+	// Días de la factura a su pago, en promedio por monto; null sin pagos.
+	AverageDaysToPay *float64 `json:"average_days_to_pay,omitempty"`
+	// La factura típica: la mitad se pagó en estos días o menos.
+	MedianDaysToPay *int64 `json:"median_days_to_pay,omitempty"`
+	// 3 de cada 4 facturas se pagaron en estos días o menos.
+	P75DaysToPay *int64 `json:"p75_days_to_pay,omitempty"`
+	// La parte (0 a 1) de lo pagado que llegó antes de vencer; lo vencido sin pagar cuenta como tarde.
+	OnTimeShare *float64 `json:"on_time_share,omitempty"`
+	// Días después del vencimiento, en promedio por monto; lo vencido sin pagar cuenta con sus días de atraso hasta hoy.
+	AverageDaysLate *float64 `json:"average_days_late,omitempty"`
+	// Los últimos 3 meses contra los 9 anteriores; null con menos de 2 facturas pagadas en cada lado.
+	Trend *CustomerPaymentBehaviorTrend `json:"trend,omitempty"`
+	// Lo que debe ya vencido, en pesos.
+	OverdueAmount float64 `json:"overdue_amount"`
+	// Cuántas facturas tiene vencidas.
+	OverdueInvoices int64 `json:"overdue_invoices"`
+	// Cómo le pagó, la mayor primero.
+	PaymentForms []CustomerPaymentBehaviorPaymentForm `json:"payment_forms"`
+	// Cada uno de los últimos 12 meses, el más antiguo primero.
+	Months []CustomerPaymentBehaviorMonth `json:"months"`
+	// Su último pago; null sin pagos en 12 meses.
+	LastPayment *CustomerPaymentBehaviorLastPayment `json:"last_payment,omitempty"`
+	// Facturas de contado (PUE) de los últimos 12 meses: se pagan al emitirse y no cuentan en lo demás.
+	CashInvoices int64 `json:"cash_invoices"`
+	// Lo que debe ahora, la factura más antigua primero.
+	OpenInvoices []CustomerPaymentBehaviorOpenInvoice `json:"open_invoices"`
+}
+
+// CustomerPaymentBehaviorLastPayment: CustomerPaymentBehaviorLastPayment.
+type CustomerPaymentBehaviorLastPayment struct {
+	// El día (AAAA-MM-DD).
+	Date string `json:"date"`
+	// Lo pagado ese día, en pesos.
+	Amount float64 `json:"amount"`
+}
+
+// CustomerPaymentBehaviorMonth: CustomerPaymentBehaviorMonth.
+type CustomerPaymentBehaviorMonth struct {
+	// El mes de los pagos (AAAA-MM).
+	Month string `json:"month"`
+	// Días promedio (por monto) de los pagos de ese mes; null sin pagos.
+	AverageDaysToPay *float64 `json:"average_days_to_pay,omitempty"`
+	// Lo pagado ese mes, en pesos.
+	Amount float64 `json:"amount"`
+	// Facturas con un pago ese mes.
+	PaidInvoices int64 `json:"paid_invoices"`
+}
+
+// CustomerPaymentBehaviorOpenInvoice: CustomerPaymentBehaviorOpenInvoice.
+type CustomerPaymentBehaviorOpenInvoice struct {
+	// El UUID (folio fiscal) de la factura.
+	UUID string `json:"uuid"`
+	// Su fecha (AAAA-MM-DD).
+	Date string `json:"date"`
+	// PPD a crédito; PUE que le pagan este mes.
+	//
+	// Valores: PPD, PUE.
+	PaymentMethod string `json:"payment_method"`
+	// Lo que falta, en pesos.
+	AmountDue float64 `json:"amount_due"`
+	// Cuándo vence: su fecha más los días de crédito (una PUE, al fin de su mes).
+	DueDate string `json:"due_date"`
+	// Cuándo le llegaría: su fecha más lo que el cliente suele tardar (sin historial, el vencimiento).
+	ExpectedPaymentDate string `json:"expected_payment_date"`
+}
+
+// CustomerPaymentBehaviorPaymentForm: CustomerPaymentBehaviorPaymentForm.
+type CustomerPaymentBehaviorPaymentForm struct {
+	// Clave de forma de pago del SAT (c_FormaPago): 03 transferencia, 02 cheque…
+	PaymentForm string `json:"payment_form"`
+	// Lo pagado así, en pesos.
+	Amount float64 `json:"amount"`
+	// Su parte de lo pagado (0 a 1).
+	Share float64 `json:"share"`
+}
+
+// CustomerPaymentBehaviorTrend: CustomerPaymentBehaviorTrend.
+type CustomerPaymentBehaviorTrend struct {
+	// slower: tarda 7 días o más que antes; faster: 7 o más menos.
+	//
+	// Valores: slower, faster, steady.
+	Direction string `json:"direction"`
+	// Días promedio para pagar de los últimos 3 meses.
+	RecentDays float64 `json:"recent_days"`
+	// Días promedio de los 9 meses anteriores.
+	EarlierDays float64 `json:"earlier_days"`
+}
+
 // DeleteCostCenterParams: los campos de «Borrar un centro de costo».
 type DeleteCostCenterParams struct {
 	// Otro centro de costo (ccn_…) que se queda con sus facturas.
@@ -2493,6 +2709,294 @@ type EventList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// ExpenseItem: Un gasto de una comprobación.
+type ExpenseItem struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Cuándo se gastó (AAAA-MM-DD).
+	Date string `json:"date"`
+	// De qué es: hospedaje, alimentos, avion, transporte, auto, combustible, comidas, papeleria, mensajeria, software u otros.
+	//
+	// Valores: hospedaje, alimentos, avion, transporte, auto, combustible, comidas, papeleria, mensajeria, software, otros.
+	Category string `json:"category"`
+	// Qué fue (el proveedor), o null.
+	Description *string `json:"description,omitempty"`
+	// En pesos.
+	Amount float64 `json:"amount"`
+	// En su moneda, o null.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// Su moneda (USD, EUR…), o null.
+	ForeignCurrency *string `json:"foreign_currency,omitempty"`
+	// Cuántas personas comieron (en alimentos el tope es por persona).
+	People int64 `json:"people"`
+	// Cómo se pagó: tarjeta_empresa, tarjeta_propia, efectivo, transferencia u otro, o null.
+	//
+	// Valores: tarjeta_empresa, tarjeta_propia, efectivo, transferencia, otro.
+	Payment *string `json:"payment,omitempty"`
+	// Su comprobante: cfdi, extranjero, ticket o ninguno.
+	//
+	// Valores: cfdi, extranjero, ticket, ninguno.
+	Receipt string `json:"receipt"`
+	// El UUID de su factura, o null.
+	UUID *string `json:"uuid,omitempty"`
+	// La nota de la persona, o null.
+	Note *string `json:"note,omitempty"`
+	// true si quien aprueba lo rechazó.
+	Rejected bool `json:"rejected"`
+	// Por qué se rechazó, o null.
+	RejectReason *string `json:"reject_reason,omitempty"`
+	// Lo que se deduce de este gasto.
+	Deductible float64 `json:"deductible"`
+	// Lo que no se deduce.
+	NonDeductible float64 `json:"non_deductible"`
+	// true si pasa un tope de la política.
+	OverPolicy bool `json:"over_policy"`
+	// Sus avisos contra la ley y la política.
+	Issues []ExpenseItemIssue `json:"issues"`
+	// Cuándo se agregó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// ExpenseItemIssue: ExpenseItemIssue.
+type ExpenseItemIssue struct {
+	// error (impide enviarla), warning, policy (pasa la política) o info.
+	//
+	// Valores: error, warning, policy, info.
+	Level string `json:"level"`
+	// Qué es, como código estable.
+	Code string `json:"code"`
+	// Qué es, en palabras.
+	Message string `json:"message"`
+}
+
+// ExpenseMovement: Dinero que se le dio a la persona (anticipo, reembolso) o que devolvió.
+type ExpenseMovement struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// anticipo, reembolso o devolucion.
+	//
+	// Valores: anticipo, reembolso, devolucion.
+	Kind string `json:"kind"`
+	// En pesos.
+	Amount float64 `json:"amount"`
+	// Cuándo se pagó (AAAA-MM-DD).
+	Date string `json:"date"`
+	// transferencia, efectivo, tarjeta o nomina (en su recibo de nómina).
+	//
+	// Valores: transferencia, efectivo, tarjeta, nomina.
+	Method string `json:"method"`
+	// Su referencia, o null.
+	Reference *string `json:"reference,omitempty"`
+	// true si ya se pagó en un recibo de nómina.
+	InPayroll bool `json:"in_payroll"`
+	// Cuándo se registró.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// ExpensePerson: Alguien que viaja o gasta por el emisor: un empleado (de Nómina) o alguien por honorarios. Tiene un enlace propio para subir sus facturas sin cuenta.
+type ExpensePerson struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor por el que gasta.
+	Issuer string `json:"issuer"`
+	// empleado (sueldos y salarios: viáticos exentos en su recibo de nómina) o honorarios.
+	//
+	// Valores: empleado, honorarios.
+	Kind string `json:"kind"`
+	// Su empleado de Nómina (emp_…), o null si es por honorarios.
+	Employee *string `json:"employee,omitempty"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su RFC, o null.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Su correo, a donde se le manda su enlace y los avisos, o null.
+	Email *string `json:"email,omitempty"`
+	// Dónde trabaja: un viaje a más de 50 km de ahí es de viáticos.
+	BaseCity *string `json:"base_city,omitempty"`
+	// Su área, o null.
+	Department *string `json:"department,omitempty"`
+	// true si tiene un enlace que funciona para subir sus facturas.
+	LinkActive bool `json:"link_active"`
+	// true si está archivada.
+	Archived bool `json:"archived"`
+	// Cuándo se agregó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// ExpensePersonLink: El enlace de una persona: ahí ve solo sus comprobaciones y sube sus facturas desde el teléfono, sin cuenta.
+type ExpensePersonLink struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// La persona (exp_…).
+	Person string `json:"person"`
+	// Su enlace, o null si está apagado.
+	URL *string `json:"url,omitempty"`
+}
+
+// ExpensePersonList: Una página de la lista.
+type ExpensePersonList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ExpensePerson `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ExpensePolicy: La política de viáticos y gastos del emisor: topes por categoría, hasta cuánto sin factura y en cuántos días se comprueba.
+type ExpensePolicy struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Topes por categoría (hospedaje, alimentos…): las que no están no tienen tope.
+	Limits map[string]any `json:"limits"`
+	// Hasta cuánto se acepta un gasto sin factura; 0: todos la piden.
+	TicketLimit float64 `json:"ticket_limit"`
+	// Días después del regreso para comprobar.
+	DueDays int64 `json:"due_days"`
+	// true si pide una nota en cada gasto que pase un tope.
+	NoteOverLimit bool `json:"note_over_limit"`
+	// true si avisa por correo a quien aprueba.
+	NotifyApprovers bool `json:"notify_approvers"`
+	// true si avisa a la persona cuando se aprueba, se devuelve o se le paga.
+	NotifyPeople bool `json:"notify_people"`
+}
+
+// ExpenseReport: Una comprobación de viáticos (un viaje) o de gastos de un periodo: sus gastos revisados contra la ley y la política, y el dinero dado o devuelto. Al aprobarla sus facturas se deducen y entra en las pólizas por 107.01.
+type ExpenseReport struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Su número, consecutivo por emisor.
+	Number int64 `json:"number"`
+	// Cómo se muestra, por ejemplo «VIA-0012».
+	Label string `json:"label"`
+	// Quién la comprueba (exp_…).
+	Person string `json:"person"`
+	// El nombre de esa persona.
+	PersonName string `json:"person_name"`
+	// viaje o gastos (de oficina, de un periodo).
+	//
+	// Valores: viaje, gastos.
+	Kind string `json:"kind"`
+	// Su nombre.
+	Title string `json:"title"`
+	// Para qué fue, o null.
+	Purpose *string `json:"purpose,omitempty"`
+	// A dónde, o null.
+	Destination *string `json:"destination,omitempty"`
+	// true si fue al extranjero.
+	Abroad bool `json:"abroad"`
+	// true si fue a más de 50 km de donde trabaja la persona.
+	Far bool `json:"far"`
+	// La salida o el inicio del periodo (AAAA-MM-DD), o null.
+	StartDate *string `json:"start_date,omitempty"`
+	// El regreso o el fin del periodo (AAAA-MM-DD), o null.
+	EndDate *string `json:"end_date,omitempty"`
+	// draft (abierta), submitted (por aprobar), rejected (devuelta para corregir), approved (por liquidar) o closed (cerrada, con el saldo en cero).
+	//
+	// Valores: draft, submitted, rejected, approved, closed.
+	Status string `json:"status"`
+	// Hasta cuándo hay para comprobarla (la política), o null.
+	DueDate *string `json:"due_date,omitempty"`
+	// Cuándo se envió a aprobar, o null.
+	SubmittedAt *string `json:"submitted_at,omitempty"`
+	// Cuándo se aprobó o se devolvió, o null.
+	DecidedAt *string `json:"decided_at,omitempty"`
+	// La nota de quien la aprobó o la devolvió, o null.
+	DecisionNote *string `json:"decision_note,omitempty"`
+	// Cuándo se cerró, o null.
+	ClosedAt *string `json:"closed_at,omitempty"`
+	// true si ya se reportó en un recibo de nómina (viáticos 050 y 081).
+	InPayroll bool `json:"in_payroll"`
+	// Lo gastado, sin los gastos rechazados.
+	Spent float64 `json:"spent"`
+	// Lo de los gastos rechazados.
+	Rejected float64 `json:"rejected"`
+	// Lo comprobado con factura o comprobante del extranjero.
+	Proven float64 `json:"proven"`
+	// Lo que se deduce, con los topes de la ley.
+	Deductible float64 `json:"deductible"`
+	// Lo que no se deduce (pasa los topes o no tiene comprobante).
+	NonDeductible float64 `json:"non_deductible"`
+	// Lo que se le dio en anticipos.
+	Advances float64 `json:"advances"`
+	// Lo que se le reembolsó.
+	Reimbursed float64 `json:"reimbursed"`
+	// Lo que devolvió.
+	Returned float64 `json:"returned"`
+	// Positivo, lo que la persona debe devolver; negativo, lo que la empresa le debe reembolsar; 0, liquidada. Lo pagado con la tarjeta de la empresa no cuenta.
+	Balance float64 `json:"balance"`
+	// true si se puede enviar o aprobar: ningún gasto tiene errores.
+	Ready bool `json:"ready"`
+	// Avisos de la comprobación entera.
+	Issues []ExpenseReportIssue `json:"issues"`
+	// Para un empleado, cómo irá en su recibo de nómina (o null).
+	Payroll *ExpenseReportPayroll `json:"payroll,omitempty"`
+	// Sus gastos.
+	Items []ExpenseItem `json:"items"`
+	// El dinero que se le dio o devolvió.
+	Movements []ExpenseMovement `json:"movements"`
+	// Cuándo se abrió.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// ExpenseReportIssue: ExpenseReportIssue.
+type ExpenseReportIssue struct {
+	// error (impide enviarla), warning, policy (pasa la política) o info.
+	//
+	// Valores: error, warning, policy, info.
+	Level string `json:"level"`
+	// Qué es, como código estable.
+	Code string `json:"code"`
+	// Qué es, en palabras.
+	Message string `json:"message"`
+}
+
+// ExpenseReportList: Una página de la lista.
+type ExpenseReportList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ExpenseReport `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ExpenseReportPayroll: ExpenseReportPayroll.
+type ExpenseReportPayroll struct {
+	// Viáticos exentos comprobados (OtroPago/Percepción 050, ImporteExento).
+	Exempt float64 `json:"exempt"`
+	// Lo que grava como sueldo (050, ImporteGravado): lo gastado sin comprobar.
+	Taxed float64 `json:"taxed"`
+	// Lo que se descuenta (deducción 081) por lo que ya se le dio y sobró.
+	Adjustment float64 `json:"adjustment"`
+	// Lo que neto cobra o paga en el recibo por esta comprobación.
+	Net float64 `json:"net"`
 }
 
 // ExternalPayrollReceiptCreate: Un recibo de nómina que calculó su sistema, con todos sus conceptos e importes: se timbra tal cual.
@@ -3099,6 +3603,12 @@ type GetElectronicAccountingParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetExpensePolicyParams: los campos de «Ver la política».
+type GetExpensePolicyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetFinancialStatementsParams: los campos de «Ver los estados financieros».
 type GetFinancialStatementsParams struct {
 	// El mes (AAAA-MM).
@@ -3167,6 +3677,14 @@ type GetSatDeclarationCalendarParams struct {
 type GetTrialBalanceParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetVatRefundParams: los campos de «Ver el IVA a favor y preparar su devolución».
+type GetVatRefundParams struct {
+	// El mes del saldo a revisar (AAAA-MM). Sin él, solo los saldos.
+	Month *string `json:"month,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -5003,9 +5521,9 @@ type JournalEntry struct {
 	Object string `json:"object"`
 	// El emisor.
 	Issuer string `json:"issuer"`
-	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina) o depreciation (la depreciación del mes de los activos fijos).
+	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina), employee_expenses (un anticipo, reembolso, devolución o comprobación de viáticos, contra 107.01 «Funcionarios y empleados») o depreciation (la depreciación del mes de los activos fijos).
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, depreciation.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation.
 	Type string `json:"type"`
 	// La fecha del CFDI o del pago; en la depreciación, el último día del mes.
 	Date string `json:"date"`
@@ -5175,6 +5693,32 @@ type ListEventsParams struct {
 	Object *string `json:"object,omitempty"`
 	// false: los que algún webhook no recibió (su último intento falló). true: los que recibieron todos los webhooks a los que se mandaron.
 	DeliverySuccess *bool `json:"delivery_success,omitempty"`
+}
+
+// ListExpensePeopleParams: los campos de «Listar personas».
+type ListExpensePeopleParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// true para incluir las archivadas.
+	IncludeArchived *bool `json:"include_archived,omitempty"`
+}
+
+// ListExpenseReportsParams: los campos de «Listar comprobaciones».
+type ListExpenseReportsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de un estado: draft, submitted, rejected, approved o closed.
+	Status *string `json:"status,omitempty"`
+	// Solo las de una persona (exp_…).
+	Person *string `json:"person,omitempty"`
 }
 
 // ListImssMovementsParams: los campos de «Listar movimientos del IMSS».
@@ -6539,6 +7083,12 @@ type RetentionTotals struct {
 	Exempt *float64 `json:"exempt,omitempty"`
 	// Total retenido (MontoTotRet).
 	Withheld *float64 `json:"withheld,omitempty"`
+}
+
+// ReturnExpenseReportParams: los campos de «Devolver para corregir».
+type ReturnExpenseReportParams struct {
+	// Qué debe corregir: se le manda a la persona.
+	Note string `json:"note"`
 }
 
 // RollWebhookSecretParams: los campos de «Cambiar el secreto».
@@ -7995,6 +8545,98 @@ type UpdateEmployeeParams struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 }
 
+// UpdateExpenseItemParams: los campos de «Actualizar un gasto».
+type UpdateExpenseItemParams struct {
+	// De qué es: hospedaje, alimentos, avion, transporte, auto, combustible (gasolina, casetas y estacionamiento), comidas (en restaurante, fuera de viaje), papeleria, mensajeria, software u otros.
+	//
+	// Valores: hospedaje, alimentos, avion, transporte, auto, combustible, comidas, papeleria, mensajeria, software, otros.
+	Category *string `json:"category,omitempty"`
+	// Cuándo se gastó. Con uuid, la fecha de la factura.
+	Date *string `json:"date,omitempty"`
+	// Qué fue (el proveedor). Con uuid, su emisor.
+	Description *string `json:"description,omitempty"`
+	// En pesos. Con uuid, el total de la factura.
+	Amount *float64 `json:"amount,omitempty"`
+	// En su moneda, si fue en otra.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// La moneda (USD, EUR…).
+	ForeignCurrency *string `json:"foreign_currency,omitempty"`
+	// En alimentos, cuántas personas comieron: el tope es por persona.
+	People *int64 `json:"people,omitempty"`
+	// Cómo se pagó: tarjeta_empresa (no se le reembolsa), tarjeta_propia, efectivo, transferencia u otro.
+	//
+	// Valores: tarjeta_empresa, tarjeta_propia, efectivo, transferencia, otro.
+	Payment *string `json:"payment,omitempty"`
+	// Su comprobante: cfdi, extranjero, ticket o ninguno. Con uuid, cfdi.
+	//
+	// Valores: cfdi, extranjero, ticket, ninguno.
+	Receipt *string `json:"receipt,omitempty"`
+	// Por qué, si pasa la política (la política puede pedirla).
+	Note *string `json:"note,omitempty"`
+	// Al aprobar: true lo rechaza (no se paga ni se deduce), false lo vuelve a incluir. Solo en una comprobación enviada.
+	Rejected *bool `json:"rejected,omitempty"`
+	// Por qué se rechaza.
+	RejectReason *string `json:"reject_reason,omitempty"`
+}
+
+// UpdateExpensePersonParams: los campos de «Actualizar una persona».
+type UpdateExpensePersonParams struct {
+	// empleado (sus viáticos van en su recibo de nómina; sus facturas pueden ir a su nombre en un viaje) o honorarios (sus facturas deben ir a nombre del emisor).
+	//
+	// Valores: empleado, honorarios.
+	Kind *string `json:"kind,omitempty"`
+	// Un empleado de Nómina (emp_…): su nombre, RFC y correo se toman de ahí y sus viáticos van en su recibo. Solo con kind empleado.
+	Employee *string `json:"employee,omitempty"`
+	// Su nombre. Obligatorio sin employee.
+	Name *string `json:"name,omitempty"`
+	// Su RFC.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Su correo: para mandarle su enlace y avisarle cuando se aprueba o se le paga.
+	Email *string `json:"email,omitempty"`
+	// Dónde trabaja (por ejemplo «Guadalajara, Jal.»): un viaje a menos de 50 km no es deducible como viáticos.
+	BaseCity *string `json:"base_city,omitempty"`
+	// Su área.
+	Department *string `json:"department,omitempty"`
+	// true la archiva (y apaga su enlace): ya no se le abren comprobaciones. false la restaura.
+	Archived *bool `json:"archived,omitempty"`
+}
+
+// UpdateExpensePolicyParams: los campos de «Cambiar la política».
+type UpdateExpensePolicyParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Topes por categoría. Una categoría con null deja de tener tope; las que no manda no cambian. Un gasto que pase un tope no se rechaza: se marca para quien aprueba.
+	Limits map[string]any `json:"limits,omitempty"`
+	// Hasta cuánto se acepta un gasto sin factura; 0: todos la piden.
+	TicketLimit *float64 `json:"ticket_limit,omitempty"`
+	// Días después del regreso para comprobar.
+	DueDays *int64 `json:"due_days,omitempty"`
+	// Pedir una nota en cada gasto que pase un tope.
+	NoteOverLimit *bool `json:"note_over_limit,omitempty"`
+	// Avisar por correo a quien aprueba cuando le envían una comprobación.
+	NotifyApprovers *bool `json:"notify_approvers,omitempty"`
+	// Avisar a la persona cuando se aprueba, se devuelve o se le paga.
+	NotifyPeople *bool `json:"notify_people,omitempty"`
+}
+
+// UpdateExpenseReportParams: los campos de «Actualizar una comprobación».
+type UpdateExpenseReportParams struct {
+	// Su nombre. Por omisión, «Viaje a {destination}» o el periodo.
+	Title *string `json:"title,omitempty"`
+	// Para qué fue: el SAT pide que el viaje sea por el negocio.
+	Purpose *string `json:"purpose,omitempty"`
+	// A dónde.
+	Destination *string `json:"destination,omitempty"`
+	// Al extranjero: cambian los topes de alimentos y hospedaje.
+	Abroad *bool `json:"abroad,omitempty"`
+	// A más de 50 km de donde trabaja la persona (por omisión, true). Más cerca, no son viáticos deducibles.
+	Far *bool `json:"far,omitempty"`
+	// La salida (o el inicio del periodo).
+	StartDate *string `json:"start_date,omitempty"`
+	// El regreso (o el fin del periodo).
+	EndDate *string `json:"end_date,omitempty"`
+}
+
 // UpdateImssMovementParams: los campos de «Cambiar un movimiento del IMSS».
 type UpdateImssMovementParams struct {
 	// alta (o reingreso): tipo 08; modificacion: cambio de salario, tipo 07; baja: tipo 02.
@@ -8493,6 +9135,116 @@ type ValidateTaxIdParams struct {
 	Use *string `json:"use,omitempty"`
 	// El idCIF de su constancia de situación fiscal (11 dígitos, arriba a la izquierda, junto al QR). Con él se compara todo con lo que tiene el SAT.
 	CifID *string `json:"cif_id,omitempty"`
+}
+
+// VatRefund: El IVA a favor del emisor mes por mes, qué pasó con cada saldo y, con un mes, la revisión antes de pedir su devolución.
+type VatRefund struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El IVA a favor que todavía puede pedir de vuelta: lo que queda de cada saldo sin acreditar, sin solicitud y sin prescribir.
+	Available float64 `json:"available"`
+	// Lo pedido en solicitudes que siguen en trámite o ya se resolvieron sin depósito.
+	InRefund float64 `json:"in_refund"`
+	// Lo que el SAT ya depositó.
+	Refunded float64 `json:"refunded"`
+	// true si algún mes sale de sus CFDI porque su declaración no se ha leído (POST /v1/sat_declarations/refresh).
+	Estimated bool `json:"estimated"`
+	// Cada mes con IVA a favor en los últimos cinco años, del más reciente al más antiguo.
+	Balances []VatRefundBalance `json:"balances"`
+	// Con month, la revisión de ese mes antes de pedirlo; null sin month.
+	Review *VatRefundReview `json:"review,omitempty"`
+}
+
+// VatRefundBalance: VatRefundBalance.
+type VatRefundBalance struct {
+	// El mes del saldo (AAAA-MM).
+	Month string `json:"month"`
+	// declaration si sale de la declaración leída; cfdi si se calculó con sus CFDI.
+	//
+	// Valores: declaration, cfdi.
+	Source string `json:"source"`
+	// El saldo a favor del mes.
+	Amount float64 `json:"amount"`
+	// El número de operación de la declaración, o null.
+	OperationNumber *string `json:"operation_number,omitempty"`
+	// Lo que de este saldo se acreditó en meses posteriores, del saldo más antiguo primero.
+	Credited float64 `json:"credited"`
+	// En qué mes se acreditó cada parte y cuánto.
+	CreditedIn []VatRefundBalanceCreditedInItem `json:"credited_in"`
+	// Lo que queda de este saldo para pedir de vuelta.
+	Available float64 `json:"available"`
+	// available (se puede pedir), credited (ya se acreditó), in_refund (con solicitud), refunded (depositado), denied (negado) o prescribed (pasaron cinco años).
+	//
+	// Valores: available, credited, in_refund, refunded, denied, prescribed.
+	Status string `json:"status"`
+	// Cuándo prescribe el derecho a pedirlo: cinco años desde su declaración (AAAA-MM-DD).
+	PrescribesOn string `json:"prescribes_on"`
+}
+
+// VatRefundBalanceCreditedInItem: VatRefundBalanceCreditedInItem.
+type VatRefundBalanceCreditedInItem struct {
+	// El mes en que se acreditó esa parte (AAAA-MM).
+	Month string `json:"month"`
+	// Lo acreditado ese mes.
+	Amount float64 `json:"amount"`
+}
+
+// VatRefundReview: VatRefundReview.
+type VatRefundReview struct {
+	// El mes revisado (AAAA-MM).
+	Month string `json:"month"`
+	// Lo que conviene pedir, en pesos sin centavos como lo pide el SAT.
+	AmountToRequest float64 `json:"amount_to_request"`
+	// true si ya acreditó parte del saldo y lo que pide es el remanente.
+	Remainder bool `json:"remainder"`
+	// true si ninguna revisión bloquea la solicitud.
+	Ready bool `json:"ready"`
+	// Cada revisión, de la más grave a la que está bien.
+	Checks []VatRefundReviewCheck `json:"checks"`
+	// Los proveedores del mes, para la relación que pide el SAT.
+	Suppliers VatRefundReviewSuppliers `json:"suppliers"`
+	// Los clientes del mes.
+	Customers VatRefundReviewCustomers `json:"customers"`
+}
+
+// VatRefundReviewCheck: VatRefundReviewCheck.
+type VatRefundReviewCheck struct {
+	// Qué se revisó, estable para su código.
+	Key string `json:"key"`
+	// ok, warning (conviene revisar), blocking (el SAT la rechazaría) o pending (falta un dato).
+	//
+	// Valores: ok, warning, blocking, pending.
+	Result string `json:"result"`
+	// La revisión, en una línea.
+	Title string `json:"title"`
+	// Qué encontró y qué hacer.
+	Detail string `json:"detail"`
+	// Los pesos que toca, como el IVA en riesgo, o null.
+	Amount *float64 `json:"amount,omitempty"`
+}
+
+// VatRefundReviewCustomers: Los clientes del mes.
+type VatRefundReviewCustomers struct {
+	// Cuántos clientes tuvo en el mes.
+	Count int64 `json:"count"`
+	// Cuántos CFDI emitidos suman al IVA cobrado.
+	CFDI int64 `json:"cfdi"`
+}
+
+// VatRefundReviewSuppliers: Los proveedores del mes, para la relación que pide el SAT.
+type VatRefundReviewSuppliers struct {
+	// Cuántos proveedores tuvo en el mes.
+	Count int64 `json:"count"`
+	// Cuántos CFDI recibidos suman al IVA acreditable.
+	CFDI int64 `json:"cfdi"`
+	// Cuántos proveedores juntan el 80% del IVA acreditable.
+	Main int64 `json:"main"`
+	// El IVA de CFDI de proveedores que el SAT no reconocería: cancelados, de EFOS o con otros hallazgos.
+	VatAtRisk float64 `json:"vat_at_risk"`
 }
 
 // Warehouse: Un almacén del emisor: el de la Matriz y uno por sucursal se crean solos; cada factura saca existencias del de su sucursal.

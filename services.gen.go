@@ -32,6 +32,8 @@ type services struct {
 	Invoices *InvoicesService
 	// Cuentas por cobrar.
 	Receivables *ReceivablesService
+	// Cuentas por cobrar.
+	Customers *CustomersService
 	// Conciliación bancaria.
 	BankTransactions *BankTransactionsService
 	// Tickets de compra.
@@ -64,8 +66,12 @@ type services struct {
 	Branches *BranchesService
 	// Centros de costo.
 	CostCenters *CostCentersService
-	// Clientes.
-	Customers *CustomersService
+	// Viáticos y gastos.
+	ExpensePeople *ExpensePeopleService
+	// Viáticos y gastos.
+	ExpenseReports *ExpenseReportsService
+	// Viáticos y gastos.
+	ExpensePolicy *ExpensePolicyService
 	// Clientes.
 	CustomerDataRequests *CustomerDataRequestsService
 	// Productos.
@@ -117,6 +123,7 @@ func (s *services) init(c *Client) {
 	s.Issuers = &IssuersService{c}
 	s.Invoices = &InvoicesService{c}
 	s.Receivables = &ReceivablesService{c}
+	s.Customers = &CustomersService{c}
 	s.BankTransactions = &BankTransactionsService{c}
 	s.PurchaseReceipts = &PurchaseReceiptsService{c}
 	s.Payments = &PaymentsService{c}
@@ -133,7 +140,9 @@ func (s *services) init(c *Client) {
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
 	s.CostCenters = &CostCentersService{c}
-	s.Customers = &CustomersService{c}
+	s.ExpensePeople = &ExpensePeopleService{c}
+	s.ExpenseReports = &ExpenseReportsService{c}
+	s.ExpensePolicy = &ExpensePolicyService{c}
 	s.CustomerDataRequests = &CustomerDataRequestsService{c}
 	s.Products = &ProductsService{c}
 	s.SatMailboxMessages = &SatMailboxMessagesService{c}
@@ -796,6 +805,100 @@ func (s *ReceivablesService) List(ctx context.Context, params *ListReceivablesPa
 // ListAutoPaging: Ver lo que le deben, todos, página por página: for x, err := range …
 func (s *ReceivablesService) ListAutoPaging(ctx context.Context, params *ListReceivablesParams, opts ...RequestOption) iter.Seq2[Receivable, error] {
 	return listAll[Receivable](ctx, s.c, "/v1/receivables", params, opts)
+}
+
+// CustomersService: Cuentas por cobrar (client.Customers).
+type CustomersService struct{ c *Client }
+
+// PaymentBehavior: Ver cómo paga un cliente
+//
+// Cuántos días tarda en pagar, qué parte llega a tiempo con sus días de crédito, si paga más lento que antes, cómo le paga y cuándo le llegaría lo que debe. De sus facturas a crédito (PPD) de los últimos 12 meses y sus complementos de pago, como «Cómo paga» en la app. No aplica a XAXX010101000 ni XEXX010101000.
+//
+// GET /v1/customers/{id}/payment_behavior
+//
+// https://fiscalisto.com/docs/api/referencia/cuentas-por-cobrar/get-customer-payment-behavior
+func (s *CustomersService) PaymentBehavior(ctx context.Context, id string, opts ...RequestOption) (*CustomerPaymentBehavior, error) {
+	out := new(CustomerPaymentBehavior)
+	if err := s.c.do(ctx, "GET", "/v1/customers/"+url.PathEscape(id)+"/payment_behavior", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Crear un cliente
+//
+// Un cliente del catálogo del emisor, con sus datos fiscales como vienen en su constancia. Un RFC que ya está en el catálogo contesta customer_exists.
+//
+// POST /v1/customers
+//
+// https://fiscalisto.com/docs/api/referencia/clientes/create-customer
+func (s *CustomersService) Create(ctx context.Context, params *CreateCustomerParams, opts ...RequestOption) (*Customer, error) {
+	out := new(Customer)
+	if err := s.c.do(ctx, "POST", "/v1/customers", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar clientes
+//
+// Los clientes del emisor, los más recientes primero. Con tax_id, el de ese RFC.
+//
+// GET /v1/customers
+//
+// https://fiscalisto.com/docs/api/referencia/clientes/list-customers
+func (s *CustomersService) List(ctx context.Context, params *ListCustomersParams, opts ...RequestOption) (*Page[Customer], error) {
+	return list[Customer](ctx, s.c, "/v1/customers", params, "", opts)
+}
+
+// ListAutoPaging: Listar clientes, todos, página por página: for x, err := range …
+func (s *CustomersService) ListAutoPaging(ctx context.Context, params *ListCustomersParams, opts ...RequestOption) iter.Seq2[Customer, error] {
+	return listAll[Customer](ctx, s.c, "/v1/customers", params, opts)
+}
+
+// Get: Ver un cliente
+//
+// Un cliente del catálogo.
+//
+// GET /v1/customers/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/clientes/get-customer
+func (s *CustomersService) Get(ctx context.Context, id string, opts ...RequestOption) (*Customer, error) {
+	out := new(Customer)
+	if err := s.c.do(ctx, "GET", "/v1/customers/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar un cliente
+//
+// Cambia solo los campos que manda. Las facturas ya timbradas no cambian.
+//
+// POST /v1/customers/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/clientes/update-customer
+func (s *CustomersService) Update(ctx context.Context, id string, params *UpdateCustomerParams, opts ...RequestOption) (*Customer, error) {
+	out := new(Customer)
+	if err := s.c.do(ctx, "POST", "/v1/customers/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un cliente
+//
+// Lo quita del catálogo. Sus facturas timbradas siguen igual.
+//
+// DELETE /v1/customers/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/clientes/delete-customer
+func (s *CustomersService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/customers/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // BankTransactionsService: Conciliación bancaria (client.BankTransactions).
@@ -1763,80 +1866,342 @@ func (s *CostCentersService) Delete(ctx context.Context, id string, params *Dele
 	return out, nil
 }
 
-// CustomersService: Clientes (client.Customers).
-type CustomersService struct{ c *Client }
+// ExpensePeopleService: Viáticos y gastos (client.ExpensePeople).
+type ExpensePeopleService struct{ c *Client }
 
-// Create: Crear un cliente
+// Create: Agregar a una persona
 //
-// Un cliente del catálogo del emisor, con sus datos fiscales como vienen en su constancia. Un RFC que ya está en el catálogo contesta customer_exists.
+// Alguien que viaja o gasta por el emisor: un empleado (employee, emp_…: sus anticipos y reembolsos «En la nómina» van en su siguiente recibo) o alguien por honorarios (name y tax_id). Con email, Fiscalisto le puede mandar su enlace.
 //
-// POST /v1/customers
+// POST /v1/expense_people
 //
-// https://fiscalisto.com/docs/api/referencia/clientes/create-customer
-func (s *CustomersService) Create(ctx context.Context, params *CreateCustomerParams, opts ...RequestOption) (*Customer, error) {
-	out := new(Customer)
-	if err := s.c.do(ctx, "POST", "/v1/customers", params, nil, true, out, opts); err != nil {
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/create-expense-person
+func (s *ExpensePeopleService) Create(ctx context.Context, params *CreateExpensePersonParams, opts ...RequestOption) (*ExpensePerson, error) {
+	out := new(ExpensePerson)
+	if err := s.c.do(ctx, "POST", "/v1/expense_people", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// List: Listar clientes
+// List: Listar personas
 //
-// Los clientes del emisor, los más recientes primero. Con tax_id, el de ese RFC.
+// Las personas que comprueban gastos del emisor, las más recientes primero. Las archivadas solo con include_archived=true.
 //
-// GET /v1/customers
+// GET /v1/expense_people
 //
-// https://fiscalisto.com/docs/api/referencia/clientes/list-customers
-func (s *CustomersService) List(ctx context.Context, params *ListCustomersParams, opts ...RequestOption) (*Page[Customer], error) {
-	return list[Customer](ctx, s.c, "/v1/customers", params, "", opts)
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/list-expense-people
+func (s *ExpensePeopleService) List(ctx context.Context, params *ListExpensePeopleParams, opts ...RequestOption) (*Page[ExpensePerson], error) {
+	return list[ExpensePerson](ctx, s.c, "/v1/expense_people", params, "", opts)
 }
 
-// ListAutoPaging: Listar clientes, todos, página por página: for x, err := range …
-func (s *CustomersService) ListAutoPaging(ctx context.Context, params *ListCustomersParams, opts ...RequestOption) iter.Seq2[Customer, error] {
-	return listAll[Customer](ctx, s.c, "/v1/customers", params, opts)
+// ListAutoPaging: Listar personas, todos, página por página: for x, err := range …
+func (s *ExpensePeopleService) ListAutoPaging(ctx context.Context, params *ListExpensePeopleParams, opts ...RequestOption) iter.Seq2[ExpensePerson, error] {
+	return listAll[ExpensePerson](ctx, s.c, "/v1/expense_people", params, opts)
 }
 
-// Get: Ver un cliente
+// Get: Ver una persona
 //
-// Un cliente del catálogo.
+// Una persona que comprueba gastos del emisor.
 //
-// GET /v1/customers/{id}
+// GET /v1/expense_people/{id}
 //
-// https://fiscalisto.com/docs/api/referencia/clientes/get-customer
-func (s *CustomersService) Get(ctx context.Context, id string, opts ...RequestOption) (*Customer, error) {
-	out := new(Customer)
-	if err := s.c.do(ctx, "GET", "/v1/customers/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/get-expense-person
+func (s *ExpensePeopleService) Get(ctx context.Context, id string, opts ...RequestOption) (*ExpensePerson, error) {
+	out := new(ExpensePerson)
+	if err := s.c.do(ctx, "GET", "/v1/expense_people/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Update: Actualizar un cliente
+// Update: Actualizar una persona
 //
-// Cambia solo los campos que manda. Las facturas ya timbradas no cambian.
+// Cambia solo lo que manda. archived: true la archiva (ya no se le abren comprobaciones y su enlace deja de funcionar), false la restaura.
 //
-// POST /v1/customers/{id}
+// POST /v1/expense_people/{id}
 //
-// https://fiscalisto.com/docs/api/referencia/clientes/update-customer
-func (s *CustomersService) Update(ctx context.Context, id string, params *UpdateCustomerParams, opts ...RequestOption) (*Customer, error) {
-	out := new(Customer)
-	if err := s.c.do(ctx, "POST", "/v1/customers/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/update-expense-person
+func (s *ExpensePeopleService) Update(ctx context.Context, id string, params *UpdateExpensePersonParams, opts ...RequestOption) (*ExpensePerson, error) {
+	out := new(ExpensePerson)
+	if err := s.c.do(ctx, "POST", "/v1/expense_people/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Delete: Borrar un cliente
+// CreateLink: Dar su enlace a una persona
 //
-// Lo quita del catálogo. Sus facturas timbradas siguen igual.
+// El enlace donde la persona ve solo sus comprobaciones y sube sus facturas desde el teléfono, sin cuenta. Con renew: true le da uno nuevo y el anterior deja de funcionar.
 //
-// DELETE /v1/customers/{id}
+// POST /v1/expense_people/{id}/link
 //
-// https://fiscalisto.com/docs/api/referencia/clientes/delete-customer
-func (s *CustomersService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/create-expense-person-link
+func (s *ExpensePeopleService) CreateLink(ctx context.Context, id string, params *CreateExpensePersonLinkParams, opts ...RequestOption) (*ExpensePersonLink, error) {
+	out := new(ExpensePersonLink)
+	if err := s.c.do(ctx, "POST", "/v1/expense_people/"+url.PathEscape(id)+"/link", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteLink: Apagar el enlace de una persona
+//
+// Su enlace deja de funcionar (url: null). Puede darle uno nuevo después con POST /v1/expense_people/{id}/link.
+//
+// DELETE /v1/expense_people/{id}/link
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/delete-expense-person-link
+func (s *ExpensePeopleService) DeleteLink(ctx context.Context, id string, opts ...RequestOption) (*ExpensePersonLink, error) {
+	out := new(ExpensePersonLink)
+	if err := s.c.do(ctx, "DELETE", "/v1/expense_people/"+url.PathEscape(id)+"/link", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ExpenseReportsService: Viáticos y gastos (client.ExpenseReports).
+type ExpenseReportsService struct{ c *Client }
+
+// Create: Abrir una comprobación
+//
+// Una por viaje (kind viaje) o una por periodo de gastos de oficina que la empresa reembolsa (kind gastos). Queda abierta (draft): se le agregan gastos y anticipos, y se envía con POST /v1/expense_reports/{id}/submit.
+//
+// POST /v1/expense_reports
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/create-expense-report
+func (s *ExpenseReportsService) Create(ctx context.Context, params *CreateExpenseReportParams, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar comprobaciones
+//
+// Las comprobaciones del emisor, las más recientes primero, con sus gastos y movimientos.
+//
+// GET /v1/expense_reports
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/list-expense-reports
+func (s *ExpenseReportsService) List(ctx context.Context, params *ListExpenseReportsParams, opts ...RequestOption) (*Page[ExpenseReport], error) {
+	return list[ExpenseReport](ctx, s.c, "/v1/expense_reports", params, "", opts)
+}
+
+// ListAutoPaging: Listar comprobaciones, todos, página por página: for x, err := range …
+func (s *ExpenseReportsService) ListAutoPaging(ctx context.Context, params *ListExpenseReportsParams, opts ...RequestOption) iter.Seq2[ExpenseReport, error] {
+	return listAll[ExpenseReport](ctx, s.c, "/v1/expense_reports", params, opts)
+}
+
+// Get: Ver una comprobación
+//
+// Una comprobación con sus gastos, lo deducible de cada uno, sus avisos (issues) contra la ley y la política, y su saldo.
+//
+// GET /v1/expense_reports/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/get-expense-report
+func (s *ExpenseReportsService) Get(ctx context.Context, id string, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "GET", "/v1/expense_reports/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar una comprobación
+//
+// Cambia solo lo que manda: su nombre, el propósito, el destino y las fechas. Mientras no esté aprobada.
+//
+// POST /v1/expense_reports/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/update-expense-report
+func (s *ExpenseReportsService) Update(ctx context.Context, id string, params *UpdateExpenseReportParams, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una comprobación
+//
+// Una que no esté aprobada y no tenga anticipos ni pagos (quítelos antes). No se puede deshacer.
+//
+// DELETE /v1/expense_reports/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/delete-expense-report
+func (s *ExpenseReportsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
-	if err := s.c.do(ctx, "DELETE", "/v1/customers/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "DELETE", "/v1/expense_reports/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Submit: Enviar a aprobar
+//
+// La persona termina: pasa a submitted (por aprobar). Contesta expense_report_invalid si un gasto tiene un error (issues con level error).
+//
+// POST /v1/expense_reports/{id}/submit
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/submit-expense-report
+func (s *ExpenseReportsService) Submit(ctx context.Context, id string, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id)+"/submit", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Approve: Aprobar una comprobación
+//
+// Pasa a approved (por liquidar): sus facturas se deducen en los impuestos del emisor y entra en las pólizas contra 107.01 Funcionarios y empleados. Con el saldo en cero se cierra sola; si no, liquide con un reembolso o una devolución.
+//
+// POST /v1/expense_reports/{id}/approve
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/approve-expense-report
+func (s *ExpenseReportsService) Approve(ctx context.Context, id string, params *ApproveExpenseReportParams, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id)+"/approve", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SendBack: Devolver para corregir
+//
+// Regresa a la persona (rejected, «Devuelta») con una nota de qué corregir. La corrige y la vuelve a enviar.
+//
+// POST /v1/expense_reports/{id}/return
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/return-expense-report
+func (s *ExpenseReportsService) SendBack(ctx context.Context, id string, params *ReturnExpenseReportParams, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id)+"/return", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reopen: Reabrir una comprobación
+//
+// Una aprobada vuelve a abierta: sus facturas dejan de deducirse y sale de las pólizas. No si ya se reportó en la nómina.
+//
+// POST /v1/expense_reports/{id}/reopen
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/reopen-expense-report
+func (s *ExpenseReportsService) Reopen(ctx context.Context, id string, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id)+"/reopen", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CreateItem: Agregar un gasto
+//
+// Con uuid, una factura recibida del emisor (GET /v1/sat_invoices): la fecha, el monto y el proveedor salen de ella. Sin uuid, un gasto con su category, date y amount (un ticket, un comprobante del extranjero). Contesta la comprobación revisada.
+//
+// POST /v1/expense_reports/{id}/items
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/create-expense-item
+func (s *ExpenseReportsService) CreateItem(ctx context.Context, id string, params *CreateExpenseItemParams, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id)+"/items", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateItem: Actualizar un gasto
+//
+// Cambia solo lo que manda. Al revisarla, rejected: true con reject_reason rechaza el gasto (no se paga ni se deduce) y false lo vuelve a incluir.
+//
+// POST /v1/expense_reports/{id}/items/{item}
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/update-expense-item
+func (s *ExpenseReportsService) UpdateItem(ctx context.Context, id string, item string, params *UpdateExpenseItemParams, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id)+"/items/"+url.PathEscape(item), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteItem: Quitar un gasto
+//
+// Lo quita de la comprobación mientras no esté aprobada. Contesta la comprobación.
+//
+// DELETE /v1/expense_reports/{id}/items/{item}
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/delete-expense-item
+func (s *ExpenseReportsService) DeleteItem(ctx context.Context, id string, item string, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "DELETE", "/v1/expense_reports/"+url.PathEscape(id)+"/items/"+url.PathEscape(item), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CreateMovement: Registrar dinero dado o devuelto
+//
+// Un anticipo (antes de aprobarla), un reembolso o una devolución (ya aprobada). Con method nomina va en el siguiente recibo de nómina del empleado. Con el saldo en cero, una aprobada se cierra.
+//
+// POST /v1/expense_reports/{id}/movements
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/create-expense-movement
+func (s *ExpenseReportsService) CreateMovement(ctx context.Context, id string, params *CreateExpenseMovementParams, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "POST", "/v1/expense_reports/"+url.PathEscape(id)+"/movements", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteMovement: Deshacer un movimiento
+//
+// Lo quita (una cerrada vuelve a por liquidar). No uno que ya se pagó en la nómina.
+//
+// DELETE /v1/expense_reports/{id}/movements/{movement}
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/delete-expense-movement
+func (s *ExpenseReportsService) DeleteMovement(ctx context.Context, id string, movement string, opts ...RequestOption) (*ExpenseReport, error) {
+	out := new(ExpenseReport)
+	if err := s.c.do(ctx, "DELETE", "/v1/expense_reports/"+url.PathEscape(id)+"/movements/"+url.PathEscape(movement), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ExpensePolicyService: Viáticos y gastos (client.ExpensePolicy).
+type ExpensePolicyService struct{ c *Client }
+
+// Get: Ver la política
+//
+// La política de viáticos y gastos del emisor: topes por categoría, hasta cuánto sin factura y los días para comprobar.
+//
+// GET /v1/expense_policy
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/get-expense-policy
+func (s *ExpensePolicyService) Get(ctx context.Context, params *GetExpensePolicyParams, opts ...RequestOption) (*ExpensePolicy, error) {
+	out := new(ExpensePolicy)
+	if err := s.c.do(ctx, "GET", "/v1/expense_policy", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar la política
+//
+// Cambia solo lo que manda; en limits, una categoría con null deja de tener tope. Un gasto que pasa un tope no se rechaza: se marca para quien aprueba.
+//
+// POST /v1/expense_policy
+//
+// https://fiscalisto.com/docs/api/referencia/viaticos-y-gastos/update-expense-policy
+func (s *ExpensePolicyService) Update(ctx context.Context, params *UpdateExpensePolicyParams, opts ...RequestOption) (*ExpensePolicy, error) {
+	out := new(ExpensePolicy)
+	if err := s.c.do(ctx, "POST", "/v1/expense_policy", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -2596,6 +2961,21 @@ func (s *AccountingService) FinancialStatements(ctx context.Context, params *Get
 func (s *AccountingService) CrossChecks(ctx context.Context, params *GetCrossChecksParams, opts ...RequestOption) (*CrossChecks, error) {
 	out := new(CrossChecks)
 	if err := s.c.do(ctx, "GET", "/v1/accounting/cross_checks", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VatRefund: Ver el IVA a favor y preparar su devolución
+//
+// El IVA a favor de cada mes de los últimos cinco años (de las declaraciones leídas con POST /v1/sat_declarations/refresh o, sin ellas, de sus CFDI, con estimated en true), cuánto se acreditó después (del saldo más antiguo primero), cuánto queda, qué está en devolución y cuándo prescribe. Con `month`, la revisión de ese mes antes de pedirlo en el SAT: declaración, cruce con CFDI, DIOT, opinión de cumplimiento, Buzón Tributario, e.firma, listas del SAT, CFDI de proveedores con hallazgos y CLABE, con el monto a pedir. No presenta nada en el SAT. Gratis.
+//
+// GET /v1/accounting/vat_refund
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-vat-refund
+func (s *AccountingService) VatRefund(ctx context.Context, params *GetVatRefundParams, opts ...RequestOption) (*VatRefund, error) {
+	out := new(VatRefund)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/vat_refund", nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
