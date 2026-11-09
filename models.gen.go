@@ -2365,8 +2365,18 @@ type CreateTicketParams struct {
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
+	// Quién pagó, para reconocer la venta en Tickets. No es el receptor de la factura (eso lo escribe el comprador en el portal) y no se le manda nada.
+	Buyer *CreateTicketParamsBuyer `json:"buyer,omitempty"`
 	// Una venta de varios conceptos (el folio de un hotel: noches, desayunos, lavandería), cada uno con su producto o sus claves, sus impuestos y lo que se cobró por él; hasta 200. En lugar de `product`, `description`, `product_key`, `unit_key` e `iva`. La factura del cliente lleva un concepto por línea; la factura global, uno por cada combinación de impuestos del ticket.
 	Lines []CreateTicketParamsLine `json:"lines,omitempty"`
+}
+
+// CreateTicketParamsBuyer: Quién pagó, para reconocer la venta en Tickets. No es el receptor de la factura (eso lo escribe el comprador en el portal) y no se le manda nada.
+type CreateTicketParamsBuyer struct {
+	// Su nombre o el de su empresa, como lo conoce su sistema.
+	Name *string `json:"name,omitempty"`
+	// Su correo.
+	Email *string `json:"email,omitempty"`
 }
 
 // CreateTicketParamsLine: CreateTicketParamsLine.
@@ -9017,8 +9027,18 @@ type Ticket struct {
 	GlobalInvoice *string `json:"global_invoice,omitempty"`
 	// A quién se facturó, o null.
 	Customer *TicketCustomer `json:"customer,omitempty"`
+	// Quién pagó, como lo conoce el origen de la venta (el `buyer` que mandó, o el cliente de un pago de Stripe). No es el receptor de la factura (`customer`).
+	Buyer *TicketBuyer `json:"buyer,omitempty"`
 	// Cuándo se registró.
 	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// TicketBuyer: TicketBuyer.
+type TicketBuyer struct {
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email *string `json:"email,omitempty"`
 }
 
 // TicketCustomer: TicketCustomer.
