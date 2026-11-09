@@ -66,6 +66,12 @@ type services struct {
 	Branches *BranchesService
 	// Centros de costo.
 	CostCenters *CostCentersService
+	// Listas de precios.
+	PriceLists *PriceListsService
+	// Listas de precios.
+	CustomerGroups *CustomerGroupsService
+	// Listas de precios.
+	Prices *PricesService
 	// Viáticos y gastos.
 	ExpensePeople *ExpensePeopleService
 	// Viáticos y gastos.
@@ -142,6 +148,9 @@ func (s *services) init(c *Client) {
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
 	s.CostCenters = &CostCentersService{c}
+	s.PriceLists = &PriceListsService{c}
+	s.CustomerGroups = &CustomerGroupsService{c}
+	s.Prices = &PricesService{c}
 	s.ExpensePeople = &ExpensePeopleService{c}
 	s.ExpenseReports = &ExpenseReportsService{c}
 	s.ExpensePolicy = &ExpensePolicyService{c}
@@ -1864,6 +1873,182 @@ func (s *CostCentersService) Update(ctx context.Context, id string, params *Upda
 func (s *CostCentersService) Delete(ctx context.Context, id string, params *DeleteCostCenterParams, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
 	if err := s.c.do(ctx, "DELETE", "/v1/cost_centers/"+url.PathEscape(id), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PriceListsService: Listas de precios (client.PriceLists).
+type PriceListsService struct{ c *Client }
+
+// Create: Crear una lista de precios
+//
+// Parte del precio del catálogo (o de base_list, otra lista), lo mueve adjust_percent y lo redondea a round_to; con starts_on y ends_on es una promoción. items le pone precios propios por producto, por presentación (unit, una caja) y desde min_quantity (escalones de mayoreo), cada uno con unit_price o discount_percent. is_default: la tienen los clientes sin otra. Hasta 100.
+//
+// POST /v1/price_lists
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/create-price-list
+func (s *PriceListsService) Create(ctx context.Context, params *CreatePriceListParams, opts ...RequestOption) (*PriceList, error) {
+	out := new(PriceList)
+	if err := s.c.do(ctx, "POST", "/v1/price_lists", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar listas de precios
+//
+// Las listas de precios en el orden de la app, con cuántos grupos y clientes la tienen. items viene al ver una.
+//
+// GET /v1/price_lists
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/list-price-lists
+func (s *PriceListsService) List(ctx context.Context, params *ListPriceListsParams, opts ...RequestOption) (*Page[PriceList], error) {
+	return list[PriceList](ctx, s.c, "/v1/price_lists", params, "", opts)
+}
+
+// ListAutoPaging: Listar listas de precios, todos, página por página: for x, err := range …
+func (s *PriceListsService) ListAutoPaging(ctx context.Context, params *ListPriceListsParams, opts ...RequestOption) iter.Seq2[PriceList, error] {
+	return listAll[PriceList](ctx, s.c, "/v1/price_lists", params, opts)
+}
+
+// Get: Ver una lista de precios
+//
+// Una lista de precios con sus precios propios (items).
+//
+// GET /v1/price_lists/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/get-price-list
+func (s *PriceListsService) Get(ctx context.Context, id string, opts ...RequestOption) (*PriceList, error) {
+	out := new(PriceList)
+	if err := s.c.do(ctx, "GET", "/v1/price_lists/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar una lista de precios
+//
+// Cambia solo lo que manda; items reemplaza todos sus precios propios. Las facturas, cotizaciones y pedidos ya hechos no cambian.
+//
+// POST /v1/price_lists/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/update-price-list
+func (s *PriceListsService) Update(ctx context.Context, id string, params *UpdatePriceListParams, opts ...RequestOption) (*PriceList, error) {
+	out := new(PriceList)
+	if err := s.c.do(ctx, "POST", "/v1/price_lists/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar una lista de precios
+//
+// La archiva: sus grupos y clientes pasan a la lista que aplica a todos (o al precio del catálogo).
+//
+// DELETE /v1/price_lists/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/delete-price-list
+func (s *PriceListsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/price_lists/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CustomerGroupsService: Listas de precios (client.CustomerGroups).
+type CustomerGroupsService struct{ c *Client }
+
+// Create: Crear un grupo de clientes
+//
+// Lo que tienen todos sus clientes: price_list, discount_percent (el descuento de cada concepto en el CFDI), credit_days, min_order (antes de IVA, desde el portal) y portal_ordering. Un cliente entra con group en POST /v1/customers/{id}.
+//
+// POST /v1/customer_groups
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/create-customer-group
+func (s *CustomerGroupsService) Create(ctx context.Context, params *CreateCustomerGroupParams, opts ...RequestOption) (*CustomerGroup, error) {
+	out := new(CustomerGroup)
+	if err := s.c.do(ctx, "POST", "/v1/customer_groups", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar grupos de clientes
+//
+// Los grupos de clientes, con cuántos clientes tiene cada uno.
+//
+// GET /v1/customer_groups
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/list-customer-groups
+func (s *CustomerGroupsService) List(ctx context.Context, params *ListCustomerGroupsParams, opts ...RequestOption) (*Page[CustomerGroup], error) {
+	return list[CustomerGroup](ctx, s.c, "/v1/customer_groups", params, "", opts)
+}
+
+// ListAutoPaging: Listar grupos de clientes, todos, página por página: for x, err := range …
+func (s *CustomerGroupsService) ListAutoPaging(ctx context.Context, params *ListCustomerGroupsParams, opts ...RequestOption) iter.Seq2[CustomerGroup, error] {
+	return listAll[CustomerGroup](ctx, s.c, "/v1/customer_groups", params, opts)
+}
+
+// Get: Ver un grupo de clientes
+//
+// Un grupo de clientes.
+//
+// GET /v1/customer_groups/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/get-customer-group
+func (s *CustomerGroupsService) Get(ctx context.Context, id string, opts ...RequestOption) (*CustomerGroup, error) {
+	out := new(CustomerGroup)
+	if err := s.c.do(ctx, "GET", "/v1/customer_groups/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar un grupo de clientes
+//
+// Cambia solo lo que manda.
+//
+// POST /v1/customer_groups/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/update-customer-group
+func (s *CustomerGroupsService) Update(ctx context.Context, id string, params *UpdateCustomerGroupParams, opts ...RequestOption) (*CustomerGroup, error) {
+	out := new(CustomerGroup)
+	if err := s.c.do(ctx, "POST", "/v1/customer_groups/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar un grupo de clientes
+//
+// Sus clientes se quedan sin grupo.
+//
+// DELETE /v1/customer_groups/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/delete-customer-group
+func (s *CustomerGroupsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/customer_groups/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PricesService: Listas de precios (client.Prices).
+type PricesService struct{ c *Client }
+
+// Quote: Ver los precios de un cliente
+//
+// Lo que un cliente paga por unos productos a una cantidad: el precio por unidad sin IVA de su lista (la suya, la de su grupo o la de todos), su descuento y el siguiente escalón de mayoreo. No guarda nada.
+//
+// POST /v1/prices
+//
+// https://fiscalisto.com/docs/api/referencia/listas-de-precios/quote-prices
+func (s *PricesService) Quote(ctx context.Context, params *QuotePricesParams, opts ...RequestOption) (*PriceQuote, error) {
+	out := new(PriceQuote)
+	if err := s.c.do(ctx, "POST", "/v1/prices", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

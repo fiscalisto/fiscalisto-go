@@ -693,6 +693,28 @@ type CreateCustomerDataRequestParams struct {
 	ExpiresInDays *int64 `json:"expires_in_days,omitempty"`
 }
 
+// CreateCustomerGroupParams: los campos de «Crear un grupo de clientes».
+type CreateCustomerGroupParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
+	// Color de su etiqueta en la app: info, warning, positive, critical o muted.
+	//
+	// Valores: info, warning, positive, critical, muted.
+	Color *string `json:"color,omitempty"`
+	// Su lista (prl_…); null: la que aplica a todos.
+	PriceList *string `json:"price_list,omitempty"`
+	// Un descuento en cada concepto, como descuento del CFDI.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
+	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
+	CreditDays *int64 `json:"credit_days,omitempty"`
+	// El pedido mínimo antes de IVA desde el Portal del cliente.
+	MinOrder *float64 `json:"min_order,omitempty"`
+	// Sus clientes pueden hacer pedidos desde su Portal del cliente (true por omisión).
+	PortalOrdering *bool `json:"portal_ordering,omitempty"`
+}
+
 // CreateCustomerParams: los campos de «Crear un cliente».
 type CreateCustomerParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -711,6 +733,12 @@ type CreateCustomerParams struct {
 	Use *string `json:"use,omitempty"`
 	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
 	Foreign *CreateCustomerParamsForeign `json:"foreign,omitempty"`
+	// Su grupo de clientes (cgr_…), o null para ninguno.
+	Group *string `json:"group,omitempty"`
+	// Su propia lista de precios (prl_…), que gana sobre la de su grupo; null: la de su grupo o la de todos.
+	PriceList *string `json:"price_list,omitempty"`
+	// Su propio descuento en cada concepto, en %; null: el de su grupo.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
 	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
@@ -1225,6 +1253,44 @@ type CreatePayrollReceiptParamsPeriod struct {
 	PaymentDate *string `json:"payment_date,omitempty"`
 }
 
+// CreatePriceListParams: los campos de «Crear una lista de precios».
+type CreatePriceListParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Mayoreo, Distribuidor, Buen Fin…
+	Name string `json:"name"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+	// Otra lista (prl_…) de la que parte; null o sin ella: el precio del catálogo.
+	BaseList *string `json:"base_list,omitempty"`
+	// Cuánto mueve el precio del que parte: −10 lo baja 10 %, 5 lo sube 5 %.
+	AdjustPercent *float64 `json:"adjust_percent,omitempty"`
+	// Redondea a: 0.5, 1, 5, 10… (null: a centavos).
+	RoundTo *float64 `json:"round_to,omitempty"`
+	// Desde qué día vale (YYYY-MM-DD, Ciudad de México), o null desde siempre.
+	StartsOn *string `json:"starts_on,omitempty"`
+	// Hasta qué día vale, ese día incluido (YYYY-MM-DD), o null sin fin.
+	EndsOn *string `json:"ends_on,omitempty"`
+	// La tienen los clientes sin otra lista (ni ellos ni su grupo). Solo una lo es.
+	IsDefault *bool `json:"is_default,omitempty"`
+	// Sus precios propios; al mandarlos reemplazan a los que tenía.
+	Items []CreatePriceListParamsItem `json:"items,omitempty"`
+}
+
+// CreatePriceListParamsItem: CreatePriceListParamsItem.
+type CreatePriceListParamsItem struct {
+	// El producto (prd_…).
+	Product string `json:"product"`
+	// Una presentación del producto (su id de unidad, un entero de GET /v1/products/{id}/units), por ejemplo una caja de 12; null o sin él: su propia unidad.
+	Unit *string `json:"unit,omitempty"`
+	// Desde cuántas aplica (1 por omisión): varios renglones del mismo producto son sus escalones de mayoreo.
+	MinQuantity *float64 `json:"min_quantity,omitempty"`
+	// Su precio por unidad sin IVA. Mande este o discount_percent.
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Un descuento sobre el precio de la lista. Mande este o unit_price.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
+}
+
 // CreateProductParams: los campos de «Crear un producto».
 type CreateProductParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -1273,6 +1339,12 @@ type CreateProductParams struct {
 	Barcode *string `json:"barcode,omitempty"`
 	// Existencia mínima: por debajo, el aviso de existencias bajas lo incluye.
 	MinStock *float64 `json:"min_stock,omitempty"`
+	// Se vende en el Portal del cliente: sus clientes lo piden desde ahí, a sus precios (listas de precios), y el pedido llega por confirmar.
+	PortalVisible *bool `json:"portal_visible,omitempty"`
+	// Lo menos que se le pide desde el portal, en su unidad.
+	MinOrderQty *float64 `json:"min_order_qty,omitempty"`
+	// Se pide de tantos en tantos desde el portal (12: de 12 en 12).
+	OrderStep *float64 `json:"order_step,omitempty"`
 }
 
 // CreateProductParamsLocalTax: CreateProductParamsLocalTax.
@@ -2503,6 +2575,12 @@ type Customer struct {
 	Foreign *CustomerForeign `json:"foreign,omitempty"`
 	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
 	IEPSTaxpayer bool `json:"ieps_taxpayer"`
+	// Su grupo de clientes (cgr_…), o null si no está en ninguno.
+	Group *string `json:"group,omitempty"`
+	// Lista de precios (prl_…). En un cliente, la suya propia, que gana a la de su grupo; null para usar la de su grupo o la de todos.
+	PriceList *string `json:"price_list,omitempty"`
+	// Porcentaje de descuento sobre el precio, de 0 a 100; en el CFDI va como Descuento de cada concepto.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
@@ -2581,6 +2659,48 @@ type CustomerForeign struct {
 	Country string `json:"country"`
 	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
 	TaxID *string `json:"tax_id,omitempty"`
+}
+
+// CustomerGroup: Un grupo de clientes: su lista de precios, descuento, días de crédito, pedido mínimo y si piden desde su Portal del cliente.
+type CustomerGroup struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Nombre.
+	Name string `json:"name"`
+	// Color de su etiqueta en la app: info, warning, positive, critical o muted.
+	Color string `json:"color"`
+	// Lista de precios (prl_…). En un cliente, la suya propia, que gana a la de su grupo; null para usar la de su grupo o la de todos.
+	PriceList *string `json:"price_list,omitempty"`
+	// Porcentaje de descuento sobre el precio, de 0 a 100; en el CFDI va como Descuento de cada concepto.
+	DiscountPercent float64 `json:"discount_percent"`
+	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
+	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Pedido mínimo, sin IVA, para pedir desde el Portal del cliente, o null sin mínimo.
+	MinOrder *float64 `json:"min_order,omitempty"`
+	// true si sus clientes pueden hacer pedidos desde su Portal del cliente.
+	PortalOrdering bool `json:"portal_ordering"`
+	// Cuántos clientes hay en el grupo.
+	Customers int64 `json:"customers"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// CustomerGroupList: Una página de la lista.
+type CustomerGroupList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []CustomerGroup `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // CustomerList: Una página de la lista.
@@ -5907,6 +6027,16 @@ type ListCustomerDataRequestsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListCustomerGroupsParams: los campos de «Listar grupos de clientes».
+type ListCustomerGroupsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListCustomersParams: los campos de «Listar clientes».
 type ListCustomersParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -6057,6 +6187,16 @@ type ListLedgerAccountsParams struct {
 
 // ListPayrollBatchesParams: los campos de «Listar lotes de nómina».
 type ListPayrollBatchesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListPriceListsParams: los campos de «Listar listas de precios».
+type ListPriceListsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
@@ -6739,6 +6879,112 @@ type PreviewPayrollReceiptParamsPeriod struct {
 	PaymentDate *string `json:"payment_date,omitempty"`
 }
 
+// PriceList: Una lista de precios: parte del precio del catálogo (o de otra lista), lo mueve un porcentaje y lo redondea, con precios propios por producto, presentación y desde cierta cantidad (escalones de mayoreo). items solo viene al ver una lista.
+type PriceList struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Nombre.
+	Name string `json:"name"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+	// La lista (prl_…) de la que parte; null parte del precio del catálogo de cada producto.
+	BaseList *string `json:"base_list,omitempty"`
+	// Cuánto sube (positivo) o baja (negativo) el precio del que parte, en porcentaje.
+	AdjustPercent float64 `json:"adjust_percent"`
+	// A cuánto redondea los precios que calcula (0.5, 1, 10…), o null sin redondear.
+	RoundTo *float64 `json:"round_to,omitempty"`
+	// Desde qué día vale (YYYY-MM-DD, Ciudad de México), o null desde siempre.
+	StartsOn *string `json:"starts_on,omitempty"`
+	// Hasta qué día vale, ese día incluido (YYYY-MM-DD), o null sin fin.
+	EndsOn *string `json:"ends_on,omitempty"`
+	// true si es la lista de todos los clientes que no tienen otra (solo puede haber una).
+	IsDefault bool `json:"is_default"`
+	// false la pausa; true la reanuda desde hoy.
+	Active bool `json:"active"`
+	// Cuántos grupos de clientes la usan.
+	Groups int64 `json:"groups"`
+	// Cuántos clientes la tienen como suya.
+	Customers int64 `json:"customers"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []PriceListItem `json:"items,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez, ISO 8601 (-06:00).
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// PriceListItem: PriceListItem.
+type PriceListItem struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product string `json:"product"`
+	// Unidad aduana (UnidadAduana), c_UnidadAduana.
+	Unit *string `json:"unit,omitempty"`
+	// Desde cuántas unidades (de su presentación) vale este precio: un escalón de mayoreo. 1 por omisión.
+	MinQuantity float64 `json:"min_quantity"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Porcentaje que baja el precio de la lista para este producto, en vez de un precio fijo.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
+}
+
+// PriceListList: Una página de la lista.
+type PriceListList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PriceList `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PriceQuote: Lo que un cliente paga por unos productos a una cantidad: su precio por unidad sin IVA (de su lista), su descuento y el siguiente escalón de mayoreo.
+type PriceQuote struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El cliente (cus_…) cuyos precios se calcularon.
+	Customer string `json:"customer"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []PriceQuoteItem `json:"items"`
+}
+
+// PriceQuoteItem: PriceQuoteItem.
+type PriceQuoteItem struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product string `json:"product"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity float64 `json:"quantity"`
+	// Unidad aduana (UnidadAduana), c_UnidadAduana.
+	Unit *string `json:"unit,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice float64 `json:"unit_price"`
+	// Su precio del catálogo, por unidad y sin IVA, antes de su lista.
+	CatalogPrice float64 `json:"catalog_price"`
+	// El descuento del cliente (el suyo, o el de su grupo) sobre ese precio; va como Descuento en el CFDI.
+	DiscountPercent float64 `json:"discount_percent"`
+	// La lista (prl_…) de donde sale el precio, o null si es el del catálogo.
+	PriceList *string `json:"price_list,omitempty"`
+	// El siguiente escalón de mayoreo: desde qué cantidad y a qué precio. null si no hay.
+	NextStep *PriceQuoteItemNextStep `json:"next_step,omitempty"`
+}
+
+// PriceQuoteItemNextStep: PriceQuoteItemNextStep.
+type PriceQuoteItemNextStep struct {
+	// Desde cuántas unidades (de su presentación) vale este precio: un escalón de mayoreo. 1 por omisión.
+	MinQuantity float64 `json:"min_quantity"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice float64 `json:"unit_price"`
+}
+
 // Product: Un producto o servicio del catálogo de un emisor.
 type Product struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -6787,6 +7033,12 @@ type Product struct {
 	Barcode *string `json:"barcode,omitempty"`
 	// Su existencia mínima, o null.
 	MinStock *float64 `json:"min_stock,omitempty"`
+	// true si se ofrece en el Portal del cliente para hacer pedidos.
+	PortalVisible bool `json:"portal_visible"`
+	// Lo mínimo que se pide de él en el Portal del cliente, o null sin mínimo.
+	MinOrderQty *float64 `json:"min_order_qty,omitempty"`
+	// De cuántos en cuántos se pide en el Portal del cliente (6 para pedir 6, 12, 18…), o null de uno en uno.
+	OrderStep *float64 `json:"order_step,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
@@ -7005,6 +7257,26 @@ type QuoteList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// QuotePricesParams: los campos de «Ver los precios de un cliente».
+type QuotePricesParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// El cliente (cus_…) o su RFC.
+	Customer string `json:"customer"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []QuotePricesParamsItem `json:"items"`
+}
+
+// QuotePricesParamsItem: QuotePricesParamsItem.
+type QuotePricesParamsItem struct {
+	// El producto (prd_…).
+	Product string `json:"product"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Unidad aduana (UnidadAduana), c_UnidadAduana.
+	Unit *string `json:"unit,omitempty"`
 }
 
 // Receivable: Lo que un cliente le debe a un emisor en una moneda, de sus facturas abiertas.
@@ -8907,6 +9179,26 @@ type UpdateCostCenterParams struct {
 	Archived *bool `json:"archived,omitempty"`
 }
 
+// UpdateCustomerGroupParams: los campos de «Actualizar un grupo de clientes».
+type UpdateCustomerGroupParams struct {
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Color de su etiqueta en la app: info, warning, positive, critical o muted.
+	//
+	// Valores: info, warning, positive, critical, muted.
+	Color *string `json:"color,omitempty"`
+	// Su lista (prl_…); null: la que aplica a todos.
+	PriceList *string `json:"price_list,omitempty"`
+	// Un descuento en cada concepto, como descuento del CFDI.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
+	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
+	CreditDays *int64 `json:"credit_days,omitempty"`
+	// El pedido mínimo antes de IVA desde el Portal del cliente.
+	MinOrder *float64 `json:"min_order,omitempty"`
+	// Sus clientes pueden hacer pedidos desde su Portal del cliente (true por omisión).
+	PortalOrdering *bool `json:"portal_ordering,omitempty"`
+}
+
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
 type UpdateCustomerParams struct {
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
@@ -8923,6 +9215,12 @@ type UpdateCustomerParams struct {
 	Use *string `json:"use,omitempty"`
 	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
 	Foreign *UpdateCustomerParamsForeign `json:"foreign,omitempty"`
+	// Su grupo de clientes (cgr_…), o null para ninguno.
+	Group *string `json:"group,omitempty"`
+	// Su propia lista de precios (prl_…), que gana sobre la de su grupo; null: la de su grupo o la de todos.
+	PriceList *string `json:"price_list,omitempty"`
+	// Su propio descuento en cada concepto, en %; null: el de su grupo.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
 	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
@@ -9137,6 +9435,42 @@ type UpdateIssuerParams struct {
 	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
+// UpdatePriceListParams: los campos de «Actualizar una lista de precios».
+type UpdatePriceListParams struct {
+	// Mayoreo, Distribuidor, Buen Fin…
+	Name *string `json:"name,omitempty"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+	// Otra lista (prl_…) de la que parte; null o sin ella: el precio del catálogo.
+	BaseList *string `json:"base_list,omitempty"`
+	// Cuánto mueve el precio del que parte: −10 lo baja 10 %, 5 lo sube 5 %.
+	AdjustPercent *float64 `json:"adjust_percent,omitempty"`
+	// Redondea a: 0.5, 1, 5, 10… (null: a centavos).
+	RoundTo *float64 `json:"round_to,omitempty"`
+	// Desde qué día vale (YYYY-MM-DD, Ciudad de México), o null desde siempre.
+	StartsOn *string `json:"starts_on,omitempty"`
+	// Hasta qué día vale, ese día incluido (YYYY-MM-DD), o null sin fin.
+	EndsOn *string `json:"ends_on,omitempty"`
+	// La tienen los clientes sin otra lista (ni ellos ni su grupo). Solo una lo es.
+	IsDefault *bool `json:"is_default,omitempty"`
+	// Sus precios propios; al mandarlos reemplazan a los que tenía.
+	Items []UpdatePriceListParamsItem `json:"items,omitempty"`
+}
+
+// UpdatePriceListParamsItem: UpdatePriceListParamsItem.
+type UpdatePriceListParamsItem struct {
+	// El producto (prd_…).
+	Product string `json:"product"`
+	// Una presentación del producto (su id de unidad, un entero de GET /v1/products/{id}/units), por ejemplo una caja de 12; null o sin él: su propia unidad.
+	Unit *string `json:"unit,omitempty"`
+	// Desde cuántas aplica (1 por omisión): varios renglones del mismo producto son sus escalones de mayoreo.
+	MinQuantity *float64 `json:"min_quantity,omitempty"`
+	// Su precio por unidad sin IVA. Mande este o discount_percent.
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Un descuento sobre el precio de la lista. Mande este o unit_price.
+	DiscountPercent *float64 `json:"discount_percent,omitempty"`
+}
+
 // UpdateProductParams: los campos de «Actualizar un producto».
 type UpdateProductParams struct {
 	// Nombre corto para encontrarlo, solo para usted; en el CFDI va description.
@@ -9183,6 +9517,12 @@ type UpdateProductParams struct {
 	Barcode *string `json:"barcode,omitempty"`
 	// Existencia mínima: por debajo, el aviso de existencias bajas lo incluye.
 	MinStock *float64 `json:"min_stock,omitempty"`
+	// Se vende en el Portal del cliente: sus clientes lo piden desde ahí, a sus precios (listas de precios), y el pedido llega por confirmar.
+	PortalVisible *bool `json:"portal_visible,omitempty"`
+	// Lo menos que se le pide desde el portal, en su unidad.
+	MinOrderQty *float64 `json:"min_order_qty,omitempty"`
+	// Se pide de tantos en tantos desde el portal (12: de 12 en 12).
+	OrderStep *float64 `json:"order_step,omitempty"`
 }
 
 // UpdateProductParamsLocalTax: UpdateProductParamsLocalTax.

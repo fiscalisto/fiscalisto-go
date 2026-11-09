@@ -664,6 +664,83 @@
 		"go": "CostCenters.Delete",
 		"java": "costCenters.delete"
 	},
+	"POST /v1/price_lists": {
+		"python": "price_lists.create",
+		"php": "priceLists->create",
+		"dotnet": "PriceLists.CreateAsync",
+		"go": "PriceLists.Create",
+		"java": "priceLists.create"
+	},
+	"GET /v1/price_lists": {
+		"python": "price_lists.list",
+		"php": "priceLists->list",
+		"dotnet": "PriceLists.ListAsync",
+		"go": "PriceLists.List",
+		"java": "priceLists.list"
+	},
+	"GET /v1/price_lists/{id}": {
+		"python": "price_lists.get",
+		"php": "priceLists->get",
+		"dotnet": "PriceLists.GetAsync",
+		"go": "PriceLists.Get",
+		"java": "priceLists.get"
+	},
+	"POST /v1/price_lists/{id}": {
+		"python": "price_lists.update",
+		"php": "priceLists->update",
+		"dotnet": "PriceLists.UpdateAsync",
+		"go": "PriceLists.Update",
+		"java": "priceLists.update"
+	},
+	"DELETE /v1/price_lists/{id}": {
+		"python": "price_lists.delete",
+		"php": "priceLists->delete",
+		"dotnet": "PriceLists.DeleteAsync",
+		"go": "PriceLists.Delete",
+		"java": "priceLists.delete"
+	},
+	"POST /v1/customer_groups": {
+		"python": "customer_groups.create",
+		"php": "customerGroups->create",
+		"dotnet": "CustomerGroups.CreateAsync",
+		"go": "CustomerGroups.Create",
+		"java": "customerGroups.create"
+	},
+	"GET /v1/customer_groups": {
+		"python": "customer_groups.list",
+		"php": "customerGroups->list",
+		"dotnet": "CustomerGroups.ListAsync",
+		"go": "CustomerGroups.List",
+		"java": "customerGroups.list"
+	},
+	"GET /v1/customer_groups/{id}": {
+		"python": "customer_groups.get",
+		"php": "customerGroups->get",
+		"dotnet": "CustomerGroups.GetAsync",
+		"go": "CustomerGroups.Get",
+		"java": "customerGroups.get"
+	},
+	"POST /v1/customer_groups/{id}": {
+		"python": "customer_groups.update",
+		"php": "customerGroups->update",
+		"dotnet": "CustomerGroups.UpdateAsync",
+		"go": "CustomerGroups.Update",
+		"java": "customerGroups.update"
+	},
+	"DELETE /v1/customer_groups/{id}": {
+		"python": "customer_groups.delete",
+		"php": "customerGroups->delete",
+		"dotnet": "CustomerGroups.DeleteAsync",
+		"go": "CustomerGroups.Delete",
+		"java": "customerGroups.delete"
+	},
+	"POST /v1/prices": {
+		"python": "prices.quote",
+		"php": "prices->quote",
+		"dotnet": "Prices.QuoteAsync",
+		"go": "Prices.Quote",
+		"java": "prices.quote"
+	},
 	"POST /v1/expense_people": {
 		"python": "expense_people.create",
 		"php": "expensePeople->create",
