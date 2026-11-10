@@ -10,6 +10,8 @@ package fiscalisto
 //
 // Vea https://fiscalisto.com/docs/api/errores.
 const (
+	// Suspendimos la cuenta API (todas sus llaves, o solo las de producción) por un uso que rompe los términos del servicio. El mensaje dice por qué; escríbanos a soporte@fiscalisto.com para reactivarla.
+	CodeAccountSuspended = "account_suspended"
 	// No existe esa versión de la API (en Fiscalisto-Version o api_version). El mensaje dice cuáles hay; vea Versiones.
 	CodeAPIVersionInvalid = "api_version_invalid"
 	// El depósito no se puede conciliar, clasificar o reabrir así (ya está conciliado, las facturas son de otro cliente o una está cancelada…). El mensaje dice por qué.

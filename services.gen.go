@@ -468,7 +468,7 @@ func (s *IssuersService) UploadCertificate(ctx context.Context, id string, param
 
 // SignEfirma: Firmar el contrato con el PAC
 //
-// Una sola vez por RFC antes de timbrar en producción: firma el contrato de servicio del PAC (Finkok) con la e.firma del emisor. La e.firma se usa en memoria para esa firma y no se guarda, salvo que mande keep_for_downloads: true para pedirle al SAT las facturas del emisor (POST /v1/sat_downloads); entonces se guarda cifrada y puede borrarla con DELETE.
+// Una sola vez por RFC antes de timbrar en producción: firma el contrato de servicio del PAC con la e.firma del emisor. La e.firma se usa en memoria para esa firma y no se guarda, salvo que mande keep_for_downloads: true para pedirle al SAT las facturas del emisor (POST /v1/sat_downloads); entonces se guarda cifrada y puede borrarla con DELETE.
 //
 // POST /v1/issuers/{id}/efirma
 //
