@@ -5803,6 +5803,10 @@ type Issuer struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// api si lo creó con la API o en Desarrolladores; empresa si es una empresa de la app conectada a su cuenta (Desarrolladores › Emisores › Conectar una empresa): con ella solo se usa su Portal de proveedores, y status siempre es active.
+	//
+	// Valores: api, empresa.
+	Source string `json:"source"`
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
 	TaxID string `json:"tax_id"`
 	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
