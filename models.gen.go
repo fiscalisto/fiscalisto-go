@@ -3045,7 +3045,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -5809,6 +5809,10 @@ type Issuer struct {
 	//
 	// Valores: api, empresa.
 	Source string `json:"source"`
+	// own: un RFC de la empresa de esta API (lo da de alta la empresa en la app; no se archiva por la API). connected: un emisor conectado, que su plataforma agregó con POST /v1/issuers. portal: otra empresa de Fiscalisto conectada por su Portal de proveedores.
+	//
+	// Valores: own, connected, portal.
+	Type string `json:"type"`
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
 	TaxID string `json:"tax_id"`
 	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
@@ -6083,7 +6087,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, usage.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -9363,7 +9367,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -10509,6 +10513,30 @@ type UploadCertificateParams struct {
 	Key string `json:"key"`
 	// La contraseña de la llave privada (.key). Se usa para abrirla y no se guarda en texto.
 	Password string `json:"password"`
+}
+
+// Usage: Las solicitudes de producción de los últimos 30 días contra las que tiene.
+type Usage struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Siempre true: solo cuenta producción.
+	Livemode bool `json:"livemode"`
+	// Los días que cuenta: los últimos 30.
+	PeriodDays int64 `json:"period_days"`
+	// Solicitudes de producción en esos días.
+	Requests int64 `json:"requests"`
+	// Las que tiene: 10,000 en el plan Gratis o 100,000 con un plan de paga, más 500 por cada timbre de la API que usó en esos días.
+	Allowance int64 `json:"allowance"`
+	// Llega al usar el 80 % y otra vez al 100 %.
+	PercentUsed json.RawMessage `json:"percent_used,omitempty"`
+	// free: la empresa está en Gratis (o en su prueba); paid: tiene un plan de paga.
+	//
+	// Valores: free, paid.
+	Plan string `json:"plan"`
+	// Qué pasa al pasarlas: refused (Gratis: 429 monthly_allowance) o slowed (de paga: 10 solicitudes cada 10 segundos).
+	//
+	// Valores: refused, slowed.
+	OverAllowance string `json:"over_allowance"`
 }
 
 // ValidateTaxIdParams: los campos de «Validar los datos fiscales de un cliente».

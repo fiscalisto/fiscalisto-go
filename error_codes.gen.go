@@ -66,6 +66,8 @@ const (
 	CodeExpandInvalid = "expand_invalid"
 	// Viáticos y gastos no lo permite en ese momento: el mensaje dice por qué (un gasto con errores al enviarla, un reembolso antes de aprobarla, aprobar lo que usted mismo envió).
 	CodeExpenseReportInvalid = "expense_report_invalid"
+	// En producción, inventario avanzado, portal de proveedores, pedidos de venta y comprobación de gastos siguen el plan de la empresa, como en la app: vienen del plan Negocio en adelante. En modo de pruebas están todos.
+	CodeFeatureNotInPlan = "feature_not_in_plan"
 	// Idempotency-Key es de 1 a 255 caracteres ASCII, sin acentos ni ñ: el id de su pedido o un UUID.
 	CodeIdempotencyKeyInvalid = "idempotency_key_invalid"
 	// Lo que timbra exige el encabezado Idempotency-Key (8 a 255 caracteres, uno nuevo por comprobante). Así un reintento nunca timbra dos veces.
@@ -106,6 +108,8 @@ const (
 	CodeIssuerNotAllowed = "issuer_not_allowed"
 	// Al emisor le falta su RFC (sus datos fiscales): regístrelos antes, con el CSD o la e.firma.
 	CodeIssuerNotReady = "issuer_not_ready"
+	// El emisor es un RFC de la propia empresa (Desarrolladores de la empresa): es emisor mientras la empresa lo tenga y no se archiva.
+	CodeIssuerOwnRFC = "issuer_own_rfc"
 	// La cuenta tiene varios emisores y la solicitud no dice cuál: mande issuer (iss_…).
 	CodeIssuerRequired = "issuer_required"
 	// La llave es de un entorno de prueba y la solicitud es de toda la cuenta (como crear o borrar entornos): use una llave de pruebas de la cuenta.
@@ -120,6 +124,8 @@ const (
 	CodeMethodNotAllowed = "method_not_allowed"
 	// Falta el encabezado Authorization: Bearer fk_test_… o fk_live_….
 	CodeMissingAPIKey = "missing_api_key"
+	// En el plan Gratis, la API ya hizo sus solicitudes de producción de los últimos 30 días: 10,000 más 500 por cada timbre que usó. Con un plan de paga son 100,000 más 500 por timbre, y al pasarlas la API solo va más despacio (10 solicitudes cada 10 segundos, rate_limit). Use webhooks en vez de consultar seguido; para más, escriba a soporte@fiscalisto.com.
+	CodeMonthlyAllowance = "monthly_allowance"
 	// Un campo tiene un valor que no se acepta (formato, catálogo del SAT, rango). param dice cuál y message cómo corregirlo.
 	CodeParameterInvalid = "parameter_invalid"
 	// Falta un campo obligatorio. param dice cuál.
