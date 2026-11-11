@@ -1210,6 +1210,34 @@
 		"go": "SatInvoices.PDF",
 		"java": "satInvoices.pdf"
 	},
+	"GET /v1/sat_retentions": {
+		"python": "sat_retentions.list",
+		"php": "satRetentions->list",
+		"dotnet": "SatRetentions.ListAsync",
+		"go": "SatRetentions.List",
+		"java": "satRetentions.list"
+	},
+	"GET /v1/sat_retentions/{id}": {
+		"python": "sat_retentions.get",
+		"php": "satRetentions->get",
+		"dotnet": "SatRetentions.GetAsync",
+		"go": "SatRetentions.Get",
+		"java": "satRetentions.get"
+	},
+	"GET /v1/sat_retentions/{id}/xml": {
+		"python": "sat_retentions.xml",
+		"php": "satRetentions->xml",
+		"dotnet": "SatRetentions.XmlAsync",
+		"go": "SatRetentions.XML",
+		"java": "satRetentions.xml"
+	},
+	"GET /v1/sat_retentions/{id}/pdf": {
+		"python": "sat_retentions.pdf",
+		"php": "satRetentions->pdf",
+		"dotnet": "SatRetentions.PdfAsync",
+		"go": "SatRetentions.PDF",
+		"java": "satRetentions.pdf"
+	},
 	"POST /v1/sat_declarations/refresh": {
 		"python": "sat_declarations.refresh",
 		"php": "satDeclarations->refresh",

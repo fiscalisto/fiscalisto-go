@@ -102,6 +102,8 @@ type services struct {
 	SatDownloads *SatDownloadsService
 	// Descargas del SAT.
 	SatInvoices *SatInvoicesService
+	// Descargas del SAT.
+	SatRetentions *SatRetentionsService
 	// Declaraciones del SAT.
 	SatDeclarations *SatDeclarationsService
 	// Autofactura.
@@ -166,6 +168,7 @@ func (s *services) init(c *Client) {
 	s.SatLists = &SatListsService{c}
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
+	s.SatRetentions = &SatRetentionsService{c}
 	s.SatDeclarations = &SatDeclarationsService{c}
 	s.Tickets = &TicketsService{c}
 	s.Accounting = &AccountingService{c}
@@ -2926,6 +2929,63 @@ func (s *SatInvoicesService) XML(ctx context.Context, id string, opts ...Request
 // https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-invoice-pdf
 func (s *SatInvoicesService) PDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
 	return s.c.raw(ctx, "GET", "/v1/sat_invoices/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
+}
+
+// SatRetentionsService: Descargas del SAT (client.SatRetentions).
+type SatRetentionsService struct{ c *Client }
+
+// List: Listar constancias de retenciones
+//
+// Los CFDI de retenciones e información de pagos del emisor, como los muestra Facturas › Retenciones: los que recibió (descargados del SAT o subidos) o los que emitió, del más reciente al más antiguo, con las canceladas marcadas. Las que emite por la API también están en GET /v1/retentions.
+//
+// GET /v1/sat_retentions
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/list-sat-retentions
+func (s *SatRetentionsService) List(ctx context.Context, params *ListSatRetentionsParams, opts ...RequestOption) (*Page[SATRetention], error) {
+	return list[SATRetention](ctx, s.c, "/v1/sat_retentions", params, "", opts)
+}
+
+// ListAutoPaging: Listar constancias de retenciones, todos, página por página: for x, err := range …
+func (s *SatRetentionsService) ListAutoPaging(ctx context.Context, params *ListSatRetentionsParams, opts ...RequestOption) iter.Seq2[SATRetention, error] {
+	return listAll[SATRetention](ctx, s.c, "/v1/sat_retentions", params, opts)
+}
+
+// Get: Ver una constancia de retenciones
+//
+// Una constancia de retenciones del emisor, con sus montos, impuestos y estado.
+//
+// GET /v1/sat_retentions/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-retention
+func (s *SatRetentionsService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATRetention, error) {
+	out := new(SATRetention)
+	if err := s.c.do(ctx, "GET", "/v1/sat_retentions/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Xml: Descargar el XML de una constancia de retenciones
+//
+// El CFDI de retenciones tal como llegó.
+//
+// GET /v1/sat_retentions/{id}/xml
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-retention-xml
+func (s *SatRetentionsService) XML(ctx context.Context, id string, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/sat_retentions/"+url.PathEscape(id)+"/xml", nil, nil, false, opts)
+	return string(b), err
+}
+
+// Pdf: Descargar el PDF de una constancia de retenciones
+//
+// La constancia en PDF, como la ofrece Facturas › Retenciones. El XML es el documento válido ante el SAT.
+//
+// GET /v1/sat_retentions/{id}/pdf
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-retention-pdf
+func (s *SatRetentionsService) PDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/sat_retentions/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
 }
 
 // SatDeclarationsService: Declaraciones del SAT (client.SatDeclarations).

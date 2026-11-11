@@ -6431,6 +6431,32 @@ type ListSatMailboxMessagesParams struct {
 	Unread *bool `json:"unread,omitempty"`
 }
 
+// ListSatRetentionsParams: los campos de «Listar constancias de retenciones».
+type ListSatRetentionsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// received (por omisión) o issued.
+	//
+	// Valores: received, issued.
+	Direction *string `json:"direction,omitempty"`
+	// active o canceled. Sin él, las dos.
+	//
+	// Valores: active, canceled.
+	Status *string `json:"status,omitempty"`
+	// El RFC de quien retuvo (recibidas) o a quien le retuvo (emitidas).
+	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
+	// Clave de la retención (CveRetenc) de dos dígitos, como 16 o 26.
+	Code *string `json:"code,omitempty"`
+	// Solo las de un ejercicio, como 2025.
+	Year *int64 `json:"year,omitempty"`
+	// Solo las que cubren este mes (1 a 12): una anual de enero a diciembre cubre todos.
+	Month *int64 `json:"month,omitempty"`
+}
+
 // ListStockAdjustmentsParams: los campos de «Listar ajustes».
 type ListStockAdjustmentsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -8249,6 +8275,112 @@ type SATRefresh struct {
 	NextRefreshAt *string `json:"next_refresh_at,omitempty"`
 	// Dónde leer lo que trajo.
 	URL string `json:"url"`
+}
+
+// SATRetention: Un CFDI de retenciones e información de pagos del emisor, recibido (la constancia que le dio un banco, una plataforma o quien le pagó) o emitido, como lo muestra Facturas › Retenciones.
+type SATRetention struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor de su cuenta (iss_…) a quien pertenece esta constancia.
+	Issuer string `json:"issuer"`
+	// El folio fiscal (UUID del timbre).
+	UUID string `json:"uuid"`
+	// received (se la dieron al emisor: un banco, una plataforma, quien le pagó) o issued (la emitió).
+	//
+	// Valores: received, issued.
+	Direction string `json:"direction"`
+	// La fecha de expedición (FechaExp).
+	Date string `json:"date"`
+	// Folio interno (FolioInt), o null.
+	InternalFolio *string `json:"internal_folio,omitempty"`
+	// Clave de la retención (CveRetenc), como 14 dividendos, 16 intereses o 26 plataformas.
+	Code *string `json:"code,omitempty"`
+	// Descripción de la retención (DescRetenc), o null.
+	Description *string `json:"description,omitempty"`
+	// Quien retuvo (Emisor).
+	IssuedBy SATRetentionIssuedBy `json:"issued_by"`
+	// A quien le retuvieron (Receptor).
+	IssuedTo SATRetentionIssuedTo `json:"issued_to"`
+	// Los meses y el ejercicio que cubre (Periodo), o null si no se pudo leer.
+	Period *SATRetentionPeriod `json:"period,omitempty"`
+	// Los montos de Totales.
+	Totals SATRetentionTotals `json:"totals"`
+	// Cada impuesto retenido (ImpRetenidos).
+	WithheldTaxes []SATRetentionWithheldTax `json:"withheld_taxes"`
+	// active o canceled: la canceló el emisor en Fiscalisto, o el SAT la reporta cancelada (se revisa cada mes). Una cancelada ya no es impuesto retenido.
+	//
+	// Valores: active, canceled.
+	Status string `json:"status"`
+	// Si su XML no se pudo leer, por qué; sus campos quedan en null. Si no, null.
+	ReadError *string `json:"read_error,omitempty"`
+	// Cuándo llegó a Fiscalisto.
+	DownloadedAt *string `json:"downloaded_at,omitempty"`
+}
+
+// SATRetentionIssuedBy: Quien retuvo (Emisor).
+type SATRetentionIssuedBy struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// SATRetentionIssuedTo: A quien le retuvieron (Receptor).
+type SATRetentionIssuedTo struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+}
+
+// SATRetentionList: Una página de la lista.
+type SATRetentionList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATRetention `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// SATRetentionPeriod: SATRetentionPeriod.
+type SATRetentionPeriod struct {
+	// Ejercicio (Ejercicio).
+	Year int64 `json:"year"`
+	// Mes inicial (MesIni), 1 a 12.
+	MonthStart int64 `json:"month_start"`
+	// Mes final (MesFin), 1 a 12.
+	MonthEnd int64 `json:"month_end"`
+}
+
+// SATRetentionTotals: Los montos de Totales.
+type SATRetentionTotals struct {
+	// Monto total de la operación (MontoTotOperacion).
+	Operation *float64 `json:"operation,omitempty"`
+	// Monto gravado (MontoTotGrav). Por omisión, operation menos exempt.
+	Taxed *float64 `json:"taxed,omitempty"`
+	// Monto exento (MontoTotExent). Por omisión 0.
+	Exempt *float64 `json:"exempt,omitempty"`
+	// Total retenido (MontoTotRet).
+	Withheld *float64 `json:"withheld,omitempty"`
+}
+
+// SATRetentionWithheldTax: SATRetentionWithheldTax.
+type SATRetentionWithheldTax struct {
+	// Base del impuesto retenido (BaseRet).
+	Base *float64 `json:"base,omitempty"`
+	// Impuesto: isr, iva o ieps (ImpuestoRet 001, 002, 003).
+	Tax *string `json:"tax,omitempty"`
+	// Importe.
+	Amount *float64 `json:"amount,omitempty"`
+	// Tipo de pago de la retención (TipoPagoRet): 01 definitivo IVA, 02 definitivo IEPS, 03 definitivo ISR, 04 provisional ISR. Por omisión el usual de cada impuesto.
+	PaymentType *string `json:"payment_type,omitempty"`
 }
 
 // SalesOrder: Un pedido de venta: lo que su cliente pidió, cómo se entrega (remisiones) y cómo se factura y se cobra.
