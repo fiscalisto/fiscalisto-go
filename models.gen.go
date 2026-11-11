@@ -4221,6 +4221,8 @@ type Invoice struct {
 	AmountDue *float64 `json:"amount_due,omitempty"`
 	// Lo cobrado: complementos de pago y notas de crédito vigentes, o todo si es PUE pagada. null si no aplica.
 	AmountPaid *float64 `json:"amount_paid,omitempty"`
+	// Una PUE que estuvo por cobrar (paid_later o mark_unpaid): el día en que el cliente pagó (AAAA-MM-DD), el que dijo POST /v1/invoices/{id}/mark_paid o el del depósito conciliado con ella. null si no hay fecha de pago registrada (una PUE pagada al timbrarse), si no se ha pagado o si es PPD (sus pagos están en sus complementos).
+	PaidOn *string `json:"paid_on,omitempty"`
 	// CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
 	Related map[string]any `json:"related,omitempty"`
 	// Solo en un complemento de pago (type P).
@@ -6593,6 +6595,12 @@ type ListWebhookEndpointsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
+}
+
+// MarkInvoicePaidParams: los campos de «Marcar pagada».
+type MarkInvoicePaidParams struct {
+	// El día en que el cliente pagó (AAAA-MM-DD, no antes de la factura ni después de hoy); hoy si no se indica. Queda en paid_on.
+	PaidOn *string `json:"paid_on,omitempty"`
 }
 
 // MarkPurchaseReceiptInvoicedParams: los campos de «Ya llegó la factura».
