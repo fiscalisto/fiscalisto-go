@@ -1345,6 +1345,8 @@ type CreateProductParams struct {
 	MinOrderQty *float64 `json:"min_order_qty,omitempty"`
 	// Se pide de tantos en tantos desde el portal (12: de 12 en 12).
 	OrderStep *float64 `json:"order_step,omitempty"`
+	// Su categoría, con las de arriba separadas por › (también > o /): «Ferretería › Tornillos». Si no existe, se crea. null la quita.
+	Category *string `json:"category,omitempty"`
 }
 
 // CreateProductParamsLocalTax: CreateProductParamsLocalTax.
@@ -6247,6 +6249,8 @@ type ListProductsParams struct {
 	SKU *string `json:"sku,omitempty"`
 	// Solo los de esta clave del SAT.
 	ProductKey *string `json:"product_key,omitempty"`
+	// Solo los de esta categoría y sus subcategorías: «Ferretería» o «Ferretería › Tornillos».
+	Category *string `json:"category,omitempty"`
 }
 
 // ListPurchaseReceiptsParams: los campos de «Listar tickets de compra».
@@ -7195,6 +7199,8 @@ type Product struct {
 	UnitName *string `json:"unit_name,omitempty"`
 	// Número de identificación o SKU (NoIdentificacion).
 	SKU *string `json:"sku,omitempty"`
+	// Su categoría, con las de arriba separadas por › («Ferretería › Tornillos»), o null si no tiene.
+	Category *string `json:"category,omitempty"`
 	// Precio unitario antes de impuestos (ValorUnitario).
 	UnitPrice float64 `json:"unit_price"`
 	// Precio abierto: el producto no tiene precio fijo y cada concepto con él manda su unit_price.
@@ -9919,6 +9925,8 @@ type UpdateProductParams struct {
 	MinOrderQty *float64 `json:"min_order_qty,omitempty"`
 	// Se pide de tantos en tantos desde el portal (12: de 12 en 12).
 	OrderStep *float64 `json:"order_step,omitempty"`
+	// Su categoría, con las de arriba separadas por › (también > o /): «Ferretería › Tornillos». Si no existe, se crea. null la quita.
+	Category *string `json:"category,omitempty"`
 }
 
 // UpdateProductParamsLocalTax: UpdateProductParamsLocalTax.

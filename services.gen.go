@@ -2488,7 +2488,7 @@ func (s *ProductsService) Create(ctx context.Context, params *CreateProductParam
 
 // List: Listar productos
 //
-// Los productos del emisor, los más recientes primero. Filtre por sku o product_key.
+// Los productos del emisor, los más recientes primero. Filtre por sku, product_key o category.
 //
 // GET /v1/products
 //
