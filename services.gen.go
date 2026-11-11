@@ -104,6 +104,10 @@ type services struct {
 	SatInvoices *SatInvoicesService
 	// Descargas del SAT.
 	SatRetentions *SatRetentionsService
+	// Portal de proveedores.
+	PortalSuppliers *PortalSuppliersService
+	// Portal de proveedores.
+	SupplierInvoices *SupplierInvoicesService
 	// Declaraciones del SAT.
 	SatDeclarations *SatDeclarationsService
 	// Autofactura.
@@ -169,6 +173,8 @@ func (s *services) init(c *Client) {
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
 	s.SatRetentions = &SatRetentionsService{c}
+	s.PortalSuppliers = &PortalSuppliersService{c}
+	s.SupplierInvoices = &SupplierInvoicesService{c}
 	s.SatDeclarations = &SatDeclarationsService{c}
 	s.Tickets = &TicketsService{c}
 	s.Accounting = &AccountingService{c}
@@ -2986,6 +2992,104 @@ func (s *SatRetentionsService) XML(ctx context.Context, id string, opts ...Reque
 // https://fiscalisto.com/docs/api/referencia/descargas-del-sat/get-sat-retention-pdf
 func (s *SatRetentionsService) PDF(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
 	return s.c.raw(ctx, "GET", "/v1/sat_retentions/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
+}
+
+// PortalSuppliersService: Portal de proveedores (client.PortalSuppliers).
+type PortalSuppliersService struct{ c *Client }
+
+// List: Listar proveedores del portal
+//
+// Los proveedores invitados o registrados en el Portal de proveedores del emisor, los más recientes primero: su alta, sus documentos, la cuenta a la que se le paga y su calificación.
+//
+// GET /v1/portal_suppliers
+//
+// https://fiscalisto.com/docs/api/referencia/portal-de-proveedores/list-portal-suppliers
+func (s *PortalSuppliersService) List(ctx context.Context, params *ListPortalSuppliersParams, opts ...RequestOption) (*Page[PortalSupplier], error) {
+	return list[PortalSupplier](ctx, s.c, "/v1/portal_suppliers", params, "", opts)
+}
+
+// ListAutoPaging: Listar proveedores del portal, todos, página por página: for x, err := range …
+func (s *PortalSuppliersService) ListAutoPaging(ctx context.Context, params *ListPortalSuppliersParams, opts ...RequestOption) iter.Seq2[PortalSupplier, error] {
+	return listAll[PortalSupplier](ctx, s.c, "/v1/portal_suppliers", params, opts)
+}
+
+// Get: Ver un proveedor del portal
+//
+// Su alta, sus documentos, su cuenta bancaria y su calificación por partes.
+//
+// GET /v1/portal_suppliers/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/portal-de-proveedores/get-portal-supplier
+func (s *PortalSuppliersService) Get(ctx context.Context, id string, opts ...RequestOption) (*PortalSupplier, error) {
+	out := new(PortalSupplier)
+	if err := s.c.do(ctx, "GET", "/v1/portal_suppliers/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SupplierInvoicesService: Portal de proveedores (client.SupplierInvoices).
+type SupplierInvoicesService struct{ c *Client }
+
+// List: Listar facturas de proveedores
+//
+// Las facturas que mandaron sus proveedores por el portal, las más recientes primero. Para llevar a su ERP lo aprobado: status=approved, o escuche supplier_invoice.approved.
+//
+// GET /v1/supplier_invoices
+//
+// https://fiscalisto.com/docs/api/referencia/portal-de-proveedores/list-supplier-invoices
+func (s *SupplierInvoicesService) List(ctx context.Context, params *ListSupplierInvoicesParams, opts ...RequestOption) (*Page[SupplierInvoice], error) {
+	return list[SupplierInvoice](ctx, s.c, "/v1/supplier_invoices", params, "", opts)
+}
+
+// ListAutoPaging: Listar facturas de proveedores, todos, página por página: for x, err := range …
+func (s *SupplierInvoicesService) ListAutoPaging(ctx context.Context, params *ListSupplierInvoicesParams, opts ...RequestOption) iter.Seq2[SupplierInvoice, error] {
+	return listAll[SupplierInvoice](ctx, s.c, "/v1/supplier_invoices", params, opts)
+}
+
+// Get: Ver una factura de proveedor
+//
+// Con su estado, su orden de compra, su contrarecibo y sus fechas de pago. Su XML y su PDF: GET /v1/sat_invoices/{sat_invoice}/xml y /pdf.
+//
+// GET /v1/supplier_invoices/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/portal-de-proveedores/get-supplier-invoice
+func (s *SupplierInvoicesService) Get(ctx context.Context, id string, opts ...RequestOption) (*SupplierInvoice, error) {
+	out := new(SupplierInvoice)
+	if err := s.c.do(ctx, "GET", "/v1/supplier_invoices/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Schedule: Programar el pago de una factura de proveedor
+//
+// El día en que la pagará, como «Programar pago» en la app: el proveedor lo ve en su portal y llega supplier_invoice.scheduled. Solo una aprobada o ya programada; si el SAT la reporta cancelada, 400 supplier_invoice_invalid.
+//
+// POST /v1/supplier_invoices/{id}/schedule
+//
+// https://fiscalisto.com/docs/api/referencia/portal-de-proveedores/schedule-supplier-invoice
+func (s *SupplierInvoicesService) Schedule(ctx context.Context, id string, params *ScheduleSupplierInvoiceParams, opts ...RequestOption) (*SupplierInvoice, error) {
+	out := new(SupplierInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/supplier_invoices/"+url.PathEscape(id)+"/schedule", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MarkPaid: Marcar pagada una factura de proveedor
+//
+// El pago que hizo su ERP o su banco, como «Marcar pagada» en la app: el proveedor lo ve, y si es PPD le pedimos su complemento de pago. Llega supplier_invoice.paid.
+//
+// POST /v1/supplier_invoices/{id}/mark_paid
+//
+// https://fiscalisto.com/docs/api/referencia/portal-de-proveedores/mark-supplier-invoice-paid
+func (s *SupplierInvoicesService) MarkPaid(ctx context.Context, id string, params *MarkSupplierInvoicePaidParams, opts ...RequestOption) (*SupplierInvoice, error) {
+	out := new(SupplierInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/supplier_invoices/"+url.PathEscape(id)+"/mark_paid", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // SatDeclarationsService: Declaraciones del SAT (client.SatDeclarations).

@@ -200,6 +200,8 @@ const (
 	CodeStorePlatformUnavailable = "store_platform_unavailable"
 	// Los complementos de pago y las notas de crédito no se sustituyen: se cancelan y se emite otro. Un recibo de nómina se sustituye con POST /v1/payroll_receipts/external y replaces.
 	CodeSubstitutionUnsupported = "substitution_unsupported"
+	// La factura del proveedor no admite eso en su estado (por ejemplo, programar una que no está aprobada, una fecha de pago pasada o marcar pagada una ya pagada), o el SAT la reporta cancelada. El mensaje dice por qué.
+	CodeSupplierInvoiceInvalid = "supplier_invoice_invalid"
 	// El reloj se está adelantando en otra solicitud (409, con Retry-After). Espere a test_clock.ready y repita.
 	CodeTestClockAdvancing = "test_clock_advancing"
 	// El emisor ya tiene un reloj de prueba: adelántelo, o bórrelo para volver a la hora real.

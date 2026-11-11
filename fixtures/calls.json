@@ -1238,6 +1238,48 @@
 		"go": "SatRetentions.PDF",
 		"java": "satRetentions.pdf"
 	},
+	"GET /v1/portal_suppliers": {
+		"python": "portal_suppliers.list",
+		"php": "portalSuppliers->list",
+		"dotnet": "PortalSuppliers.ListAsync",
+		"go": "PortalSuppliers.List",
+		"java": "portalSuppliers.list"
+	},
+	"GET /v1/portal_suppliers/{id}": {
+		"python": "portal_suppliers.get",
+		"php": "portalSuppliers->get",
+		"dotnet": "PortalSuppliers.GetAsync",
+		"go": "PortalSuppliers.Get",
+		"java": "portalSuppliers.get"
+	},
+	"GET /v1/supplier_invoices": {
+		"python": "supplier_invoices.list",
+		"php": "supplierInvoices->list",
+		"dotnet": "SupplierInvoices.ListAsync",
+		"go": "SupplierInvoices.List",
+		"java": "supplierInvoices.list"
+	},
+	"GET /v1/supplier_invoices/{id}": {
+		"python": "supplier_invoices.get",
+		"php": "supplierInvoices->get",
+		"dotnet": "SupplierInvoices.GetAsync",
+		"go": "SupplierInvoices.Get",
+		"java": "supplierInvoices.get"
+	},
+	"POST /v1/supplier_invoices/{id}/schedule": {
+		"python": "supplier_invoices.schedule",
+		"php": "supplierInvoices->schedule",
+		"dotnet": "SupplierInvoices.ScheduleAsync",
+		"go": "SupplierInvoices.Schedule",
+		"java": "supplierInvoices.schedule"
+	},
+	"POST /v1/supplier_invoices/{id}/mark_paid": {
+		"python": "supplier_invoices.mark_paid",
+		"php": "supplierInvoices->markPaid",
+		"dotnet": "SupplierInvoices.MarkPaidAsync",
+		"go": "SupplierInvoices.MarkPaid",
+		"java": "supplierInvoices.markPaid"
+	},
 	"POST /v1/sat_declarations/refresh": {
 		"python": "sat_declarations.refresh",
 		"php": "satDeclarations->refresh",

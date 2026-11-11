@@ -3043,7 +3043,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, issuer.ready, balance.low o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -6077,7 +6077,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -6203,6 +6203,22 @@ type ListPayrollBatchesParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListPortalSuppliersParams: los campos de «Listar proveedores del portal».
+type ListPortalSuppliersParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo los que estén en este estado.
+	//
+	// Valores: invited, onboarding, in_review, approved, rejected, suspended.
+	Status *string `json:"status,omitempty"`
+	// Solo el de este RFC.
+	TaxID *string `json:"tax_id,omitempty"`
 }
 
 // ListPriceListsParams: los campos de «Listar listas de precios».
@@ -6505,6 +6521,24 @@ type ListStoreConnectionsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListSupplierInvoicesParams: los campos de «Listar facturas de proveedores».
+type ListSupplierInvoicesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las que estén en este estado.
+	//
+	// Valores: received, approved, scheduled, paid, rejected.
+	Status *string `json:"status,omitempty"`
+	// Solo las de este proveedor (sup_…).
+	Supplier *string `json:"supplier,omitempty"`
+	// Solo las que llegaron desde este día (AAAA-MM-DD).
+	ReceivedSince *string `json:"received_since,omitempty"`
+}
+
 // ListTicketsParams: los campos de «Listar tickets».
 type ListTicketsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -6553,6 +6587,14 @@ type ListWebhookEndpointsParams struct {
 type MarkPurchaseReceiptInvoicedParams struct {
 	// La factura recibida que lo cubre: su id (sat_…) o su folio fiscal (UUID). Sin ella, solo se marca facturado.
 	Invoice *string `json:"invoice,omitempty"`
+}
+
+// MarkSupplierInvoicePaidParams: los campos de «Marcar pagada una factura de proveedor».
+type MarkSupplierInvoicePaidParams struct {
+	// El día en que la pagó (AAAA-MM-DD, hoy o antes).
+	PaidOn string `json:"paid_on"`
+	// La referencia del pago (la de la transferencia o del ERP), o null.
+	Reference *string `json:"reference,omitempty"`
 }
 
 // MatchBankTransactionParams: los campos de «Conciliar un depósito».
@@ -6889,6 +6931,112 @@ type PayrollReceiptPreviewWarning struct {
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
+}
+
+// PortalSupplier: Un proveedor del Portal de proveedores del emisor: su alta, sus documentos, la cuenta a la que se le paga y su calificación.
+type PortalSupplier struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor de su cuenta (iss_…) cuyo portal es.
+	Issuer string `json:"issuer"`
+	// El RFC del proveedor.
+	TaxID string `json:"tax_id"`
+	// Su nombre o razón social, o null si aún no lo da.
+	Name *string `json:"name,omitempty"`
+	// Los correos a los que le escribimos.
+	Emails []string `json:"emails"`
+	// Su teléfono, o null.
+	Phone *string `json:"phone,omitempty"`
+	// invited (invitado), onboarding (dando su alta), in_review (alta por revisar), approved (puede mandar facturas), rejected o suspended.
+	//
+	// Valores: invited, onboarding, in_review, approved, rejected, suspended.
+	Status string `json:"status"`
+	// true si da servicios especializados (REPSE).
+	Repse bool `json:"repse"`
+	// Su alta: complete cuando todo lo obligatorio está aprobado y vigente, y cuántos documentos faltan, esperan revisión, vencieron o están por vencer.
+	Documents PortalSupplierDocuments `json:"documents"`
+	// La cuenta a la que se le paga, o null. Una nueva queda pending hasta que se aprueba en la app; mientras, se le paga a previous_clabe.
+	BankAccount *PortalSupplierBankAccount `json:"bank_account,omitempty"`
+	// Su calificación de 0 a 100 de los últimos 12 meses (value, null sin datos; level excellent, good, fair o poor) y cada parte: invoices (facturas a la primera), deliveries (entregas a tiempo), prices (precio y cantidad de la orden), documents (documentos al día) y complements (complementos de pago), con good de total casos.
+	Score PortalSupplierScore `json:"score"`
+	// La última vez que entró a su portal, o null.
+	LastSeenAt *string `json:"last_seen_at,omitempty"`
+	// Cuándo se invitó o se registró.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// PortalSupplierBankAccount: PortalSupplierBankAccount.
+type PortalSupplierBankAccount struct {
+	// La CLABE de 18 dígitos.
+	CLABE string `json:"clabe"`
+	// El banco, o null.
+	Bank *string `json:"bank,omitempty"`
+	// El titular de la cuenta, o null.
+	Holder *string `json:"holder,omitempty"`
+	// Estado del objeto.
+	//
+	// Valores: pending, approved, rejected.
+	Status string `json:"status"`
+	// Mientras una CLABE nueva está pending, la anterior, a la que se le sigue pagando; si no, null.
+	PreviousCLABE *string `json:"previous_clabe,omitempty"`
+}
+
+// PortalSupplierDocuments: Su alta: complete cuando todo lo obligatorio está aprobado y vigente, y cuántos documentos faltan, esperan revisión, vencieron o están por vencer.
+type PortalSupplierDocuments struct {
+	// true cuando todo lo obligatorio de su alta está aprobado y vigente.
+	Complete bool `json:"complete"`
+	// Cuántos documentos obligatorios no ha subido.
+	Missing int64 `json:"missing"`
+	// Cuántos esperan revisión.
+	Pending int64 `json:"pending"`
+	// Cuántos vencieron.
+	Expired int64 `json:"expired"`
+	// Cuántos vencen en los próximos 7 días.
+	Expiring int64 `json:"expiring"`
+}
+
+// PortalSupplierList: Una página de la lista.
+type PortalSupplierList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PortalSupplier `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PortalSupplierScore: Su calificación de 0 a 100 de los últimos 12 meses (value, null sin datos; level excellent, good, fair o poor) y cada parte: invoices (facturas a la primera), deliveries (entregas a tiempo), prices (precio y cantidad de la orden), documents (documentos al día) y complements (complementos de pago), con good de total casos.
+type PortalSupplierScore struct {
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *int64 `json:"value,omitempty"`
+	// Nivel educativo (nivelEducativo).
+	//
+	// Valores: excellent, good, fair, poor.
+	Level *string `json:"level,omitempty"`
+	// Partes del transporte que posee o arrienda (ParteTransporte), c_ParteTransporte.
+	Parts []PortalSupplierScorePart `json:"parts"`
+}
+
+// PortalSupplierScorePart: PortalSupplierScorePart.
+type PortalSupplierScorePart struct {
+	// invoices (facturas a la primera), deliveries (entregas a tiempo), prices (precio y cantidad de la orden), documents (documentos al día) o complements (complementos de pago).
+	//
+	// Valores: invoices, deliveries, prices, documents, complements.
+	Part string `json:"part"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *int64 `json:"value,omitempty"`
+	// En cuántos de los total casos lo hizo bien.
+	Good int64 `json:"good"`
+	// Total en la moneda del comprobante (Total).
+	Total int64 `json:"total"`
 }
 
 // PreviewPayrollReceiptParams: los campos de «Calcular un recibo sin timbrar».
@@ -8611,6 +8759,12 @@ type SandboxList struct {
 	URL string `json:"url"`
 }
 
+// ScheduleSupplierInvoiceParams: los campos de «Programar el pago de una factura de proveedor».
+type ScheduleSupplierInvoiceParams struct {
+	// El día en que la pagará (AAAA-MM-DD, hoy o después). El proveedor lo ve.
+	PayOn string `json:"pay_on"`
+}
+
 // SelfInvoicing: El portal de autofactura de un emisor y sus reglas.
 type SelfInvoicing struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -8957,6 +9111,92 @@ type StoreImportSkippedItem struct {
 	Reason string `json:"reason"`
 }
 
+// SupplierInvoice: Una factura que un proveedor le mandó al emisor por su Portal de proveedores, con lo que se revisó, su orden de compra, su contrarecibo y sus fechas de pago.
+type SupplierInvoice struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor de su cuenta (iss_…) que la recibió.
+	Issuer string `json:"issuer"`
+	// El proveedor (sup_…) que la mandó.
+	Supplier string `json:"supplier"`
+	// El RFC del proveedor.
+	SupplierTaxID string `json:"supplier_tax_id"`
+	// El folio fiscal (UUID del timbre).
+	UUID string `json:"uuid"`
+	// La misma factura en sus facturas recibidas (sat_…), para su XML y su PDF, o null.
+	SATInvoice *string `json:"sat_invoice,omitempty"`
+	// Su serie, o null.
+	Series *string `json:"series,omitempty"`
+	// Su folio, o null.
+	Folio *string `json:"folio,omitempty"`
+	// income (factura de ingreso) o credit_note (nota de crédito).
+	//
+	// Valores: income, credit_note.
+	Type string `json:"type"`
+	// La fecha de la factura.
+	Date string `json:"date"`
+	// La moneda.
+	Currency string `json:"currency"`
+	// El total de la factura.
+	Total float64 `json:"total"`
+	// Lo que se le paga: el total sin las diferencias con su orden ni el descuento de pronto pago aceptado.
+	Payable float64 `json:"payable"`
+	// PUE o PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// received (por revisar), approved, scheduled (con fecha de pago), paid o rejected.
+	//
+	// Valores: received, approved, scheduled, paid, rejected.
+	Status string `json:"status"`
+	// La orden de compra que factura (OC-12), o null.
+	PurchaseOrder *string `json:"purchase_order,omitempty"`
+	// true si cuadró con su orden, false si tuvo diferencias, null sin orden.
+	MatchesPurchaseOrder *bool `json:"matches_purchase_order,omitempty"`
+	// El folio de su contrarecibo, o null.
+	Contrarecibo *string `json:"contrarecibo,omitempty"`
+	// El día en que vence por sus fechas de pago, o null.
+	DueOn *string `json:"due_on,omitempty"`
+	// El día programado para pagarla, o null.
+	ScheduledOn *string `json:"scheduled_on,omitempty"`
+	// El día en que se pagó, o null.
+	PaidOn *string `json:"paid_on,omitempty"`
+	// Lo que se pagó, o null.
+	PaidAmount *float64 `json:"paid_amount,omitempty"`
+	// La referencia del pago, o null.
+	PaymentReference *string `json:"payment_reference,omitempty"`
+	// Por qué se rechazó, o null.
+	RejectionReason *string `json:"rejection_reason,omitempty"`
+	// Lo que se revisó y quedó como aviso (code y message), para que su equipo lo vea.
+	Warnings []SupplierInvoiceWarning `json:"warnings"`
+	// Cuándo llegó.
+	ReceivedAt *string `json:"received_at,omitempty"`
+	// Cuándo se aprobó, o null.
+	ApprovedAt *string `json:"approved_at,omitempty"`
+}
+
+// SupplierInvoiceList: Una página de la lista.
+type SupplierInvoiceList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SupplierInvoice `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// SupplierInvoiceWarning: SupplierInvoiceWarning.
+type SupplierInvoiceWarning struct {
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	Code string `json:"code"`
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message string `json:"message"`
+}
+
 // TaxIDValidation: Si los datos fiscales de un cliente van a pasar el SAT.
 type TaxIDValidation struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -9113,7 +9353,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, issuer.ready, balance.low, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
