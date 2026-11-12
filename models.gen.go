@@ -5847,7 +5847,7 @@ type Issuer struct {
 	Requirement *string `json:"requirement,omitempty"`
 	// El sello digital (CSD) cargado: número de serie y vencimiento.
 	Certificate *IssuerCertificate `json:"certificate,omitempty"`
-	// Si puede pedirle al SAT sus facturas (POST /v1/sat_downloads): available es true en pruebas, y en producción mientras su e.firma guardada esté vigente (efirma_expires_at); un RFC de su empresa (type own) usa la que la empresa guardó en la app.
+	// Si puede pedirle al SAT sus facturas (POST /v1/sat_downloads): available es true en pruebas, y en producción mientras su e.firma guardada esté vigente (efirma_expires_at); un RFC de su empresa (type own) usa la que la empresa guardó en la app. En pruebas, efirma_expires_at muestra la del mismo RFC en producción, o la que mande en pruebas.
 	SATDownloads IssuerSATDownloads `json:"sat_downloads"`
 	// Registro patronal ante el IMSS (RegistroPatronal), 11 caracteres. Necesario para timbrar nómina.
 	EmployerRegistration *string `json:"employer_registration,omitempty"`
@@ -5915,11 +5915,11 @@ type IssuerOnboardingLink struct {
 	CreatedAt *string `json:"created_at,omitempty"`
 }
 
-// IssuerSATDownloads: Si puede pedirle al SAT sus facturas (POST /v1/sat_downloads): available es true en pruebas, y en producción mientras su e.firma guardada esté vigente (efirma_expires_at); un RFC de su empresa (type own) usa la que la empresa guardó en la app.
+// IssuerSATDownloads: Si puede pedirle al SAT sus facturas (POST /v1/sat_downloads): available es true en pruebas, y en producción mientras su e.firma guardada esté vigente (efirma_expires_at); un RFC de su empresa (type own) usa la que la empresa guardó en la app. En pruebas, efirma_expires_at muestra la del mismo RFC en producción, o la que mande en pruebas.
 type IssuerSATDownloads struct {
 	// true si puede pedir descargas al SAT ahora: siempre en pruebas; en producción con su e.firma guardada y vigente (la de la app, en un RFC de su empresa).
 	Available bool `json:"available"`
-	// Cuándo vence la e.firma guardada para las descargas, o null si no hay una.
+	// Cuándo vence la e.firma guardada para las descargas, o null si no hay una. En pruebas, la que mandó en pruebas o, si no, la que guarda en producción para el mismo RFC.
 	EfirmaExpiresAt *string `json:"efirma_expires_at,omitempty"`
 }
 
