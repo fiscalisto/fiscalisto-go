@@ -199,6 +199,8 @@ type Balance struct {
 	LowBalanceAt int64 `json:"low_balance_at"`
 	// La recarga automática con la tarjeta guardada, o null si está apagada.
 	AutoRecharge *BalanceAutoRecharge `json:"auto_recharge,omitempty"`
+	// true si, al acabarse `available`, la API sigue timbrando con los timbres del plan de la empresa (Desarrolladores › Timbres › Si se acaban, usar los timbres de la empresa). false: responde 402 insufficient_balance.
+	UsePlanTimbres bool `json:"use_plan_timbres"`
 	// Los paquetes con timbres, el que vence antes primero (en ese orden se usan).
 	Packs []BalancePack `json:"packs"`
 }
@@ -215,6 +217,10 @@ type BalanceAutoRecharge struct {
 
 // BalancePack: BalancePack.
 type BalancePack struct {
+	// welcome: los timbres de bienvenida (no vencen); purchase: un paquete comprado o una recarga automática; referral: los de una recomendación.
+	//
+	// Valores: welcome, purchase, referral.
+	Type string `json:"type"`
 	// Timbres del paquete.
 	Timbres int64 `json:"timbres"`
 	// Los que le quedan.
