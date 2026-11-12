@@ -105,8 +105,8 @@ type ApplyAdvanceParams struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
-	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
+	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
+	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -513,7 +513,7 @@ type CostCenterList struct {
 type CreateAdvanceParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
 	Customer StringOr[CreateAdvanceParamsCustomer] `json:"customer"`
 	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
 	Use *string `json:"use,omitempty"`
@@ -979,8 +979,8 @@ type CreateInvoiceBatchParamsInvoice struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
-	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
+	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
+	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -1591,8 +1591,8 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
-	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
+	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
+	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -4369,8 +4369,8 @@ type InvoiceCreate struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
-	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
+	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
+	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -5849,7 +5849,7 @@ type Issuer struct {
 	CURP *string `json:"curp,omitempty"`
 	// Donataria autorizada (régimen 603): el oficio del SAT que la autoriza a recibir donativos deducibles (o su renovación). Va en cada recibo de donativo (`donation` de POST /v1/invoices); null lo quita. El emisor debe tener tax_system 603. En pruebas sirve cualquier número y una fecha pasada.
 	DonationAuthorization *IssuerDonationAuthorization `json:"donation_authorization,omitempty"`
-	// RFC con el que se timbra: el del emisor en producción y el de pruebas del SAT (EKU9003173C9) en pruebas, con régimen 601 o, si el emisor es donataria (tax_system 603), 603.
+	// RFC con el que se timbra: el del emisor en producción y, en pruebas, el contribuyente de pruebas del SAT de su tipo: EKU9003173C9 para una persona moral, CACX7605101P8 para una persona física (con su CURP en la nómina). Se timbra con el régimen y el código postal del emisor.
 	StampsAs string `json:"stamps_as"`
 	// El entorno de prueba (sbx_…) al que pertenece, o null si es de la cuenta. Vea /v1/sandboxes.
 	Sandbox *string `json:"sandbox,omitempty"`
@@ -10189,8 +10189,8 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
-	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
-	Customer StringOr[InvoiceCreateCustomer] `json:"customer"`
+	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
+	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
