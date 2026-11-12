@@ -119,7 +119,7 @@ type ApplyAdvanceParams struct {
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
 	Leyendas []InvoiceCreateLeyenda `json:"leyendas,omitempty"`
-	// Complemento de donatarias.
+	// Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
@@ -993,7 +993,7 @@ type CreateInvoiceBatchParamsInvoice struct {
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
 	Leyendas []InvoiceCreateLeyenda `json:"leyendas,omitempty"`
-	// Complemento de donatarias.
+	// Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
@@ -1069,8 +1069,18 @@ type CreateIssuerParams struct {
 	EmployerRegistration *string `json:"employer_registration,omitempty"`
 	// CURP, 18 caracteres.
 	CURP *string `json:"curp,omitempty"`
+	// Donataria autorizada (régimen 603): el oficio del SAT que la autoriza a recibir donativos deducibles (o su renovación). Va en cada recibo de donativo (`donation` de POST /v1/invoices); null lo quita. El emisor debe tener tax_system 603. En pruebas sirve cualquier número y una fecha pasada.
+	DonationAuthorization *CreateIssuerParamsDonationAuthorization `json:"donation_authorization,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// CreateIssuerParamsDonationAuthorization: CreateIssuerParamsDonationAuthorization.
+type CreateIssuerParamsDonationAuthorization struct {
+	// Número del oficio de autorización, hasta 100 caracteres.
+	Number string `json:"number"`
+	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
+	Date string `json:"date"`
 }
 
 // CreatePaymentParams: los campos de «Timbrar un complemento de pago».
@@ -1391,7 +1401,7 @@ type CreatePurchaseReceiptParams struct {
 	PortalURL *string `json:"portal_url,omitempty"`
 	// El correo de facturación de la tienda.
 	StoreEmail *string `json:"store_email,omitempty"`
-	// El uso de la factura (G03, I01…). Por omisión G03 si el régimen del emisor lo permite.
+	// El uso del CFDI (G03, I01…). Por omisión G03 si el régimen del emisor lo permite.
 	Use *string `json:"use,omitempty"`
 	// Una nota para su equipo.
 	Note *string `json:"note,omitempty"`
@@ -1595,7 +1605,7 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
 	Leyendas []InvoiceCreateLeyenda `json:"leyendas,omitempty"`
-	// Complemento de donatarias.
+	// Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
@@ -4373,7 +4383,7 @@ type InvoiceCreate struct {
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
 	Leyendas []InvoiceCreateLeyenda `json:"leyendas,omitempty"`
-	// Complemento de donatarias.
+	// Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
@@ -5177,11 +5187,11 @@ type InvoiceCreateCustomerForeign struct {
 	TaxID string `json:"tax_id"`
 }
 
-// InvoiceCreateDonation: Complemento de donatarias.
+// InvoiceCreateDonation: Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
 type InvoiceCreateDonation struct {
-	// true si el donativo es en especie (va sin forma de pago en efectivo).
+	// true si el donativo es en especie (bienes): va con forma de pago 12 (dación en pago) y un concepto por cada tipo de bien.
 	InKind *bool `json:"in_kind,omitempty"`
-	// true si el donativo es deducible para quien lo da.
+	// true si el donante ya había deducido los bienes que dona: el recibo dice que el donativo no es deducible.
 	Deducted *bool `json:"deducted,omitempty"`
 }
 
@@ -5837,7 +5847,9 @@ type Issuer struct {
 	EmployerRegistration *string `json:"employer_registration,omitempty"`
 	// CURP, 18 caracteres.
 	CURP *string `json:"curp,omitempty"`
-	// RFC con el que se timbra: el del emisor en producción y el de pruebas del SAT (EKU9003173C9) en pruebas.
+	// Donataria autorizada (régimen 603): el oficio del SAT que la autoriza a recibir donativos deducibles (o su renovación). Va en cada recibo de donativo (`donation` de POST /v1/invoices); null lo quita. El emisor debe tener tax_system 603. En pruebas sirve cualquier número y una fecha pasada.
+	DonationAuthorization *IssuerDonationAuthorization `json:"donation_authorization,omitempty"`
+	// RFC con el que se timbra: el del emisor en producción y el de pruebas del SAT (EKU9003173C9) en pruebas, con régimen 601 o, si el emisor es donataria (tax_system 603), 603.
 	StampsAs string `json:"stamps_as"`
 	// El entorno de prueba (sbx_…) al que pertenece, o null si es de la cuenta. Vea /v1/sandboxes.
 	Sandbox *string `json:"sandbox,omitempty"`
@@ -5857,6 +5869,14 @@ type IssuerCertificate struct {
 	SerialNumber *string `json:"serial_number,omitempty"`
 	// Cuándo vence.
 	ExpiresAt *string `json:"expires_at,omitempty"`
+}
+
+// IssuerDonationAuthorization: IssuerDonationAuthorization.
+type IssuerDonationAuthorization struct {
+	// Número del oficio de autorización, hasta 100 caracteres.
+	Number string `json:"number"`
+	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
+	Date *string `json:"date,omitempty"`
 }
 
 // IssuerList: Una página de la lista.
@@ -7301,7 +7321,7 @@ type PurchaseReceipt struct {
 	Folio *string `json:"folio,omitempty"`
 	// Otros datos que pide el portal de la tienda para facturar (Web ID, sucursal, caja…).
 	Fields []PurchaseReceiptField `json:"fields"`
-	// El uso de la factura que se pide, o null: G03 si el régimen del emisor lo permite, si no S01.
+	// El uso del CFDI que se pide, o null: G03 si el régimen del emisor lo permite, si no S01.
 	Use *string `json:"use,omitempty"`
 	// Una nota, o null.
 	Note *string `json:"note,omitempty"`
@@ -9845,8 +9865,18 @@ type UpdateIssuerParams struct {
 	EmployerRegistration *string `json:"employer_registration,omitempty"`
 	// CURP, 18 caracteres.
 	CURP *string `json:"curp,omitempty"`
+	// Donataria autorizada (régimen 603): el oficio del SAT que la autoriza a recibir donativos deducibles (o su renovación). Va en cada recibo de donativo (`donation` de POST /v1/invoices); null lo quita. El emisor debe tener tax_system 603. En pruebas sirve cualquier número y una fecha pasada.
+	DonationAuthorization *UpdateIssuerParamsDonationAuthorization `json:"donation_authorization,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// UpdateIssuerParamsDonationAuthorization: UpdateIssuerParamsDonationAuthorization.
+type UpdateIssuerParamsDonationAuthorization struct {
+	// Número del oficio de autorización, hasta 100 caracteres.
+	Number string `json:"number"`
+	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
+	Date string `json:"date"`
 }
 
 // UpdatePriceListParams: los campos de «Actualizar una lista de precios».
@@ -9973,7 +10003,7 @@ type UpdatePurchaseReceiptParams struct {
 	PortalURL *string `json:"portal_url,omitempty"`
 	// El correo de facturación de la tienda.
 	StoreEmail *string `json:"store_email,omitempty"`
-	// El uso de la factura (G03, I01…). Por omisión G03 si el régimen del emisor lo permite.
+	// El uso del CFDI (G03, I01…). Por omisión G03 si el régimen del emisor lo permite.
 	Use *string `json:"use,omitempty"`
 	// Una nota para su equipo.
 	Note *string `json:"note,omitempty"`
@@ -10173,7 +10203,7 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
 	Leyendas []InvoiceCreateLeyenda `json:"leyendas,omitempty"`
-	// Complemento de donatarias.
+	// Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`

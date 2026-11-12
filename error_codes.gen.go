@@ -168,7 +168,7 @@ const (
 	CodeRecurringNotDue = "recurring_not_due"
 	// La factura recurrente está en pausa: reanúdela con active: true para timbrarla.
 	CodeRecurringPaused = "recurring_paused"
-	// Otra solicitud con la misma Idempotency-Key sigue en proceso, o otra solicitud está cambiando el mismo objeto (dos actualizaciones del mismo cliente a la vez esperan su turno hasta 15 segundos) (409, con Retry-After). Repítala en un momento con la misma llave: contestará lo mismo.
+	// Otra solicitud con la misma Idempotency-Key sigue en proceso, otra solicitud está cambiando el mismo objeto (dos actualizaciones del mismo cliente a la vez esperan su turno hasta 15 segundos), u otro comprobante que se timbra a la vez no terminó en unos segundos (otro recibo de nómina del mismo empleado, otro pago de la misma factura) (409, con Retry-After). Repítala en un momento con la misma llave: contestará lo mismo.
 	CodeRequestInProgress = "request_in_progress"
 	// No existe un objeto con ese id (o es de otro emisor o del otro modo).
 	CodeResourceMissing = "resource_missing"
