@@ -18,6 +18,9 @@ func IDOf[T any](id string) StringOr[T] { return StringOr[T]{ID: id} }
 // ObjectOf manda el objeto completo.
 func ObjectOf[T any](v T) StringOr[T] { return StringOr[T]{Object: &v} }
 
+// IsZero dice si no lleva ni id ni objeto: un campo opcional así no se manda.
+func (s StringOr[T]) IsZero() bool { return s.ID == "" && s.Object == nil }
+
 func (s StringOr[T]) MarshalJSON() ([]byte, error) {
 	if s.Object != nil {
 		return json.Marshal(s.Object)

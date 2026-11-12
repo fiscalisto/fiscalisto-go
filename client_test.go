@@ -266,3 +266,17 @@ func TestStringOr(t *testing.T) {
 		t.Fatal(string(b))
 	}
 }
+
+func TestOptionalStringOrIsLeftOut(t *testing.T) {
+	b, err := json.Marshal(InvoiceCreate{Type: String("T"), Items: []InvoiceCreateItem{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), `"customer"`) {
+		t.Errorf("un traslado sin cliente no manda customer: %s", b)
+	}
+	b, _ = json.Marshal(InvoiceCreate{Customer: IDOf[InvoiceCreateCustomer]("cus_1"), Items: []InvoiceCreateItem{}})
+	if !strings.Contains(string(b), `"customer":"cus_1"`) {
+		t.Errorf("customer: %s", b)
+	}
+}

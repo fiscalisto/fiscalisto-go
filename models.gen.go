@@ -106,7 +106,7 @@ type ApplyAdvanceParams struct {
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
-	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
+	Customer StringOr[InvoiceCreateCustomer] `json:"customer,omitzero"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -980,7 +980,7 @@ type CreateInvoiceBatchParamsInvoice struct {
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
-	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
+	Customer StringOr[InvoiceCreateCustomer] `json:"customer,omitzero"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -1592,7 +1592,7 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
-	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
+	Customer StringOr[InvoiceCreateCustomer] `json:"customer,omitzero"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -2052,7 +2052,7 @@ type CreateSalesOrderParams struct {
 	// Hacerlo de una cotización (quo_…): toma su cliente y sus conceptos, y la cotización queda aceptada. Sin customer ni items.
 	Quote *string `json:"quote,omitempty"`
 	// Un cliente de su catálogo (cus_…) o uno con sus datos fiscales (como en POST /v1/invoices: se agrega a sus clientes).
-	Customer *StringOr[CreateSalesOrderParamsCustomer] `json:"customer,omitempty"`
+	Customer StringOr[CreateSalesOrderParamsCustomer] `json:"customer,omitzero"`
 	// Los conceptos, como en POST /v1/invoices (hasta 200).
 	Items []CreateSalesOrderParamsItem `json:"items,omitempty"`
 	// Confirmarlo en el mismo paso (por omisión false: queda en draft). Confirmado, aparta lo pedido en el almacén.
@@ -4370,7 +4370,7 @@ type InvoiceCreate struct {
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
-	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
+	Customer StringOr[InvoiceCreateCustomer] `json:"customer,omitzero"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -10190,7 +10190,7 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
 	Warehouse *string `json:"warehouse,omitempty"`
 	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
-	Customer *StringOr[InvoiceCreateCustomer] `json:"customer,omitempty"`
+	Customer StringOr[InvoiceCreateCustomer] `json:"customer,omitzero"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []InvoiceCreateItem `json:"items"`
 	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
@@ -10278,7 +10278,7 @@ type UpdateRecurringInvoiceParamsSchedule struct {
 // UpdateSalesOrderParams: los campos de «Cambiar un pedido».
 type UpdateSalesOrderParams struct {
 	// Un cliente de su catálogo (cus_…) o uno con sus datos fiscales (como en POST /v1/invoices: se agrega a sus clientes).
-	Customer *StringOr[UpdateSalesOrderParamsCustomer] `json:"customer,omitempty"`
+	Customer StringOr[UpdateSalesOrderParamsCustomer] `json:"customer,omitzero"`
 	// Los conceptos, como en POST /v1/invoices (hasta 200).
 	Items []UpdateSalesOrderParamsItem `json:"items,omitempty"`
 	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
