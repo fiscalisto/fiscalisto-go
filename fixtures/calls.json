@@ -1154,6 +1154,13 @@
 		"go": "SatLists.Check",
 		"java": "satLists.check"
 	},
+	"POST /v1/cfdi_verifications": {
+		"python": "cfdi_verifications.create",
+		"php": "cfdiVerifications->create",
+		"dotnet": "CfdiVerifications.CreateAsync",
+		"go": "CfdiVerifications.Create",
+		"java": "cfdiVerifications.create"
+	},
 	"POST /v1/sat_downloads": {
 		"python": "sat_downloads.create",
 		"php": "satDownloads->create",
@@ -1776,5 +1783,12 @@
 		"dotnet": "Events.GetAsync",
 		"go": "Events.Get",
 		"java": "events.get"
+	},
+	"POST /v1/events/{id}/resend": {
+		"python": "events.resend",
+		"php": "events->resend",
+		"dotnet": "Events.ResendAsync",
+		"go": "Events.Resend",
+		"java": "events.resend"
 	}
 }

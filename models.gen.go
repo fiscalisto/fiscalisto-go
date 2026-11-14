@@ -399,6 +399,82 @@ type BranchSeries struct {
 	Transfer *string `json:"transfer,omitempty"`
 }
 
+// CFDIVerification: Lo que dice el SAT de un CFDI: si existe, si está vigente o cancelado y si se puede cancelar, con su emisor y su receptor en las listas del SAT.
+type CFDIVerification struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
+	UUID string `json:"uuid"`
+	// El RFC del emisor que se consultó.
+	IssuerTaxID string `json:"issuer_tax_id"`
+	// El RFC del receptor que se consultó.
+	ReceiverTaxID string `json:"receiver_tax_id"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// De dónde se leyeron el UUID, los RFC y el total: xml, qr o fields.
+	//
+	// Valores: xml, qr, fields.
+	Source string `json:"source"`
+	// Lo que dice el SAT: active (vigente), canceled (cancelado), not_found (no lo tiene: no se timbró, se timbró hace minutos o es de pruebas) o data_mismatch (el UUID existe pero los RFC o el total no coinciden).
+	//
+	// Valores: active, canceled, not_found, data_mismatch.
+	SATStatus string `json:"sat_status"`
+	// Si está vigente, cómo se cancela: without_acceptance (sin que el receptor acepte), with_acceptance (el receptor tiene 3 días hábiles para aceptar) o not_cancellable (por ejemplo, tiene documentos relacionados vigentes). null si no está vigente o el SAT no lo dijo.
+	//
+	// Valores: without_acceptance, with_acceptance, not_cancellable.
+	Cancellable *string `json:"cancellable,omitempty"`
+	// Una cancelación en curso o terminada: in_process (esperando al receptor), rejected (el receptor la rechazó), deadline_passed (pasó el plazo y se canceló), accepted o without_acceptance (cancelado con o sin aceptación). null si nadie la pidió.
+	//
+	// Valores: in_process, rejected, deadline_passed, accepted, without_acceptance.
+	CancellationStatus *string `json:"cancellation_status,omitempty"`
+	// true si el SAT dice que el emisor está en la lista 69-B como definitivo (EFOS); false si no; null si no lo dijo.
+	IssuerEfos *bool `json:"issuer_efos,omitempty"`
+	// La respuesta del SAT tal cual (CodigoEstatus, Estado, EsCancelable, EstatusCancelacion, ValidacionEFOS), por si la necesita igual que el SAT.
+	SAT CFDIVerificationSAT `json:"sat"`
+	// Lo que trae el XML además (versión, tipo, fechas, nombres, moneda), si mandó xml; null si no.
+	XML *CFDIVerificationXML `json:"xml,omitempty"`
+	// El emisor en las listas del SAT (69-B, 69-B Bis y art. 69), como GET /v1/sat_lists/{tax_id}, sin costo. Solo cuando el SAT tiene el comprobante (active o canceled); null si no, o si las listas no se pudieron leer.
+	IssuerSATLists *SATListCheck `json:"issuer_sat_lists,omitempty"`
+	// El receptor en las listas del SAT, igual que el emisor.
+	ReceiverSATLists *SATListCheck `json:"receiver_sat_lists,omitempty"`
+	// Cuándo se le preguntó al SAT.
+	CheckedAt string `json:"checked_at"`
+}
+
+// CFDIVerificationSAT: La respuesta del SAT tal cual (CodigoEstatus, Estado, EsCancelable, EstatusCancelacion, ValidacionEFOS), por si la necesita igual que el SAT.
+type CFDIVerificationSAT struct {
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	Code string `json:"code"`
+	// Entidad federativa donde trabaja (ClaveEntFed): JAL, CMX, NLE…
+	State string `json:"state"`
+	// EsCancelable, tal cual lo dijo el SAT.
+	Cancellable *string `json:"cancellable,omitempty"`
+	// EstatusCancelacion, tal cual lo dijo el SAT.
+	CancellationStatus *string `json:"cancellation_status,omitempty"`
+	// ValidacionEFOS: 200 si el emisor no es EFOS, 100 si lo es.
+	EfosValidation *string `json:"efos_validation,omitempty"`
+}
+
+// CFDIVerificationXML: CFDIVerificationXML.
+type CFDIVerificationXML struct {
+	// La versión del CFDI (4.0 o 3.3).
+	Version *string `json:"version,omitempty"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	Type *string `json:"type,omitempty"`
+	// La fecha de emisión (Fecha), como viene en el XML.
+	IssuedAt *string `json:"issued_at,omitempty"`
+	// La fecha de timbrado (FechaTimbrado), como viene en el XML.
+	StampedAt *string `json:"stamped_at,omitempty"`
+	// El nombre del emisor en el XML.
+	IssuerName *string `json:"issuer_name,omitempty"`
+	// El nombre del receptor en el XML.
+	ReceiverName *string `json:"receiver_name,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+}
+
 // CancelInvoiceParams: los campos de «Cancelar una factura».
 type CancelInvoiceParams struct {
 	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
@@ -3091,6 +3167,16 @@ type EventList struct {
 	URL string `json:"url"`
 }
 
+// EventResend: Un evento que se mandó otra vez: a cuántos webhooks salió. Cada entrega es un intento aparte, ahora; véalo en las entregas del webhook.
+type EventResend struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El evento (evt_…) que se mandó otra vez.
+	Event string `json:"event"`
+	// A cuántos webhooks salió. 0 si ninguno encendido escucha ese tipo de evento.
+	Deliveries int64 `json:"deliveries"`
+}
+
 // ExpenseItem: Un gasto de una comprobación.
 type ExpenseItem struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -5207,7 +5293,7 @@ type InvoiceCreateGlobal struct {
 	Periodicity string `json:"periodicity"`
 	// Meses (Meses), c_Meses: 01 a 12, o 13 a 18 bimestres.
 	Months string `json:"months"`
-	// Año (Año).
+	// Año (Año): el de la fecha de la factura o hasta cinco años antes (CFDI40136).
 	Year int64 `json:"year"`
 	// Solo emisores con régimen 603 (donatarias y asociaciones): true conserva la descripción, claves, unidad y cantidad de cada concepto en vez de «Venta», 01010101, ACT.
 	KeepConcepts *bool `json:"keep_concepts,omitempty"`
@@ -7689,6 +7775,12 @@ type RequestPurchaseReceiptInvoiceParams struct {
 	Message *string `json:"message,omitempty"`
 	// email y fiscalisto: el correo al que la tienda manda la factura. Por omisión, el correo de respuesta del emisor.
 	ReplyTo *string `json:"reply_to,omitempty"`
+}
+
+// ResendEventParams: los campos de «Reenviar un evento».
+type ResendEventParams struct {
+	// El webhook (whe_…) al que mandarlo otra vez. Sin mandar: a todos los webhooks encendidos que escuchan ese tipo de evento.
+	Endpoint *string `json:"endpoint,omitempty"`
 }
 
 // ResetTestDataParams: los campos de «Reiniciar los datos de prueba».
@@ -10711,6 +10803,22 @@ type VatRefundReviewSuppliers struct {
 	VatAtRisk float64 `json:"vat_at_risk"`
 }
 
+// VerifyCfdiParams: los campos de «Verificar un CFDI en el SAT».
+type VerifyCfdiParams struct {
+	// El XML del CFDI, como texto. Se leen de él el UUID, los dos RFC y el total. Hasta 4 millones de caracteres.
+	XML *string `json:"xml,omitempty"`
+	// El texto del QR del PDF (https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=…&re=…&rr=…&tt=…&fe=…), si no tiene el XML.
+	Qr *string `json:"qr,omitempty"`
+	// El folio fiscal, sin XML ni QR. Va con issuer_tax_id, receiver_tax_id y total.
+	UUID *string `json:"uuid,omitempty"`
+	// El RFC del emisor, sin XML ni QR.
+	IssuerTaxID *string `json:"issuer_tax_id,omitempty"`
+	// El RFC del receptor, sin XML ni QR.
+	ReceiverTaxID *string `json:"receiver_tax_id,omitempty"`
+	// El total del comprobante, sin XML ni QR. El SAT lo compara como número.
+	Total *float64 `json:"total,omitempty"`
+}
+
 // Warehouse: Un almacén del emisor: el de la Matriz y uno por sucursal se crean solos; cada factura saca existencias del de su sucursal.
 type Warehouse struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -10771,7 +10879,7 @@ type WebhookEndpoint struct {
 	//
 	// Valores: enabled, failing, disabled.
 	Status string `json:"status"`
-	// Por qué se apagó (sus entregas fallaron 5 días seguidos, o usted lo apagó).
+	// Por qué se apagó: failing (sus entregas fallaron 5 días seguidos), gone (su servidor contestó 410 Gone) o manual (usted lo apagó).
 	DisabledReason *string `json:"disabled_reason,omitempty"`
 	// Desde cuándo fallan las entregas, o null.
 	FailingSince *string `json:"failing_since,omitempty"`

@@ -98,6 +98,8 @@ type services struct {
 	SatCatalogs *SatCatalogsService
 	// Listas del SAT.
 	SatLists *SatListsService
+	// Verificar comprobantes.
+	CfdiVerifications *CfdiVerificationsService
 	// Descargas del SAT.
 	SatDownloads *SatDownloadsService
 	// Descargas del SAT.
@@ -170,6 +172,7 @@ func (s *services) init(c *Client) {
 	s.StockAdjustments = &StockAdjustmentsService{c}
 	s.SatCatalogs = &SatCatalogsService{c}
 	s.SatLists = &SatListsService{c}
+	s.CfdiVerifications = &CfdiVerificationsService{c}
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
 	s.SatRetentions = &SatRetentionsService{c}
@@ -2816,6 +2819,24 @@ func (s *SatListsService) Check(ctx context.Context, params *CheckSatListsParams
 	return out, nil
 }
 
+// CfdiVerificationsService: Verificar comprobantes (client.CfdiVerifications).
+type CfdiVerificationsService struct{ c *Client }
+
+// Create: Verificar un CFDI en el SAT
+//
+// Si cualquier CFDI (suyo, de un proveedor o de un cliente) existe en el SAT y está vigente o cancelado, si se puede cancelar, y si su emisor y su receptor están en las listas del SAT. Mande su XML, el texto de su QR, o el UUID con los dos RFC y el total. Consulta el servicio público del SAT, sin e.firma. No usa timbres. En pruebas también consulta el SAT real: los comprobantes de prueba no están ahí y responden not_found.
+//
+// POST /v1/cfdi_verifications
+//
+// https://fiscalisto.com/docs/api/referencia/verificar-comprobantes/verify-cfdi
+func (s *CfdiVerificationsService) Create(ctx context.Context, params *VerifyCfdiParams, opts ...RequestOption) (*CFDIVerification, error) {
+	out := new(CFDIVerification)
+	if err := s.c.do(ctx, "POST", "/v1/cfdi_verifications", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SatDownloadsService: Descargas del SAT (client.SatDownloads).
 type SatDownloadsService struct{ c *Client }
 
@@ -4133,6 +4154,21 @@ func (s *EventsService) ListAutoPaging(ctx context.Context, params *ListEventsPa
 func (s *EventsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Event, error) {
 	out := new(Event)
 	if err := s.c.do(ctx, "GET", "/v1/events/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Resend: Reenviar un evento
+//
+// Manda otra vez, ahora, un evento de los últimos 30 días: a un webhook (endpoint) o a todos los encendidos que escuchan ese tipo. Es un intento aparte, firmado con el mismo webhook-id: no cambia los reintentos automáticos, y si llega, ya no se reintenta. Úselo después de arreglar su servidor, con GET /v1/events?delivery_success=false.
+//
+// POST /v1/events/{id}/resend
+//
+// https://fiscalisto.com/docs/api/referencia/eventos/resend-event
+func (s *EventsService) Resend(ctx context.Context, id string, params *ResendEventParams, opts ...RequestOption) (*EventResend, error) {
+	out := new(EventResend)
+	if err := s.c.do(ctx, "POST", "/v1/events/"+url.PathEscape(id)+"/resend", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
