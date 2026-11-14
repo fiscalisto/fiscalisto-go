@@ -399,6 +399,60 @@ type BranchSeries struct {
 	Transfer *string `json:"transfer,omitempty"`
 }
 
+// CFDISeals: Si los sellos del XML son auténticos, como los revisa el SAT: el Sello del emisor contra la cadena original y su certificado, y el SelloSAT del timbre contra el certificado del SAT.
+type CFDISeals struct {
+	// true si no hay ningún problema: el Sello corresponde a los datos y al certificado del emisor (un CSD de su RFC, vigente en la fecha de emisión) y el timbre es de este comprobante y del SAT.
+	Valid bool `json:"valid"`
+	// Si el Sello del emisor firma la cadena original de este XML con la llave del certificado que trae. false si alguien cambió un monto, un nombre o una fecha después de sellar.
+	IssuerSealValid bool `json:"issuer_seal_valid"`
+	// El certificado del emisor que trae el XML (Certificado): número, RFC, nombre, si es CSD o e.firma y su vigencia. null si no se pudo leer.
+	Certificate *CFDISealsCertificate `json:"certificate,omitempty"`
+	// El timbre (TimbreFiscalDigital): si su SelloSAT es del SAT, con qué certificado del SAT y qué PAC lo timbró. null si el XML no está timbrado.
+	Stamp *CFDISealsStamp `json:"stamp,omitempty"`
+	// Cada problema, con su código y qué significa. Vacía si valid es true.
+	Problems []CFDISealsProblem `json:"problems"`
+	// La cadena original del comprobante, como la arma el SAT con sus XSLT. null si el XML no se pudo leer.
+	OriginalString *string `json:"original_string,omitempty"`
+}
+
+// CFDISealsCertificate: CFDISealsCertificate.
+type CFDISealsCertificate struct {
+	// El número del certificado (20 dígitos), como lo da el SAT.
+	Number string `json:"number"`
+	// El RFC dueño del certificado.
+	TaxID *string `json:"tax_id,omitempty"`
+	// El nombre o razón social en el certificado.
+	Name *string `json:"name,omitempty"`
+	// csd si es un sello digital; fiel si es una e.firma (no se debe sellar con ella).
+	//
+	// Valores: csd, fiel.
+	Kind string `json:"kind"`
+	// Desde cuándo vale el certificado.
+	ValidFrom string `json:"valid_from"`
+	// Hasta cuándo vale el certificado.
+	ValidTo string `json:"valid_to"`
+}
+
+// CFDISealsProblem: CFDISealsProblem.
+type CFDISealsProblem struct {
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	//
+	// Valores: malformed_xml, missing_seal, certificate_unreadable, certificate_number_mismatch, certificate_not_issuer, certificate_not_csd, certificate_not_valid_at_issue, seal_mismatch, stamp_not_for_this_seal, sat_seal_mismatch.
+	Code string `json:"code"`
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message string `json:"message"`
+}
+
+// CFDISealsStamp: CFDISealsStamp.
+type CFDISealsStamp struct {
+	// Si el SelloSAT firma el timbre con el certificado del SAT (NoCertificadoSAT). null si el certificado del SAT no se pudo obtener en ese momento.
+	SATSealValid *bool `json:"sat_seal_valid,omitempty"`
+	// El número del certificado del SAT que selló el timbre.
+	SATCertificateNumber string `json:"sat_certificate_number"`
+	// El RFC del PAC que timbró (RfcProvCertif).
+	PacTaxID *string `json:"pac_tax_id,omitempty"`
+}
+
 // CFDIVerification: Lo que dice el SAT de un CFDI: si existe, si está vigente o cancelado y si se puede cancelar, con su emisor y su receptor en las listas del SAT.
 type CFDIVerification struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -435,6 +489,8 @@ type CFDIVerification struct {
 	SAT CFDIVerificationSAT `json:"sat"`
 	// Lo que trae el XML además (versión, tipo, fechas, nombres, moneda), si mandó xml; null si no.
 	XML *CFDIVerificationXML `json:"xml,omitempty"`
+	// Los sellos del XML, si mandó xml de un CFDI 4.0: si el comprobante no se modificó después de sellarse y si el timbre es del SAT. null con qr o fields, o con un CFDI 3.3.
+	Seals *CFDISeals `json:"seals,omitempty"`
 	// El emisor en las listas del SAT (69-B, 69-B Bis y art. 69), como GET /v1/sat_lists/{tax_id}, sin costo. Solo cuando el SAT tiene el comprobante (active o canceled); null si no, o si las listas no se pudieron leer.
 	IssuerSATLists *SATListCheck `json:"issuer_sat_lists,omitempty"`
 	// El receptor en las listas del SAT, igual que el emisor.
@@ -4083,6 +4139,12 @@ type GetFinancialStatementsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetInvoiceCancellationReceiptParams: los campos de «Descargar el acuse de cancelación».
+type GetInvoiceCancellationReceiptParams struct {
+	// Con un UUID en vez del id, el emisor (iss_…) si la cuenta tiene varios.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetInvoiceParams: los campos de «Ver una factura».
 type GetInvoiceParams struct {
 	// Con un UUID en vez del id, el emisor (iss_…) si la cuenta tiene varios.
@@ -5859,6 +5921,92 @@ type InvoicePayrollTotals struct {
 	Net float64 `json:"net"`
 }
 
+// InvoicePreview: Una factura revisada y sin timbrar: lo que se timbraría ahora con POST /v1/invoices y el mismo cuerpo.
+type InvoicePreview struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: I, E, T.
+	Type string `json:"type"`
+	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	Series *string `json:"series,omitempty"`
+	// El folio que tendría si se timbrara ahora; otra factura timbrada antes puede tomarlo.
+	Folio *string `json:"folio,omitempty"`
+	// Fecha de emisión (Fecha), hora de la Ciudad de México.
+	Date *string `json:"date,omitempty"`
+	// Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+	Customer InvoicePreviewCustomer `json:"customer"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency string `json:"currency"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []InvoiceItem `json:"items"`
+	// Suma de los importes antes de impuestos y descuentos (SubTotal).
+	Subtotal *float64 `json:"subtotal,omitempty"`
+	// Descuento (Descuento).
+	Discount *float64 `json:"discount,omitempty"`
+	// Los impuestos de la factura, por tipo: IVA e IEPS trasladados, IVA e ISR retenidos e impuestos locales.
+	Taxes *InvoicePreviewTaxes `json:"taxes,omitempty"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Lo que conviene revisar antes de timbrar (un cliente en las listas 69 o 69-B del SAT, una factura que parece duplicada); no impide timbrar.
+	Warnings []InvoicePreviewWarning `json:"warnings"`
+	// El XML que se mandaría al PAC, sin sello ni timbre.
+	UnsignedXML string `json:"unsigned_xml"`
+}
+
+// InvoicePreviewCustomer: Cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos en un objeto.
+type InvoicePreviewCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName *string `json:"legal_name,omitempty"`
+	// Régimen fiscal (RegimenFiscal), clave de c_RegimenFiscal: 601, 612, 626…
+	TaxSystem *string `json:"tax_system,omitempty"`
+	// Código postal del domicilio fiscal del cliente (DomicilioFiscalReceptor), 5 dígitos.
+	Zip *string `json:"zip,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign map[string]any `json:"foreign,omitempty"`
+}
+
+// InvoicePreviewTaxes: InvoicePreviewTaxes.
+type InvoicePreviewTaxes struct {
+	// IVA trasladado.
+	IVA *float64 `json:"iva,omitempty"`
+	// IEPS trasladado.
+	IEPS *float64 `json:"ieps,omitempty"`
+	// IVA retenido.
+	IVAWithheld *float64 `json:"iva_withheld,omitempty"`
+	// ISR retenido.
+	ISRWithheld *float64 `json:"isr_withheld,omitempty"`
+	// Impuestos locales trasladados.
+	LocalTransferred *float64 `json:"local_transferred,omitempty"`
+	// Impuestos locales retenidos.
+	LocalWithheld *float64 `json:"local_withheld,omitempty"`
+}
+
+// InvoicePreviewWarning: InvoicePreviewWarning.
+type InvoicePreviewWarning struct {
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	Code string `json:"code"`
+	// Qué pasó y cómo corregirlo, para una persona.
+	Message string `json:"message"`
+}
+
 // InvoiceSalesOrderParams: los campos de «Facturar un pedido».
 type InvoiceSalesOrderParams struct {
 	// Cuánto facturar de cada concepto. Por omisión, lo entregado sin facturar (o todo lo pedido con invoice_policy ordered).
@@ -5955,6 +6103,26 @@ type Issuer struct {
 	ArchivedAt *string `json:"archived_at,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata"`
+}
+
+// IssuerBranding: Cómo se ven los documentos de un emisor: nombre comercial, estilo y color del PDF, y logo.
+type IssuerBranding struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Su nombre comercial: va en grande en el PDF, el correo y la página de la factura; null: la razón social.
+	TradeName *string `json:"trade_name,omitempty"`
+	// Estilo del PDF: clasico, moderno, compacto o minimalista; null: clasico.
+	//
+	// Valores: clasico, moderno, compacto, minimalista.
+	PDFStyle *string `json:"pdf_style,omitempty"`
+	// Color del PDF (#RRGGBB); null: el de Fiscalisto (#5B48EE).
+	PDFColor *string `json:"pdf_color,omitempty"`
+	// Dirección pública del logo; null si no tiene.
+	LogoURL *string `json:"logo_url,omitempty"`
 }
 
 // IssuerCertificate: IssuerCertificate.
@@ -6701,6 +6869,16 @@ type ListWarehousesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// true para incluir los archivados.
 	IncludeArchived *bool `json:"include_archived,omitempty"`
+}
+
+// ListWebhookDeliveriesParams: los campos de «Listar entregas».
+type ListWebhookDeliveriesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// false: solo los que fallaron en su último intento. true: solo los que llegaron.
+	Succeeded *bool `json:"succeeded,omitempty"`
 }
 
 // ListWebhookEndpointsParams: los campos de «Listar webhooks».
@@ -9953,6 +10131,18 @@ type UpdateInvoiceParams struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 }
 
+// UpdateIssuerBrandingParams: los campos de «Cambiar el diseño del PDF».
+type UpdateIssuerBrandingParams struct {
+	// Su nombre comercial, si se presenta con otra marca: va en grande en el PDF, en el correo y en la página de la factura. null: la razón social.
+	TradeName *string `json:"trade_name,omitempty"`
+	// Estilo del PDF: clasico (por omisión), moderno (encabezado y total con color, renglones alternados), compacto (letra chica, márgenes cortos) o minimalista (sin rellenos, el color solo en el total).
+	//
+	// Valores: clasico, moderno, compacto, minimalista.
+	PDFStyle *string `json:"pdf_style,omitempty"`
+	// Color del PDF, como #2563EB. null: el de Fiscalisto (#5B48EE).
+	PDFColor *string `json:"pdf_color,omitempty"`
+}
+
 // UpdateIssuerParams: los campos de «Actualizar un emisor».
 type UpdateIssuerParams struct {
 	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
@@ -10653,6 +10843,12 @@ type UploadCertificateParams struct {
 	Password string `json:"password"`
 }
 
+// UploadIssuerLogoParams: los campos de «Subir el logo».
+type UploadIssuerLogoParams struct {
+	// El logo, PNG o JPG de hasta 1 MB, en base64 (con o sin el prefijo data:image/png;base64,). Uno muy grande se reduce para el PDF.
+	File string `json:"file"`
+}
+
 // Usage: Las solicitudes de producción de los últimos 30 días contra las que tiene.
 type Usage struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -10853,6 +11049,50 @@ type WarehouseList struct {
 	Object string `json:"object"`
 	// Los objetos de esta página.
 	Data []Warehouse `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// WebhookDelivery: Lo que pasó con un evento en un webhook: su último intento, cuántos lleva y cuándo va el siguiente.
+type WebhookDelivery struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El último intento (whd_…). Úselo en starting_after para la página siguiente.
+	ID string `json:"id"`
+	// El webhook (whe_…).
+	WebhookEndpoint string `json:"webhook_endpoint"`
+	// El evento (evt_…). Reenvíelo con POST /v1/events/{id}/resend.
+	Event string `json:"event"`
+	// El tipo del evento (invoice.stamped…).
+	EventType *string `json:"event_type,omitempty"`
+	// true si su servidor contestó 2xx en el último intento.
+	Succeeded bool `json:"succeeded"`
+	// El código HTTP que contestó su servidor; null si no se pudo conectar.
+	Status *int64 `json:"status,omitempty"`
+	// Qué falló (tiempo de espera, DNS, o el inicio de su respuesta); null si llegó.
+	Error *string `json:"error,omitempty"`
+	// Cuánto tardó su servidor en contestar el último intento.
+	DurationMs int64 `json:"duration_ms"`
+	// Cuántas veces se ha mandado a este webhook, reenvíos incluidos.
+	Attempts int64 `json:"attempts"`
+	// true si el último intento fue un reenvío (POST /v1/events/{id}/resend).
+	Resent bool `json:"resent"`
+	// true si es un evento de prueba (POST /v1/webhook_endpoints/{id}/test); no se reintenta.
+	Test bool `json:"test"`
+	// Cuándo fue el último intento.
+	CreatedAt string `json:"created_at"`
+	// Cuándo va el siguiente reintento automático; null si llegó o ya no hay más.
+	NextRetryAt *string `json:"next_retry_at,omitempty"`
+}
+
+// WebhookDeliveryList: Una página de la lista.
+type WebhookDeliveryList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []WebhookDelivery `json:"data"`
 	// true si hay más: pida la siguiente con starting_after igual al id del último.
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.

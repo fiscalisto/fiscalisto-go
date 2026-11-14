@@ -478,6 +478,66 @@ func (s *IssuersService) UploadCertificate(ctx context.Context, id string, param
 	return out, nil
 }
 
+// GetBranding: Ver el diseño del PDF
+//
+// Cómo se ven los documentos del emisor: su nombre comercial, el estilo y el color del PDF y su logo. Es lo mismo que Ajustes › Marca y documentos en la app.
+//
+// GET /v1/issuers/{id}/branding
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/get-issuer-branding
+func (s *IssuersService) GetBranding(ctx context.Context, id string, opts ...RequestOption) (*IssuerBranding, error) {
+	out := new(IssuerBranding)
+	if err := s.c.do(ctx, "GET", "/v1/issuers/"+url.PathEscape(id)+"/branding", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateBranding: Cambiar el diseño del PDF
+//
+// Cambia el nombre comercial, el estilo (clasico, moderno, compacto o minimalista) y el color del PDF de las facturas, notas, pagos, recibos y cotizaciones del emisor, y de sus correos. Lo que no mande se queda como está; null vuelve al de omisión. Se ve en el siguiente PDF que pida, también de lo ya timbrado. Una sucursal puede tener el suyo (POST /v1/branches/{id}).
+//
+// POST /v1/issuers/{id}/branding
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/update-issuer-branding
+func (s *IssuersService) UpdateBranding(ctx context.Context, id string, params *UpdateIssuerBrandingParams, opts ...RequestOption) (*IssuerBranding, error) {
+	out := new(IssuerBranding)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/branding", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UploadLogo: Subir el logo
+//
+// El logo del emisor (PNG o JPG de hasta 1 MB, en base64): va en sus PDF, sus correos y la página de la factura que ve su cliente. Reemplaza el anterior.
+//
+// POST /v1/issuers/{id}/logo
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/upload-issuer-logo
+func (s *IssuersService) UploadLogo(ctx context.Context, id string, params *UploadIssuerLogoParams, opts ...RequestOption) (*IssuerBranding, error) {
+	out := new(IssuerBranding)
+	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/logo", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteLogo: Quitar el logo
+//
+// Sus PDF y correos van sin logo, con su nombre.
+//
+// DELETE /v1/issuers/{id}/logo
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/delete-issuer-logo
+func (s *IssuersService) DeleteLogo(ctx context.Context, id string, opts ...RequestOption) (*IssuerBranding, error) {
+	out := new(IssuerBranding)
+	if err := s.c.do(ctx, "DELETE", "/v1/issuers/"+url.PathEscape(id)+"/logo", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SignEfirma: Firmar el contrato con el PAC
 //
 // Una sola vez por RFC antes de timbrar en producción: firma el contrato de servicio del PAC con la e.firma del emisor. La e.firma se usa en memoria para esa firma y no se guarda, salvo que mande keep_for_downloads: true para pedirle al SAT las facturas del emisor (POST /v1/sat_downloads); entonces se guarda cifrada y puede borrarla con DELETE. En pruebas no firma nada ni se guarda: con keep_for_downloads se revisa igual y queda su vencimiento en sat_downloads.efirma_expires_at.
@@ -684,6 +744,21 @@ func (s *InvoicesService) ListAutoPaging(ctx context.Context, params *ListInvoic
 	return listAll[Invoice](ctx, s.c, "/v1/invoices", params, opts)
 }
 
+// Preview: Revisar una factura sin timbrar
+//
+// El mismo cuerpo y las mismas revisiones que POST /v1/invoices, sin timbrar ni usar timbres: devuelve la factura como se timbraría ahora (con los datos fiscales del emisor, el siguiente folio, el subtotal, los impuestos y el total que calcula Fiscalisto), los avisos (un cliente en las listas del SAT, un duplicado) y el XML sin sellar (unsigned_xml). Úsela para mostrar el total antes de cobrar o para validar en su sistema; si algo falla, invoice_invalid como al timbrar. No pide Idempotency-Key y sirve con una llave de solo lectura.
+//
+// POST /v1/invoices/preview
+//
+// https://fiscalisto.com/docs/api/referencia/facturas/preview-invoice
+func (s *InvoicesService) Preview(ctx context.Context, params *InvoiceCreate, opts ...RequestOption) (*InvoicePreview, error) {
+	out := new(InvoicePreview)
+	if err := s.c.do(ctx, "POST", "/v1/invoices/preview", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Get: Ver una factura
 //
 // Por su id (inv_…) o por su folio fiscal (UUID).
@@ -734,6 +809,18 @@ func (s *InvoicesService) PDF(ctx context.Context, id string, params *GetInvoice
 // https://fiscalisto.com/docs/api/referencia/facturas/get-invoice-xml
 func (s *InvoicesService) XML(ctx context.Context, id string, params *GetInvoiceXmlParams, opts ...RequestOption) (string, error) {
 	b, err := s.c.raw(ctx, "GET", "/v1/invoices/"+url.PathEscape(id)+"/xml", nil, params, false, opts)
+	return string(b), err
+}
+
+// CancellationReceipt: Descargar el acuse de cancelación
+//
+// El acuse de cancelación del SAT (XML firmado por el SAT) de una factura cancelada: la prueba de que el SAT la canceló y cuándo. Antes de que el SAT la cancele (status valid o pending), 409 invoice_not_canceled.
+//
+// GET /v1/invoices/{id}/cancellation_receipt
+//
+// https://fiscalisto.com/docs/api/referencia/facturas/get-invoice-cancellation-receipt
+func (s *InvoicesService) CancellationReceipt(ctx context.Context, id string, params *GetInvoiceCancellationReceiptParams, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/invoices/"+url.PathEscape(id)+"/cancellation_receipt", nil, params, false, opts)
 	return string(b), err
 }
 
@@ -4123,6 +4210,22 @@ func (s *WebhookEndpointsService) Test(ctx context.Context, id string, params *T
 		return nil, err
 	}
 	return out, nil
+}
+
+// ListDeliveries: Listar entregas
+//
+// Qué pasó con cada evento en este webhook, el más reciente primero: una fila por evento con su último intento, cuántos lleva y cuándo va el siguiente reintento. Con succeeded=false ve los que su servidor no recibió, para reenviarlos con POST /v1/events/{id}/resend.
+//
+// GET /v1/webhook_endpoints/{id}/deliveries
+//
+// https://fiscalisto.com/docs/api/referencia/webhooks/list-webhook-deliveries
+func (s *WebhookEndpointsService) ListDeliveries(ctx context.Context, id string, params *ListWebhookDeliveriesParams, opts ...RequestOption) (*Page[WebhookDelivery], error) {
+	return list[WebhookDelivery](ctx, s.c, "/v1/webhook_endpoints/"+url.PathEscape(id)+"/deliveries", params, "", opts)
+}
+
+// ListDeliveriesAutoPaging: Listar entregas, todos, página por página: for x, err := range …
+func (s *WebhookEndpointsService) ListDeliveriesAutoPaging(ctx context.Context, id string, params *ListWebhookDeliveriesParams, opts ...RequestOption) iter.Seq2[WebhookDelivery, error] {
+	return listAll[WebhookDelivery](ctx, s.c, "/v1/webhook_endpoints/"+url.PathEscape(id)+"/deliveries", params, opts)
 }
 
 // EventsService: Eventos (client.Events).

@@ -125,6 +125,34 @@
 		"go": "Issuers.UploadCertificate",
 		"java": "issuers.uploadCertificate"
 	},
+	"GET /v1/issuers/{id}/branding": {
+		"python": "issuers.get_branding",
+		"php": "issuers->getBranding",
+		"dotnet": "Issuers.GetBrandingAsync",
+		"go": "Issuers.GetBranding",
+		"java": "issuers.getBranding"
+	},
+	"POST /v1/issuers/{id}/branding": {
+		"python": "issuers.update_branding",
+		"php": "issuers->updateBranding",
+		"dotnet": "Issuers.UpdateBrandingAsync",
+		"go": "Issuers.UpdateBranding",
+		"java": "issuers.updateBranding"
+	},
+	"POST /v1/issuers/{id}/logo": {
+		"python": "issuers.upload_logo",
+		"php": "issuers->uploadLogo",
+		"dotnet": "Issuers.UploadLogoAsync",
+		"go": "Issuers.UploadLogo",
+		"java": "issuers.uploadLogo"
+	},
+	"DELETE /v1/issuers/{id}/logo": {
+		"python": "issuers.delete_logo",
+		"php": "issuers->deleteLogo",
+		"dotnet": "Issuers.DeleteLogoAsync",
+		"go": "Issuers.DeleteLogo",
+		"java": "issuers.deleteLogo"
+	},
 	"POST /v1/issuers/{id}/efirma": {
 		"python": "issuers.sign_efirma",
 		"php": "issuers->signEfirma",
@@ -160,6 +188,13 @@
 		"go": "Invoices.List",
 		"java": "invoices.list"
 	},
+	"POST /v1/invoices/preview": {
+		"python": "invoices.preview",
+		"php": "invoices->preview",
+		"dotnet": "Invoices.PreviewAsync",
+		"go": "Invoices.Preview",
+		"java": "invoices.preview"
+	},
 	"GET /v1/invoices/{id}": {
 		"python": "invoices.get",
 		"php": "invoices->get",
@@ -187,6 +222,13 @@
 		"dotnet": "Invoices.XmlAsync",
 		"go": "Invoices.XML",
 		"java": "invoices.xml"
+	},
+	"GET /v1/invoices/{id}/cancellation_receipt": {
+		"python": "invoices.cancellation_receipt",
+		"php": "invoices->cancellationReceipt",
+		"dotnet": "Invoices.CancellationReceiptAsync",
+		"go": "Invoices.CancellationReceipt",
+		"java": "invoices.cancellationReceipt"
 	},
 	"POST /v1/invoices/{id}/send": {
 		"python": "invoices.send",
@@ -1769,6 +1811,13 @@
 		"dotnet": "WebhookEndpoints.TestAsync",
 		"go": "WebhookEndpoints.Test",
 		"java": "webhookEndpoints.test"
+	},
+	"GET /v1/webhook_endpoints/{id}/deliveries": {
+		"python": "webhook_endpoints.list_deliveries",
+		"php": "webhookEndpoints->listDeliveries",
+		"dotnet": "WebhookEndpoints.ListDeliveriesAsync",
+		"go": "WebhookEndpoints.ListDeliveries",
+		"java": "webhookEndpoints.listDeliveries"
 	},
 	"GET /v1/events": {
 		"python": "events.list",
