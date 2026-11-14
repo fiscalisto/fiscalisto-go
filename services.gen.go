@@ -100,6 +100,16 @@ type services struct {
 	SatLists *SatListsService
 	// Verificar comprobantes.
 	CfdiVerifications *CfdiVerificationsService
+	// Equipo.
+	Members *MembersService
+	// Equipo.
+	Invitations *InvitationsService
+	// Equipo.
+	Roles *RolesService
+	// Equipo.
+	Permissions *PermissionsService
+	// Exportaciones.
+	Exports *ExportsService
 	// Descargas del SAT.
 	SatDownloads *SatDownloadsService
 	// Descargas del SAT.
@@ -173,6 +183,11 @@ func (s *services) init(c *Client) {
 	s.SatCatalogs = &SatCatalogsService{c}
 	s.SatLists = &SatListsService{c}
 	s.CfdiVerifications = &CfdiVerificationsService{c}
+	s.Members = &MembersService{c}
+	s.Invitations = &InvitationsService{c}
+	s.Roles = &RolesService{c}
+	s.Permissions = &PermissionsService{c}
+	s.Exports = &ExportsService{c}
 	s.SatDownloads = &SatDownloadsService{c}
 	s.SatInvoices = &SatInvoicesService{c}
 	s.SatRetentions = &SatRetentionsService{c}
@@ -715,7 +730,7 @@ type InvoicesService struct{ c *Client }
 
 // Create: Timbrar una factura
 //
-// Revisa la factura con las reglas del SAT, la sella y la timbra en una sola llamada. Responde con la factura timbrada (status valid) o, si el PAC tarda, en processing (escuche invoice.stamped). Lo que puede omitir tiene el valor usual: PUE, MXN, uso G03 (S01 con régimen 616), objeto de impuesto 02, IVA 16%, cantidad 1, unidad E48.
+// Revisa la factura con las reglas del SAT, la sella y la timbra en una sola llamada. Responde con la factura timbrada (status valid) o, si el PAC tarda o el SAT no responde, 202 en processing: Fiscalisto la reintenta sola y invoice.stamped avisa. Con async: true responde 202 de inmediato y timbra después. Lo que puede omitir tiene el valor usual: PUE, MXN, uso G03 (S01 con régimen 616), objeto de impuesto 02, IVA 16%, cantidad 1, unidad E48.
 //
 // POST /v1/invoices
 //
@@ -2922,6 +2937,259 @@ func (s *CfdiVerificationsService) Create(ctx context.Context, params *VerifyCfd
 		return nil, err
 	}
 	return out, nil
+}
+
+// MembersService: Equipo (client.Members).
+type MembersService struct{ c *Client }
+
+// List: Listar miembros
+//
+// Quién entra a la empresa en la app, con su rol, sus permisos y los RFC y sucursales a su alcance, como Ajustes › Miembros. Todos, los más antiguos primero. Pide que quien creó la llave tenga el permiso de ver el equipo.
+//
+// GET /v1/members
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/list-members
+func (s *MembersService) List(ctx context.Context, params *ListMembersParams, opts ...RequestOption) (*MemberList, error) {
+	out := new(MemberList)
+	if err := s.c.do(ctx, "GET", "/v1/members", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un miembro
+//
+// Su rol, sus permisos (los agregados, los quitados y los que tiene al final) y su alcance.
+//
+// GET /v1/members/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/get-member
+func (s *MembersService) Get(ctx context.Context, id string, opts ...RequestOption) (*Member, error) {
+	out := new(Member)
+	if err := s.c.do(ctx, "GET", "/v1/members/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar el acceso de un miembro
+//
+// Su rol, los permisos que se le agregan o quitan y los RFC y sucursales a su alcance; lo que no mande se queda como está. Nadie da más de lo que tiene quien creó la llave. Dar, quitar o tocar un permiso delicado (equipo, credenciales, seguridad, plan) contesta 403 team_change_requires_app: se hace en la app, que confirma la identidad.
+//
+// POST /v1/members/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/update-member
+func (s *MembersService) Update(ctx context.Context, id string, params *UpdateMemberParams, opts ...RequestOption) (*Member, error) {
+	out := new(Member)
+	if err := s.c.do(ctx, "POST", "/v1/members/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar a un miembro
+//
+// La persona deja de entrar a la empresa y sus invitaciones se cancelan. Siempre queda al menos un propietario; quitar a alguien con permisos delicados se hace en la app.
+//
+// DELETE /v1/members/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/delete-member
+func (s *MembersService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/members/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// InvitationsService: Equipo (client.Invitations).
+type InvitationsService struct{ c *Client }
+
+// List: Listar invitaciones
+//
+// Las invitaciones pendientes de la empresa, las más antiguas primero.
+//
+// GET /v1/invitations
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/list-invitations
+func (s *InvitationsService) List(ctx context.Context, params *ListInvitationsParams, opts ...RequestOption) (*InvitationList, error) {
+	out := new(InvitationList)
+	if err := s.c.do(ctx, "GET", "/v1/invitations", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Invitar a alguien a la empresa
+//
+// Le manda un correo con un enlace para entrar a la empresa con ese rol, válido 7 días, como Invitar en Ajustes › Miembros. Invitar otra vez al mismo correo reemplaza la invitación. Una invitación con permisos delicados (equipo, credenciales, seguridad, plan) o como propietario se hace en la app.
+//
+// POST /v1/invitations
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/create-invitation
+func (s *InvitationsService) Create(ctx context.Context, params *CreateInvitationParams, opts ...RequestOption) (*Invitation, error) {
+	out := new(Invitation)
+	if err := s.c.do(ctx, "POST", "/v1/invitations", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Cancel: Cancelar una invitación
+//
+// Su enlace deja de servir. Contesta la invitación con status canceled.
+//
+// DELETE /v1/invitations/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/cancel-invitation
+func (s *InvitationsService) Cancel(ctx context.Context, id string, opts ...RequestOption) (*Invitation, error) {
+	out := new(Invitation)
+	if err := s.c.do(ctx, "DELETE", "/v1/invitations/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RolesService: Equipo (client.Roles).
+type RolesService struct{ c *Client }
+
+// List: Listar roles
+//
+// Propietario, los roles de Fiscalisto (como se editaron en la empresa) y los suyos, con sus permisos y cuántas personas los tienen.
+//
+// GET /v1/roles
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/list-roles
+func (s *RolesService) List(ctx context.Context, params *ListRolesParams, opts ...RequestOption) (*RoleList, error) {
+	out := new(RoleList)
+	if err := s.c.do(ctx, "GET", "/v1/roles", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Crear un rol
+//
+// Un rol de la empresa con su nombre y sus permisos (GET /v1/permissions), como Ajustes › Roles. No puede tener permisos que no tenga quien creó la llave; uno con permisos delicados se hace en la app.
+//
+// POST /v1/roles
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/create-role
+func (s *RolesService) Create(ctx context.Context, params *CreateRoleParams, opts ...RequestOption) (*Role, error) {
+	out := new(Role)
+	if err := s.c.do(ctx, "POST", "/v1/roles", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un rol
+//
+// Su nombre, su descripción o sus permisos; lo que no mande se queda. Cambia el acceso de todos los que lo tienen. Propietario no se cambia.
+//
+// POST /v1/roles/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/update-role
+func (s *RolesService) Update(ctx context.Context, id string, params *UpdateRoleParams, opts ...RequestOption) (*Role, error) {
+	out := new(Role)
+	if err := s.c.do(ctx, "POST", "/v1/roles/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un rol
+//
+// Solo uno de la empresa (type custom), cuando nadie lo tiene ni lo da una invitación pendiente.
+//
+// DELETE /v1/roles/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/delete-role
+func (s *RolesService) Delete(ctx context.Context, id string, params *DeleteRoleParams, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/roles/"+url.PathEscape(id), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PermissionsService: Equipo (client.Permissions).
+type PermissionsService struct{ c *Client }
+
+// List: Listar permisos
+//
+// Cada permiso que un rol o una persona puede tener, con su nombre en la app, su grupo y si es delicado.
+//
+// GET /v1/permissions
+//
+// https://fiscalisto.com/docs/api/referencia/equipo/list-permissions
+func (s *PermissionsService) List(ctx context.Context, opts ...RequestOption) (*PermissionList, error) {
+	out := new(PermissionList)
+	if err := s.c.do(ctx, "GET", "/v1/permissions", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ExportsService: Exportaciones (client.Exports).
+type ExportsService struct{ c *Client }
+
+// Create: Exportar las facturas de un mes
+//
+// Un ZIP con el XML (y si quiere el PDF) de cada factura que el emisor emitió o recibió en un mes o un periodo, o un Excel con una fila por factura: los mismos archivos que Facturas › Exportar en la app, para su contador, un respaldo o una auditoría. Contesta 202 de inmediato con status processing; consulte GET /v1/exports/{id} hasta completed y descárguelo con GET /v1/exports/{id}/download durante 30 días. No usa timbres y sirve con una llave de solo lectura.
+//
+// POST /v1/exports
+//
+// https://fiscalisto.com/docs/api/referencia/exportaciones/create-export
+func (s *ExportsService) Create(ctx context.Context, params *CreateExportParams, opts ...RequestOption) (*Export, error) {
+	out := new(Export)
+	if err := s.c.do(ctx, "POST", "/v1/exports", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar exportaciones
+//
+// Las exportaciones del emisor pedidas por la API, las más recientes primero.
+//
+// GET /v1/exports
+//
+// https://fiscalisto.com/docs/api/referencia/exportaciones/list-exports
+func (s *ExportsService) List(ctx context.Context, params *ListExportsParams, opts ...RequestOption) (*Page[Export], error) {
+	return list[Export](ctx, s.c, "/v1/exports", params, "", opts)
+}
+
+// ListAutoPaging: Listar exportaciones, todos, página por página: for x, err := range …
+func (s *ExportsService) ListAutoPaging(ctx context.Context, params *ListExportsParams, opts ...RequestOption) iter.Seq2[Export, error] {
+	return listAll[Export](ctx, s.c, "/v1/exports", params, opts)
+}
+
+// Get: Ver una exportación
+//
+// Su estado (processing, completed, failed o expired), cuántas facturas lleva, su tamaño y hasta cuándo se descarga.
+//
+// GET /v1/exports/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/exportaciones/get-export
+func (s *ExportsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Export, error) {
+	out := new(Export)
+	if err := s.c.do(ctx, "GET", "/v1/exports/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Download: Descargar una exportación
+//
+// El ZIP o el Excel, cuando status es completed. Antes, 409 export_not_ready; pasados 30 días, 410 export_expired.
+//
+// GET /v1/exports/{id}/download
+//
+// https://fiscalisto.com/docs/api/referencia/exportaciones/download-export
+func (s *ExportsService) Download(ctx context.Context, id string, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/exports/"+url.PathEscape(id)+"/download", nil, nil, false, opts)
+	return string(b), err
 }
 
 // SatDownloadsService: Descargas del SAT (client.SatDownloads).

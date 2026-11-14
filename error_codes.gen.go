@@ -68,6 +68,14 @@ const (
 	CodeExpandInvalid = "expand_invalid"
 	// Viáticos y gastos no lo permite en ese momento: el mensaje dice por qué (un gasto con errores al enviarla, un reembolso antes de aprobarla, aprobar lo que usted mismo envió).
 	CodeExpenseReportInvalid = "expense_report_invalid"
+	// Ninguna factura del emisor coincide con el periodo y los filtros de POST /v1/exports: no se generó nada.
+	CodeExportEmpty = "export_empty"
+	// Los archivos de una exportación se guardan 30 días. Pídala otra vez con POST /v1/exports.
+	CodeExportExpired = "export_expired"
+	// Ya hay una exportación del mismo formato generándose en la empresa. Espere a que termine (GET /v1/exports) y pida la siguiente.
+	CodeExportInProgress = "export_in_progress"
+	// La exportación aún se genera (status processing) o falló (failed). Consulte GET /v1/exports/{id}; si falló, pídala otra vez.
+	CodeExportNotReady = "export_not_ready"
 	// En producción, inventario avanzado, portal de proveedores, pedidos de venta y comprobación de gastos siguen el plan de la empresa, como en la app: vienen con Operaciones (se agrega a Negocio; incluida en Corporativo). En modo de pruebas están todos.
 	CodeFeatureNotInPlan = "feature_not_in_plan"
 	// Idempotency-Key es de 1 a 255 caracteres ASCII, sin acentos ni ñ: el id de su pedido o un UUID.
@@ -76,7 +84,7 @@ const (
 	CodeIdempotencyKeyMissing = "idempotency_key_missing"
 	// Esa Idempotency-Key ya se usó en las últimas 24 horas con otra solicitud (otra ruta u otro cuerpo). Use una nueva para cada operación distinta.
 	CodeIdempotencyKeyReused = "idempotency_key_reused"
-	// La cuenta no tiene timbres de producción: para timbrar, revisar RFC en las listas, consultar constancias, pedir descargas o traer declaraciones, opinión o buzón del SAT. Compre un paquete en Desarrolladores › Timbres. En pruebas nunca pasa. Para enterarse antes, escuche balance.low o active la recarga automática.
+	// La cuenta no tiene timbres de producción: para timbrar, revisar RFC en las listas, consultar constancias, pedir descargas o traer declaraciones, opinión o buzón del SAT. Compre un paquete en Desarrolladores › Timbres y pagos. En pruebas nunca pasa. Para enterarse antes, escuche balance.low o active la recarga automática.
 	CodeInsufficientBalance = "insufficient_balance"
 	// Algo falló de nuestro lado. Repita la solicitud con la misma Idempotency-Key: nunca se timbra dos veces. Si sigue, escríbanos con el request_id.
 	CodeInternalError = "internal_error"
@@ -104,6 +112,8 @@ const (
 	CodeIssuerCreationLimit = "issuer_creation_limit"
 	// Ese RFC ya es un emisor de la cuenta en este modo.
 	CodeIssuerExists = "issuer_exists"
+	// El emisor no tiene equipo: el equipo es el de una empresa, en sus emisores propios (type own) y con una llave fk_live_. Un emisor conectado o uno de pruebas no tiene miembros.
+	CodeIssuerHasNoTeam = "issuer_has_no_team"
 	// El emisor es una empresa de la app conectada a la cuenta (source empresa): con la API solo se usa su Portal de proveedores.
 	CodeIssuerLinkedEmpresa = "issuer_linked_empresa"
 	// No existe ese emisor en la cuenta (o es del otro modo).
@@ -214,6 +224,14 @@ const (
 	CodeSubstitutionUnsupported = "substitution_unsupported"
 	// La factura del proveedor no admite eso en su estado (por ejemplo, programar una que no está aprobada, una fecha de pago pasada o marcar pagada una ya pagada), o el SAT la reporta cancelada. El mensaje dice por qué.
 	CodeSupplierInvoiceInvalid = "supplier_invoice_invalid"
+	// El cambio da, quita o toca un permiso delicado (equipo, credenciales, seguridad o plan), o nombra a un propietario: pide confirmar la identidad de quien lo hace, y eso se hace en la app, en Ajustes › Miembros o Ajustes › Roles.
+	CodeTeamChangeRequiresApp = "team_change_requires_app"
+	// El cambio no se puede: la persona ya es miembro, quedaría la empresa sin propietario, ya hay un rol con ese nombre, el rol lo tiene alguien, o se mandaron demasiadas invitaciones hoy. El mensaje dice cuál.
+	CodeTeamInvalid = "team_invalid"
+	// La llave actúa como la persona que la creó, con su acceso en la empresa: le falta el permiso para esto, o lo que pide daría más de lo que ella tiene, o ya no es miembro.
+	CodeTeamPermissionDenied = "team_permission_denied"
+	// El plan de la empresa ya tiene todos sus usuarios (miembros más invitaciones pendientes). Cambie de plan en Ajustes › Plan y pagos o quite a alguien.
+	CodeTeamSeatLimit = "team_seat_limit"
 	// El reloj se está adelantando en otra solicitud (409, con Retry-After). Espere a test_clock.ready y repita.
 	CodeTestClockAdvancing = "test_clock_advancing"
 	// El emisor ya tiene un reloj de prueba: adelántelo, o bórrelo para volver a la hora real.

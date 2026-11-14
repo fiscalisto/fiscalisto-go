@@ -169,6 +169,8 @@ type ApplyAdvanceParams struct {
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
+	Async *bool `json:"async,omitempty"`
 }
 
 // ApplyAdvanceParamsRemainder: Cómo se paga lo que falta del anticipo: ahora con su forma de pago, o después (PPD).
@@ -195,11 +197,11 @@ type Balance struct {
 	Available int64 `json:"available"`
 	// true si la cuenta timbra sin usar timbres.
 	Unlimited bool `json:"unlimited"`
-	// Con esta cantidad o menos llega balance.low (y otra vez al acabarse). Se elige en Desarrolladores › Timbres.
+	// Con esta cantidad o menos llega balance.low (y otra vez al acabarse). Se elige en Desarrolladores › Timbres y pagos.
 	LowBalanceAt int64 `json:"low_balance_at"`
 	// La recarga automática con la tarjeta guardada, o null si está apagada.
 	AutoRecharge *BalanceAutoRecharge `json:"auto_recharge,omitempty"`
-	// true si, al acabarse `available`, la API sigue timbrando con los timbres del plan de la empresa (Desarrolladores › Timbres › Si se acaban, usar los timbres de la empresa). false: responde 402 insufficient_balance.
+	// true si, al acabarse `available`, la API sigue timbrando con los timbres del plan de la empresa (Desarrolladores › Timbres y pagos › Si se acaban, usar los timbres de la empresa). false: responde 402 insufficient_balance.
 	UsePlanTimbres bool `json:"use_plan_timbres"`
 	// Los paquetes con timbres, el que vence antes primero (en ese orden se usan).
 	Packs []BalancePack `json:"packs"`
@@ -1065,6 +1067,34 @@ type CreateExpenseReportParams struct {
 	EndDate *string `json:"end_date,omitempty"`
 }
 
+// CreateExportParams: los campos de «Exportar las facturas de un mes».
+type CreateExportParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Un mes completo (AAAA-MM), por la fecha de emisión en hora de la Ciudad de México. Mande month, o from y to.
+	Month *string `json:"month,omitempty"`
+	// Desde qué día (incluido), en lugar de month.
+	From *string `json:"from,omitempty"`
+	// Hasta qué día (incluido), en lugar de month. A lo más 7 ejercicios.
+	To *string `json:"to,omitempty"`
+	// issued (las facturas que emitió el emisor, por omisión) o received (las que le hicieron).
+	//
+	// Valores: issued, received.
+	Direction *string `json:"direction,omitempty"`
+	// Solo un tipo de comprobante: I, E, P, T o N. Por omisión, todos.
+	//
+	// Valores: I, E, P, T, N.
+	Type *string `json:"type,omitempty"`
+	// zip (los archivos de cada factura, por omisión) o xlsx (un Excel con una fila por factura).
+	//
+	// Valores: zip, xlsx.
+	Format *string `json:"format,omitempty"`
+	// Con format zip: xml (por omisión), pdf, o xml_and_pdf (los dos de cada factura).
+	//
+	// Valores: xml, pdf, xml_and_pdf.
+	Files *string `json:"files,omitempty"`
+}
+
 // CreateImssFilesParams: los campos de «Archivos para IDSE o SUA».
 type CreateImssFilesParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -1095,6 +1125,26 @@ type CreateImssMovementParams struct {
 	//
 	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
 	ExitReason *string `json:"exit_reason,omitempty"`
+}
+
+// CreateInvitationParams: los campos de «Invitar a alguien a la empresa».
+type CreateInvitationParams struct {
+	// El emisor (iss_…) de la empresa. Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El correo de la persona: le llega la invitación, válida 7 días.
+	Email string `json:"email"`
+	// El rol (id de GET /v1/roles, como admin, contador, facturista o uno suyo). owner es Propietario: solo un propietario da o quita ese rol.
+	Role string `json:"role"`
+	// true: todos los permisos, incluidos los que se agreguen después (además de los del rol).
+	AllPermissions *bool `json:"all_permissions,omitempty"`
+	// Permisos además de los del rol (GET /v1/permissions).
+	PermissionsAdded []string `json:"permissions_added,omitempty"`
+	// Permisos del rol que esta persona no tiene.
+	PermissionsRemoved []string `json:"permissions_removed,omitempty"`
+	// Solo trabaja con estos RFC de la empresa. null: con todos.
+	TaxIDs []string `json:"tax_ids,omitempty"`
+	// Solo emite desde estas sucursales (brn_…, o "matriz" para el domicilio fiscal). null: desde todas.
+	Branches []string `json:"branches,omitempty"`
 }
 
 // CreateInvoiceBatchParams: los campos de «Timbrar un lote de facturas».
@@ -1181,6 +1231,8 @@ type CreateInvoiceBatchParamsInvoice struct {
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
+	Async *bool `json:"async,omitempty"`
 	// Su identificador de esta factura (su número de pedido), hasta 100 caracteres.
 	Reference *string `json:"reference,omitempty"`
 }
@@ -1793,6 +1845,8 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
+	Async *bool `json:"async,omitempty"`
 }
 
 // CreateRecurringInvoiceParamsSchedule: Cada cuánto y a qué hora se timbra.
@@ -2157,6 +2211,20 @@ type CreateRetentionParamsTrustWithholding struct {
 	Amount float64 `json:"amount"`
 	// Descripción de la retención (DescRetRelPagFideic), hasta 100 caracteres.
 	Description string `json:"description"`
+}
+
+// CreateRoleParams: los campos de «Crear un rol».
+type CreateRoleParams struct {
+	// El emisor (iss_…) de la empresa. Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Como se ve en la app.
+	Name string `json:"name"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+	// true: todos los permisos, incluidos los que se agreguen después.
+	AllPermissions *bool `json:"all_permissions,omitempty"`
+	// Sus permisos (GET /v1/permissions). Los que otro necesita se agregan solos (timbrar pide ver facturas).
+	Permissions []string `json:"permissions,omitempty"`
 }
 
 // CreateSalesOrderDeliveryParams: los campos de «Registrar una entrega».
@@ -2989,6 +3057,12 @@ type DeleteCostCenterParams struct {
 	MoveTo *string `json:"move_to,omitempty"`
 }
 
+// DeleteRoleParams: los campos de «Borrar un rol».
+type DeleteRoleParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // Deleted: Confirmación de que se borró.
 type Deleted struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -3519,6 +3593,66 @@ type ExpenseReportPayroll struct {
 	Adjustment float64 `json:"adjustment"`
 	// Lo que neto cobra o paga en el recibo por esta comprobación.
 	Net float64 `json:"net"`
+}
+
+// Export: Las facturas de un emisor en un periodo, en un ZIP o en Excel.
+type Export struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// zip (los archivos de cada factura) o xlsx (un Excel con una fila por factura).
+	//
+	// Valores: zip, xlsx.
+	Format string `json:"format"`
+	// Qué archivos de cada factura lleva el ZIP; null en un Excel.
+	//
+	// Valores: xml, pdf, xml_and_pdf.
+	Files *string `json:"files,omitempty"`
+	// EntradaSalidaMerc: Entrada o Salida.
+	//
+	// Valores: issued, received.
+	Direction string `json:"direction"`
+	// Desde qué día (incluido), por la fecha de emisión.
+	From *string `json:"from,omitempty"`
+	// Hasta qué día (incluido), por la fecha de emisión.
+	To *string `json:"to,omitempty"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: I, E, P, T, N.
+	Type *string `json:"type,omitempty"`
+	// processing: se está generando. completed: listo para descargar. failed: falló (ver error); pídala otra vez. expired: pasaron 30 días y el archivo se borró.
+	//
+	// Valores: processing, completed, failed, expired.
+	Status string `json:"status"`
+	// Cuántas facturas lleva.
+	InvoiceCount float64 `json:"invoice_count"`
+	// El tamaño del archivo en bytes, cuando está listo.
+	SizeBytes *float64 `json:"size_bytes,omitempty"`
+	// Por qué falló la exportación, en palabras; null si no falló.
+	Error *string `json:"error,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo terminó.
+	CompletedAt *string `json:"completed_at,omitempty"`
+	// Hasta cuándo se descarga (30 días después de completed).
+	ExpiresAt *string `json:"expires_at,omitempty"`
+}
+
+// ExportList: Una página de la lista.
+type ExportList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Export `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // ExternalPayrollReceiptCreate: Un recibo de nómina que calculó su sistema, con todos sus conceptos e importes: se timbra tal cual.
@@ -4325,6 +4459,50 @@ type ImssMovementList struct {
 	URL string `json:"url"`
 }
 
+// Invitation: Una invitación a la empresa que aún no se acepta.
+type Invitation struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email string `json:"email"`
+	// El rol (id de GET /v1/roles).
+	Role string `json:"role"`
+	// true: todos los permisos, incluidos los que se agreguen después.
+	AllPermissions bool `json:"all_permissions"`
+	// Permisos además de los del rol.
+	PermissionsAdded []string `json:"permissions_added"`
+	// Permisos del rol que esta persona no tiene.
+	PermissionsRemoved []string `json:"permissions_removed"`
+	// Solo trabaja con estos RFC de la empresa; null: con todos.
+	TaxIDs []string `json:"tax_ids,omitempty"`
+	// Solo emite desde estas sucursales (brn_…, o "matriz"); null: desde todas.
+	Branches []string `json:"branches,omitempty"`
+	// pending: su enlace sirve. canceled: se canceló.
+	//
+	// Valores: pending, canceled.
+	Status string `json:"status"`
+	// Hasta cuándo sirve su enlace (7 días).
+	ExpiresAt string `json:"expires_at"`
+}
+
+// InvitationList: Una página de la lista.
+type InvitationList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Invitation `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // Invoice: Un CFDI 4.0 emitido: factura de ingreso o global, traslado, nota de crédito (E), complemento de pago (P) o recibo de nómina (N).
 type Invoice struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -4587,6 +4765,8 @@ type InvoiceCreate struct {
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
+	Async *bool `json:"async,omitempty"`
 }
 
 // InvoiceCreateAddenda: Addenda del receptor (Walmart, Soriana…), con sus propios campos.
@@ -6405,6 +6585,16 @@ type ListExpenseReportsParams struct {
 	Person *string `json:"person,omitempty"`
 }
 
+// ListExportsParams: los campos de «Listar exportaciones».
+type ListExportsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListImssMovementsParams: los campos de «Listar movimientos del IMSS».
 type ListImssMovementsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -6417,6 +6607,12 @@ type ListImssMovementsParams struct {
 	//
 	// Valores: pending, reported.
 	Status *string `json:"status,omitempty"`
+}
+
+// ListInvitationsParams: los campos de «Listar invitaciones».
+type ListInvitationsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // ListInvoiceBatchesParams: los campos de «Listar lotes».
@@ -6485,6 +6681,12 @@ type ListJournalEntriesParams struct {
 
 // ListLedgerAccountsParams: los campos de «Ver el catálogo de cuentas».
 type ListLedgerAccountsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListMembersParams: los campos de «Listar miembros».
+type ListMembersParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -6611,6 +6813,12 @@ type ListRetentionsParams struct {
 	Recipient *string `json:"recipient,omitempty"`
 	// Ejercicio, 4 dígitos.
 	Year *string `json:"year,omitempty"`
+}
+
+// ListRolesParams: los campos de «Listar roles».
+type ListRolesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // ListSalesOrdersParams: los campos de «Listar pedidos».
@@ -6913,6 +7121,52 @@ type MarkSupplierInvoicePaidParams struct {
 type MatchBankTransactionParams struct {
 	// Las facturas (inv_… o UUID) que pagó este depósito, de un mismo cliente. Sin ellas, las de suggested_match.
 	Invoices []string `json:"invoices,omitempty"`
+}
+
+// Member: Una persona que entra a la empresa en la app.
+type Member struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email string `json:"email"`
+	// El rol (id de GET /v1/roles).
+	Role string `json:"role"`
+	// true: todos los permisos, incluidos los que se agreguen después.
+	AllPermissions bool `json:"all_permissions"`
+	// Permisos además de los del rol.
+	PermissionsAdded []string `json:"permissions_added"`
+	// Permisos del rol que esta persona no tiene.
+	PermissionsRemoved []string `json:"permissions_removed"`
+	// Solo trabaja con estos RFC de la empresa; null: con todos.
+	TaxIDs []string `json:"tax_ids,omitempty"`
+	// Solo emite desde estas sucursales (brn_…, o "matriz"); null: desde todas.
+	Branches []string `json:"branches,omitempty"`
+	// Lo que puede hacer al final: los permisos del rol, más los agregados, menos los quitados.
+	Permissions []string `json:"permissions"`
+	// Si entra con verificación en dos pasos.
+	TwoFactorEnabled bool `json:"two_factor_enabled"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+}
+
+// MemberList: Una página de la lista.
+type MemberList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Member `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // PayrollBankFile: El archivo para pagar la nómina desde el portal del banco (no cobra nada).
@@ -7243,6 +7497,32 @@ type PayrollReceiptPreviewWarning struct {
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
+}
+
+// Permission: Algo que una persona puede hacer en la empresa.
+type Permission struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Nombre.
+	Name string `json:"name"`
+	// Su grupo, como en Ajustes › Roles.
+	Group string `json:"group"`
+	// Delicado (equipo, credenciales, seguridad, plan): darlo o quitarlo se hace en la app.
+	Sensitive bool `json:"sensitive"`
+}
+
+// PermissionList: Una página de la lista.
+type PermissionList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Permission `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // PortalSupplier: Un proveedor del Portal de proveedores del emisor: su alta, sus documentos, la cuenta a la que se le paga y su calificación.
@@ -8131,6 +8411,46 @@ type RetentionTotals struct {
 type ReturnExpenseReportParams struct {
 	// Qué debe corregir: se le manda a la persona.
 	Note string `json:"note"`
+}
+
+// Role: Un rol de la empresa: un nombre y sus permisos.
+type Role struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Nombre.
+	Name string `json:"name"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+	// true: el rol tiene todos los permisos, incluidos los futuros.
+	AllPermissions bool `json:"all_permissions"`
+	// Sus permisos (vacío con all_permissions).
+	Permissions []string `json:"permissions"`
+	// owner: Propietario. starter: uno de los de Fiscalisto (se puede cambiar, no borrar). custom: uno de la empresa.
+	//
+	// Valores: owner, starter, custom.
+	Type string `json:"type"`
+	// Cuántos miembros lo tienen.
+	Members float64 `json:"members"`
+	// Cuántas invitaciones pendientes lo dan.
+	Invitations float64 `json:"invitations"`
+}
+
+// RoleList: Una página de la lista.
+type RoleList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Role `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // RollWebhookSecretParams: los campos de «Cambiar el secreto».
@@ -10169,6 +10489,22 @@ type UpdateIssuerParamsDonationAuthorization struct {
 	Date string `json:"date"`
 }
 
+// UpdateMemberParams: los campos de «Cambiar el acceso de un miembro».
+type UpdateMemberParams struct {
+	// El rol (id de GET /v1/roles, como admin, contador, facturista o uno suyo). owner es Propietario: solo un propietario da o quita ese rol.
+	Role *string `json:"role,omitempty"`
+	// true: todos los permisos, incluidos los que se agreguen después (además de los del rol).
+	AllPermissions *bool `json:"all_permissions,omitempty"`
+	// Permisos además de los del rol (GET /v1/permissions).
+	PermissionsAdded []string `json:"permissions_added,omitempty"`
+	// Permisos del rol que esta persona no tiene.
+	PermissionsRemoved []string `json:"permissions_removed,omitempty"`
+	// Solo trabaja con estos RFC de la empresa. null: con todos.
+	TaxIDs []string `json:"tax_ids,omitempty"`
+	// Solo emite desde estas sucursales (brn_…, o "matriz" para el domicilio fiscal). null: desde todas.
+	Branches []string `json:"branches,omitempty"`
+}
+
 // UpdatePriceListParams: los campos de «Actualizar una lista de precios».
 type UpdatePriceListParams struct {
 	// Mayoreo, Distribuidor, Buen Fin…
@@ -10543,6 +10879,8 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
+	Async *bool `json:"async,omitempty"`
 }
 
 // UpdateRecurringInvoiceParamsSchedule: Cada cuánto y a qué hora se timbra.
@@ -10563,6 +10901,20 @@ type UpdateRecurringInvoiceParamsSchedule struct {
 	//
 	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
+}
+
+// UpdateRoleParams: los campos de «Cambiar un rol».
+type UpdateRoleParams struct {
+	// El emisor (iss_…) de la empresa. Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+	// true: todos los permisos, incluidos los que se agreguen después.
+	AllPermissions *bool `json:"all_permissions,omitempty"`
+	// Sus permisos (GET /v1/permissions). Los que otro necesita se agregan solos (timbrar pide ver facturas).
+	Permissions []string `json:"permissions,omitempty"`
+	// Como se ve en la app.
+	Name *string `json:"name,omitempty"`
 }
 
 // UpdateSalesOrderParams: los campos de «Cambiar un pedido».

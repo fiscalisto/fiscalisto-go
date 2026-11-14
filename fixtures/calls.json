@@ -1203,6 +1203,118 @@
 		"go": "CfdiVerifications.Create",
 		"java": "cfdiVerifications.create"
 	},
+	"GET /v1/members": {
+		"python": "members.list",
+		"php": "members->list",
+		"dotnet": "Members.ListAsync",
+		"go": "Members.List",
+		"java": "members.list"
+	},
+	"GET /v1/members/{id}": {
+		"python": "members.get",
+		"php": "members->get",
+		"dotnet": "Members.GetAsync",
+		"go": "Members.Get",
+		"java": "members.get"
+	},
+	"POST /v1/members/{id}": {
+		"python": "members.update",
+		"php": "members->update",
+		"dotnet": "Members.UpdateAsync",
+		"go": "Members.Update",
+		"java": "members.update"
+	},
+	"DELETE /v1/members/{id}": {
+		"python": "members.delete",
+		"php": "members->delete",
+		"dotnet": "Members.DeleteAsync",
+		"go": "Members.Delete",
+		"java": "members.delete"
+	},
+	"GET /v1/invitations": {
+		"python": "invitations.list",
+		"php": "invitations->list",
+		"dotnet": "Invitations.ListAsync",
+		"go": "Invitations.List",
+		"java": "invitations.list"
+	},
+	"POST /v1/invitations": {
+		"python": "invitations.create",
+		"php": "invitations->create",
+		"dotnet": "Invitations.CreateAsync",
+		"go": "Invitations.Create",
+		"java": "invitations.create"
+	},
+	"DELETE /v1/invitations/{id}": {
+		"python": "invitations.cancel",
+		"php": "invitations->cancel",
+		"dotnet": "Invitations.CancelAsync",
+		"go": "Invitations.Cancel",
+		"java": "invitations.cancel"
+	},
+	"GET /v1/roles": {
+		"python": "roles.list",
+		"php": "roles->list",
+		"dotnet": "Roles.ListAsync",
+		"go": "Roles.List",
+		"java": "roles.list"
+	},
+	"POST /v1/roles": {
+		"python": "roles.create",
+		"php": "roles->create",
+		"dotnet": "Roles.CreateAsync",
+		"go": "Roles.Create",
+		"java": "roles.create"
+	},
+	"POST /v1/roles/{id}": {
+		"python": "roles.update",
+		"php": "roles->update",
+		"dotnet": "Roles.UpdateAsync",
+		"go": "Roles.Update",
+		"java": "roles.update"
+	},
+	"DELETE /v1/roles/{id}": {
+		"python": "roles.delete",
+		"php": "roles->delete",
+		"dotnet": "Roles.DeleteAsync",
+		"go": "Roles.Delete",
+		"java": "roles.delete"
+	},
+	"GET /v1/permissions": {
+		"python": "permissions.list",
+		"php": "permissions->list",
+		"dotnet": "Permissions.ListAsync",
+		"go": "Permissions.List",
+		"java": "permissions.list"
+	},
+	"POST /v1/exports": {
+		"python": "exports.create",
+		"php": "exports->create",
+		"dotnet": "Exports.CreateAsync",
+		"go": "Exports.Create",
+		"java": "exports.create"
+	},
+	"GET /v1/exports": {
+		"python": "exports.list",
+		"php": "exports->list",
+		"dotnet": "Exports.ListAsync",
+		"go": "Exports.List",
+		"java": "exports.list"
+	},
+	"GET /v1/exports/{id}": {
+		"python": "exports.get",
+		"php": "exports->get",
+		"dotnet": "Exports.GetAsync",
+		"go": "Exports.Get",
+		"java": "exports.get"
+	},
+	"GET /v1/exports/{id}/download": {
+		"python": "exports.download",
+		"php": "exports->download",
+		"dotnet": "Exports.DownloadAsync",
+		"go": "Exports.Download",
+		"java": "exports.download"
+	},
 	"POST /v1/sat_downloads": {
 		"python": "sat_downloads.create",
 		"php": "satDownloads->create",
