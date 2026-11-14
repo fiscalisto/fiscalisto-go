@@ -5209,6 +5209,8 @@ type InvoiceCreateGlobal struct {
 	Months string `json:"months"`
 	// Año (Año).
 	Year int64 `json:"year"`
+	// Solo emisores con régimen 603 (donatarias y asociaciones): true conserva la descripción, claves, unidad y cantidad de cada concepto en vez de «Venta», 01010101, ACT.
+	KeepConcepts *bool `json:"keep_concepts,omitempty"`
 }
 
 // InvoiceCreateINE: Complemento INE (procesos electorales).
