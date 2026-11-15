@@ -1435,6 +1435,8 @@ type CreatePayrollReceiptParams struct {
 	Period CreatePayrollReceiptParamsPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days *float64 `json:"days,omitempty"`
+	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
+	Replaces *string `json:"replaces,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
@@ -7639,6 +7641,8 @@ type PreviewPayrollReceiptParams struct {
 	Period PreviewPayrollReceiptParamsPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days *float64 `json:"days,omitempty"`
+	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
+	Replaces *string `json:"replaces,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
