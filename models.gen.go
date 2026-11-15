@@ -1687,8 +1687,20 @@ type CreateQuoteParamsItem struct {
 	Iedu *CreateQuoteParamsItemIedu `json:"iedu,omitempty"`
 	// Complemento de vehículo usado.
 	UsedVehicle *CreateQuoteParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+	Hydrocarbon *CreateQuoteParamsItemHydrocarbon `json:"hydrocarbon,omitempty"`
 	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
 	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// CreateQuoteParamsItemHydrocarbon: Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+type CreateQuoteParamsItemHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct string `json:"subproduct"`
 }
 
 // CreateQuoteParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
@@ -2375,8 +2387,20 @@ type CreateSalesOrderParamsItem struct {
 	Iedu *CreateSalesOrderParamsItemIedu `json:"iedu,omitempty"`
 	// Complemento de vehículo usado.
 	UsedVehicle *CreateSalesOrderParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+	Hydrocarbon *CreateSalesOrderParamsItemHydrocarbon `json:"hydrocarbon,omitempty"`
 	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
 	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// CreateSalesOrderParamsItemHydrocarbon: Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+type CreateSalesOrderParamsItemHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct string `json:"subproduct"`
 }
 
 // CreateSalesOrderParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
@@ -3269,7 +3293,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -3739,7 +3763,7 @@ type ExternalPayrollReceiptCreateEmployee struct {
 	SocialSecurityNumber *string `json:"social_security_number,omitempty"`
 	// FechaInicioRelLaboral.
 	StartDate *string `json:"start_date,omitempty"`
-	// Antigüedad (P52W o P1Y2M3D). Sin el campo y con registro patronal: semanas desde start_date hasta el fin del periodo.
+	// Antigüedad (P52W o P1Y2M3D). Sin el campo y con registro patronal: semanas desde start_date hasta el fin del periodo (días si es menos de una semana, P3D).
 	Seniority *string `json:"seniority,omitempty"`
 	// Tipo de contrato (TipoContrato), c_TipoContrato. Por omisión 01, por tiempo indeterminado.
 	ContractType string `json:"contract_type"`
@@ -4683,7 +4707,7 @@ type InvoiceBatchList struct {
 
 // InvoiceCancellation: InvoiceCancellation.
 type InvoiceCancellation struct {
-	// pending (espera la respuesta del cliente), accepted (cancelada), rejected (el cliente la rechazó) o lapsed (venció; puede pedirla otra vez).
+	// `pending`: el SAT tiene la solicitud (la termina en minutos, o espera la respuesta del receptor). `accepted`: cancelada. `rejected`: el receptor la rechazó. `lapsed`: el SAT nunca la registró; puede pedirse otra vez. `scheduled`: el SAT aún no la acepta (no registra el CFDI que la sustituye, o rechazó la firma un momento) y Fiscalisto la vuelve a pedir sola. `failed`: Fiscalisto dejó de intentarlo; pídala de nuevo con POST /v1/invoices/{id}/cancel.
 	Status *string `json:"status,omitempty"`
 	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
 	Motive *string `json:"motive,omitempty"`
@@ -4691,6 +4715,10 @@ type InvoiceCancellation struct {
 	Substitution *string `json:"substitution,omitempty"`
 	// Cuándo se canceló.
 	CanceledAt *string `json:"canceled_at,omitempty"`
+	// Con `scheduled`: cuándo la vuelve a pedir Fiscalisto (null: en los próximos 15 minutos).
+	NextAttemptAt *string `json:"next_attempt_at,omitempty"`
+	// Con `scheduled` o `failed`: por qué no ha pasado.
+	Error *string `json:"error,omitempty"`
 }
 
 // InvoiceCreate: Una factura (CFDI 4.0). Un campo que no existe se rechaza con parameter_unknown, nunca se ignora.
@@ -5621,8 +5649,20 @@ type InvoiceCreateItem struct {
 	Iedu *InvoiceCreateItemIedu `json:"iedu,omitempty"`
 	// Complemento de vehículo usado.
 	UsedVehicle *InvoiceCreateItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+	Hydrocarbon *InvoiceCreateItemHydrocarbon `json:"hydrocarbon,omitempty"`
 	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
 	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// InvoiceCreateItemHydrocarbon: Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+type InvoiceCreateItemHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct string `json:"subproduct"`
 }
 
 // InvoiceCreateItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
@@ -6211,10 +6251,28 @@ type InvoiceSalesOrderParamsItem struct {
 type InvoiceSubstitutes struct {
 	// La factura sustituida (inv_…).
 	Invoice string `json:"invoice"`
-	// true si la sustituida ya quedó cancelada.
+	// true si la sustituida ya quedó cancelada. false no es definitivo: vea substitutes.cancellation.
 	Canceled bool `json:"canceled"`
 	// Por qué no se pudo cancelar la sustituida (cancélela con POST /v1/invoices/{id}/cancel).
 	CancelError *string `json:"cancel_error,omitempty"`
+	// La cancelación de la anterior, igual que su `cancellation` en GET /v1/invoices/{id}: `accepted` si ya quedó cancelada, `pending` si el SAT la está terminando (o espera al receptor), `scheduled` si Fiscalisto la vuelve a pedir sola, `failed` si hay que pedirla de nuevo. El webhook de la anterior dice cuando cambia.
+	Cancellation *InvoiceSubstitutesCancellation `json:"cancellation,omitempty"`
+}
+
+// InvoiceSubstitutesCancellation: InvoiceSubstitutesCancellation.
+type InvoiceSubstitutesCancellation struct {
+	// `pending`: el SAT tiene la solicitud (la termina en minutos, o espera la respuesta del receptor). `accepted`: cancelada. `rejected`: el receptor la rechazó. `lapsed`: el SAT nunca la registró; puede pedirse otra vez. `scheduled`: el SAT aún no la acepta (no registra el CFDI que la sustituye, o rechazó la firma un momento) y Fiscalisto la vuelve a pedir sola. `failed`: Fiscalisto dejó de intentarlo; pídala de nuevo con POST /v1/invoices/{id}/cancel.
+	Status *string `json:"status,omitempty"`
+	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
+	Motive *string `json:"motive,omitempty"`
+	// El comprobante que sustituye a este (su id o su UUID), con el motivo 01.
+	Substitution *string `json:"substitution,omitempty"`
+	// Cuándo se canceló.
+	CanceledAt *string `json:"canceled_at,omitempty"`
+	// Con `scheduled`: cuándo la vuelve a pedir Fiscalisto (null: en los próximos 15 minutos).
+	NextAttemptAt *string `json:"next_attempt_at,omitempty"`
+	// Con `scheduled` o `failed`: por qué no ha pasado.
+	Error *string `json:"error,omitempty"`
 }
 
 // InvoiceTaxes: InvoiceTaxes.
@@ -6553,7 +6611,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, usage.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, usage.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -8325,7 +8383,7 @@ type Retention struct {
 
 // RetentionCancellation: RetentionCancellation.
 type RetentionCancellation struct {
-	// pending (espera la respuesta del cliente), accepted (cancelada), rejected (el cliente la rechazó) o lapsed (venció; puede pedirla otra vez).
+	// pending (el SAT la tiene: la termina en minutos o espera la respuesta del cliente), accepted (cancelada), rejected (el cliente la rechazó), lapsed (venció; puede pedirla otra vez), scheduled (Fiscalisto la vuelve a pedir sola) o failed (Fiscalisto dejó de intentarlo; pídala de nuevo).
 	Status string `json:"status"`
 	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
 	Motive *string `json:"motive,omitempty"`
@@ -9997,7 +10055,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -10723,8 +10781,20 @@ type UpdateQuoteParamsItem struct {
 	Iedu *UpdateQuoteParamsItemIedu `json:"iedu,omitempty"`
 	// Complemento de vehículo usado.
 	UsedVehicle *UpdateQuoteParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+	Hydrocarbon *UpdateQuoteParamsItemHydrocarbon `json:"hydrocarbon,omitempty"`
 	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
 	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// UpdateQuoteParamsItemHydrocarbon: Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+type UpdateQuoteParamsItemHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct string `json:"subproduct"`
 }
 
 // UpdateQuoteParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
@@ -11037,8 +11107,20 @@ type UpdateSalesOrderParamsItem struct {
 	Iedu *UpdateSalesOrderParamsItemIedu `json:"iedu,omitempty"`
 	// Complemento de vehículo usado.
 	UsedVehicle *UpdateSalesOrderParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+	Hydrocarbon *UpdateSalesOrderParamsItemHydrocarbon `json:"hydrocarbon,omitempty"`
 	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
 	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// UpdateSalesOrderParamsItemHydrocarbon: Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+type UpdateSalesOrderParamsItemHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct string `json:"subproduct"`
 }
 
 // UpdateSalesOrderParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
