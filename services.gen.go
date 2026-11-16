@@ -2321,6 +2321,21 @@ func (s *AttendanceService) VoidMark(ctx context.Context, id string, params *Voi
 	return out, nil
 }
 
+// ApproveOvertime: Autorizar horas extra
+//
+// Hasta cuántos minutos de horas extra de un día de un empleado cuentan para la nómina, antes o después de ese día (minutes null quita la autorización). Con la regla «Las horas extra necesitan autorización» encendida, lo demás queda en el registro como sin autorizar.
+//
+// POST /v1/attendance/overtime
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/approve-attendance-overtime
+func (s *AttendanceService) ApproveOvertime(ctx context.Context, params *ApproveAttendanceOvertimeParams, opts ...RequestOption) (*AttendanceOvertime, error) {
+	out := new(AttendanceOvertime)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/overtime", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExpensePeopleService: Viáticos y gastos (client.ExpensePeople).
 type ExpensePeopleService struct{ c *Client }
 

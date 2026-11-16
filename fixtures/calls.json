@@ -846,6 +846,13 @@
 		"go": "Attendance.VoidMark",
 		"java": "attendance.voidMark"
 	},
+	"POST /v1/attendance/overtime": {
+		"python": "attendance.approve_overtime",
+		"php": "attendance->approveOvertime",
+		"dotnet": "Attendance.ApproveOvertimeAsync",
+		"go": "Attendance.ApproveOvertime",
+		"java": "attendance.approveOvertime"
+	},
 	"POST /v1/expense_people": {
 		"python": "expense_people.create",
 		"php": "expensePeople->create",

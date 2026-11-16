@@ -203,6 +203,18 @@ type ApplyAdvanceParamsRemainder struct {
 	PaymentForm *string `json:"payment_form,omitempty"`
 }
 
+// ApproveAttendanceOvertimeParams: los campos de «Autorizar horas extra».
+type ApproveAttendanceOvertimeParams struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// AAAA-MM-DD.
+	Date string `json:"date"`
+	// Hasta cuántos minutos de horas extra de ese día cuentan para la nómina (0 a 960); null quita la autorización.
+	Minutes *int64 `json:"minutes,omitempty"`
+	// Por qué (opcional).
+	Comment *string `json:"comment,omitempty"`
+}
+
 // ApproveExpenseReportParams: los campos de «Aprobar una comprobación».
 type ApproveExpenseReportParams struct {
 	// Una nota para la persona.
@@ -253,6 +265,22 @@ type AttendanceMark struct {
 	VoidedAt *string `json:"voided_at,omitempty"`
 }
 
+// AttendanceOvertime: Las horas extra que la empresa autorizó para un día de un empleado, antes o después de ese día.
+type AttendanceOvertime struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// El día, AAAA-MM-DD.
+	Date string `json:"date"`
+	// Hasta cuántos minutos de horas extra de ese día cuentan para la nómina; null: sin autorización.
+	Minutes *int64 `json:"minutes,omitempty"`
+	// Por qué, o null.
+	Comment *string `json:"comment,omitempty"`
+}
+
 // AttendanceReport: La asistencia de un periodo, por empleado: horas contra su horario, faltas, retardos y horas extra dobles y triples por semana, como Nómina › Asistencia › Registro.
 type AttendanceReport struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -265,6 +293,8 @@ type AttendanceReport struct {
 	From string `json:"from"`
 	// Último día del periodo, AAAA-MM-DD.
 	To string `json:"to"`
+	// true: las horas extra cuentan solo hasta lo que la empresa autorizó cada día.
+	OvertimeApproval bool `json:"overtime_approval"`
 	// Cada empleado del emisor en el periodo.
 	Employees []AttendanceReportEmployee `json:"employees"`
 }
@@ -301,6 +331,10 @@ type AttendanceReportEmployee struct {
 	OvertimeDoubleMinutes int64 `json:"overtime_double_minutes"`
 	// Horas extra que se pagan triples (las que pasan del límite de la semana).
 	OvertimeTripleMinutes int64 `json:"overtime_triple_minutes"`
+	// Todos los minutos de más en el registro, autorizados o no.
+	OvertimeMinutes int64 `json:"overtime_minutes"`
+	// Minutos de más que nadie autorizó: quedan en el registro y no cuentan para la nómina.
+	UnapprovedOvertimeMinutes int64 `json:"unapproved_overtime_minutes"`
 	// Días de descanso en que trabajó.
 	RestDaysWorked int64 `json:"rest_days_worked"`
 	// Días festivos en que trabajó.
@@ -331,6 +365,8 @@ type AttendanceReportEmployeeDay struct {
 	LateMinutes int64 `json:"late_minutes"`
 	// Minutos de más ese día (horas extra).
 	OvertimeMinutes int64 `json:"overtime_minutes"`
+	// De esos, los que cuentan para la nómina: hasta lo autorizado ese día cuando las horas extra necesitan autorización; si no, todos.
+	ApprovedOvertimeMinutes int64 `json:"approved_overtime_minutes"`
 	// La nota del día que puso la empresa, o null.
 	//
 	// Valores: vacaciones, incapacidad, permiso_con_goce, permiso_sin_goce, descanso, festivo, falta.
