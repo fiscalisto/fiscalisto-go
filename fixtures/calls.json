@@ -1112,6 +1112,20 @@
 		"go": "SatFindingCounterparties.List",
 		"java": "satFindingCounterparties.list"
 	},
+	"GET /v1/materiality_suppliers": {
+		"python": "materiality_suppliers.list",
+		"php": "materialitySuppliers->list",
+		"dotnet": "MaterialitySuppliers.ListAsync",
+		"go": "MaterialitySuppliers.List",
+		"java": "materialitySuppliers.list"
+	},
+	"GET /v1/materiality_invoices": {
+		"python": "materiality_invoices.list",
+		"php": "materialityInvoices->list",
+		"dotnet": "MaterialityInvoices.ListAsync",
+		"go": "MaterialityInvoices.List",
+		"java": "materialityInvoices.list"
+	},
 	"GET /v1/warehouses": {
 		"python": "warehouses.list",
 		"php": "warehouses->list",

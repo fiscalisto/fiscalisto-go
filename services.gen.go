@@ -88,6 +88,10 @@ type services struct {
 	SatFindings *SatFindingsService
 	// Cumplimiento SAT.
 	SatFindingCounterparties *SatFindingCounterpartiesService
+	// Cumplimiento SAT.
+	MaterialitySuppliers *MaterialitySuppliersService
+	// Cumplimiento SAT.
+	MaterialityInvoices *MaterialityInvoicesService
 	// Inventario.
 	Warehouses *WarehousesService
 	// Inventario.
@@ -177,6 +181,8 @@ func (s *services) init(c *Client) {
 	s.SatMailboxMessages = &SatMailboxMessagesService{c}
 	s.SatFindings = &SatFindingsService{c}
 	s.SatFindingCounterparties = &SatFindingCounterpartiesService{c}
+	s.MaterialitySuppliers = &MaterialitySuppliersService{c}
+	s.MaterialityInvoices = &MaterialityInvoicesService{c}
 	s.Warehouses = &WarehousesService{c}
 	s.StockMovements = &StockMovementsService{c}
 	s.StockAdjustments = &StockAdjustmentsService{c}
@@ -2738,6 +2744,42 @@ func (s *SatFindingCounterpartiesService) ListAutoPaging(ctx context.Context, pa
 	return listAll[SATFindingCounterparty](ctx, s.c, "/v1/sat_finding_counterparties", params, opts)
 }
 
+// MaterialitySuppliersService: Cumplimiento SAT (client.MaterialitySuppliers).
+type MaterialitySuppliersService struct{ c *Client }
+
+// List: Listar la materialidad por proveedor
+//
+// Como Materialidad en la app: los proveedores de las facturas recibidas (ingresos) del emisor en un periodo, con cuánto de lo que facturaron tiene evidencia completa de que la operación existió (acuerdo, entrega y pago). Primero los que están en 69-B definitivo (corre su plazo de 30 días hábiles), después los de más importe sin probar. Una página, hasta 500. Sin fechas, este año hasta hoy. No usa timbres.
+//
+// GET /v1/materiality_suppliers
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/list-materiality-suppliers
+func (s *MaterialitySuppliersService) List(ctx context.Context, params *ListMaterialitySuppliersParams, opts ...RequestOption) (*MaterialitySupplierList, error) {
+	out := new(MaterialitySupplierList)
+	if err := s.c.do(ctx, "GET", "/v1/materiality_suppliers", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MaterialityInvoicesService: Cumplimiento SAT (client.MaterialityInvoices).
+type MaterialityInvoicesService struct{ c *Client }
+
+// List: Listar facturas recibidas por probar
+//
+// Las facturas recibidas (ingresos) del emisor en un periodo que no tienen su evidencia completa, de mayor a menor importe, cada una con lo que tiene, lo que le falta y de dónde salió cada evidencia (orden de compra, recepción, complemento de pago, banco, archivos). Con state, solo las de ese estado. Una página, hasta 300; has_more dice que hay más (acorte el periodo o filtre por proveedor). No usa timbres.
+//
+// GET /v1/materiality_invoices
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/list-materiality-invoices
+func (s *MaterialityInvoicesService) List(ctx context.Context, params *ListMaterialityInvoicesParams, opts ...RequestOption) (*MaterialityInvoiceList, error) {
+	out := new(MaterialityInvoiceList)
+	if err := s.c.do(ctx, "GET", "/v1/materiality_invoices", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WarehousesService: Inventario (client.Warehouses).
 type WarehousesService struct{ c *Client }
 
@@ -3741,7 +3783,7 @@ func (s *AccountingService) Accounts(ctx context.Context, params *ListLedgerAcco
 
 // ElectronicAccounting: Descargar la contabilidad electrónica
 //
-// El ZIP del mes para el Buzón Tributario: el catálogo (CT) y la balanza (BN, o BC si es complementaria), cada uno en su ZIP con el nombre que espera el SAT, en el formato 1.3 del Anexo 24. Con journal_request, también las pólizas (PL), que se entregan cuando el SAT las pide.
+// El ZIP del mes para el Buzón Tributario: el catálogo (CT) y la balanza (BN, o BC si es complementaria), cada uno en su ZIP con el nombre que espera el SAT, en el formato 1.3 del Anexo 24. Con journal_request, también las pólizas (PL), que se entregan cuando el SAT las pide. Con month AAAA-13, la balanza de comprobación ajustada al cierre del ejercicio (regla 2.8.1.6 RMF): solo la balanza, con los saldos finales de diciembre como saldos iniciales y, con closing_entry, la póliza de cierre.
 //
 // GET /v1/accounting/electronic_accounting
 //

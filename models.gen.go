@@ -699,7 +699,7 @@ type CreateAdvanceParamsCustomer struct {
 	Email *string `json:"email,omitempty"`
 	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
 	Foreign *CreateAdvanceParamsCustomerForeign `json:"foreign,omitempty"`
-	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
 
@@ -883,7 +883,7 @@ type CreateCustomerParams struct {
 	PriceList *string `json:"price_list,omitempty"`
 	// Su propio descuento en cada concepto, en %; null: el de su grupo.
 	DiscountPercent *float64 `json:"discount_percent,omitempty"`
-	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
 
@@ -2365,7 +2365,7 @@ type CreateSalesOrderParamsCustomer struct {
 	Email *string `json:"email,omitempty"`
 	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
 	Foreign *CreateSalesOrderParamsCustomerForeign `json:"foreign,omitempty"`
-	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
 
@@ -2867,7 +2867,7 @@ type Customer struct {
 	Use *string `json:"use,omitempty"`
 	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
 	Foreign *CustomerForeign `json:"foreign,omitempty"`
-	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer bool `json:"ieps_taxpayer"`
 	// Su grupo de clientes (cgr_…), o null si no está en ninguno.
 	Group *string `json:"group,omitempty"`
@@ -4305,8 +4305,12 @@ type GetDiotParams struct {
 
 // GetElectronicAccountingParams: los campos de «Descargar la contabilidad electrónica».
 type GetElectronicAccountingParams struct {
-	// El mes (AAAA-MM).
+	// El mes (AAAA-MM), o AAAA-13 para la balanza de cierre de un ejercicio ya terminado.
 	Month string `json:"month"`
+	// Solo con AAAA-13: true (por omisión) incluye la póliza de cierre, que cancela ingresos, costos y gastos contra el resultado del ejercicio (305.01 utilidad o 305.02 pérdida); false manda los saldos de diciembre sin movimientos.
+	//
+	// Valores: true, false.
+	ClosingEntry *string `json:"closing_entry,omitempty"`
 	// normal (BN, por omisión) o complementary (BC, con modified_on).
 	//
 	// Valores: normal, complementary.
@@ -5587,7 +5591,7 @@ type InvoiceCreateCustomer struct {
 	Email *string `json:"email,omitempty"`
 	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
 	Foreign *InvoiceCreateCustomerForeign `json:"foreign,omitempty"`
-	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
 
@@ -6809,6 +6813,34 @@ type ListLedgerAccountsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListMaterialityInvoicesParams: los campos de «Listar facturas recibidas por probar».
+type ListMaterialityInvoicesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Facturas desde este día (AAAA-MM-DD).
+	DateGte *string `json:"date_gte,omitempty"`
+	// Facturas hasta este día (AAAA-MM-DD, completo).
+	DateLte *string `json:"date_lte,omitempty"`
+	// Solo las de este proveedor (su RFC).
+	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
+	// Solo las de este estado: complete, partial o none. Sin él, las que no están completas.
+	//
+	// Valores: complete, partial, none.
+	State *string `json:"state,omitempty"`
+}
+
+// ListMaterialitySuppliersParams: los campos de «Listar la materialidad por proveedor».
+type ListMaterialitySuppliersParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Facturas desde este día (AAAA-MM-DD).
+	DateGte *string `json:"date_gte,omitempty"`
+	// Facturas hasta este día (AAAA-MM-DD, completo).
+	DateLte *string `json:"date_lte,omitempty"`
+	// Solo este proveedor (su RFC).
+	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
+}
+
 // ListMembersParams: los campos de «Listar miembros».
 type ListMembersParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -7245,6 +7277,144 @@ type MarkSupplierInvoicePaidParams struct {
 type MatchBankTransactionParams struct {
 	// Las facturas (inv_… o UUID) que pagó este depósito, de un mismo cliente. Sin ellas, las de suggested_match.
 	Invoices []string `json:"invoices,omitempty"`
+}
+
+// MaterialityInvoice: Una factura recibida (ingreso) con lo que prueba que la operación existió: qué tiene, qué le falta y de dónde salió cada evidencia.
+type MaterialityInvoice struct {
+	// El UUID de la factura (el mismo que uuid).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor que la recibió.
+	Issuer string `json:"issuer"`
+	// El folio fiscal (UUID).
+	UUID string `json:"uuid"`
+	// Su serie, o null.
+	Series *string `json:"series,omitempty"`
+	// Su folio, o null.
+	Folio *string `json:"folio,omitempty"`
+	// Su fecha (AAAA-MM-DD).
+	Date string `json:"date"`
+	// El RFC del proveedor que la emitió.
+	SupplierTaxID string `json:"supplier_tax_id"`
+	// Su nombre como viene en el CFDI, o null.
+	SupplierName *string `json:"supplier_name,omitempty"`
+	// Su total en pesos (de otra moneda, a su tipo de cambio).
+	Total float64 `json:"total"`
+	// complete (tiene acuerdo, entrega y pago), partial (alguno) o none (ninguno).
+	//
+	// Valores: complete, partial, none.
+	State string `json:"state"`
+	// Lo que ya tiene: agreement (contrato u orden de compra), delivery (recepción, entregables o fotos), payment (complemento, pago en el portal o en la orden, banco o comprobante).
+	Has []string `json:"has"`
+	// Lo que le falta, de lo mismo.
+	Missing []string `json:"missing"`
+	// De dónde salió cada evidencia: source es un código estable (orden_compra, recepcion, complemento_pago, pago_banco, foto, mensaje_portal…), proves lo que prueba (null: respaldo que no prueba nada solo) y label lo dice en palabras.
+	Evidence []MaterialityInvoiceEvidenceItem `json:"evidence"`
+}
+
+// MaterialityInvoiceEvidenceItem: MaterialityInvoiceEvidenceItem.
+type MaterialityInvoiceEvidenceItem struct {
+	// De dónde salió: orden_compra, recepcion, complemento_pago, pago_banco, foto, mensaje_portal…
+	Source string `json:"source"`
+	// Lo que prueba: agreement, delivery o payment; null si solo respalda.
+	//
+	// Valores: agreement, delivery, payment.
+	Proves *string `json:"proves,omitempty"`
+	// De dónde salió, en palabras.
+	Label string `json:"label"`
+}
+
+// MaterialityInvoiceList: Una página de la lista.
+type MaterialityInvoiceList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []MaterialityInvoice `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// MaterialitySupplier: Un proveedor del emisor en el periodo: cuánto le facturó, cuánto de eso tiene su evidencia completa (acuerdo, entrega y pago) y, si está en la lista 69-B, su plazo.
+type MaterialitySupplier struct {
+	// Su RFC (el mismo que tax_id).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor que recibió sus facturas.
+	Issuer string `json:"issuer"`
+	// El RFC del proveedor.
+	TaxID string `json:"tax_id"`
+	// Su nombre como viene en el CFDI, o null.
+	Name *string `json:"name,omitempty"`
+	// Cuántas facturas recibidas (ingresos, no canceladas) le dio en el periodo.
+	Invoices int64 `json:"invoices"`
+	// Lo que suman, en pesos (las de otra moneda, a su tipo de cambio).
+	Total float64 `json:"total"`
+	// Lo que suman las que no tienen su evidencia completa, en pesos.
+	Unproven float64 `json:"unproven"`
+	// Cuántas facturas están complete (acuerdo, entrega y pago), partial (alguna) y none (ninguna).
+	States MaterialitySupplierStates `json:"states"`
+	// A cuántas facturas les falta el acuerdo, la entrega y el pago.
+	Missing MaterialitySupplierMissing `json:"missing"`
+	// Si está en la lista 69-B: definitive (definitivo) o presumed (presunto); en definitivo, el día que se publicó, el último día de los 30 días hábiles para acreditar las operaciones o corregir y cuántos días hábiles quedan (negativo: ya venció). null: no está.
+	SATList *MaterialitySupplierSATList `json:"sat_list,omitempty"`
+	// Si está en el Portal de proveedores del emisor (para pedirle la evidencia desde la app).
+	InSupplierPortal bool `json:"in_supplier_portal"`
+	// Cuándo se le pidió evidencia que todavía no manda, o null.
+	EvidenceRequestedAt *string `json:"evidence_requested_at,omitempty"`
+}
+
+// MaterialitySupplierList: Una página de la lista.
+type MaterialitySupplierList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []MaterialitySupplier `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// MaterialitySupplierMissing: A cuántas facturas les falta el acuerdo, la entrega y el pago.
+type MaterialitySupplierMissing struct {
+	// Facturas sin acuerdo (contrato u orden de compra).
+	Agreement int64 `json:"agreement"`
+	// Facturas sin entrega (recepción, entregables o fotos).
+	Delivery int64 `json:"delivery"`
+	// Facturas sin pago (complemento, pago en el portal o en la orden, banco o comprobante).
+	Payment int64 `json:"payment"`
+}
+
+// MaterialitySupplierSATList: Una página de la lista.
+type MaterialitySupplierSATList struct {
+	// definitive (69-B definitivo) o presumed (69-B presunto).
+	//
+	// Valores: definitive, presumed.
+	Status string `json:"status"`
+	// El día que el SAT lo publicó como definitivo (AAAA-MM-DD), o null.
+	PublishedOn *string `json:"published_on,omitempty"`
+	// El último de los 30 días hábiles para acreditar las operaciones o corregir (AAAA-MM-DD), o null.
+	Deadline *string `json:"deadline,omitempty"`
+	// Días hábiles que quedan, sin contar hoy; negativo si ya venció. null si no es definitivo.
+	BusinessDaysLeft *int64 `json:"business_days_left,omitempty"`
+}
+
+// MaterialitySupplierStates: Cuántas facturas están complete (acuerdo, entrega y pago), partial (alguna) y none (ninguna).
+type MaterialitySupplierStates struct {
+	// Facturas con acuerdo, entrega y pago.
+	Complete int64 `json:"complete"`
+	// Facturas con alguna de las tres pruebas, no todas.
+	Partial int64 `json:"partial"`
+	// Facturas sin ninguna prueba.
+	None int64 `json:"none"`
 }
 
 // Member: Una persona que entra a la empresa en la app.
@@ -10425,7 +10595,7 @@ type UpdateCustomerParams struct {
 	PriceList *string `json:"price_list,omitempty"`
 	// Su propio descuento en cada concepto, en %; null: el de su grupo.
 	DiscountPercent *float64 `json:"discount_percent,omitempty"`
-	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
 
@@ -11171,7 +11341,7 @@ type UpdateSalesOrderParamsCustomer struct {
 	Email *string `json:"email,omitempty"`
 	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
 	Foreign *UpdateSalesOrderParamsCustomerForeign `json:"foreign,omitempty"`
-	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio.
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 }
 
