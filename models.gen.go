@@ -1337,6 +1337,10 @@ type CreateCustomerParams struct {
 	DiscountPercent *float64 `json:"discount_percent,omitempty"`
 	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
+	// Sus días de crédito: sus facturas vencen estos días después de su fecha (due_date, cobranza); null: los de su grupo o los de la empresa.
+	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Sus condiciones de pago («Crédito a 30 días»): las facturas nuevas en la app empiezan con ellas; null: las de la empresa. POST /v1/invoices no las pone solas: mándelas en payment_terms.
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 }
 
 // CreateCustomerParamsForeign: CreateCustomerParamsForeign.
@@ -3325,6 +3329,10 @@ type Customer struct {
 	Foreign *CustomerForeign `json:"foreign,omitempty"`
 	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer bool `json:"ieps_taxpayer"`
+	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
+	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Su grupo de clientes (cgr_…), o null si no está en ninguno.
 	Group *string `json:"group,omitempty"`
 	// Lista de precios (prl_…). En un cliente, la suya propia, que gana a la de su grupo; null para usar la de su grupo o la de todos.
@@ -11135,6 +11143,10 @@ type UpdateCustomerParams struct {
 	DiscountPercent *float64 `json:"discount_percent,omitempty"`
 	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
+	// Sus días de crédito: sus facturas vencen estos días después de su fecha (due_date, cobranza); null: los de su grupo o los de la empresa.
+	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Sus condiciones de pago («Crédito a 30 días»): las facturas nuevas en la app empiezan con ellas; null: las de la empresa. POST /v1/invoices no las pone solas: mándelas en payment_terms.
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 }
 
 // UpdateCustomerParamsForeign: UpdateCustomerParamsForeign.
