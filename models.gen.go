@@ -115,6 +115,10 @@ type ApplyAdvanceParams struct {
 	Type *string `json:"type,omitempty"`
 	// Complemento Carta Porte 3.1 (traslado de mercancías).
 	CartaPorte *InvoiceCreateCartaPorte `json:"carta_porte,omitempty"`
+	// Solo en un traslado (type T) sin carta_porte: la regla de la RMF 2026 que lo permite. 2.7.7.2.1 mercancías propias en un traslado local (no medicamentos, hidrocarburos ni mercancías para despacho aduanero); 2.7.7.2.2 paquetería o mensajería en primera o última milla, un concepto por paquete con su número de guía en sku; 2.7.7.2.3 grúa de arrastre o salvamento local, relacionando con related (05) la factura de ingreso del servicio. Mandarlo es declarar que el traslado no transita por ningún tramo de jurisdicción federal. Los conceptos van con unit_price 0 y taxability 01 (por omisión en un traslado).
+	//
+	// Valores: 2.7.7.2.1, 2.7.7.2.2, 2.7.7.2.3.
+	CartaPorteExemption *string `json:"carta_porte_exemption,omitempty"`
 	// Complemento INE (procesos electorales).
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
@@ -123,7 +127,7 @@ type ApplyAdvanceParams struct {
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
-	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva…
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva con clave A1 (lleva comercio_exterior), 03 temporal (sin él), 04 definitiva con clave distinta a A1 o sin enajenación (con o sin comercio_exterior; con él, incoterm opcional).
 	//
 	// Valores: 01, 02, 03, 04.
 	Export *string `json:"export,omitempty"`
@@ -437,7 +441,7 @@ type CFDISealsCertificate struct {
 
 // CFDISealsProblem: CFDISealsProblem.
 type CFDISealsProblem struct {
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 06, 14 a 24 llevan su complemento, como lo pide el catálogo del SAT (share_sale con 06 y 19, dividends con 14, distributable_remainder con 15, interest, trust_lease, foreign_payment, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); 01, 02, 04 y 05 llevan foreign_payment cuando el receptor es extranjero; la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones. 27 y 28 no se pueden emitir aquí.
 	//
 	// Valores: malformed_xml, missing_seal, certificate_unreadable, certificate_number_mismatch, certificate_not_issuer, certificate_not_csd, certificate_not_valid_at_issue, seal_mismatch, stamp_not_for_this_seal, sat_seal_mismatch.
 	Code string `json:"code"`
@@ -503,7 +507,7 @@ type CFDIVerification struct {
 
 // CFDIVerificationSAT: La respuesta del SAT tal cual (CodigoEstatus, Estado, EsCancelable, EstatusCancelacion, ValidacionEFOS), por si la necesita igual que el SAT.
 type CFDIVerificationSAT struct {
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 06, 14 a 24 llevan su complemento, como lo pide el catálogo del SAT (share_sale con 06 y 19, dividends con 14, distributable_remainder con 15, interest, trust_lease, foreign_payment, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); 01, 02, 04 y 05 llevan foreign_payment cuando el receptor es extranjero; la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones. 27 y 28 no se pueden emitir aquí.
 	Code string `json:"code"`
 	// Entidad federativa donde trabaja (ClaveEntFed): JAL, CMX, NLE…
 	State string `json:"state"`
@@ -1177,6 +1181,10 @@ type CreateInvoiceBatchParamsInvoice struct {
 	Type *string `json:"type,omitempty"`
 	// Complemento Carta Porte 3.1 (traslado de mercancías).
 	CartaPorte *InvoiceCreateCartaPorte `json:"carta_porte,omitempty"`
+	// Solo en un traslado (type T) sin carta_porte: la regla de la RMF 2026 que lo permite. 2.7.7.2.1 mercancías propias en un traslado local (no medicamentos, hidrocarburos ni mercancías para despacho aduanero); 2.7.7.2.2 paquetería o mensajería en primera o última milla, un concepto por paquete con su número de guía en sku; 2.7.7.2.3 grúa de arrastre o salvamento local, relacionando con related (05) la factura de ingreso del servicio. Mandarlo es declarar que el traslado no transita por ningún tramo de jurisdicción federal. Los conceptos van con unit_price 0 y taxability 01 (por omisión en un traslado).
+	//
+	// Valores: 2.7.7.2.1, 2.7.7.2.2, 2.7.7.2.3.
+	CartaPorteExemption *string `json:"carta_porte_exemption,omitempty"`
 	// Complemento INE (procesos electorales).
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
@@ -1185,7 +1193,7 @@ type CreateInvoiceBatchParamsInvoice struct {
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
-	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva…
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva con clave A1 (lleva comercio_exterior), 03 temporal (sin él), 04 definitiva con clave distinta a A1 o sin enajenación (con o sin comercio_exterior; con él, incoterm opcional).
 	//
 	// Valores: 01, 02, 03, 04.
 	Export *string `json:"export,omitempty"`
@@ -1409,8 +1417,12 @@ type CreatePayrollBatchParamsReceipt struct {
 	Employee string `json:"employee"`
 	// Su periodo de pago (FechaInicialPago, FechaFinalPago y FechaPago), si no es el del lote (period).
 	Period *CreatePayrollBatchParamsReceiptPeriod `json:"period,omitempty"`
-	// Días pagados; sin él, todos los días que le tocan del periodo.
+	// Días pagados; sin él, todos los días que le tocan del periodo menos absences y disability_days.
 	Days *float64 `json:"days,omitempty"`
+	// Faltas del periodo (días sin goce de sueldo), de 0 a 31: no se pagan (salen de days) y cotizan al IMSS solo en enfermedades y maternidad, hasta 7 por mes (LSS art. 31 fr. I).
+	Absences *int64 `json:"absences,omitempty"`
+	// Días de incapacidad que expidió el IMSS en el periodo, de 0 a 31: no se pagan (salen de days) y no causan cuotas obreras del IMSS (LSS art. 31 fr. IV).
+	DisabilityDays *int64 `json:"disability_days,omitempty"`
 	// Mandarle su recibo por correo; sin él, lo que diga send_email del lote. Con true el empleado debe tener correo.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Su identificador de este recibo, hasta 100 caracteres.
@@ -1435,6 +1447,10 @@ type CreatePayrollReceiptParams struct {
 	Period CreatePayrollReceiptParamsPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days *float64 `json:"days,omitempty"`
+	// Faltas del periodo (días sin goce de sueldo), de 0 a 31: no se pagan (salen de days) y cotizan al IMSS solo en enfermedades y maternidad, hasta 7 por mes (LSS art. 31 fr. I).
+	Absences *int64 `json:"absences,omitempty"`
+	// Días de incapacidad que expidió el IMSS en el periodo, de 0 a 31: no se pagan (salen de days) y no causan cuotas obreras del IMSS (LSS art. 31 fr. IV).
+	DisabilityDays *int64 `json:"disability_days,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
 	Replaces *string `json:"replaces,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
@@ -1503,7 +1519,7 @@ type CreateProductParams struct {
 	Description string `json:"description"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey string `json:"product_key"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -1533,6 +1549,8 @@ type CreateProductParams struct {
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
 	LocalTaxes []CreateProductParamsLocalTax `json:"local_taxes,omitempty"`
+	// Diésel (15101505) y gasolinas (15101514, 15101515): el permiso de la CNE que lleva cada factura con él en el complemento de Hidrocarburos y Petrolíferos. Una factura cuyo concepto trae su propio hydrocarbon usa ese. null lo quita.
+	Hydrocarbon *CreateProductParamsHydrocarbon `json:"hydrocarbon,omitempty"`
 	// Lleva existencias (Inventario): cada factura que lo vende las saca del almacén de su sucursal, y una cancelada las regresa. Ver GET /v1/products/{id}/stock.
 	TrackStock *bool `json:"track_stock,omitempty"`
 	// Su costo por unidad en pesos sin IVA, hasta que sus compras den otro: vale las existencias que entran sin unit_cost.
@@ -1549,6 +1567,16 @@ type CreateProductParams struct {
 	OrderStep *float64 `json:"order_step,omitempty"`
 	// Su categoría, con las de arriba separadas por › (también > o /): «Ferretería › Tornillos». Si no existe, se crea. null la quita.
 	Category *string `json:"category,omitempty"`
+}
+
+// CreateProductParamsHydrocarbon: CreateProductParamsHydrocarbon.
+type CreateProductParamsHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct *string `json:"subproduct,omitempty"`
 }
 
 // CreateProductParamsLocalTax: CreateProductParamsLocalTax.
@@ -1645,7 +1673,7 @@ type CreateQuoteParamsItem struct {
 	Description *string `json:"description,omitempty"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey *string `json:"product_key,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -1805,6 +1833,10 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	Type *string `json:"type,omitempty"`
 	// Complemento Carta Porte 3.1 (traslado de mercancías).
 	CartaPorte *InvoiceCreateCartaPorte `json:"carta_porte,omitempty"`
+	// Solo en un traslado (type T) sin carta_porte: la regla de la RMF 2026 que lo permite. 2.7.7.2.1 mercancías propias en un traslado local (no medicamentos, hidrocarburos ni mercancías para despacho aduanero); 2.7.7.2.2 paquetería o mensajería en primera o última milla, un concepto por paquete con su número de guía en sku; 2.7.7.2.3 grúa de arrastre o salvamento local, relacionando con related (05) la factura de ingreso del servicio. Mandarlo es declarar que el traslado no transita por ningún tramo de jurisdicción federal. Los conceptos van con unit_price 0 y taxability 01 (por omisión en un traslado).
+	//
+	// Valores: 2.7.7.2.1, 2.7.7.2.2, 2.7.7.2.3.
+	CartaPorteExemption *string `json:"carta_porte_exemption,omitempty"`
 	// Complemento INE (procesos electorales).
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
@@ -1813,7 +1845,7 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
-	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva…
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva con clave A1 (lleva comercio_exterior), 03 temporal (sin él), 04 definitiva con clave distinta a A1 o sin enajenación (con o sin comercio_exterior; con él, incoterm opcional).
 	//
 	// Valores: 01, 02, 03, 04.
 	Export *string `json:"export,omitempty"`
@@ -1887,7 +1919,7 @@ type CreateRecurringInvoiceParamsSchedule struct {
 type CreateRetentionParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 06, 14 a 24 llevan su complemento, como lo pide el catálogo del SAT (share_sale con 06 y 19, dividends con 14, distributable_remainder con 15, interest, trust_lease, foreign_payment, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); 01, 02, 04 y 05 llevan foreign_payment cuando el receptor es extranjero; la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones. 27 y 28 no se pueden emitir aquí.
 	Code string `json:"code"`
 	// Descripción de la retención (DescRetenc); obligatoria con la clave 25 (otro tipo).
 	Description *string `json:"description,omitempty"`
@@ -1905,11 +1937,13 @@ type CreateRetentionParams struct {
 	Dividends *CreateRetentionParamsDividends `json:"dividends,omitempty"`
 	// Complemento de intereses.
 	Interest *CreateRetentionParamsInterest `json:"interest,omitempty"`
-	// Complemento de pagos a extranjeros.
+	// Complemento de pagos a extranjeros: obligatorio con code 18, y con 01, 02, 04 y 05 cuando el receptor es extranjero.
 	ForeignPayment *CreateRetentionParamsForeignPayment `json:"foreign_payment,omitempty"`
+	// Complemento de dividendos con su nodo Remanente (remanente distribuible), obligatorio con code 15. Si no lo manda, va sin proporción.
+	DistributableRemainder *CreateRetentionParamsDistributableRemainder `json:"distributable_remainder,omitempty"`
 	// Complemento de arrendamiento en fideicomiso (Arrendamientoenfideicomiso 1.0), obligatorio con code 17.
 	TrustLease *CreateRetentionParamsTrustLease `json:"trust_lease,omitempty"`
-	// Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 19.
+	// Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 06 y 19.
 	ShareSale *CreateRetentionParamsShareSale `json:"share_sale,omitempty"`
 	// Complemento de premios (Premios 1.0), obligatorio con code 20. Sus montos son los de totals.
 	Prize *CreateRetentionParamsPrize `json:"prize,omitempty"`
@@ -1927,6 +1961,12 @@ type CreateRetentionParams struct {
 	Email *string `json:"email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// CreateRetentionParamsDistributableRemainder: Complemento de dividendos con su nodo Remanente (remanente distribuible), obligatorio con code 15. Si no lo manda, va sin proporción.
+type CreateRetentionParamsDistributableRemainder struct {
+	// Porcentaje de participación del integrante o socio en el remanente (ProporcionRem), opcional.
+	Proportion *float64 `json:"proportion,omitempty"`
 }
 
 // CreateRetentionParamsDividends: Complemento de dividendos.
@@ -1961,7 +2001,7 @@ type CreateRetentionParamsFinancialDerivatives struct {
 	Loss float64 `json:"loss"`
 }
 
-// CreateRetentionParamsForeignPayment: Complemento de pagos a extranjeros.
+// CreateRetentionParamsForeignPayment: Complemento de pagos a extranjeros: obligatorio con code 18, y con 01, 02, 04 y 05 cuando el receptor es extranjero.
 type CreateRetentionParamsForeignPayment struct {
 	// true si quien recibe es el beneficiario efectivo (EsBenefEfectDelCobro).
 	Beneficiary bool `json:"beneficiary"`
@@ -2135,7 +2175,7 @@ type CreateRetentionParamsRetirementPlanContribution struct {
 	TrusteeRFC *string `json:"trustee_rfc,omitempty"`
 }
 
-// CreateRetentionParamsShareSale: Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 19.
+// CreateRetentionParamsShareSale: Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 06 y 19.
 type CreateRetentionParamsShareSale struct {
 	// Descripción del contrato de intermediación (ContratoIntermediacion).
 	Contract string `json:"contract"`
@@ -2345,7 +2385,7 @@ type CreateSalesOrderParamsItem struct {
 	Description *string `json:"description,omitempty"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey *string `json:"product_key,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -3747,7 +3787,7 @@ type ExternalPayrollReceiptCreateDisability struct {
 
 // ExternalPayrollReceiptCreateEmployee: El empleado (Receptor y Nomina/Receptor) con los datos de su sistema de nómina; no usa ni cambia los empleados de Fiscalisto.
 type ExternalPayrollReceiptCreateEmployee struct {
-	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	// RFC del empleado. XAXX010101000 si falleció: con su nombre y su CURP.
 	TaxID string `json:"tax_id"`
 	// Nombre.
 	Name string `json:"name"`
@@ -3995,7 +4035,7 @@ type ExternalPayrollReceiptPreviewCustomer struct {
 type ExternalPayrollReceiptPreviewWarning struct {
 	// El campo de la solicitud.
 	Param string `json:"param"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 06, 14 a 24 llevan su complemento, como lo pide el catálogo del SAT (share_sale con 06 y 19, dividends con 14, distributable_remainder con 15, interest, trust_lease, foreign_payment, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); 01, 02, 04 y 05 llevan foreign_payment cuando el receptor es extranjero; la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones. 27 y 28 no se pueden emitir aquí.
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
@@ -4555,7 +4595,7 @@ type Invoice struct {
 	UUID *string `json:"uuid,omitempty"`
 	// La serie (Serie) con que se timbró, o null.
 	Series *string `json:"series,omitempty"`
-	// El folio (Folio) que se le asignó, o null.
+	// Folio interno. En una rechazada es el que se intentó: no se gasta, y el siguiente CFDI de la serie lo usa.
 	Folio *string `json:"folio,omitempty"`
 	// Fecha de emisión (Fecha), hora de la Ciudad de México.
 	Date *string `json:"date,omitempty"`
@@ -4611,7 +4651,7 @@ type Invoice struct {
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata"`
-	// Avisos que no impidieron timbrar (por ejemplo, el XML se guardará después).
+	// Avisos sobre la factura (solo en la respuesta que la timbra o, con 202, la que la deja en proceso): se timbra como se mandó.
 	Warnings []string `json:"warnings,omitempty"`
 	// Por qué no se pudo mandar el correo; el comprobante sí se timbró.
 	EmailError *string `json:"email_error,omitempty"`
@@ -4691,6 +4731,8 @@ type InvoiceBatchInvoice struct {
 	Total float64 `json:"total"`
 	// Por qué no se timbró.
 	Error *string `json:"error,omitempty"`
+	// Solo en la respuesta de POST /v1/invoice_batches: los avisos de esta factura antes de timbrarla, los mismos que daría POST /v1/invoices. Se timbra como se mandó.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // InvoiceBatchList: Una página de la lista.
@@ -4741,6 +4783,10 @@ type InvoiceCreate struct {
 	Type *string `json:"type,omitempty"`
 	// Complemento Carta Porte 3.1 (traslado de mercancías).
 	CartaPorte *InvoiceCreateCartaPorte `json:"carta_porte,omitempty"`
+	// Solo en un traslado (type T) sin carta_porte: la regla de la RMF 2026 que lo permite. 2.7.7.2.1 mercancías propias en un traslado local (no medicamentos, hidrocarburos ni mercancías para despacho aduanero); 2.7.7.2.2 paquetería o mensajería en primera o última milla, un concepto por paquete con su número de guía en sku; 2.7.7.2.3 grúa de arrastre o salvamento local, relacionando con related (05) la factura de ingreso del servicio. Mandarlo es declarar que el traslado no transita por ningún tramo de jurisdicción federal. Los conceptos van con unit_price 0 y taxability 01 (por omisión en un traslado).
+	//
+	// Valores: 2.7.7.2.1, 2.7.7.2.2, 2.7.7.2.3.
+	CartaPorteExemption *string `json:"carta_porte_exemption,omitempty"`
 	// Complemento INE (procesos electorales).
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
@@ -4749,7 +4795,7 @@ type InvoiceCreate struct {
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
-	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva…
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva con clave A1 (lleva comercio_exterior), 03 temporal (sin él), 04 definitiva con clave distinta a A1 o sin enajenación (con o sin comercio_exterior; con él, incoterm opcional).
 	//
 	// Valores: 01, 02, 03, 04.
 	Export *string `json:"export,omitempty"`
@@ -5413,7 +5459,9 @@ type InvoiceCreateCartaPorteVehicleTrailer struct {
 
 // InvoiceCreateComercioExterior: Complemento de comercio exterior 2.0.
 type InvoiceCreateComercioExterior struct {
-	// Motivo de traslado (MotivoTraslado): 05 envío de mercancías propias.
+	// Motivo de traslado (MotivoTraslado), c_MotivoTraslado, solo en un traslado: 01 mercancías facturadas con anterioridad (relacione la factura de venta en related), 02 reubicación de mercancías propias, 03 consignación, 04 para posterior enajenación, 05 propiedad de terceros (con owners), 99 otros.
+	//
+	// Valores: 99, 01, 02, 03, 04, 05.
 	Motive *string `json:"motive,omitempty"`
 	// Propietarios de la mercancía si no es el emisor (Propietario), con motive 05.
 	Owners []InvoiceCreateComercioExteriorOwner `json:"owners,omitempty"`
@@ -5589,7 +5637,7 @@ type InvoiceCreateINE struct {
 
 // InvoiceCreateINEEntity: InvoiceCreateINEEntity.
 type InvoiceCreateINEEntity struct {
-	// Clave de la entidad (ClaveEntidad), 3 letras.
+	// Clave de la entidad (ClaveEntidad): la del estado (JAL, QUE…), NAC (nacional) o la circunscripción CR1 a CR5; estas seis no van con ámbito Local.
 	Key string `json:"key"`
 	// Ámbito (Ambito): Local o Federal.
 	//
@@ -5607,7 +5655,7 @@ type InvoiceCreateItem struct {
 	Description *string `json:"description,omitempty"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey *string `json:"product_key,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -5907,6 +5955,8 @@ type InvoicePayroll struct {
 	Retirement *InvoicePayrollRetirement `json:"retirement,omitempty"`
 	// Incapacidades (percepción 014 o deducción 006).
 	Disabilities []InvoicePayrollDisability `json:"disabilities,omitempty"`
+	// En un recibo que calculó Fiscalisto: los días del IMSS.
+	ImssDays *InvoicePayrollImssDays `json:"imss_days,omitempty"`
 	// Totales: percepciones, deducciones, otros pagos y el neto a pagar.
 	Totals InvoicePayrollTotals `json:"totals"`
 }
@@ -6001,6 +6051,20 @@ type InvoicePayrollEmployerSncf struct {
 	ResourceOrigin string `json:"resource_origin"`
 	// Monto de recursos propios (MontoRecursoPropio), con IM.
 	OwnResourceAmount *float64 `json:"own_resource_amount,omitempty"`
+}
+
+// InvoicePayrollImssDays: En un recibo que calculó Fiscalisto: los días del IMSS.
+type InvoicePayrollImssDays struct {
+	// Días naturales del periodo que trabajó para el patrón: las cuotas del IMSS se causan por mes calendario (LSS art. 39), no por los días pagados.
+	CalendarDays int64 `json:"calendar_days"`
+	// Faltas del recibo.
+	Absences int64 `json:"absences"`
+	// Días de incapacidad del recibo.
+	DisabilityDays int64 `json:"disability_days"`
+	// Días que cotiza en enfermedades y maternidad (excedente, prestaciones en dinero, gastos médicos de pensionados): el periodo sin la incapacidad; las faltas cuentan (LSS art. 31 fr. I).
+	SicknessAndMaternity int64 `json:"sickness_and_maternity"`
+	// Días que cotiza en invalidez y vida y en cesantía en edad avanzada y vejez: además sin las faltas, hasta 7 por mes.
+	DisabilityAndOldAge int64 `json:"disability_and_old_age"`
 }
 
 // InvoicePayrollOtherPayment: InvoicePayrollOtherPayment.
@@ -6223,7 +6287,7 @@ type InvoicePreviewTaxes struct {
 
 // InvoicePreviewWarning: InvoicePreviewWarning.
 type InvoicePreviewWarning struct {
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 06, 14 a 24 llevan su complemento, como lo pide el catálogo del SAT (share_sale con 06 y 19, dividends con 14, distributable_remainder con 15, interest, trust_lease, foreign_payment, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); 01, 02, 04 y 05 llevan foreign_payment cuando el receptor es extranjero; la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones. 27 y 28 no se pueden emitir aquí.
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
@@ -7399,6 +7463,8 @@ type PayrollReceiptPreview struct {
 	Period PayrollReceiptPreviewPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days float64 `json:"days"`
+	// Los días por los que se calcularon las cuotas obreras del IMSS.
+	ImssDays PayrollReceiptPreviewImssDays `json:"imss_days"`
 	// Salario base de cotización (SalarioBaseCotApor).
 	ContributionBaseSalary float64 `json:"contribution_base_salary"`
 	// Percepciones (Percepcion): sueldo y demás, gravado y exento.
@@ -7445,6 +7511,20 @@ type PayrollReceiptPreviewISRAdjustment struct {
 	Reversed float64 `json:"reversed"`
 	// El ISR que se retiene después del ajuste.
 	ISR float64 `json:"isr"`
+}
+
+// PayrollReceiptPreviewImssDays: Los días por los que se calcularon las cuotas obreras del IMSS.
+type PayrollReceiptPreviewImssDays struct {
+	// Días naturales del periodo que trabajó para el patrón: las cuotas del IMSS se causan por mes calendario (LSS art. 39), no por los días pagados.
+	CalendarDays int64 `json:"calendar_days"`
+	// Faltas del recibo.
+	Absences int64 `json:"absences"`
+	// Días de incapacidad del recibo.
+	DisabilityDays int64 `json:"disability_days"`
+	// Días que cotiza en enfermedades y maternidad (excedente, prestaciones en dinero, gastos médicos de pensionados): el periodo sin la incapacidad; las faltas cuentan (LSS art. 31 fr. I).
+	SicknessAndMaternity int64 `json:"sickness_and_maternity"`
+	// Días que cotiza en invalidez y vida y en cesantía en edad avanzada y vejez: además sin las faltas, hasta 7 por mes.
+	DisabilityAndOldAge int64 `json:"disability_and_old_age"`
 }
 
 // PayrollReceiptPreviewOtherPayment: PayrollReceiptPreviewOtherPayment.
@@ -7553,7 +7633,7 @@ type PayrollReceiptPreviewTotals struct {
 
 // PayrollReceiptPreviewWarning: PayrollReceiptPreviewWarning.
 type PayrollReceiptPreviewWarning struct {
-	// finiquito_not_included: el empleado se fue en el periodo y el recibo no trae su finiquito; payroll_rates_pending: aún no se cargan los valores (ISR, subsidio, salario mínimo, UMA) de una fecha próxima.
+	// finiquito_not_included: el empleado se fue en el periodo y el recibo no trae su finiquito; absences_over_monthly_limit: con este recibo pasa de 7 faltas en el mes y las de más cotizan como días trabajados (para dejar de cotizar, presente su aviso de baja); payroll_rates_pending: aún no se cargan los valores (ISR, subsidio, salario mínimo, UMA) de una fecha próxima.
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
@@ -7699,6 +7779,10 @@ type PreviewPayrollReceiptParams struct {
 	Period PreviewPayrollReceiptParamsPeriod `json:"period"`
 	// Días pagados (NumDiasPagados). Por omisión, todos los del periodo que le tocan.
 	Days *float64 `json:"days,omitempty"`
+	// Faltas del periodo (días sin goce de sueldo), de 0 a 31: no se pagan (salen de days) y cotizan al IMSS solo en enfermedades y maternidad, hasta 7 por mes (LSS art. 31 fr. I).
+	Absences *int64 `json:"absences,omitempty"`
+	// Días de incapacidad que expidió el IMSS en el periodo, de 0 a 31: no se pagan (salen de days) y no causan cuotas obreras del IMSS (LSS art. 31 fr. IV).
+	DisabilityDays *int64 `json:"disability_days,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
 	Replaces *string `json:"replaces,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
@@ -7839,7 +7923,7 @@ type Product struct {
 	Description string `json:"description"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey string `json:"product_key"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey string `json:"unit_key"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -7865,6 +7949,8 @@ type Product struct {
 	ISRRetention float64 `json:"isr_retention"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []ProductLocalTax `json:"local_taxes"`
+	// Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+	Hydrocarbon *ProductHydrocarbon `json:"hydrocarbon,omitempty"`
 	// true si lleva existencias (Inventario).
 	TrackStock bool `json:"track_stock"`
 	// Su costo por unidad en pesos sin IVA, o null.
@@ -7883,6 +7969,16 @@ type Product struct {
 	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
 	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// ProductHydrocarbon: ProductHydrocarbon.
+type ProductHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct string `json:"subproduct"`
 }
 
 // ProductList: Una página de la lista.
@@ -8081,7 +8177,7 @@ type QuoteItem struct {
 	ProductKey string `json:"product_key"`
 	// Cantidad (Cantidad). Por omisión 1.
 	Quantity *float64 `json:"quantity,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Precio unitario antes de impuestos (ValorUnitario).
 	UnitPrice float64 `json:"unit_price"`
@@ -8221,7 +8317,7 @@ type RecurringInvoiceItem struct {
 	ProductKey string `json:"product_key"`
 	// Cantidad (Cantidad). Por omisión 1.
 	Quantity *float64 `json:"quantity,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Precio unitario antes de impuestos (ValorUnitario).
 	UnitPrice float64 `json:"unit_price"`
@@ -8331,7 +8427,7 @@ type Retention struct {
 	InternalFolio *string `json:"internal_folio,omitempty"`
 	// Fecha de emisión (Fecha), hora de la Ciudad de México.
 	Date *string `json:"date,omitempty"`
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 06, 14 a 24 llevan su complemento, como lo pide el catálogo del SAT (share_sale con 06 y 19, dividends con 14, distributable_remainder con 15, interest, trust_lease, foreign_payment, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); 01, 02, 04 y 05 llevan foreign_payment cuando el receptor es extranjero; la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones. 27 y 28 no se pueden emitir aquí.
 	Code string `json:"code"`
 	// Descripción de la retención (DescRetenc).
 	Description *string `json:"description,omitempty"`
@@ -8347,11 +8443,13 @@ type Retention struct {
 	Dividends map[string]any `json:"dividends,omitempty"`
 	// Complemento de intereses.
 	Interest map[string]any `json:"interest,omitempty"`
-	// Complemento de pagos a extranjeros.
+	// Complemento de pagos a extranjeros: obligatorio con code 18, y con 01, 02, 04 y 05 cuando el receptor es extranjero.
 	ForeignPayment map[string]any `json:"foreign_payment,omitempty"`
+	// Complemento de dividendos con su nodo Remanente (remanente distribuible), obligatorio con code 15. Si no lo manda, va sin proporción.
+	DistributableRemainder map[string]any `json:"distributable_remainder,omitempty"`
 	// Complemento de arrendamiento en fideicomiso (Arrendamientoenfideicomiso 1.0), obligatorio con code 17.
 	TrustLease map[string]any `json:"trust_lease,omitempty"`
-	// Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 19.
+	// Complemento de enajenación de acciones u operaciones de valores (EnajenaciondeAcciones 1.0), obligatorio con code 06 y 19.
 	ShareSale map[string]any `json:"share_sale,omitempty"`
 	// Complemento de premios (Premios 1.0), obligatorio con code 20. Sus montos son los de totals.
 	Prize map[string]any `json:"prize,omitempty"`
@@ -8823,6 +8921,8 @@ type SATFinding struct {
 	Title string `json:"title"`
 	// Por qué importa y qué hacer, o null.
 	Explanation *string `json:"explanation,omitempty"`
+	// Qué hacer con este hallazgo, en una frase o dos.
+	NextStep string `json:"next_step"`
 	// Cuántos CFDI lo tienen, sin revisar.
 	Invoices int64 `json:"invoices"`
 	// De cuántos proveedores o clientes son esos CFDI.
@@ -8873,6 +8973,8 @@ type SATFindingCounterpartyFinding struct {
 	Title string `json:"title"`
 	// En cuántos de sus CFDI está, sin revisar.
 	Invoices int64 `json:"invoices"`
+	// Qué hacer con este hallazgo, en una frase o dos.
+	NextStep string `json:"next_step"`
 }
 
 // SATFindingCounterpartyList: Una página de la lista.
@@ -9507,6 +9609,14 @@ type SelfInvoicing struct {
 	PortalAccent *string `json:"portal_accent,omitempty"`
 	// Las esquinas del portal en píxeles (0 a 24), o null para las de Fiscalisto.
 	PortalRadius *int64 `json:"portal_radius,omitempty"`
+	// Cuando se factura una persona moral que retiene (1.25% de ISR en RESICO, o lo del producto). keep_total: la base crece y la factura suma lo que se pagó. subtract: la base es la del ticket y el total es lo pagado menos la retención.
+	//
+	// Valores: keep_total, subtract.
+	RetentionMode string `json:"retention_mode"`
+	// ticket: la factura global lleva un concepto «Venta» por ticket, con su folio. summary: solo el monto total del periodo, uno por combinación de impuestos (NoIdentificacion «Resumen»), para una persona física en RESICO (regla 2.7.1.21 de la RMF 2026).
+	//
+	// Valores: ticket, summary.
+	GlobalConcepts string `json:"global_concepts"`
 }
 
 // SendInvoiceParams: los campos de «Enviar por correo».
@@ -9893,7 +10003,7 @@ type SupplierInvoiceList struct {
 
 // SupplierInvoiceWarning: SupplierInvoiceWarning.
 type SupplierInvoiceWarning struct {
-	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 14, 16, 17 y 18 a 24 llevan su complemento (dividends, interest, trust_lease, foreign_payment, share_sale, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones.
+	// Clave de la retención (CveRetenc), c_CveRetenc: 01 servicios profesionales, 05 arrendamiento, 14 dividendos, 16 intereses, 18 pagos al extranjero… Las claves 06, 14 a 24 llevan su complemento, como lo pide el catálogo del SAT (share_sale con 06 y 19, dividends con 14, distributable_remainder con 15, interest, trust_lease, foreign_payment, prize, trust, retirement_plan, mortgage_interest, financial_derivatives); 01, 02, 04 y 05 llevan foreign_payment cuando el receptor es extranjero; la 26 (plataformas tecnológicas) lleva platform, y sus totals y taxes se calculan de las operaciones. 27 y 28 no se pueden emitir aquí.
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
@@ -10131,7 +10241,7 @@ type TicketLine struct {
 	Description string `json:"description"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey string `json:"product_key"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey string `json:"unit_key"`
 	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
 	IVA *string `json:"iva,omitempty"`
@@ -10611,7 +10721,7 @@ type UpdateProductParams struct {
 	Description *string `json:"description,omitempty"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey *string `json:"product_key,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -10641,6 +10751,8 @@ type UpdateProductParams struct {
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
 	LocalTaxes []UpdateProductParamsLocalTax `json:"local_taxes,omitempty"`
+	// Diésel (15101505) y gasolinas (15101514, 15101515): el permiso de la CNE que lleva cada factura con él en el complemento de Hidrocarburos y Petrolíferos. Una factura cuyo concepto trae su propio hydrocarbon usa ese. null lo quita.
+	Hydrocarbon *UpdateProductParamsHydrocarbon `json:"hydrocarbon,omitempty"`
 	// Lleva existencias (Inventario): cada factura que lo vende las saca del almacén de su sucursal, y una cancelada las regresa. Ver GET /v1/products/{id}/stock.
 	TrackStock *bool `json:"track_stock,omitempty"`
 	// Su costo por unidad en pesos sin IVA, hasta que sus compras den otro: vale las existencias que entran sin unit_cost.
@@ -10657,6 +10769,16 @@ type UpdateProductParams struct {
 	OrderStep *float64 `json:"order_step,omitempty"`
 	// Su categoría, con las de arriba separadas por › (también > o /): «Ferretería › Tornillos». Si no existe, se crea. null la quita.
 	Category *string `json:"category,omitempty"`
+}
+
+// UpdateProductParamsHydrocarbon: UpdateProductParamsHydrocarbon.
+type UpdateProductParamsHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct *string `json:"subproduct,omitempty"`
 }
 
 // UpdateProductParamsLocalTax: UpdateProductParamsLocalTax.
@@ -10739,7 +10861,7 @@ type UpdateQuoteParamsItem struct {
 	Description *string `json:"description,omitempty"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey *string `json:"product_key,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -10899,6 +11021,10 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	Type *string `json:"type,omitempty"`
 	// Complemento Carta Porte 3.1 (traslado de mercancías).
 	CartaPorte *InvoiceCreateCartaPorte `json:"carta_porte,omitempty"`
+	// Solo en un traslado (type T) sin carta_porte: la regla de la RMF 2026 que lo permite. 2.7.7.2.1 mercancías propias en un traslado local (no medicamentos, hidrocarburos ni mercancías para despacho aduanero); 2.7.7.2.2 paquetería o mensajería en primera o última milla, un concepto por paquete con su número de guía en sku; 2.7.7.2.3 grúa de arrastre o salvamento local, relacionando con related (05) la factura de ingreso del servicio. Mandarlo es declarar que el traslado no transita por ningún tramo de jurisdicción federal. Los conceptos van con unit_price 0 y taxability 01 (por omisión en un traslado).
+	//
+	// Valores: 2.7.7.2.1, 2.7.7.2.2, 2.7.7.2.3.
+	CartaPorteExemption *string `json:"carta_porte_exemption,omitempty"`
 	// Complemento INE (procesos electorales).
 	INE *InvoiceCreateINE `json:"ine,omitempty"`
 	// Complemento de leyendas fiscales.
@@ -10907,7 +11033,7 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	Donation *InvoiceCreateDonation `json:"donation,omitempty"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []InvoiceCreateLocalTax `json:"local_taxes,omitempty"`
-	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva…
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva con clave A1 (lleva comercio_exterior), 03 temporal (sin él), 04 definitiva con clave distinta a A1 o sin enajenación (con o sin comercio_exterior; con él, incoterm opcional).
 	//
 	// Valores: 01, 02, 03, 04.
 	Export *string `json:"export,omitempty"`
@@ -11065,7 +11191,7 @@ type UpdateSalesOrderParamsItem struct {
 	Description *string `json:"description,omitempty"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
 	ProductKey *string `json:"product_key,omitempty"`
-	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio (por omisión), H87 pieza, ACT actividad…
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey *string `json:"unit_key,omitempty"`
 	// Nombre de la unidad (Unidad), hasta 20 caracteres.
 	UnitName *string `json:"unit_name,omitempty"`
@@ -11225,6 +11351,14 @@ type UpdateSelfInvoicingParams struct {
 	PortalAccent *string `json:"portal_accent,omitempty"`
 	// Lo redondo de las esquinas del portal, en píxeles (0 a 24). `null` pone el de Fiscalisto (10).
 	PortalRadius *int64 `json:"portal_radius,omitempty"`
+	// Cuando se factura una persona moral y retiene (1.25% de ISR a un emisor en RESICO, artículo 113-J de la LISR, o lo que diga el producto): `keep_total` (por omisión), la base crece para que la factura sume lo que se pagó; `subtract`, la base es la del ticket y la retención se resta, así que el total de la factura es menor a lo pagado.
+	//
+	// Valores: keep_total, subtract.
+	RetentionMode *string `json:"retention_mode,omitempty"`
+	// Los conceptos de la factura global: `ticket` (por omisión), uno «Venta» por ticket con su folio como `NoIdentificacion`; `summary`, solo el monto total del periodo, uno por combinación de impuestos con `NoIdentificacion` «Resumen» (regla 2.7.1.21 de la RMF 2026). `summary` es solo para un emisor persona física en RESICO (626); otro contesta `invalid_request`.
+	//
+	// Valores: ticket, summary.
+	GlobalConcepts *string `json:"global_concepts,omitempty"`
 }
 
 // UpdateStoreConnectionParams: los campos de «Cambiar cómo se vuelven tickets sus pedidos».
