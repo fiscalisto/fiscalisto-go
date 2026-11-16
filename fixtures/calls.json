@@ -825,6 +825,27 @@
 		"go": "Prices.Quote",
 		"java": "prices.quote"
 	},
+	"GET /v1/attendance": {
+		"python": "attendance.get",
+		"php": "attendance->get",
+		"dotnet": "Attendance.GetAsync",
+		"go": "Attendance.Get",
+		"java": "attendance.get"
+	},
+	"POST /v1/attendance/marks": {
+		"python": "attendance.create_mark",
+		"php": "attendance->createMark",
+		"dotnet": "Attendance.CreateMarkAsync",
+		"go": "Attendance.CreateMark",
+		"java": "attendance.createMark"
+	},
+	"POST /v1/attendance/marks/{id}/void": {
+		"python": "attendance.void_mark",
+		"php": "attendance->voidMark",
+		"dotnet": "Attendance.VoidMarkAsync",
+		"go": "Attendance.VoidMark",
+		"java": "attendance.voidMark"
+	},
 	"POST /v1/expense_people": {
 		"python": "expense_people.create",
 		"php": "expensePeople->create",

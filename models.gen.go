@@ -209,6 +209,154 @@ type ApproveExpenseReportParams struct {
 	Note *string `json:"note,omitempty"`
 }
 
+// AttendanceMark: Una marca de entrada o salida de Asistencia (registro electrónico de jornada, LFT art. 132).
+type AttendanceMark struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// in: entrada; out: salida.
+	//
+	// Valores: in, out.
+	Kind string `json:"kind"`
+	// Cuándo marcó (UTC).
+	At string `json:"at"`
+	// El día al que cuenta, AAAA-MM-DD en la hora del lugar.
+	Date string `json:"date"`
+	// La hora en el lugar, HH:MM.
+	Time string `json:"time"`
+	// Cómo marcó: kiosk_qr (el código del checador), kiosk_pin (número y NIP en el checador), printed_qr (el QR impreso), remote (fuera de la sucursal, con su ubicación), manual (corrección en la app), api.
+	//
+	// Valores: kiosk_qr, kiosk_pin, printed_qr, remote, manual, api.
+	Method string `json:"method"`
+	// El lugar donde marcó, o null.
+	Place *string `json:"place,omitempty"`
+	// A cuántos metros del lugar estaba, si dio su ubicación; si no, null.
+	DistanceM *float64 `json:"distance_m,omitempty"`
+	// Notas para revisar (la marca nunca se rechaza por ellas): no_location (no dio su ubicación), far (lejos del lugar), imprecise (ubicación imprecisa), remote (fuera de la sucursal), new_device (un celular nuevo).
+	Flags []string `json:"flags"`
+	// Por qué se agregó, en una corrección o desde la API (el empleado lo ve); null si la hizo él.
+	Reason *string `json:"reason,omitempty"`
+	// Quién la agregó, en una corrección; null si la hizo él.
+	CreatedBy *string `json:"created_by,omitempty"`
+	// true si se quitó: queda tachada, no cuenta, y se ve con su motivo.
+	Voided bool `json:"voided"`
+	// Por qué se quitó, o null.
+	VoidReason *string `json:"void_reason,omitempty"`
+	// Quién la quitó, o null.
+	VoidedBy *string `json:"voided_by,omitempty"`
+	// Cuándo se quitó, o null.
+	VoidedAt *string `json:"voided_at,omitempty"`
+}
+
+// AttendanceReport: La asistencia de un periodo, por empleado: horas contra su horario, faltas, retardos y horas extra dobles y triples por semana, como Nómina › Asistencia › Registro.
+type AttendanceReport struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…), el patrón.
+	Issuer string `json:"issuer"`
+	// Primer día del periodo, AAAA-MM-DD.
+	From string `json:"from"`
+	// Último día del periodo, AAAA-MM-DD.
+	To string `json:"to"`
+	// Cada empleado del emisor en el periodo.
+	Employees []AttendanceReportEmployee `json:"employees"`
+}
+
+// AttendanceReportEmployee: AttendanceReportEmployee.
+type AttendanceReportEmployee struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su número de empleado, o null.
+	Number *string `json:"number,omitempty"`
+	// Donde marca, o null (cualquier lugar).
+	Place *string `json:"place,omitempty"`
+	// Minutos trabajados en el periodo.
+	WorkedMinutes int64 `json:"worked_minutes"`
+	// Minutos de su horario en el periodo.
+	ScheduledMinutes int64 `json:"scheduled_minutes"`
+	// Faltas: días de trabajo sin marcas ni nota.
+	Absences int64 `json:"absences"`
+	// Días con nota de incapacidad.
+	DisabilityDays int64 `json:"disability_days"`
+	// Días con nota de vacaciones.
+	VacationDays int64 `json:"vacation_days"`
+	// Cuántos días llegó tarde.
+	LateCount int64 `json:"late_count"`
+	// Minutos de retardo en total.
+	LateMinutes int64 `json:"late_minutes"`
+	// Días con una marca sin su pareja (sin salida).
+	IncompleteDays int64 `json:"incomplete_days"`
+	// Marcas con una nota para revisar (flags).
+	FlaggedMarks int64 `json:"flagged_marks"`
+	// Horas extra que se pagan dobles (hasta 9 por semana en 2026, 12 desde 2027).
+	OvertimeDoubleMinutes int64 `json:"overtime_double_minutes"`
+	// Horas extra que se pagan triples (las que pasan del límite de la semana).
+	OvertimeTripleMinutes int64 `json:"overtime_triple_minutes"`
+	// Días de descanso en que trabajó.
+	RestDaysWorked int64 `json:"rest_days_worked"`
+	// Días festivos en que trabajó.
+	HolidaysWorked int64 `json:"holidays_worked"`
+	// Semanas que el empleado confirmó en su enlace.
+	WeeksConfirmed int64 `json:"weeks_confirmed"`
+	// Las semanas con las que el empleado no está de acuerdo.
+	WeeksDisputed []AttendanceReportEmployeeWeeksDisputedItem `json:"weeks_disputed"`
+	// Cada día del periodo, solo cuando se pide un employee; si no, null.
+	Days []AttendanceReportEmployeeDay `json:"days,omitempty"`
+	// Sus marcas, también las quitadas, solo cuando se pide un employee; si no, null.
+	Marks []AttendanceMark `json:"marks,omitempty"`
+}
+
+// AttendanceReportEmployeeDay: AttendanceReportEmployeeDay.
+type AttendanceReportEmployeeDay struct {
+	// AAAA-MM-DD.
+	Date string `json:"date"`
+	// worked (trabajó), incomplete (falta una marca), absent (falta), rest (descanso), holiday (día festivo), excused (justificado con una nota), upcoming (por venir), before (antes de empezar su registro).
+	//
+	// Valores: worked, incomplete, absent, rest, holiday, excused, upcoming, before.
+	Status string `json:"status"`
+	// Su horario ese día, o null si descansa.
+	Scheduled *AttendanceReportEmployeeDayScheduled `json:"scheduled,omitempty"`
+	// Minutos trabajados ese día.
+	WorkedMinutes int64 `json:"worked_minutes"`
+	// Minutos de retardo, pasada la tolerancia.
+	LateMinutes int64 `json:"late_minutes"`
+	// Minutos de más ese día (horas extra).
+	OvertimeMinutes int64 `json:"overtime_minutes"`
+	// La nota del día que puso la empresa, o null.
+	//
+	// Valores: vacaciones, incapacidad, permiso_con_goce, permiso_sin_goce, descanso, festivo, falta.
+	Note *string `json:"note,omitempty"`
+	// El nombre del día festivo, o null.
+	Holiday *string `json:"holiday,omitempty"`
+}
+
+// AttendanceReportEmployeeDayScheduled: AttendanceReportEmployeeDayScheduled.
+type AttendanceReportEmployeeDayScheduled struct {
+	// Hora de entrada, HH:MM.
+	Start string `json:"start"`
+	// Hora de salida, HH:MM (antes de la entrada: al día siguiente).
+	End string `json:"end"`
+	// Minutos de comida que no se pagan.
+	BreakMinutes int64 `json:"break_minutes"`
+}
+
+// AttendanceReportEmployeeWeeksDisputedItem: AttendanceReportEmployeeWeeksDisputedItem.
+type AttendanceReportEmployeeWeeksDisputedItem struct {
+	// El lunes de la semana, AAAA-MM-DD.
+	Week string `json:"week"`
+	// Lo que el empleado dijo que no coincide.
+	Text string `json:"text"`
+}
+
 // Balance: Timbres de producción de la cuenta, por paquete, el que vence antes primero.
 type Balance struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -927,6 +1075,20 @@ type CreateAdvanceParamsCustomerForeign struct {
 	Country string `json:"country"`
 	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
 	TaxID string `json:"tax_id"`
+}
+
+// CreateAttendanceMarkParams: los campos de «Registrar una marca».
+type CreateAttendanceMarkParams struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// in: entrada; out: salida.
+	//
+	// Valores: in, out.
+	Kind string `json:"kind"`
+	// Cuándo marcó, con su zona horaria (2027-01-04T09:02:00-06:00). No en el futuro ni de hace más de 400 días.
+	At string `json:"at"`
+	// Por qué se registra (se guarda y el empleado lo ve en su enlace). Por omisión «Registrada por la API».
+	Reason *string `json:"reason,omitempty"`
 }
 
 // CreateBankTransactionsParams: los campos de «Mandar depósitos».
@@ -4503,6 +4665,18 @@ type FinancialStatementsIncomeStatementYearToDateSectionGroupAccount struct {
 	Name string `json:"name"`
 	// Importe.
 	Amount float64 `json:"amount"`
+}
+
+// GetAttendanceParams: los campos de «Ver la asistencia de un periodo».
+type GetAttendanceParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Primer día, AAAA-MM-DD.
+	From string `json:"from"`
+	// Último día, AAAA-MM-DD (hasta 92 días después de from).
+	To string `json:"to"`
+	// Solo este empleado (emp_…), con sus días y marcas.
+	Employee *string `json:"employee,omitempty"`
 }
 
 // GetCashForecastParams: los campos de «Ver el flujo de efectivo».
@@ -12049,6 +12223,12 @@ type VerifyCfdiParams struct {
 	ReceiverTaxID *string `json:"receiver_tax_id,omitempty"`
 	// El total del comprobante, sin XML ni QR. El SAT lo compara como número.
 	Total *float64 `json:"total,omitempty"`
+}
+
+// VoidAttendanceMarkParams: los campos de «Quitar una marca».
+type VoidAttendanceMarkParams struct {
+	// Por qué se quita: queda tachada con este motivo y el empleado lo ve.
+	Reason string `json:"reason"`
 }
 
 // Warehouse: Un almacén del emisor: el de la Matriz y uno por sucursal se crean solos; cada factura saca existencias del de su sucursal.

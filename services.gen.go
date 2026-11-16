@@ -74,6 +74,8 @@ type services struct {
 	CustomerGroups *CustomerGroupsService
 	// Listas de precios.
 	Prices *PricesService
+	// Asistencia.
+	Attendance *AttendanceService
 	// Viáticos y gastos.
 	ExpensePeople *ExpensePeopleService
 	// Viáticos y gastos.
@@ -176,6 +178,7 @@ func (s *services) init(c *Client) {
 	s.PriceLists = &PriceListsService{c}
 	s.CustomerGroups = &CustomerGroupsService{c}
 	s.Prices = &PricesService{c}
+	s.Attendance = &AttendanceService{c}
 	s.ExpensePeople = &ExpensePeopleService{c}
 	s.ExpenseReports = &ExpenseReportsService{c}
 	s.ExpensePolicy = &ExpensePolicyService{c}
@@ -2265,6 +2268,54 @@ type PricesService struct{ c *Client }
 func (s *PricesService) Quote(ctx context.Context, params *QuotePricesParams, opts ...RequestOption) (*PriceQuote, error) {
 	out := new(PriceQuote)
 	if err := s.c.do(ctx, "POST", "/v1/prices", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AttendanceService: Asistencia (client.Attendance).
+type AttendanceService struct{ c *Client }
+
+// Get: Ver la asistencia de un periodo
+//
+// El registro de jornada del emisor (LFT art. 132) del periodo, por empleado: minutos trabajados contra su horario, faltas, retardos, días sin salida, marcas con notas y horas extra dobles y triples por semana. Con employee, también cada día y cada marca (con sus correcciones). Hasta 92 días a la vez.
+//
+// GET /v1/attendance
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/get-attendance
+func (s *AttendanceService) Get(ctx context.Context, params *GetAttendanceParams, opts ...RequestOption) (*AttendanceReport, error) {
+	out := new(AttendanceReport)
+	if err := s.c.do(ctx, "GET", "/v1/attendance", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CreateMark: Registrar una marca
+//
+// Una entrada o salida que viene de otro reloj checador. Queda con method api y su motivo, y el empleado la ve en su enlace. Una marca igual del mismo empleado dentro de 60 segundos no se duplica.
+//
+// POST /v1/attendance/marks
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/create-attendance-mark
+func (s *AttendanceService) CreateMark(ctx context.Context, params *CreateAttendanceMarkParams, opts ...RequestOption) (*AttendanceMark, error) {
+	out := new(AttendanceMark)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/marks", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VoidMark: Quitar una marca
+//
+// La marca deja de contar y queda tachada con su motivo, quién y cuándo (nunca se borra). En la app se puede restaurar.
+//
+// POST /v1/attendance/marks/{id}/void
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/void-attendance-mark
+func (s *AttendanceService) VoidMark(ctx context.Context, id string, params *VoidAttendanceMarkParams, opts ...RequestOption) (*AttendanceMark, error) {
+	out := new(AttendanceMark)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/marks/"+url.PathEscape(id)+"/void", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

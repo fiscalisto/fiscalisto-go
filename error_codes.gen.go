@@ -14,6 +14,8 @@ const (
 	CodeAccountSuspended = "account_suspended"
 	// No existe esa versión de la API (en Fiscalisto-Version o api_version). El mensaje dice cuáles hay; vea Versiones.
 	CodeAPIVersionInvalid = "api_version_invalid"
+	// Asistencia no lo permite: el mensaje dice por qué (una hora en el futuro o de hace más de 400 días, un empleado con fecha de baja, un periodo de más de 92 días, una marca ya quitada).
+	CodeAttendanceInvalid = "attendance_invalid"
 	// El depósito no se puede conciliar, clasificar o reabrir así (ya está conciliado, las facturas son de otro cliente o una está cancelada…). El mensaje dice por qué.
 	CodeBankTransactionInvalid = "bank_transaction_invalid"
 	// Una factura del lote no pasa la revisión; param dice cuál (invoices.3.items.0.unit_price). Ninguna del lote se timbró.
