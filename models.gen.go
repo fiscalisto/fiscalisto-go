@@ -169,6 +169,8 @@ type ApplyAdvanceParams struct {
 	Series *string `json:"series,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Idioma del PDF: es (por omisión) o en.
 	//
 	// Valores: es, en, bi.
@@ -1667,6 +1669,8 @@ type CreateInvoiceBatchParamsInvoice struct {
 	Series *string `json:"series,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Idioma del PDF: es (por omisión) o en.
 	//
 	// Valores: es, en, bi.
@@ -2319,6 +2323,8 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	Series *string `json:"series,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Idioma del PDF: es (por omisión) o en.
 	//
 	// Valores: es, en, bi.
@@ -3471,7 +3477,7 @@ type CustomerPaymentBehavior struct {
 	Customer string `json:"customer"`
 	// Su RFC.
 	TaxID string `json:"tax_id"`
-	// Sus días de crédito: los suyos (Clientes) o los de la empresa (Ajustes › Cobranza automática). Contra ellos se mide el atraso.
+	// Sus días de crédito: los suyos (Clientes, o los de su grupo) o los de la empresa (Ajustes › Cobranza automática). Contra ellos se mide el atraso.
 	CreditDays int64 `json:"credit_days"`
 	// on_time (80 % o más llega a tiempo y atraso promedio de 5 días o menos), sometimes_late (hasta 15 días), late (hasta 45), very_late (más) o no_history (menos de 2 facturas pagadas y nada vencido).
 	//
@@ -5089,6 +5095,8 @@ type Invoice struct {
 	PaymentForm *string `json:"payment_form,omitempty"`
 	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
 	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
 	Currency string `json:"currency"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
@@ -5113,7 +5121,7 @@ type Invoice struct {
 	AmountPaid *float64 `json:"amount_paid,omitempty"`
 	// Una PUE que estuvo por cobrar (paid_later o mark_unpaid): el día en que el cliente pagó (AAAA-MM-DD), el que dijo POST /v1/invoices/{id}/mark_paid o el del depósito conciliado con ella. null si no hay fecha de pago registrada (una PUE pagada al timbrarse), si no se ha pagado o si es PPD (sus pagos están en sus complementos).
 	PaidOn *string `json:"paid_on,omitempty"`
-	// Mientras falta cobrarla (unpaid o partial): el día en que vence (AAAA-MM-DD), su fecha más los días de crédito de la ficha del cliente o, sin ellos, los de la empresa (30 si no los cambió); una PUE con paid_later, el último día de su mes. Son los días que usan Cuentas por cobrar y los recordatorios de cobranza. null si ya se pagó o no aplica.
+	// Mientras falta cobrarla (unpaid o partial): el día en que vence (AAAA-MM-DD), su fecha más los días de crédito de la ficha del cliente (o de su grupo de clientes) o, sin ellos, los de la empresa (30 si no los cambió); una PUE con paid_later, el último día de su mes. Son los días que usan Cuentas por cobrar y los recordatorios de cobranza. null si ya se pagó o no aplica.
 	DueDate *string `json:"due_date,omitempty"`
 	// CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
 	Related map[string]any `json:"related,omitempty"`
@@ -5303,6 +5311,8 @@ type InvoiceCreate struct {
 	Series *string `json:"series,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Idioma del PDF: es (por omisión) o en.
 	//
 	// Valores: es, en, bi.
@@ -8325,7 +8335,7 @@ type PortalSupplier struct {
 	Object string `json:"object"`
 	// El emisor de su cuenta (iss_…) cuyo portal es.
 	Issuer string `json:"issuer"`
-	// El RFC del proveedor.
+	// El RFC del proveedor; uno del extranjero, sin RFC, trae su clave `EXT-<país>-<tax ID>` (país en c_Pais del SAT, «EXT-USA-123456789»).
 	TaxID string `json:"tax_id"`
 	// Su nombre o razón social, o null si aún no lo da.
 	Name *string `json:"name,omitempty"`
@@ -10587,9 +10597,9 @@ type SupplierInvoice struct {
 	Issuer string `json:"issuer"`
 	// El proveedor (sup_…) que la mandó.
 	Supplier string `json:"supplier"`
-	// El RFC del proveedor.
+	// El RFC del proveedor, o la clave `EXT-<país>-<tax ID>` de uno del extranjero.
 	SupplierTaxID string `json:"supplier_tax_id"`
-	// El folio fiscal (UUID del timbre).
+	// El folio fiscal (UUID del timbre); la factura de un proveedor del extranjero, que no lleva CFDI, trae `EXT-…` y sat_invoice null.
 	UUID string `json:"uuid"`
 	// La misma factura en sus facturas recibidas (sat_…), para su XML y su PDF, o null.
 	SATInvoice *string `json:"sat_invoice,omitempty"`
@@ -11747,6 +11757,8 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	Series *string `json:"series,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Idioma del PDF: es (por omisión) o en.
 	//
 	// Valores: es, en, bi.
