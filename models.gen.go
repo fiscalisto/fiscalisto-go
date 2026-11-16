@@ -5113,6 +5113,8 @@ type Invoice struct {
 	AmountPaid *float64 `json:"amount_paid,omitempty"`
 	// Una PUE que estuvo por cobrar (paid_later o mark_unpaid): el día en que el cliente pagó (AAAA-MM-DD), el que dijo POST /v1/invoices/{id}/mark_paid o el del depósito conciliado con ella. null si no hay fecha de pago registrada (una PUE pagada al timbrarse), si no se ha pagado o si es PPD (sus pagos están en sus complementos).
 	PaidOn *string `json:"paid_on,omitempty"`
+	// Mientras falta cobrarla (unpaid o partial): el día en que vence (AAAA-MM-DD), su fecha más los días de crédito de la ficha del cliente o, sin ellos, los de la empresa (30 si no los cambió); una PUE con paid_later, el último día de su mes. Son los días que usan Cuentas por cobrar y los recordatorios de cobranza. null si ya se pagó o no aplica.
+	DueDate *string `json:"due_date,omitempty"`
 	// CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
 	Related map[string]any `json:"related,omitempty"`
 	// Solo en un complemento de pago (type P).
@@ -8879,6 +8881,8 @@ type Receivable struct {
 	Currency string `json:"currency"`
 	// Lo que debe en total, en esa moneda.
 	AmountDue float64 `json:"amount_due"`
+	// De eso, lo que ya pasó de su vencimiento (el due_date de cada factura), en esa moneda.
+	AmountOverdue float64 `json:"amount_overdue"`
 	// Cuántas facturas tiene abiertas.
 	OpenInvoices int64 `json:"open_invoices"`
 	// La fecha (AAAA-MM-DD) de su factura abierta más antigua.
