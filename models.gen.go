@@ -3993,6 +3993,8 @@ type ExpensePolicy struct {
 	NotifyApprovers bool `json:"notify_approvers"`
 	// true si avisa a la persona cuando se aprueba, se devuelve o se le paga.
 	NotifyPeople bool `json:"notify_people"`
+	// Cómo se suben los tickets y recibos: image (foto), pdf o los dos. El XML de una factura siempre se acepta.
+	ReceiptFormats []string `json:"receipt_formats"`
 }
 
 // ExpenseReport: Una comprobación de viáticos (un viaje) o de gastos de un periodo: sus gastos revisados contra la ley y la política, y el dinero dado o devuelto. Al aprobarla sus facturas se deducen y entra en las pólizas por 107.01.
@@ -11281,6 +11283,8 @@ type UpdateExpensePolicyParams struct {
 	NotifyApprovers *bool `json:"notify_approvers,omitempty"`
 	// Avisar a la persona cuando se aprueba, se devuelve o se le paga.
 	NotifyPeople *bool `json:"notify_people,omitempty"`
+	// Cómo se suben los tickets y recibos: image (foto), pdf o los dos. Un archivo de otro tipo se rechaza con invalid_request_error. El XML de una factura siempre se acepta.
+	ReceiptFormats []string `json:"receipt_formats,omitempty"`
 }
 
 // UpdateExpenseReportParams: los campos de «Actualizar una comprobación».
