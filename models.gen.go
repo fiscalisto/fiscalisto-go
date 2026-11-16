@@ -39,6 +39,24 @@ type AccountKey struct {
 	Sandbox *string `json:"sandbox,omitempty"`
 }
 
+// AdjustCashForecastParams: los campos de «Cambiar un renglón del flujo».
+type AdjustCashForecastParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// El renglón (lines[].line de GET /v1/cash_forecast).
+	Line string `json:"line"`
+	// Otro día para ese renglón; null el estimado.
+	Date *string `json:"date,omitempty"`
+	// Otro monto, en pesos; null el estimado.
+	Amount *float64 `json:"amount,omitempty"`
+	// true para no contarlo.
+	Excluded *bool `json:"excluded,omitempty"`
+	// Por qué (lo ve quien abra la semana en la app).
+	Note *string `json:"note,omitempty"`
+	// true lo regresa a lo estimado; lo demás se ignora.
+	Reset *bool `json:"reset,omitempty"`
+}
+
 // Advance: Un anticipo timbrado que aún no se aplica.
 type Advance struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -569,6 +587,206 @@ type CancelSalesOrderParams struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// CashForecast: El flujo de efectivo de las próximas 13 semanas: lo que le deben (con lo que cada cliente suele tardar), lo que debe a proveedores, la nómina, las declaraciones, las facturas recurrentes y sus movimientos previstos, desde el saldo que usted dio. Una estimación: no cambia nada.
+type CashForecast struct {
+	// Siempre cash_forecast.
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Hoy en la Ciudad de México (AAAA-MM-DD): el inicio.
+	Today string `json:"today"`
+	// El último día de la semana 13.
+	End string `json:"end"`
+	// Todo en pesos: lo de otra moneda, a su tipo de cambio.
+	Currency string `json:"currency"`
+	// El saldo de hoy que usted dio; null si no lo ha dado (el flujo parte de 0).
+	StartingBalance *CashForecastStartingBalance `json:"starting_balance,omitempty"`
+	// Lo menos que quiere tener; cada semana debajo trae un aviso. 0 si no lo dio.
+	MinimumBalance float64 `json:"minimum_balance"`
+	// El saldo de sus últimos estados de cuenta en Conciliación (60 días), solo como sugerencia; null sin ellos.
+	SuggestedStartingBalance *CashForecastSuggestedStartingBalance `json:"suggested_starting_balance,omitempty"`
+	// El escenario con que se calculó: el de los parámetros de la consulta.
+	Scenario CashForecastScenario `json:"scenario"`
+	// Las 13 semanas juntas.
+	Totals CashForecastTotals `json:"totals"`
+	// Las 13 semanas, en orden.
+	Weeks []CashForecastWeek `json:"weeks"`
+	// Cada cosa que entra o sale, de la que se suman las semanas.
+	Lines []CashForecastLine `json:"lines"`
+	// Avisos con lo que puede hacer; usted decide.
+	Warnings []CashForecastWarning `json:"warnings"`
+	// Sus movimientos previstos.
+	PlannedItems []CashForecastItem `json:"planned_items"`
+	// Lo que no se pudo estimar y por qué.
+	Notes []string `json:"notes"`
+}
+
+// CashForecastItem: Algo que espera pagar o cobrar y que ninguna factura dice (una renta, un crédito, una venta de contado), que cuenta en el flujo de efectivo.
+type CashForecastItem struct {
+	// El movimiento previsto (cfi_…).
+	ID string `json:"id"`
+	// Siempre cash_forecast_item.
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Qué es: «Renta», «Crédito del banco».
+	Description string `json:"description"`
+	// inflow entra dinero; outflow sale.
+	//
+	// Valores: inflow, outflow.
+	Direction string `json:"direction"`
+	// Cuánto, en pesos.
+	Amount float64 `json:"amount"`
+	// El día (AAAA-MM-DD), o la primera vez si se repite.
+	Date string `json:"date"`
+	// once una vez; weekly cada semana; biweekly cada dos; monthly cada mes.
+	//
+	// Valores: once, weekly, biweekly, monthly.
+	Frequency string `json:"frequency"`
+	// El último día en que se repite; null sin fin.
+	Until *string `json:"until,omitempty"`
+}
+
+// CashForecastLine: CashForecastLine.
+type CashForecastLine struct {
+	// El renglón, para cambiarlo con POST /v1/cash_forecast/adjustments.
+	Line string `json:"line"`
+	// receivable: lo que le deben sus clientes; recurring_invoice: lo que facturarán sus recurrentes; planned_inflow / planned_outflow: un movimiento previsto que usted agregó; payable: lo que debe a proveedores; payroll: la nómina; taxes: las declaraciones mensuales.
+	//
+	// Valores: receivable, recurring_invoice, planned_inflow, payable, payroll, taxes, planned_outflow.
+	Type string `json:"type"`
+	// inflow entra; outflow sale.
+	//
+	// Valores: inflow, outflow.
+	Direction string `json:"direction"`
+	// El día en que se cuenta, con cambios y escenario.
+	Date string `json:"date"`
+	// El día que se estimó.
+	EstimatedDate string `json:"estimated_date"`
+	// La semana en que cae; null si se dejó fuera (left_out).
+	Week *int64 `json:"week,omitempty"`
+	// Lo que se cuenta, en pesos.
+	Amount float64 `json:"amount"`
+	// Lo que se estimó, en pesos.
+	EstimatedAmount float64 `json:"estimated_amount"`
+	// Qué es, como en la app.
+	Description string `json:"description"`
+	// El RFC del cliente o proveedor, o null.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Cuántas facturas suma, o null.
+	Invoices *int64 `json:"invoices,omitempty"`
+	// Cuándo vencía, o null.
+	DueDate *string `json:"due_date,omitempty"`
+	// Días de atraso si ya pasó el día esperado, o null.
+	DaysOverdue *int64 `json:"days_overdue,omitempty"`
+	// Cómo se estimó, en palabras.
+	Basis string `json:"basis"`
+	// high: un monto y día conocidos; medium: un promedio; low: atrasado o sin historial.
+	//
+	// Valores: high, medium, low.
+	Confidence string `json:"confidence"`
+	// Por qué no cuenta: excluded usted lo quitó; doubtful más de 90 días de atraso; scenario el escenario lo quitó; after_horizon cae después de la semana 13. null si cuenta.
+	//
+	// Valores: excluded, doubtful, scenario, after_horizon.
+	LeftOut *string `json:"left_out,omitempty"`
+	// true si usted le cambió el día, monto o lo quitó.
+	Adjusted bool `json:"adjusted"`
+	// El movimiento previsto (cfi_…) del que viene, o null.
+	PlannedItem *string `json:"planned_item,omitempty"`
+}
+
+// CashForecastScenario: El escenario con que se calculó: el de los parámetros de la consulta.
+type CashForecastScenario struct {
+	// Días que se movieron los cobros (0 como siempre).
+	CustomersPayDaysLater int64 `json:"customers_pay_days_later"`
+	// Días que se movieron los pagos a proveedores.
+	PaySuppliersDaysLater int64 `json:"pay_suppliers_days_later"`
+	// Si cuenta lo que lleva más de 90 días de atraso.
+	IncludeDoubtful bool `json:"include_doubtful"`
+	// Si cuenta las facturas recurrentes que aún no se emiten.
+	IncludeRecurring bool `json:"include_recurring"`
+	// Por ciento que cambiaron las recurrentes (−20 a +10…).
+	RecurringSalesChange int64 `json:"recurring_sales_change"`
+}
+
+// CashForecastStartingBalance: CashForecastStartingBalance.
+type CashForecastStartingBalance struct {
+	// Lo que tenía en el banco, en pesos.
+	Amount float64 `json:"amount"`
+	// El día de ese saldo.
+	Date string `json:"date"`
+}
+
+// CashForecastSuggestedStartingBalance: CashForecastSuggestedStartingBalance.
+type CashForecastSuggestedStartingBalance struct {
+	// La suma de los saldos, en pesos.
+	Amount float64 `json:"amount"`
+	// El día del estado de cuenta más reciente.
+	Date string `json:"date"`
+}
+
+// CashForecastTotals: Las 13 semanas juntas.
+type CashForecastTotals struct {
+	// Lo que entra en las 13 semanas.
+	Inflows float64 `json:"inflows"`
+	// Lo que sale en las 13 semanas.
+	Outflows float64 `json:"outflows"`
+	// El saldo al final de la semana 13.
+	EndingBalance float64 `json:"ending_balance"`
+	// El saldo más bajo al cierre de una semana.
+	LowestBalance float64 `json:"lowest_balance"`
+	// La semana de ese saldo (1 a 13).
+	LowestWeek int64 `json:"lowest_week"`
+	// Cuántas semanas cierran debajo de minimum_balance (o de 0).
+	WeeksBelowMinimum int64 `json:"weeks_below_minimum"`
+	// Lo que se dejó fuera por llevar más de 90 días de atraso.
+	DoubtfulLeftOut float64 `json:"doubtful_left_out"`
+}
+
+// CashForecastWarning: CashForecastWarning.
+type CashForecastWarning struct {
+	// no_starting_balance: falta el saldo de hoy; stale_starting_balance: tiene más de 7 días; shortfall: una semana cierra debajo del mínimo; overdue_receivables: mucho por cobrar está atrasado; customer_concentration: un cliente es 40 % o más de lo que entra; doubtful_left_out: se dejó fuera lo de más de 90 días.
+	//
+	// Valores: no_starting_balance, stale_starting_balance, shortfall, overdue_receivables, customer_concentration, doubtful_left_out.
+	Type string `json:"type"`
+	// Qué tan urgente es.
+	//
+	// Valores: critical, warning, info.
+	Severity string `json:"severity"`
+	// El aviso, en palabras.
+	Title string `json:"title"`
+	// Qué puede hacer; nada cambia solo.
+	Detail string `json:"detail"`
+	// La semana, o null.
+	Week *int64 `json:"week,omitempty"`
+	// Lo que faltaría, en pesos, o null.
+	Shortfall *float64 `json:"shortfall,omitempty"`
+}
+
+// CashForecastWeek: CashForecastWeek.
+type CashForecastWeek struct {
+	// 1 a 13; la 1 va de hoy al domingo.
+	Week int64 `json:"week"`
+	// El primer día (AAAA-MM-DD).
+	Start string `json:"start"`
+	// El último día, un domingo.
+	End string `json:"end"`
+	// El saldo al empezar la semana.
+	StartingBalance float64 `json:"starting_balance"`
+	// Lo que entra.
+	Inflows float64 `json:"inflows"`
+	// Lo que sale.
+	Outflows float64 `json:"outflows"`
+	// El saldo al cerrar la semana.
+	EndingBalance float64 `json:"ending_balance"`
+	// Lo de cada tipo de renglón (lines[].type) esa semana, en pesos.
+	ByType map[string]any `json:"by_type"`
+}
+
 // CheckSatListsParams: los campos de «Revisar varios RFC en las listas del SAT».
 type CheckSatListsParams struct {
 	// Los RFC a revisar, hasta 1000.
@@ -787,6 +1005,28 @@ type CreateBranchParamsSeries struct {
 	Payment *string `json:"payment,omitempty"`
 	// Serie de sus traslados (tipo T); sin ella, la del emisor.
 	Transfer *string `json:"transfer,omitempty"`
+}
+
+// CreateCashForecastItemParams: los campos de «Agregar un movimiento previsto».
+type CreateCashForecastItemParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Qué es: «Renta», «Crédito del banco».
+	Description string `json:"description"`
+	// inflow si es dinero que entra; outflow si sale.
+	//
+	// Valores: inflow, outflow.
+	Direction string `json:"direction"`
+	// Cuánto, en pesos.
+	Amount float64 `json:"amount"`
+	// El día (o la primera vez, si se repite).
+	Date string `json:"date"`
+	// once (por omisión), weekly, biweekly (cada dos semanas) o monthly.
+	//
+	// Valores: once, weekly, biweekly, monthly.
+	Frequency *string `json:"frequency,omitempty"`
+	// El último día en que se repite; null sin fin.
+	Until *string `json:"until,omitempty"`
 }
 
 // CreateCostCenterParams: los campos de «Crear un centro de costo».
@@ -4263,6 +4503,22 @@ type FinancialStatementsIncomeStatementYearToDateSectionGroupAccount struct {
 	Name string `json:"name"`
 	// Importe.
 	Amount float64 `json:"amount"`
+}
+
+// GetCashForecastParams: los campos de «Ver el flujo de efectivo».
+type GetCashForecastParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Escenario: sus clientes le pagan estos días después (0 a 120).
+	CustomersPayDaysLater *int64 `json:"customers_pay_days_later,omitempty"`
+	// Escenario: usted paga a sus proveedores estos días después (0 a 120).
+	PaySuppliersDaysLater *int64 `json:"pay_suppliers_days_later,omitempty"`
+	// true cuenta lo que lleva más de 90 días de atraso (por omisión no).
+	IncludeDoubtful *bool `json:"include_doubtful,omitempty"`
+	// false deja fuera las facturas recurrentes que aún no se emiten.
+	IncludeRecurring *bool `json:"include_recurring,omitempty"`
+	// Escenario: por ciento que cambian sus recurrentes (−100 a 100).
+	RecurringSalesChange *int64 `json:"recurring_sales_change,omitempty"`
 }
 
 // GetCrossCheckCfdiParams: los campos de «Ver los CFDI de una cifra del cruce».
@@ -10541,6 +10797,44 @@ type UpdateBranchParamsSeries struct {
 	Payment *string `json:"payment,omitempty"`
 	// Serie de sus traslados (tipo T); sin ella, la del emisor.
 	Transfer *string `json:"transfer,omitempty"`
+}
+
+// UpdateCashForecastItemParams: los campos de «Cambiar un movimiento previsto».
+type UpdateCashForecastItemParams struct {
+	// Qué es: «Renta», «Crédito del banco».
+	Description *string `json:"description,omitempty"`
+	// inflow si es dinero que entra; outflow si sale.
+	//
+	// Valores: inflow, outflow.
+	Direction *string `json:"direction,omitempty"`
+	// Cuánto, en pesos.
+	Amount *float64 `json:"amount,omitempty"`
+	// El día (o la primera vez, si se repite).
+	Date *string `json:"date,omitempty"`
+	// once (por omisión), weekly, biweekly (cada dos semanas) o monthly.
+	//
+	// Valores: once, weekly, biweekly, monthly.
+	Frequency *string `json:"frequency,omitempty"`
+	// El último día en que se repite; null sin fin.
+	Until *string `json:"until,omitempty"`
+}
+
+// UpdateCashForecastParams: los campos de «Dar el saldo de hoy».
+type UpdateCashForecastParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// El saldo de hoy en sus cuentas de banco; null lo quita.
+	StartingBalance *UpdateCashForecastParamsStartingBalance `json:"starting_balance,omitempty"`
+	// Lo menos que quiere tener: cada semana debajo trae un aviso. 0 para ninguno.
+	MinimumBalance *float64 `json:"minimum_balance,omitempty"`
+}
+
+// UpdateCashForecastParamsStartingBalance: UpdateCashForecastParamsStartingBalance.
+type UpdateCashForecastParamsStartingBalance struct {
+	// Lo que tiene en el banco, en pesos.
+	Amount float64 `json:"amount"`
+	// El día de ese saldo (AAAA-MM-DD); hoy si no se indica.
+	Date *string `json:"date,omitempty"`
 }
 
 // UpdateCostCenterParams: los campos de «Actualizar un centro de costo».

@@ -279,6 +279,48 @@
 		"go": "Customers.PaymentBehavior",
 		"java": "customers.paymentBehavior"
 	},
+	"GET /v1/cash_forecast": {
+		"python": "cash_forecast.get",
+		"php": "cashForecast->get",
+		"dotnet": "CashForecast.GetAsync",
+		"go": "CashForecast.Get",
+		"java": "cashForecast.get"
+	},
+	"POST /v1/cash_forecast": {
+		"python": "cash_forecast.update",
+		"php": "cashForecast->update",
+		"dotnet": "CashForecast.UpdateAsync",
+		"go": "CashForecast.Update",
+		"java": "cashForecast.update"
+	},
+	"POST /v1/cash_forecast/planned_items": {
+		"python": "cash_forecast.create_item",
+		"php": "cashForecast->createItem",
+		"dotnet": "CashForecast.CreateItemAsync",
+		"go": "CashForecast.CreateItem",
+		"java": "cashForecast.createItem"
+	},
+	"POST /v1/cash_forecast/planned_items/{id}": {
+		"python": "cash_forecast.update_item",
+		"php": "cashForecast->updateItem",
+		"dotnet": "CashForecast.UpdateItemAsync",
+		"go": "CashForecast.UpdateItem",
+		"java": "cashForecast.updateItem"
+	},
+	"DELETE /v1/cash_forecast/planned_items/{id}": {
+		"python": "cash_forecast.delete_item",
+		"php": "cashForecast->deleteItem",
+		"dotnet": "CashForecast.DeleteItemAsync",
+		"go": "CashForecast.DeleteItem",
+		"java": "cashForecast.deleteItem"
+	},
+	"POST /v1/cash_forecast/adjustments": {
+		"python": "cash_forecast.adjust",
+		"php": "cashForecast->adjust",
+		"dotnet": "CashForecast.AdjustAsync",
+		"go": "CashForecast.Adjust",
+		"java": "cashForecast.adjust"
+	},
 	"POST /v1/bank_transactions": {
 		"python": "bank_transactions.create",
 		"php": "bankTransactions->create",

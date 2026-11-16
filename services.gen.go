@@ -34,6 +34,8 @@ type services struct {
 	Receivables *ReceivablesService
 	// Cuentas por cobrar.
 	Customers *CustomersService
+	// Flujo de efectivo.
+	CashForecast *CashForecastService
 	// Conciliación bancaria.
 	BankTransactions *BankTransactionsService
 	// Tickets de compra.
@@ -154,6 +156,7 @@ func (s *services) init(c *Client) {
 	s.Invoices = &InvoicesService{c}
 	s.Receivables = &ReceivablesService{c}
 	s.Customers = &CustomersService{c}
+	s.CashForecast = &CashForecastService{c}
 	s.BankTransactions = &BankTransactionsService{c}
 	s.PurchaseReceipts = &PurchaseReceiptsService{c}
 	s.Payments = &PaymentsService{c}
@@ -1028,6 +1031,99 @@ func (s *CustomersService) Update(ctx context.Context, id string, params *Update
 func (s *CustomersService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
 	if err := s.c.do(ctx, "DELETE", "/v1/customers/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CashForecastService: Flujo de efectivo (client.CashForecast).
+type CashForecastService struct{ c *Client }
+
+// Get: Ver el flujo de efectivo
+//
+// Las próximas 13 semanas del emisor, como «Flujo de efectivo» en la app: lo que le deben, con lo que cada cliente suele tardar en pagar; lo que debe a proveedores; la nómina; las declaraciones mensuales; las facturas recurrentes y sus movimientos previstos, desde el saldo que dio. Trae avisos con lo que puede hacer, y con los parámetros, un escenario (no se guarda). Una estimación: nada cambia solo.
+//
+// GET /v1/cash_forecast
+//
+// https://fiscalisto.com/docs/api/referencia/flujo-de-efectivo/get-cash-forecast
+func (s *CashForecastService) Get(ctx context.Context, params *GetCashForecastParams, opts ...RequestOption) (*CashForecast, error) {
+	out := new(CashForecast)
+	if err := s.c.do(ctx, "GET", "/v1/cash_forecast", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Dar el saldo de hoy
+//
+// El saldo de hoy en sus cuentas de banco (de donde parte el flujo) y lo menos que quiere tener. Solo lo que mande cambia. Responde el flujo con el saldo nuevo.
+//
+// POST /v1/cash_forecast
+//
+// https://fiscalisto.com/docs/api/referencia/flujo-de-efectivo/update-cash-forecast
+func (s *CashForecastService) Update(ctx context.Context, params *UpdateCashForecastParams, opts ...RequestOption) (*CashForecast, error) {
+	out := new(CashForecast)
+	if err := s.c.do(ctx, "POST", "/v1/cash_forecast", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CreateItem: Agregar un movimiento previsto
+//
+// Algo que espera pagar o cobrar y que ninguna factura dice: una renta, un crédito, una venta de contado. Una vez o cada semana, dos semanas o mes. Hasta 200.
+//
+// POST /v1/cash_forecast/planned_items
+//
+// https://fiscalisto.com/docs/api/referencia/flujo-de-efectivo/create-cash-forecast-item
+func (s *CashForecastService) CreateItem(ctx context.Context, params *CreateCashForecastItemParams, opts ...RequestOption) (*CashForecastItem, error) {
+	out := new(CashForecastItem)
+	if err := s.c.do(ctx, "POST", "/v1/cash_forecast/planned_items", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateItem: Cambiar un movimiento previsto
+//
+// Solo lo que mande cambia.
+//
+// POST /v1/cash_forecast/planned_items/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/flujo-de-efectivo/update-cash-forecast-item
+func (s *CashForecastService) UpdateItem(ctx context.Context, id string, params *UpdateCashForecastItemParams, opts ...RequestOption) (*CashForecastItem, error) {
+	out := new(CashForecastItem)
+	if err := s.c.do(ctx, "POST", "/v1/cash_forecast/planned_items/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteItem: Borrar un movimiento previsto
+//
+// Ya no cuenta en el flujo.
+//
+// DELETE /v1/cash_forecast/planned_items/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/flujo-de-efectivo/delete-cash-forecast-item
+func (s *CashForecastService) DeleteItem(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/cash_forecast/planned_items/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Adjust: Cambiar un renglón del flujo
+//
+// Otro día o monto para un renglón (lines[].line), o no contarlo: un cliente le avisó que paga después, o una factura ya se pagó por fuera. Solo cambia el pronóstico, nunca la factura. reset: true lo regresa a lo estimado. Responde el flujo con el cambio.
+//
+// POST /v1/cash_forecast/adjustments
+//
+// https://fiscalisto.com/docs/api/referencia/flujo-de-efectivo/adjust-cash-forecast
+func (s *CashForecastService) Adjust(ctx context.Context, params *AdjustCashForecastParams, opts ...RequestOption) (*CashForecast, error) {
+	out := new(CashForecast)
+	if err := s.c.do(ctx, "POST", "/v1/cash_forecast/adjustments", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
