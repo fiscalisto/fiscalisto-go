@@ -3193,14 +3193,14 @@ func (s *MembersService) Update(ctx context.Context, id string, params *UpdateMe
 
 // Delete: Quitar a un miembro
 //
-// La persona deja de entrar a la empresa y sus invitaciones se cancelan. Siempre queda al menos un propietario; quitar a alguien con permisos delicados se hace en la app.
+// La persona deja de entrar a la empresa y sus invitaciones se cancelan; lo que hizo se queda con su nombre. Lo que le esperaba (pasos de aprobación que la nombran, aprobaciones pendientes, avisos, ausencias, viáticos que aprueba) pasa a `transfer_to` o, sin él, a cualquiera con el permiso. Siempre queda al menos un propietario; quitar a alguien con permisos delicados se hace en la app.
 //
 // DELETE /v1/members/{id}
 //
 // https://fiscalisto.com/docs/api/referencia/equipo/delete-member
-func (s *MembersService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+func (s *MembersService) Delete(ctx context.Context, id string, params *DeleteMemberParams, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
-	if err := s.c.do(ctx, "DELETE", "/v1/members/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+	if err := s.c.do(ctx, "DELETE", "/v1/members/"+url.PathEscape(id), nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

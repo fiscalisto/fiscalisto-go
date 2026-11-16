@@ -3579,6 +3579,12 @@ type DeleteCostCenterParams struct {
 	MoveTo *string `json:"move_to,omitempty"`
 }
 
+// DeleteMemberParams: los campos de «Quitar a un miembro».
+type DeleteMemberParams struct {
+	// El miembro (mem_…) que recibe su trabajo; sin él, cualquiera con permiso.
+	TransferTo *string `json:"transfer_to,omitempty"`
+}
+
 // DeleteRoleParams: los campos de «Borrar un rol».
 type DeleteRoleParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
