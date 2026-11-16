@@ -203,15 +203,17 @@ type ApplyAdvanceParamsRemainder struct {
 	PaymentForm *string `json:"payment_form,omitempty"`
 }
 
-// ApproveAttendanceOvertimeParams: los campos de «Autorizar horas extra».
+// ApproveAttendanceOvertimeParams: los campos de «Autorizar o rechazar horas extra».
 type ApproveAttendanceOvertimeParams struct {
 	// El empleado (emp_…).
 	Employee string `json:"employee"`
 	// AAAA-MM-DD.
 	Date string `json:"date"`
-	// Hasta cuántos minutos de horas extra de ese día cuentan para la nómina (0 a 960); null quita la autorización.
+	// Hasta cuántos minutos de horas extra de ese día cuentan para la nómina (0 a 960); null quita la decisión. Con rejected: true se ignora.
 	Minutes *int64 `json:"minutes,omitempty"`
-	// Por qué (opcional).
+	// true rechaza todas las horas extra de ese día: quedan en el registro, no cuentan para la nómina y dejan de estar por autorizar. Pide comment.
+	Rejected *bool `json:"rejected,omitempty"`
+	// Por qué (obligatorio al rechazar; el empleado lo ve).
 	Comment *string `json:"comment,omitempty"`
 }
 
@@ -265,7 +267,7 @@ type AttendanceMark struct {
 	VoidedAt *string `json:"voided_at,omitempty"`
 }
 
-// AttendanceOvertime: Las horas extra que la empresa autorizó para un día de un empleado, antes o después de ese día.
+// AttendanceOvertime: Las horas extra que la empresa autorizó o rechazó para un día de un empleado, antes o después de ese día.
 type AttendanceOvertime struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
@@ -275,8 +277,10 @@ type AttendanceOvertime struct {
 	Employee string `json:"employee"`
 	// El día, AAAA-MM-DD.
 	Date string `json:"date"`
-	// Hasta cuántos minutos de horas extra de ese día cuentan para la nómina; null: sin autorización.
+	// Hasta cuántos minutos de horas extra de ese día cuentan para la nómina (0 si se rechazaron); null: sin decisión.
 	Minutes *int64 `json:"minutes,omitempty"`
+	// true: la empresa rechazó las horas extra de ese día.
+	Rejected bool `json:"rejected"`
 	// Por qué, o null.
 	Comment *string `json:"comment,omitempty"`
 }
@@ -295,6 +299,10 @@ type AttendanceReport struct {
 	To string `json:"to"`
 	// true: las horas extra cuentan solo hasta lo que la empresa autorizó cada día.
 	OvertimeApproval bool `json:"overtime_approval"`
+	// Cómo llegan las horas extra a la nómina: approval (necesitan autorización), all (cuentan todas) o none (no hay horas extra: quedan en el registro y nunca cuentan).
+	//
+	// Valores: approval, all, none.
+	OvertimePolicy string `json:"overtime_policy"`
 	// Cada empleado del emisor en el periodo.
 	Employees []AttendanceReportEmployee `json:"employees"`
 }
@@ -335,6 +343,8 @@ type AttendanceReportEmployee struct {
 	OvertimeMinutes int64 `json:"overtime_minutes"`
 	// Minutos de más que nadie autorizó: quedan en el registro y no cuentan para la nómina.
 	UnapprovedOvertimeMinutes int64 `json:"unapproved_overtime_minutes"`
+	// Minutos de más que la empresa rechazó: quedan en el registro, no cuentan para la nómina y ya no están por autorizar.
+	RejectedOvertimeMinutes int64 `json:"rejected_overtime_minutes"`
 	// Días de descanso en que trabajó.
 	RestDaysWorked int64 `json:"rest_days_worked"`
 	// Días festivos en que trabajó.
@@ -365,8 +375,10 @@ type AttendanceReportEmployeeDay struct {
 	LateMinutes int64 `json:"late_minutes"`
 	// Minutos de más ese día (horas extra).
 	OvertimeMinutes int64 `json:"overtime_minutes"`
-	// De esos, los que cuentan para la nómina: hasta lo autorizado ese día cuando las horas extra necesitan autorización; si no, todos.
+	// De esos, los que cuentan para la nómina: con overtime_policy approval, hasta lo autorizado ese día; con all, todos; con none, ninguno.
 	ApprovedOvertimeMinutes int64 `json:"approved_overtime_minutes"`
+	// De esos, los que la empresa rechazó ese día: no cuentan para la nómina.
+	RejectedOvertimeMinutes int64 `json:"rejected_overtime_minutes"`
 	// La nota del día que puso la empresa, o null.
 	//
 	// Valores: vacaciones, incapacidad, permiso_con_goce, permiso_sin_goce, descanso, festivo, falta.

@@ -2321,9 +2321,9 @@ func (s *AttendanceService) VoidMark(ctx context.Context, id string, params *Voi
 	return out, nil
 }
 
-// ApproveOvertime: Autorizar horas extra
+// ApproveOvertime: Autorizar o rechazar horas extra
 //
-// Hasta cuántos minutos de horas extra de un día de un empleado cuentan para la nómina, antes o después de ese día (minutes null quita la autorización). Con la regla «Las horas extra necesitan autorización» encendida, lo demás queda en el registro como sin autorizar.
+// Hasta cuántos minutos de horas extra de un día de un empleado cuentan para la nómina, antes o después de ese día, o rechazarlas todas (rejected: true, con comment). minutes null quita la decisión. Con la regla de horas extra «Necesitan autorización», lo que nadie autorizó queda en el registro como sin autorizar.
 //
 // POST /v1/attendance/overtime
 //
