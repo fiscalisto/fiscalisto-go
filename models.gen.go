@@ -1263,8 +1263,10 @@ type CompanyReportYear struct {
 	PaidShare *float64 `json:"paid_share,omitempty"`
 	// Días promedio de la factura al pago.
 	DaysToPay *float64 `json:"days_to_pay,omitempty"`
-	// Nómina que timbró.
+	// Nómina que timbró: lo que percibieron sus trabajadores, antes de deducciones.
 	PayrollPaid float64 `json:"payroll_paid"`
+	// Sueldos que recibió de sus patrones (recibos de nómina a su RFC), antes de deducciones: lo que gana una persona física asalariada.
+	PayrollReceived float64 `json:"payroll_received"`
 	// Ingresos menos gastos y nómina.
 	Profit float64 `json:"profit"`
 	// Lo que queda, por ciento de ingresos.
