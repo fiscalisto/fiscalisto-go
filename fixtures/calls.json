@@ -1574,6 +1574,13 @@
 		"go": "SatDeclarations.Receipt",
 		"java": "satDeclarations.receipt"
 	},
+	"GET /v1/sat_declarations/{id}/payment_record": {
+		"python": "sat_declarations.payment_record",
+		"php": "satDeclarations->paymentRecord",
+		"dotnet": "SatDeclarations.PaymentRecordAsync",
+		"go": "SatDeclarations.PaymentRecord",
+		"java": "satDeclarations.paymentRecord"
+	},
 	"GET /v1/sat_declarations/{id}/financial_statements": {
 		"python": "sat_declarations.financial_statements",
 		"php": "satDeclarations->financialStatements",

@@ -1085,9 +1085,9 @@ type CompanyReportCounterpartyNotice struct {
 type CompanyReportCustomers struct {
 	// Cuántos hay en el periodo.
 	Count int64 `json:"count"`
-	// Su concentración (índice Herfindahl-Hirschman, 0 a 10,000; más de 1,500 es concentrado).
+	// Su concentración (índice Herfindahl-Hirschman, 0 a 10,000; más de 1,500 es concentrado), sin el público en general.
 	Hhi *float64 `json:"hhi,omitempty"`
-	// Por ciento del total que suman los 10 principales.
+	// Por ciento del total que suman los 10 principales, sin el público en general.
 	Top10Share *float64 `json:"top10_share,omitempty"`
 	// Los principales, de mayor a menor: 15, o 5 en executive.
 	Parties []CompanyReportCustomersParty `json:"parties"`
@@ -1095,7 +1095,7 @@ type CompanyReportCustomers struct {
 
 // CompanyReportCustomersParty: CompanyReportCustomersParty.
 type CompanyReportCustomersParty struct {
-	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	// Su RFC. XAXX010101000 y XEXX010101000 son una sola fila cada uno («Público en general», «Residentes en el extranjero») con todas las personas que facturaron con ese RFC.
 	TaxID string `json:"tax_id"`
 	// Nombre.
 	Name *string `json:"name,omitempty"`
@@ -1201,9 +1201,9 @@ type CompanyReportShareholdersReceivedFromItem struct {
 type CompanyReportSuppliers struct {
 	// Cuántos hay en el periodo.
 	Count int64 `json:"count"`
-	// Su concentración (índice Herfindahl-Hirschman, 0 a 10,000; más de 1,500 es concentrado).
+	// Su concentración (índice Herfindahl-Hirschman, 0 a 10,000; más de 1,500 es concentrado), sin el público en general.
 	Hhi *float64 `json:"hhi,omitempty"`
-	// Por ciento del total que suman los 10 principales.
+	// Por ciento del total que suman los 10 principales, sin el público en general.
 	Top10Share *float64 `json:"top10_share,omitempty"`
 	// Los principales, de mayor a menor: 15, o 5 en executive.
 	Parties []CompanyReportSuppliersParty `json:"parties"`
@@ -1211,7 +1211,7 @@ type CompanyReportSuppliers struct {
 
 // CompanyReportSuppliersParty: CompanyReportSuppliersParty.
 type CompanyReportSuppliersParty struct {
-	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	// Su RFC. XAXX010101000 y XEXX010101000 son una sola fila cada uno («Público en general», «Residentes en el extranjero») con todas las personas que facturaron con ese RFC.
 	TaxID string `json:"tax_id"`
 	// Nombre.
 	Name *string `json:"name,omitempty"`
@@ -9641,7 +9641,9 @@ type SATDeclaration struct {
 	Receipt *SATDeclarationReceipt `json:"receipt,omitempty"`
 	// Las mismas cifras con nombres fijos, por obligación (ISR, IVA, cada retención), para leerlas igual cada mes sin conocer el formato del SAT. Una cifra que no viene en la declaración o no se pudo leer es null, nunca 0. En Declaraciones y pagos solo trae lo del acuse.
 	Summary SATDeclarationSummary `json:"summary"`
-	// Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
+	// Su pago en el banco, de «Declaraciones pagadas» del SAT (solo las mensuales; null en las demás). status: paid (el SAT tiene el pago), unpaid (tiene algo a pagar y el SAT no lo tenía pagado en checked_at), overdue (igual, con la línea de captura vencida), nothing_to_pay o unchecked (aún no se revisa). paid_on, amount_paid y bank del pago más reciente, y cada pago en payments con su banco, día, línea de captura, medio (channel), importe, número de operación del banco y llave de pago.
+	Payment *SATDeclarationPayment `json:"payment,omitempty"`
+	// Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt), payment_record (GET …/payment_record, cuando el SAT la tiene como pagada) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
 	Files SATDeclarationFiles `json:"files"`
 	// Por qué falta un archivo, como lo dijo el SAT (por ejemplo «No se puede generar el archivo»). Se vuelve a pedir en la siguiente consulta.
 	FilesError *string `json:"files_error,omitempty"`
@@ -9691,12 +9693,14 @@ type SATDeclarationCalendarMonthObligation struct {
 	Declarations []string `json:"declarations"`
 }
 
-// SATDeclarationFiles: Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
+// SATDeclarationFiles: Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt), payment_record (GET …/payment_record, cuando el SAT la tiene como pagada) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
 type SATDeclarationFiles struct {
 	// Si ya tiene la declaración en PDF (GET …/pdf).
 	PDF bool `json:"pdf"`
 	// Si ya tiene el acuse (GET …/receipt).
 	Receipt bool `json:"receipt"`
+	// Si ya tiene el registro del pago (GET …/payment_record).
+	PaymentRecord bool `json:"payment_record"`
 	// Si ya tiene el Excel de estados financieros (GET …/financial_statements), solo en la anual de persona moral.
 	FinancialStatements bool `json:"financial_statements"`
 }
@@ -9711,6 +9715,42 @@ type SATDeclarationList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// SATDeclarationPayment: SATDeclarationPayment.
+type SATDeclarationPayment struct {
+	// paid, unpaid (algo a pagar que el SAT no tenía pagado), overdue (igual, línea de captura vencida), nothing_to_pay o unchecked.
+	//
+	// Valores: paid, unpaid, overdue, nothing_to_pay, unchecked.
+	Status string `json:"status"`
+	// El día del pago más reciente (AAAA-MM-DD).
+	PaidOn *string `json:"paid_on,omitempty"`
+	// Lo pagado, en pesos (la suma de los pagos).
+	AmountPaid *float64 `json:"amount_paid,omitempty"`
+	// El banco del pago más reciente.
+	Bank *string `json:"bank,omitempty"`
+	// Cuándo se buscó por última vez en «Declaraciones pagadas».
+	CheckedAt *string `json:"checked_at,omitempty"`
+	// Cada pago como el SAT lo registró del banco.
+	Payments []SATDeclarationPaymentPayment `json:"payments"`
+}
+
+// SATDeclarationPaymentPayment: SATDeclarationPaymentPayment.
+type SATDeclarationPaymentPayment struct {
+	// La institución de crédito.
+	Bank *string `json:"bank,omitempty"`
+	// El día del pago (AAAA-MM-DD).
+	Date *string `json:"date,omitempty"`
+	// La línea de captura pagada.
+	PaymentLine *string `json:"payment_line,omitempty"`
+	// Cómo se pagó, como lo dice el SAT («Ventanilla», «Internet»).
+	Channel *string `json:"channel,omitempty"`
+	// El importe pagado.
+	Amount *float64 `json:"amount,omitempty"`
+	// El número de operación del banco.
+	BankOperationNumber *string `json:"bank_operation_number,omitempty"`
+	// La llave de pago.
+	PaymentKey *string `json:"payment_key,omitempty"`
 }
 
 // SATDeclarationReceipt: SATDeclarationReceipt.

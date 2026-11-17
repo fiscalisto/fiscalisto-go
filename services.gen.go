@@ -3779,6 +3779,17 @@ func (s *SatDeclarationsService) Receipt(ctx context.Context, id string, opts ..
 	return s.c.raw(ctx, "GET", "/v1/sat_declarations/"+url.PathEscape(id)+"/receipt", nil, nil, false, opts)
 }
 
+// PaymentRecord: Descargar el registro del pago de una declaración
+//
+// La «Información registrada de pagos de contribuciones federales» de una declaración mensual pagada, como la da el SAT: el banco, el día, el importe, el número de operación del banco y la llave de pago. Existe cuando payment.status es paid. No usa timbres.
+//
+// GET /v1/sat_declarations/{id}/payment_record
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-declaration-payment-record
+func (s *SatDeclarationsService) PaymentRecord(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/sat_declarations/"+url.PathEscape(id)+"/payment_record", nil, nil, false, opts)
+}
+
 // FinancialStatements: Descargar los estados financieros de una anual
 //
 // El Excel de estados financieros de la anual de persona moral, como lo da el SAT. No usa timbres.
