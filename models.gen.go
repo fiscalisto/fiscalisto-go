@@ -1267,6 +1267,8 @@ type CompanyReportYear struct {
 	PayrollPaid float64 `json:"payroll_paid"`
 	// Sueldos que recibió de sus patrones (recibos de nómina a su RFC), antes de deducciones: lo que gana una persona física asalariada.
 	PayrollReceived float64 `json:"payroll_received"`
+	// Lo que de verdad recibió de esos sueldos: el total de los recibos, después del ISR retenido y las deducciones.
+	PayrollReceivedNet float64 `json:"payroll_received_net"`
 	// Ingresos menos gastos y nómina.
 	Profit float64 `json:"profit"`
 	// Lo que queda, por ciento de ingresos.
