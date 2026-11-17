@@ -5171,6 +5171,14 @@ type GetRetentionXmlParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetSatAnnualPreloadParams: los campos de «Ver la precarga de la anual de una persona física».
+type GetSatAnnualPreloadParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El ejercicio, como 2025. Por omisión, el anterior (el que se declara).
+	Year *int64 `json:"year,omitempty"`
+}
+
 // GetSatCatalogParams: los campos de «Consultar un catálogo del SAT».
 type GetSatCatalogParams struct {
 	// Qué buscar: palabras («consultoría») o una clave.
@@ -9577,6 +9585,140 @@ type RoleList struct {
 type RollWebhookSecretParams struct {
 	// Segundos que el secreto anterior sigue firmando, de 0 (deja de firmar ya: úselo si se filtró) a 86400. Por omisión 86400 (24 horas).
 	PreviousSecretExpiresIn *int64 `json:"previous_secret_expires_in,omitempty"`
+}
+
+// SATAnnualPreload: Lo que el SAT precargará en la declaración anual de una persona física: sus sueldos y retenciones, y sus deducciones personales.
+type SATAnnualPreload struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El ejercicio de la anual.
+	Year int64 `json:"year"`
+	// Lo que dice el visor de nómina del SAT: lo que le pagaron sus patrones y el ISR que le retuvieron, según sus recibos de nómina. null si aún no se lee.
+	Payroll *SATAnnualPreloadPayroll `json:"payroll,omitempty"`
+	// Lo que dice el visor de deducciones personales del SAT. null si aún no se lee.
+	PersonalDeductions *SATAnnualPreloadPersonalDeductions `json:"personal_deductions,omitempty"`
+}
+
+// SATAnnualPreloadPayroll: SATAnnualPreloadPayroll.
+type SATAnnualPreloadPayroll struct {
+	// Hasta qué día tiene procesados el SAT los recibos (AAAA-MM-DD).
+	UpdatedOn *string `json:"updated_on,omitempty"`
+	// Cuándo se leyó del SAT.
+	ReadAt string `json:"read_at"`
+	// Los totales del ejercicio de todos sus patrones.
+	Concepts []SATAnnualPreloadPayrollConcept `json:"concepts"`
+	// Cada patrón (retenedor) con sus totales.
+	Employers []SATAnnualPreloadPayrollEmployer `json:"employers"`
+}
+
+// SATAnnualPreloadPayrollConcept: SATAnnualPreloadPayrollConcept.
+type SATAnnualPreloadPayrollConcept struct {
+	// La clave del SAT: PIRA1 ingresos por asimilados, PISR1 ISR retenido, y las de sueldos y salarios.
+	Code string `json:"code"`
+	// El grupo en que el SAT la muestra.
+	Group string `json:"group"`
+	// Su nombre en el SAT.
+	Title string `json:"title"`
+	// El monto del ejercicio, en pesos.
+	Amount float64 `json:"amount"`
+}
+
+// SATAnnualPreloadPayrollEmployer: SATAnnualPreloadPayrollEmployer.
+type SATAnnualPreloadPayrollEmployer struct {
+	// El RFC del patrón.
+	TaxID string `json:"tax_id"`
+	// Su nombre o razón social.
+	Name string `json:"name"`
+	// Sus totales del ejercicio por clave.
+	Concepts []SATAnnualPreloadPayrollEmployerConcept `json:"concepts"`
+}
+
+// SATAnnualPreloadPayrollEmployerConcept: SATAnnualPreloadPayrollEmployerConcept.
+type SATAnnualPreloadPayrollEmployerConcept struct {
+	// La clave del SAT, como en concepts.
+	Code string `json:"code"`
+	// Su nombre en el SAT.
+	Title string `json:"title"`
+	// El monto del ejercicio de ese patrón, en pesos.
+	Amount float64 `json:"amount"`
+}
+
+// SATAnnualPreloadPersonalDeductions: SATAnnualPreloadPersonalDeductions.
+type SATAnnualPreloadPersonalDeductions struct {
+	// Cuándo actualizó el SAT el visor.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	// Cuándo se leyó del SAT.
+	ReadAt string `json:"read_at"`
+	// Las deducciones personales que el SAT precarga.
+	TotalTaken float64 `json:"total_taken"`
+	// Lo que podría deducirse y el SAT no toma (gastos factibles de ser deducción personal).
+	TotalPossible float64 `json:"total_possible"`
+	// Lo que toma, por tipo de deducción.
+	Taken []SATAnnualPreloadPersonalDeductionsTakenItem `json:"taken"`
+	// Lo que no toma, por el tipo de deducción que parece.
+	Possible []SATAnnualPreloadPersonalDeductionsPossibleItem `json:"possible"`
+	// Cada CFDI que el visor considera.
+	Invoices []SATAnnualPreloadPersonalDeductionsInvoice `json:"invoices"`
+}
+
+// SATAnnualPreloadPersonalDeductionsInvoice: SATAnnualPreloadPersonalDeductionsInvoice.
+type SATAnnualPreloadPersonalDeductionsInvoice struct {
+	// El folio fiscal.
+	UUID string `json:"uuid"`
+	// El RFC de quien lo emitió.
+	IssuerTaxID string `json:"issuer_tax_id"`
+	// Su nombre.
+	IssuerName string `json:"issuer_name"`
+	// Su fecha de emisión (AAAA-MM-DD).
+	Date *string `json:"date,omitempty"`
+	// Su total, en pesos.
+	Total float64 `json:"total"`
+	// La forma de pago, como la da el SAT.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// El método de pago, como lo da el SAT.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// La clave de producto o servicio.
+	ProductCode *string `json:"product_code,omitempty"`
+	// Sus conceptos.
+	Description *string `json:"description,omitempty"`
+	// El tipo de deducción en que lo puso el SAT (A a J), o L si no lo clasificó y podría deducirse.
+	DeductionCode *string `json:"deduction_code,omitempty"`
+	// Ese tipo, como lo nombra el SAT.
+	DeductionType *string `json:"deduction_type,omitempty"`
+	// Si no lo tomó (L), el tipo que parece; null si lo tomó.
+	PossibleCode *string `json:"possible_code,omitempty"`
+	// Por qué no lo toma, o lo que el SAT observa al tomarlo, en sus palabras.
+	Reasons []string `json:"reasons"`
+	// Si es una aportación o depósito para el retiro que reportó su banco (sin CFDI), cuál; null si es un CFDI.
+	RetirementDeposit *string `json:"retirement_deposit,omitempty"`
+}
+
+// SATAnnualPreloadPersonalDeductionsPossibleItem: SATAnnualPreloadPersonalDeductionsPossibleItem.
+type SATAnnualPreloadPersonalDeductionsPossibleItem struct {
+	// La clave del tipo de deducción del SAT (A a J).
+	Code string `json:"code"`
+	// Su nombre en el SAT.
+	Description string `json:"description"`
+	// Cuántos CFDI.
+	Invoices int64 `json:"invoices"`
+	// La suma, en pesos.
+	Total float64 `json:"total"`
+}
+
+// SATAnnualPreloadPersonalDeductionsTakenItem: SATAnnualPreloadPersonalDeductionsTakenItem.
+type SATAnnualPreloadPersonalDeductionsTakenItem struct {
+	// La clave del tipo de deducción del SAT (A a J).
+	Code string `json:"code"`
+	// Su nombre en el SAT.
+	Description string `json:"description"`
+	// Cuántos CFDI.
+	Invoices int64 `json:"invoices"`
+	// La suma, en pesos.
+	Total float64 `json:"total"`
 }
 
 // SATCatalogEntry: Una clave de un catálogo del SAT.

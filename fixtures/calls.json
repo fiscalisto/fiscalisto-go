@@ -1553,6 +1553,13 @@
 		"go": "SatDeclarations.Calendar",
 		"java": "satDeclarations.calendar"
 	},
+	"GET /v1/sat_declarations/annual_preload": {
+		"python": "sat_declarations.annual_preload",
+		"php": "satDeclarations->annualPreload",
+		"dotnet": "SatDeclarations.AnnualPreloadAsync",
+		"go": "SatDeclarations.AnnualPreload",
+		"java": "satDeclarations.annualPreload"
+	},
 	"GET /v1/sat_declarations/{id}": {
 		"python": "sat_declarations.get",
 		"php": "satDeclarations->get",

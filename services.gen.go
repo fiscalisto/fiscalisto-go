@@ -3742,6 +3742,21 @@ func (s *SatDeclarationsService) Calendar(ctx context.Context, params *GetSatDec
 	return out, nil
 }
 
+// AnnualPreload: Ver la precarga de la anual de una persona física
+//
+// Lo que el SAT precargará en la declaración anual de un emisor persona física, de sus visores: los sueldos o asimilados y el ISR que le retuvieron, por patrón, y las deducciones personales que toma de sus facturas, con las que podrían deducirse y no toma, y por qué. Se lee con la e.firma en cada consulta (POST /v1/sat_declarations/refresh), del ejercicio anterior y del actual; no usa timbres. Un emisor persona moral recibe parameter_invalid.
+//
+// GET /v1/sat_declarations/annual_preload
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-annual-preload
+func (s *SatDeclarationsService) AnnualPreload(ctx context.Context, params *GetSatAnnualPreloadParams, opts ...RequestOption) (*SATAnnualPreload, error) {
+	out := new(SATAnnualPreload)
+	if err := s.c.do(ctx, "GET", "/v1/sat_declarations/annual_preload", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Get: Ver una declaración del SAT
 //
 // Una declaración presentada al SAT, con sus cifras en summary y si ya están su PDF y su acuse.
