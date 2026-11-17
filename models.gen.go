@@ -1021,6 +1021,256 @@ type CloseSalesOrderParams struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// CompanyReport: El Reporte de la empresa de un emisor en un periodo: su salud fiscal, sus indicadores de riesgo, sus años, sus clientes y proveedores, sus socios y los avisos de sus contrapartes.
+type CompanyReport struct {
+	// Siempre company_report.
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Su RFC.
+	TaxID string `json:"tax_id"`
+	// Su razón social, o null si Fiscalisto no la conoce.
+	Name *string `json:"name,omitempty"`
+	// El primer día del periodo (AAAA-MM-DD).
+	DateGte string `json:"date_gte"`
+	// El último día del periodo (AAAA-MM-DD), hoy a lo más.
+	DateLte string `json:"date_lte"`
+	// full: todo; executive: los indicadores principales y 5 clientes y proveedores.
+	//
+	// Valores: full, executive.
+	Version string `json:"version"`
+	// La salud fiscal: una calificación de 0 a 1,000 que explica cada punto.
+	FiscalHealth CompanyReportFiscalHealth `json:"fiscal_health"`
+	// Los indicadores de riesgo, cada uno contra su umbral.
+	Indicators []CompanyReportIndicator `json:"indicators"`
+	// Los años lado a lado: este y al menos los dos anteriores.
+	Years []CompanyReportYear `json:"years"`
+	// Totales del periodo, en pesos.
+	Totals CompanyReportTotals `json:"totals"`
+	// Sus clientes del periodo.
+	Customers CompanyReportCustomers `json:"customers"`
+	// Sus proveedores del periodo.
+	Suppliers CompanyReportSuppliers `json:"suppliers"`
+	// De los CFDI de retenciones por dividendos (clave 14), hasta 20 de cada lado; null en executive.
+	Shareholders *CompanyReportShareholders `json:"shareholders,omitempty"`
+	// Clientes y proveedores que publicaron en los últimos 13 meses su liquidación, fusión, escisión, transformación o reducción de capital en las Publicaciones de Sociedades Mercantiles de la Secretaría de Economía; null en executive.
+	CounterpartyNotices []CompanyReportCounterpartyNotice `json:"counterparty_notices,omitempty"`
+}
+
+// CompanyReportCounterpartyNotice: CompanyReportCounterpartyNotice.
+type CompanyReportCounterpartyNotice struct {
+	// El RFC del cliente o proveedor.
+	TaxID string `json:"tax_id"`
+	// Su nombre en sus facturas.
+	Name *string `json:"name,omitempty"`
+	// customer (cliente) o supplier (proveedor).
+	//
+	// Valores: customer, supplier.
+	Side string `json:"side"`
+	// Qué publicó («Aviso de liquidación», «Fusión»…).
+	Type string `json:"type"`
+	// Su grupo de publicaciones.
+	Group *string `json:"group,omitempty"`
+	// El día que se publicó (AAAA-MM-DD).
+	Date string `json:"date"`
+	// Su número de publicación.
+	Number string `json:"number"`
+	// Su PDF, cuando ya se conoce.
+	PDFURL *string `json:"pdf_url,omitempty"`
+}
+
+// CompanyReportCustomers: Sus clientes del periodo.
+type CompanyReportCustomers struct {
+	// Cuántos hay en el periodo.
+	Count int64 `json:"count"`
+	// Su concentración (índice Herfindahl-Hirschman, 0 a 10,000; más de 1,500 es concentrado).
+	Hhi *float64 `json:"hhi,omitempty"`
+	// Por ciento del total que suman los 10 principales.
+	Top10Share *float64 `json:"top10_share,omitempty"`
+	// Los principales, de mayor a menor: 15, o 5 en executive.
+	Parties []CompanyReportCustomersParty `json:"parties"`
+}
+
+// CompanyReportCustomersParty: CompanyReportCustomersParty.
+type CompanyReportCustomersParty struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Lo facturado en el periodo, sin impuestos.
+	Total float64 `json:"total"`
+	// Por ciento del total.
+	Share float64 `json:"share"`
+	// Cuántas facturas del periodo.
+	Invoices int64 `json:"invoices"`
+	// Lo pendiente de cobrar o pagar.
+	Balance float64 `json:"balance"`
+}
+
+// CompanyReportFiscalHealth: La salud fiscal: una calificación de 0 a 1,000 que explica cada punto.
+type CompanyReportFiscalHealth struct {
+	// De 0 a 1,000; null si ningún factor tuvo datos.
+	Score *int64 `json:"score,omitempty"`
+	// attention (menos de 250), fair (250 a 499), good (500 a 749) o excellent (750 o más).
+	//
+	// Valores: attention, fair, good, excellent.
+	Band *string `json:"band,omitempty"`
+	// Factores con datos.
+	FactorsUsed int64 `json:"factors_used"`
+	// Todos los factores.
+	FactorsTotal int64 `json:"factors_total"`
+	// Cada factor, con su razón.
+	Factors []CompanyReportFiscalHealthFactor `json:"factors"`
+}
+
+// CompanyReportFiscalHealthFactor: CompanyReportFiscalHealthFactor.
+type CompanyReportFiscalHealthFactor struct {
+	// cumplimiento, listas, declaraciones, contrapartes, cancelaciones, concentracion, cobranza, buzon o crecimiento.
+	Key string `json:"key"`
+	// Su nombre, como en la app.
+	Label string `json:"label"`
+	// Los puntos que puede dar.
+	MaxPoints int64 `json:"max_points"`
+	// Los que dio; null sin datos (no cuenta en la calificación).
+	Points *float64 `json:"points,omitempty"`
+	// Por qué dio esos puntos.
+	Reason string `json:"reason"`
+	// Qué daría los que faltan, o null si dio todos.
+	ToImprove *string `json:"to_improve,omitempty"`
+}
+
+// CompanyReportIndicator: CompanyReportIndicator.
+type CompanyReportIndicator struct {
+	// El indicador (el de PATCH del umbral en la app).
+	Key string `json:"key"`
+	// Su nombre, como en la app.
+	Label string `json:"label"`
+	// ok, risk (pasa el umbral) o no_data.
+	//
+	// Valores: ok, risk, no_data.
+	State string `json:"state"`
+	// La cifra: por ciento 0 a 100, HHI, cuántos, pesos o días; null sin datos.
+	Value *float64 `json:"value,omitempty"`
+	// La cifra en palabras («HHI 1,954», «3 %»).
+	Display string `json:"display"`
+	// Desde dónde se marca en riesgo.
+	Threshold *float64 `json:"threshold,omitempty"`
+	// El umbral es el que puso la empresa, no el de Fiscalisto.
+	CustomThreshold bool `json:"custom_threshold"`
+}
+
+// CompanyReportShareholders: CompanyReportShareholders.
+type CompanyReportShareholders struct {
+	// A quién pagó dividendos: sus socios.
+	PaidTo []CompanyReportShareholdersPaidToItem `json:"paid_to"`
+	// Quién le pagó dividendos: dónde tiene acciones.
+	ReceivedFrom []CompanyReportShareholdersReceivedFromItem `json:"received_from"`
+}
+
+// CompanyReportShareholdersPaidToItem: CompanyReportShareholdersPaidToItem.
+type CompanyReportShareholdersPaidToItem struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Los dividendos de sus CFDI de retenciones, en pesos.
+	Total float64 `json:"total"`
+	// El día del más reciente.
+	LastDate string `json:"last_date"`
+	// Cuántos CFDI de retenciones.
+	Retentions int64 `json:"retentions"`
+}
+
+// CompanyReportShareholdersReceivedFromItem: CompanyReportShareholdersReceivedFromItem.
+type CompanyReportShareholdersReceivedFromItem struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Los dividendos de sus CFDI de retenciones, en pesos.
+	Total float64 `json:"total"`
+	// El día del más reciente.
+	LastDate string `json:"last_date"`
+	// Cuántos CFDI de retenciones.
+	Retentions int64 `json:"retentions"`
+}
+
+// CompanyReportSuppliers: Sus proveedores del periodo.
+type CompanyReportSuppliers struct {
+	// Cuántos hay en el periodo.
+	Count int64 `json:"count"`
+	// Su concentración (índice Herfindahl-Hirschman, 0 a 10,000; más de 1,500 es concentrado).
+	Hhi *float64 `json:"hhi,omitempty"`
+	// Por ciento del total que suman los 10 principales.
+	Top10Share *float64 `json:"top10_share,omitempty"`
+	// Los principales, de mayor a menor: 15, o 5 en executive.
+	Parties []CompanyReportSuppliersParty `json:"parties"`
+}
+
+// CompanyReportSuppliersParty: CompanyReportSuppliersParty.
+type CompanyReportSuppliersParty struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Lo facturado en el periodo, sin impuestos.
+	Total float64 `json:"total"`
+	// Por ciento del total.
+	Share float64 `json:"share"`
+	// Cuántas facturas del periodo.
+	Invoices int64 `json:"invoices"`
+	// Lo pendiente de cobrar o pagar.
+	Balance float64 `json:"balance"`
+}
+
+// CompanyReportTotals: Totales del periodo, en pesos.
+type CompanyReportTotals struct {
+	// Ingresos del periodo, netos de notas de crédito.
+	Income float64 `json:"income"`
+	// Gastos del periodo, netos de notas de crédito.
+	Expenses float64 `json:"expenses"`
+	// Lo que le deben sus clientes del periodo.
+	Receivable float64 `json:"receivable"`
+	// Lo que debe a sus proveedores del periodo.
+	Payable float64 `json:"payable"`
+}
+
+// CompanyReportYear: CompanyReportYear.
+type CompanyReportYear struct {
+	// Año (Ejercicio).
+	Year int64 `json:"year"`
+	// El año en curso, hasta hoy.
+	Partial bool `json:"partial"`
+	// Ingresos facturados sin impuestos, no cancelados.
+	Income float64 `json:"income"`
+	// Ingresos facturados y cancelados.
+	IncomeCancelled float64 `json:"income_cancelled"`
+	// Por ciento de ingresos en PUE.
+	CashShare *float64 `json:"cash_share,omitempty"`
+	// Por ciento de ingresos en PPD.
+	CreditShare *float64 `json:"credit_share,omitempty"`
+	// Por ciento de lo PPD ya cobrado (con complemento).
+	CollectedShare *float64 `json:"collected_share,omitempty"`
+	// Días promedio (ponderados) de la factura al cobro.
+	DaysToCollect *float64 `json:"days_to_collect,omitempty"`
+	// Gastos recibidos sin impuestos, no cancelados.
+	Expenses float64 `json:"expenses"`
+	// Gastos recibidos y cancelados.
+	ExpensesCancelled float64 `json:"expenses_cancelled"`
+	// Por ciento de lo PPD ya pagado.
+	PaidShare *float64 `json:"paid_share,omitempty"`
+	// Días promedio de la factura al pago.
+	DaysToPay *float64 `json:"days_to_pay,omitempty"`
+	// Nómina que timbró.
+	PayrollPaid float64 `json:"payroll_paid"`
+	// Ingresos menos gastos y nómina.
+	Profit float64 `json:"profit"`
+	// Lo que queda, por ciento de ingresos.
+	Margin *float64 `json:"margin,omitempty"`
+}
+
 // ComplianceOpinion: La opinión de cumplimiento de obligaciones fiscales (32-D) más reciente del emisor, como la dio el SAT.
 type ComplianceOpinion struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -4777,6 +5027,20 @@ type GetCashForecastParams struct {
 	IncludeRecurring *bool `json:"include_recurring,omitempty"`
 	// Escenario: por ciento que cambian sus recurrentes (−100 a 100).
 	RecurringSalesChange *int64 `json:"recurring_sales_change,omitempty"`
+}
+
+// GetCompanyReportParams: los campos de «Ver el reporte de la empresa».
+type GetCompanyReportParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Desde este día (AAAA-MM-DD).
+	DateGte *string `json:"date_gte,omitempty"`
+	// Hasta este día (AAAA-MM-DD, completo; hoy a lo más).
+	DateLte *string `json:"date_lte,omitempty"`
+	// full (por omisión) o executive: solo la calificación, los indicadores principales, los años y 5 clientes y proveedores.
+	//
+	// Valores: full, executive.
+	Version *string `json:"version,omitempty"`
 }
 
 // GetCrossCheckCfdiParams: los campos de «Ver los CFDI de una cifra del cruce».

@@ -1182,6 +1182,13 @@
 		"go": "SatFindingCounterparties.List",
 		"java": "satFindingCounterparties.list"
 	},
+	"GET /v1/company_report": {
+		"python": "company_report.get",
+		"php": "companyReport->get",
+		"dotnet": "CompanyReport.GetAsync",
+		"go": "CompanyReport.Get",
+		"java": "companyReport.get"
+	},
 	"GET /v1/materiality_suppliers": {
 		"python": "materiality_suppliers.list",
 		"php": "materialitySuppliers->list",

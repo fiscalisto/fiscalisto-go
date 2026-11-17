@@ -93,6 +93,8 @@ type services struct {
 	// Cumplimiento SAT.
 	SatFindingCounterparties *SatFindingCounterpartiesService
 	// Cumplimiento SAT.
+	CompanyReport *CompanyReportService
+	// Cumplimiento SAT.
 	MaterialitySuppliers *MaterialitySuppliersService
 	// Cumplimiento SAT.
 	MaterialityInvoices *MaterialityInvoicesService
@@ -187,6 +189,7 @@ func (s *services) init(c *Client) {
 	s.SatMailboxMessages = &SatMailboxMessagesService{c}
 	s.SatFindings = &SatFindingsService{c}
 	s.SatFindingCounterparties = &SatFindingCounterpartiesService{c}
+	s.CompanyReport = &CompanyReportService{c}
 	s.MaterialitySuppliers = &MaterialitySuppliersService{c}
 	s.MaterialityInvoices = &MaterialityInvoicesService{c}
 	s.Warehouses = &WarehousesService{c}
@@ -2904,6 +2907,24 @@ func (s *SatFindingCounterpartiesService) List(ctx context.Context, params *List
 // ListAutoPaging: Listar proveedores y clientes con hallazgos, todos, página por página: for x, err := range …
 func (s *SatFindingCounterpartiesService) ListAutoPaging(ctx context.Context, params *ListSatFindingCounterpartiesParams, opts ...RequestOption) iter.Seq2[SATFindingCounterparty, error] {
 	return listAll[SATFindingCounterparty](ctx, s.c, "/v1/sat_finding_counterparties", params, opts)
+}
+
+// CompanyReportService: Cumplimiento SAT (client.CompanyReport).
+type CompanyReportService struct{ c *Client }
+
+// Get: Ver el reporte de la empresa
+//
+// Como Impuestos y SAT › Reporte de la empresa en la app: la salud fiscal del emisor en una calificación de 0 a 1,000 con la razón de cada factor, los indicadores de riesgo contra su umbral, los años lado a lado (ingresos, gastos, PUE y PPD, días de cobro y pago, margen), sus principales clientes y proveedores con su concentración (HHI), sus socios por los CFDI de retenciones por dividendos y los clientes y proveedores que publicaron su liquidación o fusión. Sale de lo que Fiscalisto ya tiene: no consulta al SAT y no usa timbres. Sin fechas, los últimos 12 meses.
+//
+// GET /v1/company_report
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-company-report
+func (s *CompanyReportService) Get(ctx context.Context, params *GetCompanyReportParams, opts ...RequestOption) (*CompanyReport, error) {
+	out := new(CompanyReport)
+	if err := s.c.do(ctx, "GET", "/v1/company_report", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // MaterialitySuppliersService: Cumplimiento SAT (client.MaterialitySuppliers).
