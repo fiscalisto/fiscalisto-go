@@ -9777,6 +9777,8 @@ type SATDeclarationReceiptConcept struct {
 	AmountDue *float64 `json:"amount_due,omitempty"`
 	// La cantidad a pagar.
 	AmountToPay *float64 `json:"amount_to_pay,omitempty"`
+	// El saldo a favor que dice el acuse (la anual de personas físicas); null si no lo trae.
+	InFavor *float64 `json:"in_favor,omitempty"`
 }
 
 // SATDeclarationSection: SATDeclarationSection.
@@ -9817,6 +9819,8 @@ type SATDeclarationSummaryObligation struct {
 	AmountDue *float64 `json:"amount_due,omitempty"`
 	// La cantidad a pagar.
 	AmountToPay *float64 `json:"amount_to_pay,omitempty"`
+	// El saldo a favor, de la declaración o del acuse; null si no hay o no se pudo leer.
+	InFavor *float64 `json:"in_favor,omitempty"`
 	// Sus cifras con nombres fijos. ISR: income, invoiced_income, income_ytd, deductions, profit_coefficient, taxable_profit, losses_applied, tax_base, tax_caused, prior_payments, withheld. IVA: taxable_16, taxable_0, exempt, charged, paid_16, creditable, withheld, balance_applied. Salarios: workers, payments, exempt, withheld. Todas: surcharges, inflation, paid_before, due, in_favor, to_pay. null si no viene o no se pudo leer.
 	Figures map[string]any `json:"figures"`
 }
