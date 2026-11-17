@@ -423,6 +423,8 @@ type Balance struct {
 	AutoRecharge *BalanceAutoRecharge `json:"auto_recharge,omitempty"`
 	// Los RFC de la empresa (type own) timbran primero con los timbres del mes de su plan y después con `available`. true si, al acabarse `available`, la API sigue timbrando esos RFC con los paquetes de la app de la empresa; los emisores conectados no (Desarrolladores › Timbres y pagos › Si se acaban, usar los timbres de la empresa). false: responde 402 insufficient_balance.
 	UsePlanTimbres bool `json:"use_plan_timbres"`
+	// Los timbres del mes del plan de su empresa, que los RFC de la empresa (type own) usan antes que `available`; no se suman a `available`. null si la empresa no tiene un plan de paga con timbres al mes (Gratis o una prueba sin pagar) o en modo de prueba.
+	PlanTimbres *BalancePlanTimbres `json:"plan_timbres,omitempty"`
 	// Los paquetes con timbres, el que vence antes primero (en ese orden se usan).
 	Packs []BalancePack `json:"packs"`
 }
@@ -451,6 +453,18 @@ type BalancePack struct {
 	PurchasedAt *string `json:"purchased_at,omitempty"`
 	// Cuándo vencen; null si no vencen.
 	ExpiresAt *string `json:"expires_at,omitempty"`
+}
+
+// BalancePlanTimbres: BalancePlanTimbres.
+type BalancePlanTimbres struct {
+	// El plan de la empresa (despacho, negocio…).
+	Plan string `json:"plan"`
+	// Los que le quedan este mes.
+	Remaining int64 `json:"remaining"`
+	// Los que trae el plan cada mes.
+	Included int64 `json:"included"`
+	// El día en que vuelven a estar completos (AAAA-MM-DD).
+	ResetsOn string `json:"resets_on"`
 }
 
 // BankImport: Los depósitos que se agregaron.
