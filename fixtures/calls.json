@@ -1490,6 +1490,13 @@
 		"go": "SatRetentions.PDF",
 		"java": "satRetentions.pdf"
 	},
+	"POST /v1/sat_retentions/{id}/cancel": {
+		"python": "sat_retentions.cancel",
+		"php": "satRetentions->cancel",
+		"dotnet": "SatRetentions.CancelAsync",
+		"go": "SatRetentions.Cancel",
+		"java": "satRetentions.cancel"
+	},
 	"GET /v1/portal_suppliers": {
 		"python": "portal_suppliers.list",
 		"php": "portalSuppliers->list",

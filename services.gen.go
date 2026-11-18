@@ -3595,6 +3595,21 @@ func (s *SatRetentionsService) PDF(ctx context.Context, id string, opts ...Reque
 	return s.c.raw(ctx, "GET", "/v1/sat_retentions/"+url.PathEscape(id)+"/pdf", nil, nil, false, opts)
 }
 
+// Cancel: Cancelar una constancia de retenciones emitida
+//
+// Una que el emisor emitió (direction issued), también si la timbró desde otro sistema con el mismo PAC y solo llegó del SAT. Se cancela en el momento (no espera aceptación) y no usa timbres. Una que timbró otro PAC se cancela en el portal del SAT: contesta cancellation_failed y lo explica. Con motive 01, substitution es la constancia que la sustituye (su srt_… o su UUID).
+//
+// POST /v1/sat_retentions/{id}/cancel
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/cancel-sat-retention
+func (s *SatRetentionsService) Cancel(ctx context.Context, id string, params *CancelSatRetentionParams, opts ...RequestOption) (*SATRetention, error) {
+	out := new(SATRetention)
+	if err := s.c.do(ctx, "POST", "/v1/sat_retentions/"+url.PathEscape(id)+"/cancel", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PortalSuppliersService: Portal de proveedores (client.PortalSuppliers).
 type PortalSuppliersService struct{ c *Client }
 
@@ -3962,7 +3977,7 @@ func (s *AccountingService) VatRefund(ctx context.Context, params *GetVatRefundP
 
 // CrossCheckCfdi: Ver los CFDI de una cifra del cruce
 //
-// Los CFDI que forman lo facturado (invoiced) de una cifra del cruce de un mes, con los mismos cálculos de Impuestos: cada factura PUE o nota de crédito en su mes y cada factura PPD por lo que se pagó en el mes, con lo que aporta. La suma de cfdi más adjustment es invoiced. Sirve para ver por qué una cifra differs. Gratis: no consulta al SAT.
+// Los CFDI que forman lo facturado (invoiced) de una cifra del cruce de un mes, con los mismos cálculos de Impuestos: cada factura PUE o nota de crédito en su mes y cada factura PPD por lo que se pagó en el mes, con lo que aporta. La suma de cfdi más adjustment es invoiced. Sirve para ver por qué una cifra differs: con una diferencia, explanation trae los CFDI cuya combinación la suma (cancelados después, PPD sin cobro en el mes, de los días vecinos de otro mes, notas de crédito, cobros de PPD, repetidos o no declarados) y las posibles causas. Gratis: no consulta al SAT.
 //
 // GET /v1/accounting/cross_checks/cfdi
 //

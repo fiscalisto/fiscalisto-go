@@ -799,6 +799,16 @@ type CancelSalesOrderParams struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// CancelSatRetentionParams: los campos de «Cancelar una constancia de retenciones emitida».
+type CancelSatRetentionParams struct {
+	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
+	//
+	// Valores: 01, 02, 03, 04.
+	Motive *string `json:"motive,omitempty"`
+	// El comprobante que sustituye a este (su id o su UUID), con el motivo 01.
+	Substitution *string `json:"substitution,omitempty"`
+}
+
 // CashForecast: El flujo de efectivo de las próximas 13 semanas: lo que le deben (con lo que cada cliente suele tardar), lo que debe a proveedores, la nómina, las declaraciones, las facturas recurrentes y sus movimientos previstos, desde el saldo que usted dio. Una estimación: no cambia nada.
 type CashForecast struct {
 	// Siempre cash_forecast.
@@ -3485,6 +3495,8 @@ type CrossCheckCFDI struct {
 	CFDI []CrossCheckCFDICFDIItem `json:"cfdi"`
 	// Lo que Impuestos agrega sobre los CFDI: en vat_creditable, la proporción de gastos comunes, el IVA retenido enterado del mes anterior y las importaciones; 0 en las demás.
 	Adjustment float64 `json:"adjustment"`
+	// Qué CFDI explicarían la diferencia; null si coincide.
+	Explanation *CrossCheckCFDIExplanation `json:"explanation,omitempty"`
 }
 
 // CrossCheckCFDICFDIItem: CrossCheckCFDICFDIItem.
@@ -3503,6 +3515,82 @@ type CrossCheckCFDICFDIItem struct {
 	Name *string `json:"name,omitempty"`
 	// Lo que aporta a la cifra, en pesos; negativo en una nota de crédito.
 	Amount float64 `json:"amount"`
+}
+
+// CrossCheckCFDIExplanation: CrossCheckCFDIExplanation.
+type CrossCheckCFDIExplanation struct {
+	// La diferencia.
+	Difference float64 `json:"difference"`
+	// Los CFDI cuyo effect suma la diferencia; null si ninguno.
+	Exact *CrossCheckCFDIExplanationExact `json:"exact,omitempty"`
+	// true si varias combinaciones la suman.
+	Ambiguous bool `json:"ambiguous"`
+	// Las posibles causas, por motivo.
+	Causes []CrossCheckCFDIExplanationCause `json:"causes"`
+}
+
+// CrossCheckCFDIExplanationCause: CrossCheckCFDIExplanationCause.
+type CrossCheckCFDIExplanationCause struct {
+	// El motivo que comparten.
+	//
+	// Valores: cancelled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
+	Reason string `json:"reason"`
+	// La suma de su effect.
+	Total float64 `json:"total"`
+	// Sus CFDI.
+	CFDI []CrossCheckCFDIExplanationCauseCFDIItem `json:"cfdi"`
+}
+
+// CrossCheckCFDIExplanationCauseCFDIItem: CrossCheckCFDIExplanationCauseCFDIItem.
+type CrossCheckCFDIExplanationCauseCFDIItem struct {
+	// El folio fiscal (UUID) del CFDI; el de la factura PPD en un pago.
+	UUID *string `json:"uuid,omitempty"`
+	// La fecha del CFDI, o la del pago (AAAA-MM-DD).
+	Date *string `json:"date,omitempty"`
+	// El RFC de la contraparte: el cliente en lo emitido, el proveedor en lo recibido.
+	TaxID *string `json:"tax_id,omitempty"`
+	// El nombre de la contraparte, como viene en el CFDI.
+	Name *string `json:"name,omitempty"`
+	// Lo que aporta a la cifra, en pesos; negativo en una nota de crédito.
+	Amount float64 `json:"amount"`
+	// Cuánto cambiaría invoiced.
+	Effect float64 `json:"effect"`
+	// Por qué lo explicaría.
+	//
+	// Valores: cancelled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
+	Reason string `json:"reason"`
+	// true si está en cfdi.
+	InInvoiced bool `json:"in_invoiced"`
+}
+
+// CrossCheckCFDIExplanationExact: CrossCheckCFDIExplanationExact.
+type CrossCheckCFDIExplanationExact struct {
+	// Los CFDI de la combinación.
+	CFDI []CrossCheckCFDIExplanationExactCFDIItem `json:"cfdi"`
+	// Lo que queda (redondeo).
+	Remainder float64 `json:"remainder"`
+}
+
+// CrossCheckCFDIExplanationExactCFDIItem: CrossCheckCFDIExplanationExactCFDIItem.
+type CrossCheckCFDIExplanationExactCFDIItem struct {
+	// El folio fiscal (UUID) del CFDI; el de la factura PPD en un pago.
+	UUID *string `json:"uuid,omitempty"`
+	// La fecha del CFDI, o la del pago (AAAA-MM-DD).
+	Date *string `json:"date,omitempty"`
+	// El RFC de la contraparte: el cliente en lo emitido, el proveedor en lo recibido.
+	TaxID *string `json:"tax_id,omitempty"`
+	// El nombre de la contraparte, como viene en el CFDI.
+	Name *string `json:"name,omitempty"`
+	// Lo que aporta a la cifra, en pesos; negativo en una nota de crédito.
+	Amount float64 `json:"amount"`
+	// Cuánto cambiaría invoiced.
+	Effect float64 `json:"effect"`
+	// Por qué lo explicaría.
+	//
+	// Valores: cancelled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
+	Reason string `json:"reason"`
+	// true si está en cfdi.
+	InInvoiced bool `json:"in_invoiced"`
 }
 
 // CrossChecks: Lo que el emisor declaró cada mes contra lo que dicen sus CFDI, el IVA a favor y el régimen con que factura.
