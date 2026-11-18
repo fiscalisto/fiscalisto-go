@@ -9985,7 +9985,7 @@ type SATDeclaration struct {
 	//
 	// Valores: normal, complementary.
 	Type string `json:"type"`
-	// El tipo de complementaria como lo dice el SAT («Modificación de obligaciones»…), o null.
+	// En una complementaria, su tipo como lo dice el SAT («Modificación de Obligaciones», «Obligación no presentada», «Dejar sin efecto obligación»). Se liga con la que corrige por source, year, month y period.
 	ComplementaryType *string `json:"complementary_type,omitempty"`
 	// El número de operación que le dio el SAT.
 	OperationNumber string `json:"operation_number"`
@@ -10185,7 +10185,7 @@ type SATDeclarationSummaryObligation struct {
 	AmountToPay *float64 `json:"amount_to_pay,omitempty"`
 	// El saldo a favor, de la declaración o del acuse; null si no hay o no se pudo leer.
 	InFavor *float64 `json:"in_favor,omitempty"`
-	// Sus cifras con nombres fijos. ISR: income, invoiced_income, income_ytd, deductions, profit_coefficient, taxable_profit, losses_applied, tax_base, tax_caused, prior_payments, withheld. IVA: taxable_16, taxable_0, exempt, charged, paid_16, creditable, withheld, balance_applied. Salarios: workers, payments, exempt, withheld. Todas: surcharges, inflation, paid_before, due, in_favor, to_pay. null si no viene o no se pudo leer.
+	// Las cifras de la obligación con nombres fijos (en IVA: taxable_16, taxable_0, exempt, charged, charged_16, charged_16_invoiced, paid_16, creditable, withheld, balance_applied; en todas: surcharges, inflation, paid_before, due, in_favor, to_pay). null si la declaración no la trae o no se pudo leer, nunca 0.
 	Figures map[string]any `json:"figures"`
 }
 
