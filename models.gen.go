@@ -10783,6 +10783,8 @@ type SelfInvoicing struct {
 	//
 	// Valores: keep_total, subtract.
 	RetentionMode string `json:"retention_mode"`
+	// La serie de las facturas que se emiten desde el portal y desde un ticket, como AF, o null para la serie de facturas del emisor. La factura global no la usa.
+	InvoiceSeries *string `json:"invoice_series,omitempty"`
 	// ticket: la factura global lleva un concepto «Venta» por ticket, con su folio. summary: solo el monto total del periodo, uno por combinación de impuestos (NoIdentificacion «Resumen»), para una persona física en RESICO (regla 2.7.1.21 de la RMF 2026).
 	//
 	// Valores: ticket, summary.
@@ -12583,6 +12585,8 @@ type UpdateSelfInvoicingParams struct {
 	//
 	// Valores: keep_total, subtract.
 	RetentionMode *string `json:"retention_mode,omitempty"`
+	// La serie de las facturas que los compradores se hacen en el portal (y las que se emiten desde un ticket), como `AF`: hasta 25 caracteres, sin `|`. `null` o una vacía usa la serie de facturas del emisor. La factura global sigue con la serie de siempre.
+	InvoiceSeries *string `json:"invoice_series,omitempty"`
 	// Los conceptos de la factura global: `ticket` (por omisión), uno «Venta» por ticket con su folio como `NoIdentificacion`; `summary`, solo el monto total del periodo, uno por combinación de impuestos con `NoIdentificacion` «Resumen» (regla 2.7.1.21 de la RMF 2026). `summary` es solo para un emisor persona física en RESICO (626); otro contesta `invalid_request`.
 	//
 	// Valores: ticket, summary.
