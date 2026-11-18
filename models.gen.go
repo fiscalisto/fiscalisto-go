@@ -2693,6 +2693,8 @@ type CreateRetentionParams struct {
 	MortgageInterest *CreateRetentionParamsMortgageInterest `json:"mortgage_interest,omitempty"`
 	// Complemento de operaciones financieras derivadas de capital (Operacionesconderivados 1.0), obligatorio con code 24.
 	FinancialDerivatives *CreateRetentionParamsFinancialDerivatives `json:"financial_derivatives,omitempty"`
+	// Folio fiscal (UUID) de la constancia que esta corrige: vigente, del mismo emisor y al mismo receptor (emitida aquí o en otro sistema). Va en CfdiRetenRelacionados (04) y, timbrada esta, la anterior se cancela con el motivo 01; `replaced` dice si se canceló.
+	Replaces *string `json:"replaces,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
@@ -9651,6 +9653,8 @@ type Retention struct {
 	Warnings []string `json:"warnings,omitempty"`
 	// Por qué no se pudo mandar el correo; el comprobante sí se timbró.
 	EmailError *string `json:"email_error,omitempty"`
+	// Solo al timbrar con `replaces`: la constancia que corrige y si se canceló (motivo 01). Si no, `error` dice por qué y se cancela con POST /v1/sat_retentions/{id}/cancel.
+	Replaced *RetentionReplaced `json:"replaced,omitempty"`
 }
 
 // RetentionCancellation: RetentionCancellation.
@@ -9715,6 +9719,16 @@ type RetentionRecipient struct {
 	Zip *string `json:"zip,omitempty"`
 	// CURP, 18 caracteres.
 	CURP *string `json:"curp,omitempty"`
+}
+
+// RetentionReplaced: Solo al timbrar con `replaces`: la constancia que corrige y si se canceló (motivo 01). Si no, `error` dice por qué y se cancela con POST /v1/sat_retentions/{id}/cancel.
+type RetentionReplaced struct {
+	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
+	UUID string `json:"uuid"`
+	// true si la sustituida ya quedó cancelada. false no es definitivo: vea substitutes.cancellation.
+	Canceled bool `json:"canceled"`
+	// Por qué no se pudo cancelar la anterior; `null` si se canceló.
+	Error *string `json:"error,omitempty"`
 }
 
 // RetentionTax: RetentionTax.
