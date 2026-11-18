@@ -413,7 +413,7 @@ type Balance struct {
 	Object string `json:"object"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
-	// Timbres disponibles en total.
+	// Timbres de sus paquetes, en total: un solo saldo para la API y la app, comprados en Desarrolladores o en Plan y pagos.
 	Available int64 `json:"available"`
 	// true si la cuenta timbra sin usar timbres.
 	Unlimited bool `json:"unlimited"`
@@ -421,7 +421,7 @@ type Balance struct {
 	LowBalanceAt int64 `json:"low_balance_at"`
 	// La recarga automática con la tarjeta guardada, o null si está apagada.
 	AutoRecharge *BalanceAutoRecharge `json:"auto_recharge,omitempty"`
-	// Los RFC de la empresa (type own) timbran primero con los timbres del mes de su plan y después con `available`. true si, al acabarse `available`, la API sigue timbrando esos RFC con los paquetes de la app de la empresa; los emisores conectados no (Desarrolladores › Timbres y pagos › Si se acaban, usar los timbres de la empresa). false: responde 402 insufficient_balance.
+	// Siempre true: los RFC de la empresa (type own) timbran primero con los timbres del mes de su plan y después con `available`, los paquetes de su único saldo (comprados en Desarrolladores o en Plan y pagos). Los emisores conectados usan solo `available`. Se conserva por compatibilidad.
 	UsePlanTimbres bool `json:"use_plan_timbres"`
 	// Los timbres del mes del plan de su empresa, que los RFC de la empresa (type own) usan antes que `available`; no se suman a `available`. null si la empresa no tiene un plan de paga con timbres al mes (Gratis o una prueba sin pagar) o en modo de prueba.
 	PlanTimbres *BalancePlanTimbres `json:"plan_timbres,omitempty"`
@@ -3377,6 +3377,8 @@ type CreateTicketParams struct {
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
+	// Impuestos locales incluidos en su total, como el ISH 3.5% de hospedaje, con `product_key` (un producto lleva los suyos). Cada uno se calcula sobre la base de este concepto y la factura los suma por nombre y tasa en el complemento de impuestos locales.
+	LocalTaxes []CreateTicketParamsLocalTax `json:"local_taxes,omitempty"`
 	// Quién pagó, para reconocer la venta en Tickets. No es el receptor de la factura (eso lo escribe el comprador en el portal) y no se le manda nada.
 	Buyer *CreateTicketParamsBuyer `json:"buyer,omitempty"`
 	// Una venta de varios conceptos (el folio de un hotel: noches, desayunos, lavandería), cada uno con su producto o sus claves, sus impuestos y lo que se cobró por él; hasta 200. En lugar de `product`, `description`, `product_key`, `unit_key` e `iva`. La factura del cliente lleva un concepto por línea; la factura global, uno por cada combinación de impuestos del ticket.
@@ -3405,10 +3407,32 @@ type CreateTicketParamsLine struct {
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
+	// Impuestos locales incluidos en su total, como el ISH 3.5% de hospedaje, con `product_key` (un producto lleva los suyos). Cada uno se calcula sobre la base de este concepto y la factura los suma por nombre y tasa en el complemento de impuestos locales.
+	LocalTaxes []CreateTicketParamsLineLocalTax `json:"local_taxes,omitempty"`
 	// Unidades (noches, piezas). Por omisión 1.
 	Quantity *float64 `json:"quantity,omitempty"`
 	// Lo que se cobró por este concepto, impuestos incluidos.
 	Total float64 `json:"total"`
+}
+
+// CreateTicketParamsLineLocalTax: CreateTicketParamsLineLocalTax.
+type CreateTicketParamsLineLocalTax struct {
+	// `false`: un traslado local que se suma (el ISH). `true`: una retención local que el cliente resta (el cedular); la factura global, a público en general, no la lleva.
+	Retention bool `json:"retention"`
+	// Su nombre en el CFDI (ImpLocTrasladado o ImpLocRetenido), como «ISH».
+	Name string `json:"name"`
+	// La tasa en porcentaje: 3.5 es 3.5%.
+	Rate float64 `json:"rate"`
+}
+
+// CreateTicketParamsLocalTax: CreateTicketParamsLocalTax.
+type CreateTicketParamsLocalTax struct {
+	// `false`: un traslado local que se suma (el ISH). `true`: una retención local que el cliente resta (el cedular); la factura global, a público en general, no la lleva.
+	Retention bool `json:"retention"`
+	// Su nombre en el CFDI (ImpLocTrasladado o ImpLocRetenido), como «ISH».
+	Name string `json:"name"`
+	// La tasa en porcentaje: 3.5 es 3.5%.
+	Rate float64 `json:"rate"`
 }
 
 // CreateWebhookEndpointParams: los campos de «Crear un webhook».
@@ -11391,10 +11415,22 @@ type TicketLine struct {
 	UnitKey string `json:"unit_key"`
 	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
 	IVA *string `json:"iva,omitempty"`
+	// Sus impuestos locales (los de su producto o los que mandó), incluidos en su total.
+	LocalTaxes []TicketLineLocalTax `json:"local_taxes"`
 	// Cantidad (Cantidad). Por omisión 1.
 	Quantity float64 `json:"quantity"`
 	// Total en la moneda del comprobante (Total).
 	Total float64 `json:"total"`
+}
+
+// TicketLineLocalTax: TicketLineLocalTax.
+type TicketLineLocalTax struct {
+	// true si es una retención local; false si es un traslado.
+	Retention bool `json:"retention"`
+	// Nombre del impuesto local (ImpLocTrasladado o ImpLocRetenido), como ISH.
+	Name string `json:"name"`
+	// Tasa en por ciento (TasadeTraslado o TasadeRetencion).
+	Rate float64 `json:"rate"`
 }
 
 // TicketList: Una página de la lista.
