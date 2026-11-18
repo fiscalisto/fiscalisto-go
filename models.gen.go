@@ -8749,6 +8749,94 @@ type PermissionList struct {
 	URL string `json:"url"`
 }
 
+// PortalStyle: Cómo se ve el portal además de su tema, color y esquinas (Autofactura › Cómo se ve el portal).
+type PortalStyle struct {
+	// checkout: la factura se llena junto al formulario. compact: solo el formulario, la factura plegada. card: el formulario en una tarjeta al centro.
+	//
+	// Valores: checkout, compact, card.
+	Layout string `json:"layout"`
+	// comfortable o compact.
+	//
+	// Valores: comfortable, compact.
+	Density string `json:"density"`
+	// Qué dice arriba: name_rfc, name, logo_name o logo.
+	//
+	// Valores: logo, name, name_rfc, logo_name.
+	Header string `json:"header"`
+	// El tamaño del logo: s, m o l.
+	//
+	// Valores: s, m, l.
+	LogoSize string `json:"logo_size"`
+	// La forma del logo: square, rounded o circle.
+	//
+	// Valores: square, rounded, circle.
+	LogoShape string `json:"logo_shape"`
+	// La letra: system o una de Google Fonts.
+	Font string `json:"font"`
+	// La letra de los títulos, o null para la misma del texto.
+	HeadingFont *string `json:"heading_font,omitempty"`
+	// El tamaño del título: s, m o l.
+	//
+	// Valores: s, m, l.
+	HeadingSize string `json:"heading_size"`
+	// Los bordes: none, subtle o strong.
+	//
+	// Valores: none, subtle, strong.
+	Borders string `json:"borders"`
+	// La sombra: none, soft o strong.
+	//
+	// Valores: none, soft, strong.
+	Shadow string `json:"shadow"`
+	// Las formas de dar sus datos además de escribirlos.
+	Ways PortalStyleWays `json:"ways"`
+	// Si no se factura sin correo.
+	EmailRequired bool `json:"email_required"`
+	// Si dice hasta cuándo se puede facturar.
+	ShowDeadline bool `json:"show_deadline"`
+	// El botón al terminar para volver a su sitio, o null.
+	Back *PortalStyleBack `json:"back,omitempty"`
+	// CSS propio, ya limpio.
+	Css string `json:"css"`
+	// Los colores de la página; null usa el del tema.
+	Colors PortalStyleColors `json:"colors"`
+	// Los textos propios por llave (step_ticket, submit, success_title…), cada uno con es y en. Uno que falta lleva el de Fiscalisto.
+	Texts map[string]any `json:"texts"`
+}
+
+// PortalStyleBack: PortalStyleBack.
+type PortalStyleBack struct {
+	// El texto del botón.
+	Label string `json:"label"`
+	// A dónde lleva (https).
+	URL string `json:"url"`
+}
+
+// PortalStyleColors: Los colores de la página; null usa el del tema.
+type PortalStyleColors struct {
+	// El fondo de la página, o null.
+	Background *string `json:"background,omitempty"`
+	// El fondo de los campos y tarjetas, o null.
+	Card *string `json:"card,omitempty"`
+	// El texto, o null.
+	Text *string `json:"text,omitempty"`
+	// El texto de los botones, o null.
+	ButtonText *string `json:"button_text,omitempty"`
+}
+
+// PortalStyleWays: Las formas de dar sus datos además de escribirlos.
+type PortalStyleWays struct {
+	// Subir la constancia (PDF).
+	Constancia bool `json:"constancia"`
+	// Escanear el QR de la constancia.
+	Qr bool `json:"qr"`
+	// Buscar los datos con RFC e idCIF.
+	Cif bool `json:"cif"`
+	// «Ya le hemos facturado antes»: RFC y correo.
+	Recall bool `json:"recall"`
+	// Facturar a clientes en el extranjero.
+	Abroad bool `json:"abroad"`
+}
+
 // PortalSupplier: Un proveedor del Portal de proveedores del emisor: su alta, sus documentos, la cuenta a la que se le paga y su calificación.
 type PortalSupplier struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -10873,6 +10961,8 @@ type SelfInvoicing struct {
 	PortalAccent *string `json:"portal_accent,omitempty"`
 	// Las esquinas del portal en píxeles (0 a 24), o null para las de Fiscalisto.
 	PortalRadius *int64 `json:"portal_radius,omitempty"`
+	// Cómo se ve el portal además de su tema, color y esquinas: acomodo, encabezado, colores, letra, textos, formas de dar los datos, botón para volver y CSS.
+	PortalStyle PortalStyle `json:"portal_style"`
 	// Cuando se factura una persona moral que retiene (1.25% de ISR en RESICO, o lo del producto). keep_total: la base crece y la factura suma lo que se pagó. subtract: la base es la del ticket y el total es lo pagado menos la retención.
 	//
 	// Valores: keep_total, subtract.
@@ -12675,6 +12765,8 @@ type UpdateSelfInvoicingParams struct {
 	PortalAccent *string `json:"portal_accent,omitempty"`
 	// Lo redondo de las esquinas del portal, en píxeles (0 a 24). `null` pone el de Fiscalisto (10).
 	PortalRadius *int64 `json:"portal_radius,omitempty"`
+	// Todo lo demás de cómo se ve el portal (Autofactura › Cómo se ve el portal): acomodo, encabezado, colores, letra, bordes, textos en español e inglés, las formas de dar los datos, el botón para volver a su sitio y CSS propio. Mande solo lo que cambia: `colors`, `ways` y `texts` se combinan por llave (un texto en `null` lo quita); lo demás se reemplaza. `null` regresa todo al diseño de Fiscalisto. La leyenda «Facturado con Fiscalisto» no se puede ocultar.
+	PortalStyle *UpdateSelfInvoicingParamsPortalStyle `json:"portal_style,omitempty"`
 	// Cuando se factura una persona moral y retiene (1.25% de ISR a un emisor en RESICO, artículo 113-J de la LISR, o lo que diga el producto): `keep_total` (por omisión), la base crece para que la factura sume lo que se pagó; `subtract`, la base es la del ticket y la retención se resta, así que el total de la factura es menor a lo pagado.
 	//
 	// Valores: keep_total, subtract.
@@ -12685,6 +12777,206 @@ type UpdateSelfInvoicingParams struct {
 	//
 	// Valores: ticket, summary.
 	GlobalConcepts *string `json:"global_concepts,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyle: UpdateSelfInvoicingParamsPortalStyle.
+type UpdateSelfInvoicingParamsPortalStyle struct {
+	// `checkout` (por omisión): la factura se llena junto al formulario. `compact`: solo el formulario, la factura plegada. `card`: el formulario en una tarjeta al centro.
+	//
+	// Valores: checkout, compact, card.
+	Layout *string `json:"layout,omitempty"`
+	// `comfortable` o `compact`.
+	//
+	// Valores: comfortable, compact.
+	Density *string `json:"density,omitempty"`
+	// Qué dice arriba: `name_rfc` (por omisión), `name`, `logo_name` o `logo`. El logo y el nombre salen de Marca y documentos.
+	//
+	// Valores: logo, name, name_rfc, logo_name.
+	Header *string `json:"header,omitempty"`
+	// El tamaño del logo: `s`, `m` o `l`.
+	//
+	// Valores: s, m, l.
+	LogoSize *string `json:"logo_size,omitempty"`
+	// La forma del logo: `square`, `rounded` o `circle`.
+	//
+	// Valores: square, rounded, circle.
+	LogoShape *string `json:"logo_shape,omitempty"`
+	// Los colores de la página; cada uno se combina con lo guardado.
+	Colors *UpdateSelfInvoicingParamsPortalStyleColors `json:"colors,omitempty"`
+	// La letra: `system` (por omisión) o una de Google Fonts.
+	//
+	// Valores: system, inter, manrope, dm-sans, work-sans, nunito, space-grotesk, montserrat, lora, merriweather, playfair-display, cormorant-garamond.
+	Font *string `json:"font,omitempty"`
+	// La letra de los títulos; `null`, la misma del texto.
+	//
+	// Valores: system, inter, manrope, dm-sans, work-sans, nunito, space-grotesk, montserrat, lora, merriweather, playfair-display, cormorant-garamond.
+	HeadingFont *string `json:"heading_font,omitempty"`
+	// El tamaño del título: `s`, `m` o `l`.
+	//
+	// Valores: s, m, l.
+	HeadingSize *string `json:"heading_size,omitempty"`
+	// Los bordes: `none`, `subtle` (por omisión) o `strong`.
+	//
+	// Valores: none, subtle, strong.
+	Borders *string `json:"borders,omitempty"`
+	// La sombra: `none`, `soft` (por omisión) o `strong`.
+	//
+	// Valores: none, soft, strong.
+	Shadow *string `json:"shadow,omitempty"`
+	// Los textos, cada uno con `es` y `en`, combinados por llave con lo guardado. El título, el mensaje y dónde viene el código en español son `portal_title`, `portal_message` y `code_hint`; aquí van en inglés.
+	Texts *UpdateSelfInvoicingParamsPortalStyleTexts `json:"texts,omitempty"`
+	// Las formas de dar sus datos además de escribirlos. Todas `true` por omisión.
+	Ways *UpdateSelfInvoicingParamsPortalStyleWays `json:"ways,omitempty"`
+	// `true`: no se factura sin correo. Por omisión `false`.
+	EmailRequired *bool `json:"email_required,omitempty"`
+	// Decir hasta cuándo se puede facturar. Por omisión `true`.
+	ShowDeadline *bool `json:"show_deadline,omitempty"`
+	// Un botón al terminar para volver a su sitio; `null` lo quita.
+	Back *UpdateSelfInvoicingParamsPortalStyleBack `json:"back,omitempty"`
+	// CSS propio, dentro del portal y sin llegar a su pie. Se quitan @import, url() y lo que cargue o ejecute algo; la leyenda «Facturado con Fiscalisto» se queda.
+	Css *string `json:"css,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleBack: UpdateSelfInvoicingParamsPortalStyleBack.
+type UpdateSelfInvoicingParamsPortalStyleBack struct {
+	// El texto del botón.
+	Label string `json:"label"`
+	// A dónde lleva (https).
+	URL string `json:"url"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleColors: Los colores de la página; cada uno se combina con lo guardado.
+type UpdateSelfInvoicingParamsPortalStyleColors struct {
+	// El fondo de la página, como `#f5f1e8`; `null` usa el del tema.
+	Background *string `json:"background,omitempty"`
+	// El fondo de los campos y tarjetas, como `#f5f1e8`; `null` usa el del tema.
+	Card *string `json:"card,omitempty"`
+	// El texto, como `#f5f1e8`; `null` usa el del tema.
+	Text *string `json:"text,omitempty"`
+	// El texto de los botones, como `#f5f1e8`; `null` usa el del tema.
+	ButtonText *string `json:"button_text,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTexts: Los textos, cada uno con `es` y `en`, combinados por llave con lo guardado. El título, el mensaje y dónde viene el código en español son `portal_title`, `portal_message` y `code_hint`; aquí van en inglés.
+type UpdateSelfInvoicingParamsPortalStyleTexts struct {
+	// El título (en español es `portal_title`); `null` vuelve al de Fiscalisto.
+	Title *UpdateSelfInvoicingParamsPortalStyleTextsTitle `json:"title,omitempty"`
+	// El mensaje bajo el título (en español es `portal_message`); `null` vuelve al de Fiscalisto.
+	Message *UpdateSelfInvoicingParamsPortalStyleTextsMessage `json:"message,omitempty"`
+	// Dónde viene el código (en español es `code_hint`); `null` vuelve al de Fiscalisto.
+	CodeHint *UpdateSelfInvoicingParamsPortalStyleTextsCodeHint `json:"code_hint,omitempty"`
+	// El nombre del paso 1; `null` vuelve al de Fiscalisto.
+	StepTicket *UpdateSelfInvoicingParamsPortalStyleTextsStepTicket `json:"step_ticket,omitempty"`
+	// El nombre del paso 2; `null` vuelve al de Fiscalisto.
+	StepData *UpdateSelfInvoicingParamsPortalStyleTextsStepData `json:"step_data,omitempty"`
+	// El nombre del paso 3; `null` vuelve al de Fiscalisto.
+	StepInvoice *UpdateSelfInvoicingParamsPortalStyleTextsStepInvoice `json:"step_invoice,omitempty"`
+	// El botón para buscar el ticket; `null` vuelve al de Fiscalisto.
+	FindButton *UpdateSelfInvoicingParamsPortalStyleTextsFindButton `json:"find_button,omitempty"`
+	// La pregunta de cómo dar los datos; `null` vuelve al de Fiscalisto.
+	HowQuestion *UpdateSelfInvoicingParamsPortalStyleTextsHowQuestion `json:"how_question,omitempty"`
+	// El botón para facturar; `null` vuelve al de Fiscalisto.
+	Submit *UpdateSelfInvoicingParamsPortalStyleTextsSubmit `json:"submit,omitempty"`
+	// El título al terminar; `null` vuelve al de Fiscalisto.
+	SuccessTitle *UpdateSelfInvoicingParamsPortalStyleTextsSuccessTitle `json:"success_title,omitempty"`
+	// El mensaje al terminar; `null` vuelve al de Fiscalisto.
+	SuccessMessage *UpdateSelfInvoicingParamsPortalStyleTextsSuccessMessage `json:"success_message,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsCodeHint: UpdateSelfInvoicingParamsPortalStyleTextsCodeHint.
+type UpdateSelfInvoicingParamsPortalStyleTextsCodeHint struct {
+	// Dónde viene el código (en español es `code_hint`) en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsFindButton: UpdateSelfInvoicingParamsPortalStyleTextsFindButton.
+type UpdateSelfInvoicingParamsPortalStyleTextsFindButton struct {
+	// El botón para buscar el ticket en español.
+	Es *string `json:"es,omitempty"`
+	// El botón para buscar el ticket en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsHowQuestion: UpdateSelfInvoicingParamsPortalStyleTextsHowQuestion.
+type UpdateSelfInvoicingParamsPortalStyleTextsHowQuestion struct {
+	// La pregunta de cómo dar los datos en español.
+	Es *string `json:"es,omitempty"`
+	// La pregunta de cómo dar los datos en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsMessage: UpdateSelfInvoicingParamsPortalStyleTextsMessage.
+type UpdateSelfInvoicingParamsPortalStyleTextsMessage struct {
+	// El mensaje bajo el título (en español es `portal_message`) en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsStepData: UpdateSelfInvoicingParamsPortalStyleTextsStepData.
+type UpdateSelfInvoicingParamsPortalStyleTextsStepData struct {
+	// El nombre del paso 2 en español.
+	Es *string `json:"es,omitempty"`
+	// El nombre del paso 2 en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsStepInvoice: UpdateSelfInvoicingParamsPortalStyleTextsStepInvoice.
+type UpdateSelfInvoicingParamsPortalStyleTextsStepInvoice struct {
+	// El nombre del paso 3 en español.
+	Es *string `json:"es,omitempty"`
+	// El nombre del paso 3 en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsStepTicket: UpdateSelfInvoicingParamsPortalStyleTextsStepTicket.
+type UpdateSelfInvoicingParamsPortalStyleTextsStepTicket struct {
+	// El nombre del paso 1 en español.
+	Es *string `json:"es,omitempty"`
+	// El nombre del paso 1 en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsSubmit: UpdateSelfInvoicingParamsPortalStyleTextsSubmit.
+type UpdateSelfInvoicingParamsPortalStyleTextsSubmit struct {
+	// El botón para facturar en español.
+	Es *string `json:"es,omitempty"`
+	// El botón para facturar en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsSuccessMessage: UpdateSelfInvoicingParamsPortalStyleTextsSuccessMessage.
+type UpdateSelfInvoicingParamsPortalStyleTextsSuccessMessage struct {
+	// El mensaje al terminar en español.
+	Es *string `json:"es,omitempty"`
+	// El mensaje al terminar en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsSuccessTitle: UpdateSelfInvoicingParamsPortalStyleTextsSuccessTitle.
+type UpdateSelfInvoicingParamsPortalStyleTextsSuccessTitle struct {
+	// El título al terminar en español.
+	Es *string `json:"es,omitempty"`
+	// El título al terminar en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsTitle: UpdateSelfInvoicingParamsPortalStyleTextsTitle.
+type UpdateSelfInvoicingParamsPortalStyleTextsTitle struct {
+	// El título (en español es `portal_title`) en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleWays: Las formas de dar sus datos además de escribirlos. Todas `true` por omisión.
+type UpdateSelfInvoicingParamsPortalStyleWays struct {
+	// Ofrecer subir la constancia (PDF).
+	Constancia *bool `json:"constancia,omitempty"`
+	// Ofrecer escanear el QR de la constancia.
+	Qr *bool `json:"qr,omitempty"`
+	// Ofrecer buscar los datos con RFC e idCIF.
+	Cif *bool `json:"cif,omitempty"`
+	// Ofrecer «Ya le hemos facturado antes» (RFC y correo).
+	Recall *bool `json:"recall,omitempty"`
+	// Ofrecer facturar a clientes en el extranjero.
+	Abroad *bool `json:"abroad,omitempty"`
 }
 
 // UpdateStoreConnectionParams: los campos de «Cambiar cómo se vuelven tickets sus pedidos».
