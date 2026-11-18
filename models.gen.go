@@ -3297,9 +3297,9 @@ type CreateStockAdjustmentParamsLine struct {
 type CreateStoreConnectionParams struct {
 	// El emisor (iss_…) dueño de la tienda. Por omisión, su único emisor.
 	Issuer *string `json:"issuer,omitempty"`
-	// shopify, woocommerce, mercadolibre, tiendanube o amazon.
+	// shopify, woocommerce, mercadolibre, tiendanube, amazon, mercadopago, conekta u openpay.
 	//
-	// Valores: shopify, mercadolibre, amazon, tiendanube, woocommerce.
+	// Valores: shopify, mercadolibre, amazon, tiendanube, woocommerce, mercadopago, conekta, openpay.
 	Platform string `json:"platform"`
 	// Shopify: el dominio de la tienda (mi-tienda.myshopify.com).
 	Shop *string `json:"shop,omitempty"`
@@ -3307,8 +3307,14 @@ type CreateStoreConnectionParams struct {
 	ClientID *string `json:"client_id,omitempty"`
 	// Shopify: el Client secret de esa app; con él se firman los webhooks. Se guarda cifrado y nunca se muestra.
 	ClientSecret *string `json:"client_secret,omitempty"`
-	// Shopify, solo apps personalizadas antiguas: su token de la Admin API (shpat_…); client_secret es entonces su API secret key.
+	// Mercado Pago: el Access Token de producción (APP_USR-…), en Tus integraciones › su aplicación › Credenciales de producción. Shopify, solo apps personalizadas antiguas: su token de la Admin API (shpat_…); client_secret es entonces su API secret key. Se guarda cifrado y nunca se muestra.
 	AccessToken *string `json:"access_token,omitempty"`
+	// Conekta: la llave privada (key_…). Openpay: la llave privada (sk_…). Se guarda cifrada y nunca se muestra.
+	PrivateKey *string `json:"private_key,omitempty"`
+	// Openpay: el ID de comercio (m…).
+	MerchantID *string `json:"merchant_id,omitempty"`
+	// Openpay: true para conectar su comercio de pruebas (sandbox).
+	Sandbox *bool `json:"sandbox,omitempty"`
 	// WooCommerce: la dirección de la tienda (https://mitienda.com).
 	Site *string `json:"site,omitempty"`
 	// WooCommerce: la Clave de cliente (ck_…) de una llave de la API REST con permisos de Lectura/Escritura.
@@ -3337,11 +3343,11 @@ type CreateStoreConnectionParamsSettings struct {
 	FolioPrefix *string `json:"folio_prefix,omitempty"`
 	// c_FormaPago cuando la forma de pago del pedido no está en payment_forms. Por omisión 04 (Shopify) o 31 (Mercado Libre).
 	PaymentForm *string `json:"payment_form,omitempty"`
-	// c_FormaPago por pasarela de Shopify (shopify_payments, paypal, manual…) o tipo de pago de Mercado Libre (credit_card, debit_card, account_money, ticket, bank_transfer).
+	// c_FormaPago por pasarela de Shopify (shopify_payments, paypal, manual…) o tipo de pago de Mercado Libre y Mercado Pago (credit_card, debit_card, account_money, ticket, bank_transfer), o de Conekta y Openpay (credit_card, debit_card, cash, spei).
 	PaymentForms map[string]string `json:"payment_forms,omitempty"`
 	// Mercado Libre: timbrar en cuanto se paga si el comprador dejó sus datos fiscales completos. Por omisión true.
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
-	// WooCommerce y Tiendanube: mandar al comprador el enlace para facturar (WooCommerce, como nota al cliente del pedido; Tiendanube, por correo). Por omisión true.
+	// WooCommerce, Tiendanube, Mercado Pago, Conekta y Openpay: mandar al comprador el enlace para facturar (WooCommerce, como nota al cliente del pedido; los demás, por correo, cuando la plataforma da su correo). Por omisión true.
 	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
 }
 
@@ -10999,11 +11005,11 @@ type StoreConnection struct {
 	Object string `json:"object"`
 	// El emisor dueño de la tienda.
 	Issuer string `json:"issuer"`
-	// shopify, woocommerce, tiendanube, mercadolibre o amazon.
+	// shopify, woocommerce, tiendanube, mercadolibre, amazon, mercadopago, conekta u openpay.
 	//
-	// Valores: shopify, mercadolibre, amazon, tiendanube, woocommerce.
+	// Valores: shopify, mercadolibre, amazon, tiendanube, woocommerce, mercadopago, conekta, openpay.
 	Platform string `json:"platform"`
-	// El dominio de la tienda (Shopify, WooCommerce), o el id de la tienda en Tiendanube o del vendedor en Mercado Libre y Amazon (al autorizar).
+	// El dominio de la tienda (Shopify, WooCommerce), el id de la tienda en Tiendanube o del vendedor en Mercado Libre y Amazon (al autorizar), el id de la cuenta de Mercado Pago, el ID de comercio de Openpay, o una referencia de la cuenta de Conekta.
 	Shop *string `json:"shop,omitempty"`
 	// El nombre de la tienda según su plataforma, o null.
 	Name *string `json:"name,omitempty"`
@@ -12615,11 +12621,11 @@ type UpdateStoreConnectionParamsSettings struct {
 	FolioPrefix *string `json:"folio_prefix,omitempty"`
 	// c_FormaPago cuando la forma de pago del pedido no está en payment_forms. Por omisión 04 (Shopify) o 31 (Mercado Libre).
 	PaymentForm *string `json:"payment_form,omitempty"`
-	// c_FormaPago por pasarela de Shopify (shopify_payments, paypal, manual…) o tipo de pago de Mercado Libre (credit_card, debit_card, account_money, ticket, bank_transfer).
+	// c_FormaPago por pasarela de Shopify (shopify_payments, paypal, manual…) o tipo de pago de Mercado Libre y Mercado Pago (credit_card, debit_card, account_money, ticket, bank_transfer), o de Conekta y Openpay (credit_card, debit_card, cash, spei).
 	PaymentForms map[string]string `json:"payment_forms,omitempty"`
 	// Mercado Libre: timbrar en cuanto se paga si el comprador dejó sus datos fiscales completos. Por omisión true.
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
-	// WooCommerce y Tiendanube: mandar al comprador el enlace para facturar (WooCommerce, como nota al cliente del pedido; Tiendanube, por correo). Por omisión true.
+	// WooCommerce, Tiendanube, Mercado Pago, Conekta y Openpay: mandar al comprador el enlace para facturar (WooCommerce, como nota al cliente del pedido; los demás, por correo, cuando la plataforma da su correo). Por omisión true.
 	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
 }
 
