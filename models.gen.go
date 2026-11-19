@@ -2061,6 +2061,8 @@ type CreateIssuerOnboardingLinkParams struct {
 	ReturnURL *string `json:"return_url,omitempty"`
 	// Horas que la liga sirve, de 1 a 168 (7 días). Por omisión 24.
 	ExpiresInHours *int64 `json:"expires_in_hours,omitempty"`
+	// true para que la página también guarde (cifrada) la e.firma de su cliente, con su autorización, y pueda pedir al SAT sus facturas (POST /v1/sat_downloads), sus declaraciones (/v1/sat_declarations), su opinión de cumplimiento, constancia y buzón tributario. Sin esto la e.firma solo firma el contrato con el PAC y no se guarda.
+	KeepEfirma *bool `json:"keep_efirma,omitempty"`
 }
 
 // CreateIssuerParams: los campos de «Crear un emisor».
@@ -7905,7 +7907,7 @@ type IssuerList struct {
 	URL string `json:"url"`
 }
 
-// IssuerOnboardingLink: Una liga para que el dueño de un emisor suba su CSD y firme con su e.firma.
+// IssuerOnboardingLink: Una liga para que el dueño de un emisor suba su CSD y firme con su e.firma (y, con keep_efirma, la guarde para consultar el SAT).
 type IssuerOnboardingLink struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
@@ -7917,6 +7919,8 @@ type IssuerOnboardingLink struct {
 	URL string `json:"url"`
 	// A dónde regresa al terminar.
 	ReturnURL *string `json:"return_url,omitempty"`
+	// La página también guarda la e.firma (cifrada) para las consultas al SAT del emisor.
+	KeepEfirma bool `json:"keep_efirma"`
 	// Cuándo deja de servir la liga. Pida otra cuando quiera.
 	ExpiresAt *string `json:"expires_at,omitempty"`
 	// Cuándo se creó.
