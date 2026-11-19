@@ -1602,6 +1602,20 @@
 		"go": "SatDeclarations.Refresh",
 		"java": "satDeclarations.refresh"
 	},
+	"GET /v1/sat_refreshes": {
+		"python": "sat_refreshes.list",
+		"php": "satRefreshes->list",
+		"dotnet": "SatRefreshes.ListAsync",
+		"go": "SatRefreshes.List",
+		"java": "satRefreshes.list"
+	},
+	"GET /v1/sat_refreshes/{id}": {
+		"python": "sat_refreshes.get",
+		"php": "satRefreshes->get",
+		"dotnet": "SatRefreshes.GetAsync",
+		"go": "SatRefreshes.Get",
+		"java": "satRefreshes.get"
+	},
 	"GET /v1/sat_declarations": {
 		"python": "sat_declarations.list",
 		"php": "satDeclarations->list",

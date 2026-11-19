@@ -4415,7 +4415,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -8215,7 +8215,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, issuer.*, balance.*, usage.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, sat_refresh.*, issuer.*, balance.*, usage.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -8679,6 +8679,20 @@ type ListSatMailboxMessagesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// true para solo los no leídos en el SAT, false para los leídos.
 	Unread *bool `json:"unread,omitempty"`
+}
+
+// ListSatRefreshesParams: los campos de «Listar consultas al SAT».
+type ListSatRefreshesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// Solo las de un emisor (iss_…).
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de un documento.
+	//
+	// Valores: declarations, compliance_opinion, tax_status_certificate, sat_mailbox.
+	Document *string `json:"document,omitempty"`
 }
 
 // ListSatRetentionsParams: los campos de «Listar constancias de retenciones».
@@ -11061,34 +11075,6 @@ type SATDeclarationSummaryObligation struct {
 	Figures map[string]any `json:"figures"`
 }
 
-// SATDeclarationsRefresh: Lo que trajo una consulta de las declaraciones del emisor en el SAT.
-type SATDeclarationsRefresh struct {
-	// Qué tipo de objeto es («invoice», «customer»…).
-	Object string `json:"object"`
-	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
-	Livemode bool `json:"livemode"`
-	// El emisor consultado.
-	Issuer string `json:"issuer"`
-	// completed (ya bajó todo) o processing (queda algo por bajar: sigue solo en la siguiente hora, sin otro timbre).
-	//
-	// Valores: completed, processing.
-	Status string `json:"status"`
-	// Cuántas declaraciones listó el SAT en los años consultados.
-	Found int64 `json:"found"`
-	// Cuántos archivos bajó en esta consulta.
-	Downloaded int64 `json:"downloaded"`
-	// Cuántas declaraciones quedan con archivos por bajar.
-	Pending int64 `json:"pending"`
-	// Con status processing: cuándo deberían estar los archivos y las cifras que faltan (pending), que se descargan solos sin otro timbre. Mientras, GET /v1/sat_declarations ya las lista, con figures_status pending. null con status completed.
-	CompletesAt *string `json:"completes_at,omitempty"`
-	// Si una parte del SAT falló (por ejemplo, la anual), lo que dijo; lo demás sí se trajo. null si todo salió.
-	Warning *string `json:"warning,omitempty"`
-	// Cuándo se consultó.
-	RefreshedAt string `json:"refreshed_at"`
-	// Desde cuándo se puede volver a consultar este emisor (10 minutos después).
-	NextRefreshAt string `json:"next_refresh_at"`
-}
-
 // SATDownload: Una solicitud al SAT de las facturas emitidas o recibidas de un emisor en un periodo.
 type SATDownload struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -11445,27 +11431,53 @@ type SATMailboxMessageList struct {
 	URL string `json:"url"`
 }
 
-// SATRefresh: Una consulta al SAT de un documento del emisor: si ya terminó y dónde leerlo.
+// SATRefresh: Una consulta al SAT de las declaraciones o de un documento del emisor (opinión de cumplimiento, constancia o buzón): se contesta al aceptarla (status processing) y termina sola; sat_refresh.completed o sat_refresh.failed dicen cómo.
 type SATRefresh struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// El id de la consulta (srf_…): GET /v1/sat_refreshes/{id} dice cómo va.
+	ID string `json:"id"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor.
 	Issuer string `json:"issuer"`
-	// Qué se consultó.
+	// Qué se consultó: declarations, compliance_opinion, tax_status_certificate o sat_mailbox.
 	//
-	// Valores: compliance_opinion, tax_status_certificate, sat_mailbox.
+	// Valores: declarations, compliance_opinion, tax_status_certificate, sat_mailbox.
 	Document string `json:"document"`
-	// completed (ya está en url) o processing (el SAT tarda; llega a url en unos minutos).
+	// processing (el SAT se está consultando), completed (lo que trajo está en url) o failed (el SAT no contestó: motivo en error, el timbre regresó).
 	//
-	// Valores: completed, processing.
+	// Valores: processing, completed, failed.
 	Status string `json:"status"`
+	// Lo que trajo, con status completed: en declarations cuántas listó y bajó; en los demás, dónde leer el documento. null mientras sigue o si falló.
+	Result json.RawMessage `json:"result,omitempty"`
+	// Con status failed: lo que dijo el SAT. null en los demás.
+	Error *string `json:"error,omitempty"`
+	// true cuando se usó su timbre (el SAT contestó). En pruebas siempre false: no se usan timbres.
+	Charged bool `json:"charged"`
+	// true mientras sigue: su timbre está apartado (GET /v1/balance ya no lo cuenta) y regresa si el SAT no contesta.
+	TimbreHeld bool `json:"timbre_held"`
 	// Cuándo se pidió.
-	RefreshedAt *string `json:"refreshed_at,omitempty"`
-	// Desde cuándo se puede pedir otra vez.
-	NextRefreshAt *string `json:"next_refresh_at,omitempty"`
+	CreatedAt string `json:"created_at"`
+	// Cuándo terminó (completed o failed). null mientras sigue.
+	CompletedAt *string `json:"completed_at,omitempty"`
+	// Cuándo se pidió (igual que created_at).
+	RefreshedAt string `json:"refreshed_at"`
+	// Desde cuándo se puede pedir otra vez para el mismo emisor (10 minutos después).
+	NextRefreshAt string `json:"next_refresh_at"`
 	// Dónde leer lo que trajo.
+	URL string `json:"url"`
+}
+
+// SATRefreshList: Una página de la lista.
+type SATRefreshList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATRefresh `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
 	URL string `json:"url"`
 }
 
@@ -12435,7 +12447,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 

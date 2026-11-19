@@ -134,6 +134,8 @@ type services struct {
 	SupplierInvoices *SupplierInvoicesService
 	// Declaraciones del SAT.
 	SatDeclarations *SatDeclarationsService
+	// Declaraciones del SAT.
+	SatRefreshes *SatRefreshesService
 	// Autofactura.
 	Tickets *TicketsService
 	// Contabilidad.
@@ -220,6 +222,7 @@ func (s *services) init(c *Client) {
 	s.PortalSuppliers = &PortalSuppliersService{c}
 	s.SupplierInvoices = &SupplierInvoicesService{c}
 	s.SatDeclarations = &SatDeclarationsService{c}
+	s.SatRefreshes = &SatRefreshesService{c}
 	s.Tickets = &TicketsService{c}
 	s.Accounting = &AccountingService{c}
 	s.ManualEntries = &ManualEntriesService{c}
@@ -645,7 +648,7 @@ func (s *IssuersService) ComplianceOpinion(ctx context.Context, id string, opts 
 
 // RefreshComplianceOpinion: Pedir la opinión de cumplimiento al SAT
 //
-// La pide al SAT ahora con la e.firma guardada del emisor (POST /v1/issuers/{id}/efirma con keep_for_downloads: true). 1 timbre en producción, una vez cada 10 minutos; regresa si el SAT no contesta. Si el SAT tarda, contesta status processing y el resultado llega a GET /v1/issuers/{id}/compliance_opinion. En pruebas da una positiva de ejemplo.
+// La pide al SAT con la e.firma guardada del emisor (POST /v1/issuers/{id}/efirma con keep_for_downloads: true); llega a GET /v1/issuers/{id}/compliance_opinion. 1 timbre en producción, una vez cada 10 minutos. Contesta 202 en cuanto la acepta (status processing) y consulta al SAT en segundo plano: sat_refresh.completed o sat_refresh.failed dicen cómo terminó, y GET /v1/sat_refreshes/{id} también. Su timbre se aparta al aceptarla (sin timbres contesta 402 de inmediato), se usa cuando el SAT contesta y regresa si no contesta. En pruebas da una positiva de ejemplo al instante (la consulta ya viene completed y también llega sat_refresh.completed).
 //
 // POST /v1/issuers/{id}/compliance_opinion/refresh
 //
@@ -686,7 +689,7 @@ func (s *IssuersService) TaxStatusCertificate(ctx context.Context, id string, op
 
 // RefreshTaxStatusCertificate: Generar la constancia de situación fiscal en el SAT
 //
-// Genera una constancia nueva con la e.firma guardada del emisor. 1 timbre en producción, una vez cada 10 minutos; regresa si el SAT no contesta. En pruebas hace una con los datos del emisor.
+// Genera una constancia nueva con la e.firma guardada del emisor; llega a GET /v1/issuers/{id}/tax_status_certificate. 1 timbre en producción, una vez cada 10 minutos. Contesta 202 en cuanto la acepta (status processing) y consulta al SAT en segundo plano: sat_refresh.completed o sat_refresh.failed dicen cómo terminó, y GET /v1/sat_refreshes/{id} también. Su timbre se aparta al aceptarla (sin timbres contesta 402 de inmediato), se usa cuando el SAT contesta y regresa si no contesta. En pruebas hace una con los datos del emisor al instante.
 //
 // POST /v1/issuers/{id}/tax_status_certificate/refresh
 //
@@ -712,7 +715,7 @@ func (s *IssuersService) TaxStatusCertificatePDF(ctx context.Context, id string,
 
 // RefreshSatMailbox: Revisar el buzón tributario en el SAT
 //
-// Lee los avisos del buzón tributario del emisor ahora, con su e.firma guardada; nunca abre notificaciones (abrirlas firma el acuse y corren los plazos). 1 timbre en producción, una vez cada 10 minutos. En pruebas deja dos avisos de ejemplo.
+// Lee los avisos del buzón tributario del emisor con su e.firma guardada; nunca abre notificaciones (abrirlas firma el acuse y corren los plazos). Llegan a GET /v1/sat_mailbox_messages. 1 timbre en producción, una vez cada 10 minutos. Contesta 202 en cuanto la acepta (status processing) y consulta al SAT en segundo plano: sat_refresh.completed o sat_refresh.failed dicen cómo terminó, y GET /v1/sat_refreshes/{id} también. Su timbre se aparta al aceptarla (sin timbres contesta 402 de inmediato), se usa cuando el SAT contesta y regresa si no contesta. En pruebas deja dos avisos de ejemplo al instante.
 //
 // POST /v1/issuers/{id}/sat_mailbox/refresh
 //
@@ -3852,13 +3855,13 @@ type SatDeclarationsService struct{ c *Client }
 
 // Refresh: Consultar las declaraciones de un emisor en el SAT
 //
-// Entra al SAT con la e.firma guardada del emisor y trae las declaraciones que presentó: provisionales o definitivas (desde 2022), la anual de persona moral (desde 2019) y las del servicio anterior Declaraciones y pagos, con su PDF, su acuse y sus cifras. La primera consulta trae todos los años que el SAT conserva; las siguientes, este año y el anterior. Solo consulta: nunca presenta ni firma nada. En producción usa 1 timbre por consulta (regresa si el SAT no contesta) y se puede hacer una vez cada 10 minutos por emisor. Contesta en menos de un minuto; si queda algo por bajar (status processing), sigue solo en la siguiente hora sin otro timbre. En pruebas no se le pregunta al SAT: trae declaraciones de ejemplo al instante.
+// Entra al SAT con la e.firma guardada del emisor y trae las declaraciones que presentó: provisionales o definitivas (desde 2022), la anual de persona moral (desde 2019) y las del servicio anterior Declaraciones y pagos, con su PDF, su acuse y sus cifras. La primera consulta trae todos los años que el SAT conserva; las siguientes, este año y el anterior. Solo consulta: nunca presenta ni firma nada. En producción usa 1 timbre por consulta y se puede hacer una vez cada 10 minutos por emisor. Contesta 202 en cuanto la acepta (status processing) y consulta al SAT en segundo plano: sat_refresh.completed o sat_refresh.failed dicen cómo terminó, y GET /v1/sat_refreshes/{id} también. Su timbre se aparta al aceptarla (sin timbres contesta 402 de inmediato), se usa cuando el SAT contesta y regresa si no contesta. Si al terminar queda algo por bajar (result.pending), sigue solo en la siguiente hora sin otro timbre. En pruebas no se le pregunta al SAT: trae declaraciones de ejemplo al instante (la consulta ya viene completed y también llega sat_refresh.completed).
 //
 // POST /v1/sat_declarations/refresh
 //
 // https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/refresh-sat-declarations
-func (s *SatDeclarationsService) Refresh(ctx context.Context, params *RefreshSatDeclarationsParams, opts ...RequestOption) (*SATDeclarationsRefresh, error) {
-	out := new(SATDeclarationsRefresh)
+func (s *SatDeclarationsService) Refresh(ctx context.Context, params *RefreshSatDeclarationsParams, opts ...RequestOption) (*SATRefresh, error) {
+	out := new(SATRefresh)
 	if err := s.c.do(ctx, "POST", "/v1/sat_declarations/refresh", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
@@ -3969,6 +3972,40 @@ func (s *SatDeclarationsService) PaymentRecord(ctx context.Context, id string, o
 func (s *SatDeclarationsService) FinancialStatements(ctx context.Context, id string, opts ...RequestOption) (string, error) {
 	b, err := s.c.raw(ctx, "GET", "/v1/sat_declarations/"+url.PathEscape(id)+"/financial_statements", nil, nil, false, opts)
 	return string(b), err
+}
+
+// SatRefreshesService: Declaraciones del SAT (client.SatRefreshes).
+type SatRefreshesService struct{ c *Client }
+
+// List: Listar consultas al SAT
+//
+// Las consultas al SAT que pidió (declaraciones, opinión de cumplimiento, constancia y buzón), de la más reciente a la más antigua, con cómo van. No usa timbres.
+//
+// GET /v1/sat_refreshes
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/list-sat-refreshes
+func (s *SatRefreshesService) List(ctx context.Context, params *ListSatRefreshesParams, opts ...RequestOption) (*Page[SATRefresh], error) {
+	return list[SATRefresh](ctx, s.c, "/v1/sat_refreshes", params, "", opts)
+}
+
+// ListAutoPaging: Listar consultas al SAT, todos, página por página: for x, err := range …
+func (s *SatRefreshesService) ListAutoPaging(ctx context.Context, params *ListSatRefreshesParams, opts ...RequestOption) iter.Seq2[SATRefresh, error] {
+	return listAll[SATRefresh](ctx, s.c, "/v1/sat_refreshes", params, opts)
+}
+
+// Get: Ver una consulta al SAT
+//
+// Cómo va una consulta al SAT (srf_…): processing mientras se consulta, completed con lo que trajo en result o failed con el motivo en error (su timbre regresó). No usa timbres.
+//
+// GET /v1/sat_refreshes/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/declaraciones-del-sat/get-sat-refresh
+func (s *SatRefreshesService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATRefresh, error) {
+	out := new(SATRefresh)
+	if err := s.c.do(ctx, "GET", "/v1/sat_refreshes/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // TicketsService: Autofactura (client.Tickets).
