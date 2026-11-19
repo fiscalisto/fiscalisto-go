@@ -612,7 +612,7 @@ func (s *IssuersService) DeleteEfirma(ctx context.Context, id string, opts ...Re
 
 // CreateOnboardingLink: Crear una liga de alta
 //
-// Una página en fiscalisto.com donde el dueño del emisor sube su CSD y firma el contrato con el PAC con su e.firma, sin que esos archivos ni sus contraseñas pasen por su plataforma. Con keep_efirma: true la página también le pide autorización para guardar su e.firma cifrada, para consultar el SAT (descargas, declaraciones, opinión, constancia y buzón). Mande a su cliente a url; al terminar vuelve a return_url y llega issuer.ready. Cada liga sirve para un emisor, hasta que vence.
+// Una página en fiscalisto.com donde el dueño del emisor sube su CSD y firma el contrato con el PAC con su e.firma, sin que esos archivos ni sus contraseñas pasen por su plataforma. Con keep_efirma: true la página también le pide autorización para guardar su e.firma cifrada, para consultar el SAT (descargas, declaraciones, opinión, constancia y buzón); con efirma_only: true pide solo la e.firma, sin el CSD. Mande a su cliente a url; al terminar vuelve a return_url y llega issuer.ready. Cada liga sirve para un emisor, hasta que vence.
 //
 // POST /v1/issuers/{id}/onboarding_links
 //

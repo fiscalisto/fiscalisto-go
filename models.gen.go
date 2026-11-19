@@ -2117,6 +2117,8 @@ type CreateIssuerOnboardingLinkParams struct {
 	ExpiresInHours *int64 `json:"expires_in_hours,omitempty"`
 	// true para que la página también guarde (cifrada) la e.firma de su cliente, con su autorización, y pueda pedir al SAT sus facturas (POST /v1/sat_downloads), sus declaraciones (/v1/sat_declarations), su opinión de cumplimiento, constancia y buzón tributario. Sin esto la e.firma solo firma el contrato con el PAC y no se guarda.
 	KeepEfirma *bool `json:"keep_efirma,omitempty"`
+	// true para pedir solo la e.firma, sin el CSD: para consultar el SAT por su cliente sin timbrar por él. Implica keep_efirma. El emisor sigue sin poder timbrar hasta que suba su CSD.
+	EfirmaOnly *bool `json:"efirma_only,omitempty"`
 }
 
 // CreateIssuerParams: los campos de «Crear un emisor».
@@ -7975,6 +7977,8 @@ type IssuerOnboardingLink struct {
 	ReturnURL *string `json:"return_url,omitempty"`
 	// La página también guarda la e.firma (cifrada) para las consultas al SAT del emisor.
 	KeepEfirma bool `json:"keep_efirma"`
+	// La página pide solo la e.firma, sin el CSD (para consultar el SAT).
+	EfirmaOnly bool `json:"efirma_only"`
 	// Cuándo deja de servir la liga. Pida otra cuando quiera.
 	ExpiresAt *string `json:"expires_at,omitempty"`
 	// Cuándo se creó.
