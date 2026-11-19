@@ -1693,6 +1693,90 @@
 		"go": "Accounting.Accounts",
 		"java": "accounting.accounts"
 	},
+	"POST /v1/accounting/accounts": {
+		"python": "accounting.create_account",
+		"php": "accounting->createAccount",
+		"dotnet": "Accounting.CreateAccountAsync",
+		"go": "Accounting.CreateAccount",
+		"java": "accounting.createAccount"
+	},
+	"POST /v1/accounting/manual_entries": {
+		"python": "manual_entries.create",
+		"php": "manualEntries->create",
+		"dotnet": "ManualEntries.CreateAsync",
+		"go": "ManualEntries.Create",
+		"java": "manualEntries.create"
+	},
+	"GET /v1/accounting/manual_entries": {
+		"python": "manual_entries.list",
+		"php": "manualEntries->list",
+		"dotnet": "ManualEntries.ListAsync",
+		"go": "ManualEntries.List",
+		"java": "manualEntries.list"
+	},
+	"GET /v1/accounting/manual_entries/{id}": {
+		"python": "manual_entries.get",
+		"php": "manualEntries->get",
+		"dotnet": "ManualEntries.GetAsync",
+		"go": "ManualEntries.Get",
+		"java": "manualEntries.get"
+	},
+	"POST /v1/accounting/manual_entries/{id}": {
+		"python": "manual_entries.update",
+		"php": "manualEntries->update",
+		"dotnet": "ManualEntries.UpdateAsync",
+		"go": "ManualEntries.Update",
+		"java": "manualEntries.update"
+	},
+	"DELETE /v1/accounting/manual_entries/{id}": {
+		"python": "manual_entries.delete",
+		"php": "manualEntries->delete",
+		"dotnet": "ManualEntries.DeleteAsync",
+		"go": "ManualEntries.Delete",
+		"java": "manualEntries.delete"
+	},
+	"GET /v1/accounting/fixed_assets": {
+		"python": "fixed_assets.list",
+		"php": "fixedAssets->list",
+		"dotnet": "FixedAssets.ListAsync",
+		"go": "FixedAssets.List",
+		"java": "fixedAssets.list"
+	},
+	"POST /v1/accounting/fixed_assets": {
+		"python": "fixed_assets.create",
+		"php": "fixedAssets->create",
+		"dotnet": "FixedAssets.CreateAsync",
+		"go": "FixedAssets.Create",
+		"java": "fixedAssets.create"
+	},
+	"GET /v1/accounting/fixed_assets/{id}": {
+		"python": "fixed_assets.get",
+		"php": "fixedAssets->get",
+		"dotnet": "FixedAssets.GetAsync",
+		"go": "FixedAssets.Get",
+		"java": "fixedAssets.get"
+	},
+	"DELETE /v1/accounting/fixed_assets/{id}": {
+		"python": "fixed_assets.delete",
+		"php": "fixedAssets->delete",
+		"dotnet": "FixedAssets.DeleteAsync",
+		"go": "FixedAssets.Delete",
+		"java": "fixedAssets.delete"
+	},
+	"POST /v1/accounting/fixed_assets/{id}/dispose": {
+		"python": "fixed_assets.dispose",
+		"php": "fixedAssets->dispose",
+		"dotnet": "FixedAssets.DisposeAsync",
+		"go": "FixedAssets.Dispose",
+		"java": "fixedAssets.dispose"
+	},
+	"DELETE /v1/accounting/fixed_assets/{id}/disposal": {
+		"python": "fixed_assets.undispose",
+		"php": "fixedAssets->undispose",
+		"dotnet": "FixedAssets.UndisposeAsync",
+		"go": "FixedAssets.Undispose",
+		"java": "fixedAssets.undispose"
+	},
 	"GET /v1/accounting/electronic_accounting": {
 		"python": "accounting.electronic_accounting",
 		"php": "accounting->electronicAccounting",

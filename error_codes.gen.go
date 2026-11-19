@@ -10,10 +10,18 @@ package fiscalisto
 //
 // Vea https://fiscalisto.com/docs/api/errores.
 const (
+	// Esa cuenta no está en el catálogo del emisor: véalo con GET /v1/accounting/accounts o agréguela con POST /v1/accounting/accounts.
+	CodeAccountMissing = "account_missing"
 	// Suspendimos la API de la empresa (todas sus llaves, o solo las de producción) por un uso que rompe los términos del servicio. El mensaje dice por qué; escríbanos a soporte@fiscalisto.com para reactivarla.
 	CodeAccountSuspended = "account_suspended"
 	// No existe esa versión de la API (en Fiscalisto-Version o api_version). El mensaje dice cuáles hay; vea Versiones.
 	CodeAPIVersionInvalid = "api_version_invalid"
+	// El activo fijo ya se vendió o se dio de baja: deshaga esa baja con DELETE /v1/accounting/fixed_assets/{id}/disposal si fue un error.
+	CodeAssetAlreadyDisposed = "asset_already_disposed"
+	// El activo llegó con su CFDI y no se borra: véndalo o dele de baja con POST /v1/accounting/fixed_assets/{id}/dispose.
+	CodeAssetFromCFDI = "asset_from_cfdi"
+	// El activo fijo no está dado de baja: no hay baja que deshacer.
+	CodeAssetNotDisposed = "asset_not_disposed"
 	// Asistencia no lo permite: el mensaje dice por qué (una hora en el futuro o de hace más de 400 días, un empleado con fecha de baja, un periodo de más de 92 días, una marca ya quitada).
 	CodeAttendanceInvalid = "attendance_invalid"
 	// El depósito no se puede conciliar, clasificar o reabrir así (ya está conciliado, las facturas son de otro cliente o una está cancelada…). El mensaje dice por qué.
@@ -66,6 +74,8 @@ const (
 	CodeEndpointExists = "endpoint_exists"
 	// La cuenta llegó al máximo de webhooks en este modo.
 	CodeEndpointLimit = "endpoint_limit"
+	// La póliza no cuadra o un renglón está mal: los cargos tienen que sumar lo mismo que los abonos, y cada renglón lleva un cargo o un abono, no los dos. El mensaje dice las sumas.
+	CodeEntryUnbalanced = "entry_unbalanced"
 	// Un campo de expand[] no existe en la respuesta, no es el id de otro objeto, o se pidieron demasiados (hasta 10 campos, 4 niveles). Vea Expandir objetos.
 	CodeExpandInvalid = "expand_invalid"
 	// Viáticos y gastos no lo permite en ese momento: el mensaje dice por qué (un gasto con errores al enviarla, un reembolso antes de aprobarla, aprobar lo que usted mismo envió).

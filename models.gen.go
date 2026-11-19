@@ -1833,6 +1833,24 @@ type CreateExportParams struct {
 	Files *string `json:"files,omitempty"`
 }
 
+// CreateFixedAssetParams: los campos de «Agregar un activo fijo sin factura».
+type CreateFixedAssetParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Qué es.
+	Description string `json:"description"`
+	// El tipo de activo por su uso CFDI: I01 construcciones, I02 mobiliario, I03 transporte, I04 cómputo, I05 dados y troqueles, I06 telefonía, I07 satelital, I08 otra maquinaria. Da su tasa de depreciación.
+	//
+	// Valores: I01, I02, I03, I04, I05, I06, I07, I08.
+	CFDIUse string `json:"cfdi_use"`
+	// El monto original sin IVA.
+	Cost float64 `json:"cost"`
+	// La fecha de compra.
+	AcquiredOn string `json:"acquired_on"`
+	// Desde cuándo se usa (se deprecia desde el mes siguiente); por omisión, la de compra.
+	InUseSince *string `json:"in_use_since,omitempty"`
+}
+
 // CreateImssFilesParams: los campos de «Archivos para IDSE o SUA».
 type CreateImssFilesParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -2015,6 +2033,54 @@ type CreateIssuerParamsDonationAuthorization struct {
 	Number string `json:"number"`
 	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
 	Date string `json:"date"`
+}
+
+// CreateLedgerAccountParams: los campos de «Agregar una cuenta al catálogo».
+type CreateLedgerAccountParams struct {
+	// Su número en el catálogo, por ejemplo 210-01-01. No se repite.
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Una subcuenta del código agrupador del SAT (Anexo 24), por ejemplo 210.01.
+	GroupingCode string `json:"grouping_code"`
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// CreateManualEntryParams: los campos de «Capturar una póliza».
+type CreateManualEntryParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// La fecha de la póliza (AAAA-MM-DD).
+	Date string `json:"date"`
+	// Su concepto.
+	Description string `json:"description"`
+	// adjustment (ajuste), accrual (provisión), reclassification (reclasificación) u other.
+	//
+	// Valores: adjustment, accrual, reclassification, other.
+	Kind *string `json:"kind,omitempty"`
+	// El tipo de póliza: journal (diario), income (ingresos) o expense (egresos).
+	//
+	// Valores: journal, income, expense.
+	JournalType *string `json:"journal_type,omitempty"`
+	// Solo con kind accrual: la póliza se revierte sola el día 1 del mes siguiente (para cuando llegue la factura).
+	ReverseNextMonth *bool `json:"reverse_next_month,omitempty"`
+	// El UUID del CFDI con el que se relaciona, si hay uno.
+	UUID *string `json:"uuid,omitempty"`
+	// Con uuid: el RFC de la otra parte de ese CFDI.
+	UUIDTaxID *string `json:"uuid_tax_id,omitempty"`
+	// Sus cargos y abonos: cada renglón uno u otro; los cargos suman lo mismo que los abonos.
+	Lines []CreateManualEntryParamsLine `json:"lines"`
+}
+
+// CreateManualEntryParamsLine: CreateManualEntryParamsLine.
+type CreateManualEntryParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts), por ejemplo 205-06.
+	Account string `json:"account"`
+	// El cargo.
+	Debit *float64 `json:"debit,omitempty"`
+	// El abono.
+	Credit *float64 `json:"credit,omitempty"`
 }
 
 // CreatePaymentParams: los campos de «Timbrar un complemento de pago».
@@ -4069,6 +4135,18 @@ type DiotLineReturns struct {
 	Vat float64 `json:"vat"`
 }
 
+// DisposeFixedAssetParams: los campos de «Vender o dar de baja un activo fijo».
+type DisposeFixedAssetParams struct {
+	// El día de la venta o la baja.
+	Date string `json:"date"`
+	// sale (venta) o write_off (robo, pérdida, desecho).
+	//
+	// Valores: sale, write_off.
+	Reason *string `json:"reason,omitempty"`
+	// Una nota.
+	Note *string `json:"note,omitempty"`
+}
+
 // Employee: Un empleado de un emisor, para sus recibos de nómina.
 type Employee struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -5123,6 +5201,72 @@ type FinancialStatementsIncomeStatementYearToDateSectionGroupAccount struct {
 	Name string `json:"name"`
 	// Importe.
 	Amount float64 `json:"amount"`
+}
+
+// FixedAsset: Un activo fijo del emisor en su contabilidad al cierre de un mes: su monto original, su depreciación en línea recta (tasas del artículo 34 de la LISR) y su valor en libros.
+type FixedAsset struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Qué es: lo capturado, o el emisor del CFDI.
+	Description string `json:"description"`
+	// cfdi (llegó con una factura recibida de uso I01 a I08) o manual (capturado sin factura).
+	//
+	// Valores: cfdi, manual.
+	Source string `json:"source"`
+	// Su tipo por uso CFDI (I01 a I08), que da su tasa.
+	CFDIUse string `json:"cfdi_use"`
+	// El nombre de su tipo, por ejemplo «Equipo de cómputo».
+	Class string `json:"class"`
+	// El UUID de su CFDI, o null si se capturó.
+	UUID *string `json:"uuid,omitempty"`
+	// Desde cuándo se usa: se deprecia desde el mes siguiente.
+	InUseSince string `json:"in_use_since"`
+	// Su monto original sin IVA.
+	Cost float64 `json:"cost"`
+	// Su tasa anual de depreciación (0.3 es 30%).
+	AnnualRate float64 `json:"annual_rate"`
+	// Lo que se deprecia cada mes mientras dura.
+	MonthlyDepreciation float64 `json:"monthly_depreciation"`
+	// El mes (AAAA-MM) a cuyo cierre van las cifras.
+	Month string `json:"month"`
+	// Lo que se depreció en ese mes.
+	MonthDepreciation float64 `json:"month_depreciation"`
+	// Lo depreciado hasta el cierre de ese mes.
+	AccumulatedDepreciation float64 `json:"accumulated_depreciation"`
+	// Su valor en libros: el monto original menos lo depreciado; 0 después de su baja.
+	BookValue float64 `json:"book_value"`
+	// Su venta o baja (date, reason sale o write_off, note), o null si sigue en uso.
+	Disposal *FixedAssetDisposal `json:"disposal,omitempty"`
+}
+
+// FixedAssetDisposal: FixedAssetDisposal.
+type FixedAssetDisposal struct {
+	// El día de la venta o la baja.
+	Date string `json:"date"`
+	// sale (venta) o write_off (robo, pérdida, desecho).
+	//
+	// Valores: sale, write_off.
+	Reason string `json:"reason"`
+	// La nota que se dejó, o null.
+	Note *string `json:"note,omitempty"`
+}
+
+// FixedAssetList: Una página de la lista.
+type FixedAssetList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []FixedAsset `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // GetAttendanceParams: los campos de «Ver la asistencia de un periodo».
@@ -7461,10 +7605,12 @@ type JournalEntry struct {
 	Object string `json:"object"`
 	// El emisor.
 	Issuer string `json:"issuer"`
-	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina), employee_expenses (un anticipo, reembolso, devolución o comprobación de viáticos, contra 107.01 «Funcionarios y empleados») o depreciation (la depreciación del mes de los activos fijos).
+	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina), employee_expenses (un anticipo, reembolso, devolución o comprobación de viáticos, contra 107.01 «Funcionarios y empleados»), depreciation (la depreciación del mes de los activos fijos), manual (una póliza capturada a mano, o la reversión de una provisión) o asset_disposal (la venta o baja de un activo fijo).
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal.
 	Type string `json:"type"`
+	// Con type manual: la póliza capturada (mje_…), también en su reversión; null en las demás.
+	ManualEntry *string `json:"manual_entry,omitempty"`
 	// La fecha del CFDI o del pago; en la depreciación, el último día del mes.
 	Date string `json:"date"`
 	// El documento, su folio y la contraparte.
@@ -7681,6 +7827,14 @@ type ListExportsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListFixedAssetsParams: los campos de «Listar los activos fijos».
+type ListFixedAssetsParams struct {
+	// El mes (AAAA-MM) a cuyo cierre van las cifras. Por omisión, el actual.
+	Month *string `json:"month,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListImssMovementsParams: los campos de «Listar movimientos del IMSS».
 type ListImssMovementsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -7767,6 +7921,20 @@ type ListJournalEntriesParams struct {
 
 // ListLedgerAccountsParams: los campos de «Ver el catálogo de cuentas».
 type ListLedgerAccountsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListManualEntriesParams: los campos de «Listar las pólizas capturadas».
+type ListManualEntriesParams struct {
+	// Cuántas por página, de 1 a 1,000. Por omisión 100.
+	Limit *int64 `json:"limit,omitempty"`
+	// La última (mje_…) de la página anterior.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// Desde este día (AAAA-MM-DD).
+	From *string `json:"from,omitempty"`
+	// Hasta este día (AAAA-MM-DD).
+	To *string `json:"to,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -8209,6 +8377,72 @@ type ListWebhookEndpointsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
+}
+
+// ManualJournalEntry: Una póliza capturada a mano (ajuste, provisión, reclasificación): entra a las pólizas, la balanza, los estados financieros y la contabilidad electrónica de su mes.
+type ManualJournalEntry struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// La fecha de la póliza.
+	Date string `json:"date"`
+	// Su concepto.
+	Description string `json:"description"`
+	// adjustment (ajuste), accrual (provisión), reclassification (reclasificación) u other.
+	//
+	// Valores: adjustment, accrual, reclassification, other.
+	Kind string `json:"kind"`
+	// El tipo de póliza: journal (diario), income (ingresos) o expense (egresos).
+	//
+	// Valores: journal, income, expense.
+	JournalType string `json:"journal_type"`
+	// true: una provisión que se revierte sola el día 1 del mes siguiente.
+	ReverseNextMonth bool `json:"reverse_next_month"`
+	// El día de su reversión, o null si no se revierte.
+	ReversesOn *string `json:"reverses_on,omitempty"`
+	// El UUID del CFDI con el que se relaciona, o null.
+	UUID *string `json:"uuid,omitempty"`
+	// El RFC de la otra parte de ese CFDI, o null.
+	UUIDTaxID *string `json:"uuid_tax_id,omitempty"`
+	// La suma de sus cargos (igual a la de sus abonos).
+	Total float64 `json:"total"`
+	// Sus renglones: la cuenta y su cargo (debit) o abono (credit).
+	Lines []ManualJournalEntryLine `json:"lines"`
+	// Cuándo se capturó.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// ManualJournalEntryLine: ManualJournalEntryLine.
+type ManualJournalEntryLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// El cargo, en pesos.
+	Debit float64 `json:"debit"`
+	// El abono, en pesos.
+	Credit float64 `json:"credit"`
+}
+
+// ManualJournalEntryList: Una página de la lista.
+type ManualJournalEntryList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ManualJournalEntry `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // MarkInvoicePaidParams: los campos de «Marcar pagada».
@@ -12139,6 +12373,40 @@ type UpdateIssuerParamsDonationAuthorization struct {
 	Number string `json:"number"`
 	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
 	Date string `json:"date"`
+}
+
+// UpdateManualEntryParams: los campos de «Corregir una póliza capturada».
+type UpdateManualEntryParams struct {
+	// La fecha de la póliza (AAAA-MM-DD).
+	Date string `json:"date"`
+	// Su concepto.
+	Description string `json:"description"`
+	// adjustment (ajuste), accrual (provisión), reclassification (reclasificación) u other.
+	//
+	// Valores: adjustment, accrual, reclassification, other.
+	Kind *string `json:"kind,omitempty"`
+	// El tipo de póliza: journal (diario), income (ingresos) o expense (egresos).
+	//
+	// Valores: journal, income, expense.
+	JournalType *string `json:"journal_type,omitempty"`
+	// Solo con kind accrual: la póliza se revierte sola el día 1 del mes siguiente (para cuando llegue la factura).
+	ReverseNextMonth *bool `json:"reverse_next_month,omitempty"`
+	// El UUID del CFDI con el que se relaciona, si hay uno.
+	UUID *string `json:"uuid,omitempty"`
+	// Con uuid: el RFC de la otra parte de ese CFDI.
+	UUIDTaxID *string `json:"uuid_tax_id,omitempty"`
+	// Sus cargos y abonos: cada renglón uno u otro; los cargos suman lo mismo que los abonos.
+	Lines []UpdateManualEntryParamsLine `json:"lines"`
+}
+
+// UpdateManualEntryParamsLine: UpdateManualEntryParamsLine.
+type UpdateManualEntryParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts), por ejemplo 205-06.
+	Account string `json:"account"`
+	// El cargo.
+	Debit *float64 `json:"debit,omitempty"`
+	// El abono.
+	Credit *float64 `json:"credit,omitempty"`
 }
 
 // UpdateMemberParams: los campos de «Cambiar el acceso de un miembro».

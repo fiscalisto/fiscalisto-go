@@ -136,6 +136,10 @@ type services struct {
 	Tickets *TicketsService
 	// Contabilidad.
 	Accounting *AccountingService
+	// Contabilidad.
+	ManualEntries *ManualEntriesService
+	// Contabilidad.
+	FixedAssets *FixedAssetsService
 	// Tiendas en línea.
 	StoreConnections *StoreConnectionsService
 	// Facturas recurrentes.
@@ -211,6 +215,8 @@ func (s *services) init(c *Client) {
 	s.SatDeclarations = &SatDeclarationsService{c}
 	s.Tickets = &TicketsService{c}
 	s.Accounting = &AccountingService{c}
+	s.ManualEntries = &ManualEntriesService{c}
+	s.FixedAssets = &FixedAssetsService{c}
 	s.StoreConnections = &StoreConnectionsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
 	s.Quotes = &QuotesService{c}
@@ -3901,7 +3907,7 @@ type AccountingService struct{ c *Client }
 
 // JournalEntries: Listar las pólizas de un mes
 //
-// Las pólizas de diario del mes, con sus cuentas y código agrupador del SAT: una por cada CFDI de ingreso o egreso vigente, emitido o recibido (los recibidos con la categoría de su gasto); una por cada pago de un complemento; una por cada recibo de nómina, y una con la depreciación de los activos fijos. Un PUE se registra cobrado o pagado según su forma de pago. En pesos; un CFDI en otra moneda sin tipo de cambio no se registra. No incluye movimientos de banco sin CFDI ni provisiones.
+// Las pólizas de diario del mes, con sus cuentas y código agrupador del SAT: una por cada CFDI de ingreso o egreso vigente, emitido o recibido (los recibidos con la categoría de su gasto); una por cada pago de un complemento; una por cada recibo de nómina; una con la depreciación de los activos fijos; una por cada venta o baja de un activo, y las capturadas a mano (POST /v1/accounting/manual_entries) con las reversiones de sus provisiones. Un PUE se registra cobrado o pagado según su forma de pago. En pesos; un CFDI en otra moneda sin tipo de cambio no se registra. No incluye movimientos de banco sin CFDI.
 //
 // GET /v1/accounting/journal_entries
 //
@@ -4005,6 +4011,21 @@ func (s *AccountingService) Accounts(ctx context.Context, params *ListLedgerAcco
 	return out, nil
 }
 
+// CreateAccount: Agregar una cuenta al catálogo
+//
+// Una cuenta propia del emisor, para sus pólizas a mano: su número (que no se repite), su nombre y una subcuenta del código agrupador del SAT. Entra al catálogo de la contabilidad electrónica.
+//
+// POST /v1/accounting/accounts
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-ledger-account
+func (s *AccountingService) CreateAccount(ctx context.Context, params *CreateLedgerAccountParams, opts ...RequestOption) (*LedgerAccount, error) {
+	out := new(LedgerAccount)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/accounts", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ElectronicAccounting: Descargar la contabilidad electrónica
 //
 // El ZIP del mes para el Buzón Tributario: el catálogo (CT) y la balanza (BN, o BC si es complementaria), cada uno en su ZIP con el nombre que espera el SAT, en el formato 1.3 del Anexo 24. Con journal_request, también las pólizas (PL), que se entregan cuando el SAT las pide. Con month AAAA-13, la balanza de comprobación ajustada al cierre del ejercicio (regla 2.8.1.6 RMF): solo la balanza, con los saldos finales de diciembre como saldos iniciales y, con closing_entry, la póliza de cierre.
@@ -4042,6 +4063,178 @@ func (s *AccountingService) Diot(ctx context.Context, params *GetDiotParams, opt
 func (s *AccountingService) DiotFile(ctx context.Context, params *GetDiotFileParams, opts ...RequestOption) (string, error) {
 	b, err := s.c.raw(ctx, "GET", "/v1/accounting/diot/file", nil, params, false, opts)
 	return string(b), err
+}
+
+// ManualEntriesService: Contabilidad (client.ManualEntries).
+type ManualEntriesService struct{ c *Client }
+
+// Create: Capturar una póliza
+//
+// Una póliza a mano: un ajuste, una provisión (reverse_next_month la revierte el día 1 del mes siguiente), una reclasificación. Cada renglón lleva una cuenta del catálogo por su número y un cargo o un abono; si no cuadran contesta entry_unbalanced, y una cuenta que no existe, account_missing. Entra a journal_entries, trial_balance, financial_statements y electronic_accounting de su mes. No puede ser antes de los saldos iniciales.
+//
+// POST /v1/accounting/manual_entries
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-manual-entry
+func (s *ManualEntriesService) Create(ctx context.Context, params *CreateManualEntryParams, opts ...RequestOption) (*ManualJournalEntry, error) {
+	out := new(ManualJournalEntry)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/manual_entries", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar las pólizas capturadas
+//
+// Las pólizas capturadas a mano del emisor, las más recientes primero.
+//
+// GET /v1/accounting/manual_entries
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-manual-entries
+func (s *ManualEntriesService) List(ctx context.Context, params *ListManualEntriesParams, opts ...RequestOption) (*Page[ManualJournalEntry], error) {
+	return list[ManualJournalEntry](ctx, s.c, "/v1/accounting/manual_entries", params, "", opts)
+}
+
+// ListAutoPaging: Listar las pólizas capturadas, todos, página por página: for x, err := range …
+func (s *ManualEntriesService) ListAutoPaging(ctx context.Context, params *ListManualEntriesParams, opts ...RequestOption) iter.Seq2[ManualJournalEntry, error] {
+	return listAll[ManualJournalEntry](ctx, s.c, "/v1/accounting/manual_entries", params, opts)
+}
+
+// Get: Ver una póliza capturada
+//
+// Una póliza capturada a mano.
+//
+// GET /v1/accounting/manual_entries/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-manual-entry
+func (s *ManualEntriesService) Get(ctx context.Context, id string, opts ...RequestOption) (*ManualJournalEntry, error) {
+	out := new(ManualJournalEntry)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/manual_entries/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Corregir una póliza capturada
+//
+// La reemplaza con lo que manda, con las mismas reglas que al capturarla.
+//
+// POST /v1/accounting/manual_entries/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/update-manual-entry
+func (s *ManualEntriesService) Update(ctx context.Context, id string, params *UpdateManualEntryParams, opts ...RequestOption) (*ManualJournalEntry, error) {
+	out := new(ManualJournalEntry)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/manual_entries/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una póliza capturada
+//
+// Sale de la contabilidad con su reversión, si tenía.
+//
+// DELETE /v1/accounting/manual_entries/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/delete-manual-entry
+func (s *ManualEntriesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/manual_entries/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FixedAssetsService: Contabilidad (client.FixedAssets).
+type FixedAssetsService struct{ c *Client }
+
+// List: Listar los activos fijos
+//
+// Los activos fijos del emisor al cierre de un mes: los que llegaron con una factura recibida de uso I01 a I08 (fxc_…) y los capturados sin ella (fxa_…), con su depreciación mensual y acumulada y su valor en libros.
+//
+// GET /v1/accounting/fixed_assets
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-fixed-assets
+func (s *FixedAssetsService) List(ctx context.Context, params *ListFixedAssetsParams, opts ...RequestOption) (*FixedAssetList, error) {
+	out := new(FixedAssetList)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/fixed_assets", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Agregar un activo fijo sin factura
+//
+// Uno que compró antes de usar Fiscalisto o cuya factura no está aquí. Se deprecia cada mes desde el siguiente a in_use_since, en la contabilidad y en el cálculo del ISR. Su costo no entra solo a los libros: va en los saldos iniciales o en una póliza (POST /v1/accounting/manual_entries).
+//
+// POST /v1/accounting/fixed_assets
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-fixed-asset
+func (s *FixedAssetsService) Create(ctx context.Context, params *CreateFixedAssetParams, opts ...RequestOption) (*FixedAsset, error) {
+	out := new(FixedAsset)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/fixed_assets", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un activo fijo
+//
+// Un activo fijo, con sus cifras al cierre del mes actual.
+//
+// GET /v1/accounting/fixed_assets/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-fixed-asset
+func (s *FixedAssetsService) Get(ctx context.Context, id string, opts ...RequestOption) (*FixedAsset, error) {
+	out := new(FixedAsset)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/fixed_assets/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un activo fijo capturado
+//
+// Solo uno capturado sin factura (fxa_…); uno con CFDI contesta asset_from_cfdi: véndalo o dele de baja.
+//
+// DELETE /v1/accounting/fixed_assets/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/delete-fixed-asset
+func (s *FixedAssetsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/fixed_assets/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Dispose: Vender o dar de baja un activo fijo
+//
+// Deja de depreciarse el mes de date, y ese día una póliza (asset_disposal) cancela el activo y su depreciación acumulada; su valor en libros va a pérdida en venta o baja (703). El ingreso de una venta entra con la factura que emita. Uno ya dado de baja contesta asset_already_disposed.
+//
+// POST /v1/accounting/fixed_assets/{id}/dispose
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/dispose-fixed-asset
+func (s *FixedAssetsService) Dispose(ctx context.Context, id string, params *DisposeFixedAssetParams, opts ...RequestOption) (*FixedAsset, error) {
+	out := new(FixedAsset)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/fixed_assets/"+url.PathEscape(id)+"/dispose", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Undispose: Deshacer la baja de un activo fijo
+//
+// El activo vuelve a depreciarse como si nunca se hubiera dado de baja.
+//
+// DELETE /v1/accounting/fixed_assets/{id}/disposal
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/undispose-fixed-asset
+func (s *FixedAssetsService) Undispose(ctx context.Context, id string, opts ...RequestOption) (*FixedAsset, error) {
+	out := new(FixedAsset)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/fixed_assets/"+url.PathEscape(id)+"/disposal", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // StoreConnectionsService: Tiendas en línea (client.StoreConnections).
