@@ -2207,6 +2207,8 @@ type CreateManualEntryParams struct {
 	UUID *string `json:"uuid,omitempty"`
 	// Con uuid: el RFC de la otra parte de ese CFDI.
 	UUIDTaxID *string `json:"uuid_tax_id,omitempty"`
+	// Una póliza recurrente: se repite cada mes, el mismo día (el último si la fecha es el último del mes), hasta este mes (AAAA-MM), hasta 60 meses. null: solo en su fecha.
+	RepeatUntil *string `json:"repeat_until,omitempty"`
 	// Sus cargos y abonos: cada renglón uno u otro; los cargos suman lo mismo que los abonos.
 	Lines []CreateManualEntryParamsLine `json:"lines"`
 }
@@ -2391,6 +2393,8 @@ type CreatePayrollReceiptParams struct {
 	Absences *int64 `json:"absences,omitempty"`
 	// Días de incapacidad que expidió el IMSS en el periodo, de 0 a 31: no se pagan (salen de days) y no causan cuotas obreras del IMSS (LSS art. 31 fr. IV).
 	DisabilityDays *int64 `json:"disability_days,omitempty"`
+	// Incidencias del periodo, como en Nómina › Emitir recibos: horas extra, domingos trabajados, vacaciones y premios. Fiscalisto calcula sus importes, su parte exenta y el ISR con el sueldo.
+	Incidents *CreatePayrollReceiptParamsIncidents `json:"incidents,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
 	Replaces *string `json:"replaces,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
@@ -2399,6 +2403,34 @@ type CreatePayrollReceiptParams struct {
 	Metadata map[string]string `json:"metadata,omitempty"`
 	// El confirmation_token de POST /v1/payroll_receipts/preview: timbra solo si el recibo calculado ahora es exactamente el que revisó (si no, 409 payroll_calculation_changed y no timbra). Sin él, timbra el que calcule en ese momento.
 	ConfirmationToken *string `json:"confirmation_token,omitempty"`
+}
+
+// CreatePayrollReceiptParamsIncidents: Incidencias del periodo, como en Nómina › Emitir recibos: horas extra, domingos trabajados, vacaciones y premios. Fiscalisto calcula sus importes, su parte exenta y el ISR con el sueldo.
+type CreatePayrollReceiptParamsIncidents struct {
+	// Horas extra dobles (pagadas al doble), horas completas: hasta 9 por semana en 2026 y 2027, 10 en 2028, 11 en 2029 y 12 desde 2030 (LFT arts. 66 y transitorio cuarto del decreto DOF 01-05-2026). Exentas la mitad, hasta 5 UMA por semana; todas si gana el salario mínimo (LISR art. 93 fr. I).
+	DoubleHours *int64 `json:"double_hours,omitempty"`
+	// Horas extra triples, las que pasan de las dobles de la semana (LFT art. 68). Gravadas.
+	TripleHours *int64 `json:"triple_hours,omitempty"`
+	// Días en que se trabajaron las horas extra (nodo HorasExtra); uno por cada 3 horas si no lo manda.
+	OvertimeDays *int64 `json:"overtime_days,omitempty"`
+	// Domingos trabajados: prima dominical del 25% del salario diario por cada uno (LFT art. 71), exenta hasta 1 UMA por domingo.
+	Sundays *int64 `json:"sundays,omitempty"`
+	// Días de vacaciones que disfrutó en el periodo (se pagan como sueldo dentro de days): su prima vacacional con el porcentaje del empleado, exenta hasta 15 UMA en el año.
+	VacationDays *float64 `json:"vacation_days,omitempty"`
+	// Premios y bonos del periodo, gravados.
+	Bonuses []CreatePayrollReceiptParamsIncidentsBonus `json:"bonuses,omitempty"`
+}
+
+// CreatePayrollReceiptParamsIncidentsBonus: CreatePayrollReceiptParamsIncidentsBonus.
+type CreatePayrollReceiptParamsIncidentsBonus struct {
+	// 010 premio de puntualidad, 049 premio de asistencia, 038 otro bono (c_TipoPercepcion).
+	//
+	// Valores: 010, 049, 038.
+	Type string `json:"type"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept *string `json:"concept,omitempty"`
 }
 
 // CreatePayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
@@ -8949,6 +8981,8 @@ type ManualJournalEntry struct {
 	ReverseNextMonth bool `json:"reverse_next_month"`
 	// El día de su reversión, o null si no se revierte.
 	ReversesOn *string `json:"reverses_on,omitempty"`
+	// El último mes (AAAA-MM) en que se repite cada mes, o null si es de una sola fecha.
+	RepeatUntil *string `json:"repeat_until,omitempty"`
 	// El UUID del CFDI con el que se relaciona, o null.
 	UUID *string `json:"uuid,omitempty"`
 	// El RFC de la otra parte de ese CFDI, o null.
@@ -9861,12 +9895,42 @@ type PreviewPayrollReceiptParams struct {
 	Absences *int64 `json:"absences,omitempty"`
 	// Días de incapacidad que expidió el IMSS en el periodo, de 0 a 31: no se pagan (salen de days) y no causan cuotas obreras del IMSS (LSS art. 31 fr. IV).
 	DisabilityDays *int64 `json:"disability_days,omitempty"`
+	// Incidencias del periodo, como en Nómina › Emitir recibos: horas extra, domingos trabajados, vacaciones y premios. Fiscalisto calcula sus importes, su parte exenta y el ISR con el sueldo.
+	Incidents *PreviewPayrollReceiptParamsIncidents `json:"incidents,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
 	Replaces *string `json:"replaces,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// PreviewPayrollReceiptParamsIncidents: Incidencias del periodo, como en Nómina › Emitir recibos: horas extra, domingos trabajados, vacaciones y premios. Fiscalisto calcula sus importes, su parte exenta y el ISR con el sueldo.
+type PreviewPayrollReceiptParamsIncidents struct {
+	// Horas extra dobles (pagadas al doble), horas completas: hasta 9 por semana en 2026 y 2027, 10 en 2028, 11 en 2029 y 12 desde 2030 (LFT arts. 66 y transitorio cuarto del decreto DOF 01-05-2026). Exentas la mitad, hasta 5 UMA por semana; todas si gana el salario mínimo (LISR art. 93 fr. I).
+	DoubleHours *int64 `json:"double_hours,omitempty"`
+	// Horas extra triples, las que pasan de las dobles de la semana (LFT art. 68). Gravadas.
+	TripleHours *int64 `json:"triple_hours,omitempty"`
+	// Días en que se trabajaron las horas extra (nodo HorasExtra); uno por cada 3 horas si no lo manda.
+	OvertimeDays *int64 `json:"overtime_days,omitempty"`
+	// Domingos trabajados: prima dominical del 25% del salario diario por cada uno (LFT art. 71), exenta hasta 1 UMA por domingo.
+	Sundays *int64 `json:"sundays,omitempty"`
+	// Días de vacaciones que disfrutó en el periodo (se pagan como sueldo dentro de days): su prima vacacional con el porcentaje del empleado, exenta hasta 15 UMA en el año.
+	VacationDays *float64 `json:"vacation_days,omitempty"`
+	// Premios y bonos del periodo, gravados.
+	Bonuses []PreviewPayrollReceiptParamsIncidentsBonus `json:"bonuses,omitempty"`
+}
+
+// PreviewPayrollReceiptParamsIncidentsBonus: PreviewPayrollReceiptParamsIncidentsBonus.
+type PreviewPayrollReceiptParamsIncidentsBonus struct {
+	// 010 premio de puntualidad, 049 premio de asistencia, 038 otro bono (c_TipoPercepcion).
+	//
+	// Valores: 010, 049, 038.
+	Type string `json:"type"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept *string `json:"concept,omitempty"`
 }
 
 // PreviewPayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
@@ -13159,6 +13223,8 @@ type UpdateManualEntryParams struct {
 	UUID *string `json:"uuid,omitempty"`
 	// Con uuid: el RFC de la otra parte de ese CFDI.
 	UUIDTaxID *string `json:"uuid_tax_id,omitempty"`
+	// Una póliza recurrente: se repite cada mes, el mismo día (el último si la fecha es el último del mes), hasta este mes (AAAA-MM), hasta 60 meses. null: solo en su fecha.
+	RepeatUntil *string `json:"repeat_until,omitempty"`
 	// Sus cargos y abonos: cada renglón uno u otro; los cargos suman lo mismo que los abonos.
 	Lines []UpdateManualEntryParamsLine `json:"lines"`
 }
