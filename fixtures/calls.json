@@ -1812,6 +1812,34 @@
 		"go": "ManualEntries.Delete",
 		"java": "manualEntries.delete"
 	},
+	"POST /v1/accounting/manual_entry_imports": {
+		"python": "manual_entries.import_entries",
+		"php": "manualEntries->importEntries",
+		"dotnet": "ManualEntries.ImportEntriesAsync",
+		"go": "ManualEntries.ImportEntries",
+		"java": "manualEntries.importEntries"
+	},
+	"DELETE /v1/accounting/manual_entry_imports/{id}": {
+		"python": "manual_entries.undo_import",
+		"php": "manualEntries->undoImport",
+		"dotnet": "ManualEntries.UndoImportAsync",
+		"go": "ManualEntries.UndoImport",
+		"java": "manualEntries.undoImport"
+	},
+	"GET /v1/accounting/opening_balances": {
+		"python": "opening_balances.get",
+		"php": "openingBalances->get",
+		"dotnet": "OpeningBalances.GetAsync",
+		"go": "OpeningBalances.Get",
+		"java": "openingBalances.get"
+	},
+	"POST /v1/accounting/opening_balances": {
+		"python": "opening_balances.set",
+		"php": "openingBalances->set",
+		"dotnet": "OpeningBalances.SetAsync",
+		"go": "OpeningBalances.Set",
+		"java": "openingBalances.set"
+	},
 	"GET /v1/accounting/fixed_assets": {
 		"python": "fixed_assets.list",
 		"php": "fixedAssets->list",

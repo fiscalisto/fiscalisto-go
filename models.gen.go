@@ -5835,6 +5835,12 @@ type GetInvoiceXmlParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetOpeningBalancesParams: los campos de «Ver los saldos iniciales».
+type GetOpeningBalancesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetRetentionParams: los campos de «Ver una constancia».
 type GetRetentionParams struct {
 	// Con un UUID en vez del id, el emisor (iss_…) si la cuenta tiene varios.
@@ -5893,6 +5899,40 @@ type GetVatRefundParams struct {
 	Month *string `json:"month,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ImportManualEntriesParams: los campos de «Importar pólizas de otro sistema».
+type ImportManualEntriesParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Las pólizas, hasta 3,000.
+	Entries []ImportManualEntriesParamsEntry `json:"entries"`
+}
+
+// ImportManualEntriesParamsEntry: ImportManualEntriesParamsEntry.
+type ImportManualEntriesParamsEntry struct {
+	// La fecha de la póliza (AAAA-MM-DD).
+	Date string `json:"date"`
+	// El tipo de póliza: journal (diario), income (ingresos) o expense (egresos).
+	//
+	// Valores: journal, income, expense.
+	JournalType *string `json:"journal_type,omitempty"`
+	// Su número en el otro sistema (por ejemplo Dr 15). Con la fecha, el tipo y el total, reconoce una póliza ya importada y la salta.
+	Number *string `json:"number,omitempty"`
+	// Su concepto.
+	Description string `json:"description"`
+	// Sus cargos y abonos: cada renglón uno u otro; los cargos suman lo mismo que los abonos.
+	Lines []ImportManualEntriesParamsEntryLine `json:"lines"`
+}
+
+// ImportManualEntriesParamsEntryLine: ImportManualEntriesParamsEntryLine.
+type ImportManualEntriesParamsEntryLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts), por ejemplo 205-06.
+	Account string `json:"account"`
+	// El cargo.
+	Debit *float64 `json:"debit,omitempty"`
+	// El abono.
+	Credit *float64 `json:"credit,omitempty"`
 }
 
 // ImportStoreOrdersParams: los campos de «Traer pedidos pagados».
@@ -8841,6 +8881,28 @@ type ListWebhookEndpointsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 }
 
+// ManualEntryImport: Las pólizas que entraron de otro sistema (CONTPAQi, COI, una hoja de cálculo) en una importación.
+type ManualEntryImport struct {
+	// La importación (mji_…), para deshacerla; null si todas las pólizas ya estaban.
+	ID *string `json:"id,omitempty"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Cuántas pólizas entraron.
+	Imported int64 `json:"imported"`
+	// Cuántas se saltaron porque ya estaban importadas.
+	Duplicates int64 `json:"duplicates"`
+	// La fecha de la primera póliza del archivo.
+	From string `json:"from"`
+	// La fecha de la última.
+	To string `json:"to"`
+	// Las pólizas que entraron (mje_…).
+	ManualEntries []string `json:"manual_entries"`
+}
+
 // ManualJournalEntry: Una póliza capturada a mano (ajuste, provisión, reclasificación): entra a las pólizas, la balanza, los estados financieros y la contabilidad electrónica de su mes.
 type ManualJournalEntry struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -9123,6 +9185,32 @@ type MemberList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// OpeningBalances: Los saldos iniciales del emisor: con qué saldo empieza cada cuenta el día en que empiezan sus libros.
+type OpeningBalances struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El día en que empiezan sus libros, o null si no tiene saldos iniciales.
+	Date *string `json:"date,omitempty"`
+	// El saldo de cada cuenta: deudor (debit) o acreedor (credit).
+	Lines []OpeningBalancesLine `json:"lines"`
+}
+
+// OpeningBalancesLine: OpeningBalancesLine.
+type OpeningBalancesLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// El cargo, en pesos.
+	Debit float64 `json:"debit"`
+	// El abono, en pesos.
+	Credit float64 `json:"credit"`
 }
 
 // PayrollBankFile: El archivo para pagar la nómina desde el portal del banco (no cobra nada).
@@ -11923,6 +12011,26 @@ type SetClosedPeriodParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El último mes cerrado (AAAA-MM); los anteriores quedan cerrados también. null reabre todos.
 	ClosedThrough *string `json:"closed_through,omitempty"`
+}
+
+// SetOpeningBalancesParams: los campos de «Guardar los saldos iniciales».
+type SetOpeningBalancesParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cuándo empiezan sus libros (el día 1 de un mes): lo anterior no se cuenta.
+	Date string `json:"date"`
+	// El saldo de cada cuenta, deudor o acreedor; las dos columnas suman lo mismo. Sin renglones, borra los saldos iniciales.
+	Lines []SetOpeningBalancesParamsLine `json:"lines"`
+}
+
+// SetOpeningBalancesParamsLine: SetOpeningBalancesParamsLine.
+type SetOpeningBalancesParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts), por ejemplo 205-06.
+	Account string `json:"account"`
+	// Su saldo deudor.
+	Debit *float64 `json:"debit,omitempty"`
+	// Su saldo acreedor.
+	Credit *float64 `json:"credit,omitempty"`
 }
 
 // SignEfirmaParams: los campos de «Firmar el contrato con el PAC».

@@ -143,6 +143,8 @@ type services struct {
 	// Contabilidad.
 	ManualEntries *ManualEntriesService
 	// Contabilidad.
+	OpeningBalances *OpeningBalancesService
+	// Contabilidad.
 	FixedAssets *FixedAssetsService
 	// Contabilidad.
 	ClosedPeriod *ClosedPeriodService
@@ -226,6 +228,7 @@ func (s *services) init(c *Client) {
 	s.Tickets = &TicketsService{c}
 	s.Accounting = &AccountingService{c}
 	s.ManualEntries = &ManualEntriesService{c}
+	s.OpeningBalances = &OpeningBalancesService{c}
 	s.FixedAssets = &FixedAssetsService{c}
 	s.ClosedPeriod = &ClosedPeriodService{c}
 	s.BankMovements = &BankMovementsService{c}
@@ -4324,6 +4327,69 @@ func (s *ManualEntriesService) Update(ctx context.Context, id string, params *Up
 func (s *ManualEntriesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/manual_entries/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ImportEntries: Importar pólizas de otro sistema
+//
+// Hasta 3,000 pólizas de una vez (las de CONTPAQi, COI o una hoja de cálculo), todas o ninguna: cada una con las reglas de POST /v1/accounting/manual_entries, y el error dice cuál (param entries[i].…). Entran como kind other. Una con el mismo number, fecha, tipo y total que una ya importada se salta (duplicates). DELETE /v1/accounting/manual_entry_imports/{id} quita las de una importación.
+//
+// POST /v1/accounting/manual_entry_imports
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/import-manual-entries
+func (s *ManualEntriesService) ImportEntries(ctx context.Context, params *ImportManualEntriesParams, opts ...RequestOption) (*ManualEntryImport, error) {
+	out := new(ManualEntryImport)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/manual_entry_imports", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UndoImport: Deshacer una importación de pólizas
+//
+// Borra todas las pólizas que trajo esa importación (mji_…). No se puede si alguna es de un mes cerrado (period_closed).
+//
+// DELETE /v1/accounting/manual_entry_imports/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/undo-manual-entries-import
+func (s *ManualEntriesService) UndoImport(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/manual_entry_imports/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// OpeningBalancesService: Contabilidad (client.OpeningBalances).
+type OpeningBalancesService struct{ c *Client }
+
+// Get: Ver los saldos iniciales
+//
+// Los saldos de cada cuenta con los que empiezan los libros del emisor (date), como Estados financieros › Saldos iniciales en la app. Sin saldos iniciales, date es null.
+//
+// GET /v1/accounting/opening_balances
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-opening-balances
+func (s *OpeningBalancesService) Get(ctx context.Context, params *GetOpeningBalancesParams, opts ...RequestOption) (*OpeningBalances, error) {
+	out := new(OpeningBalances)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/opening_balances", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Set: Guardar los saldos iniciales
+//
+// Reemplaza los saldos iniciales: el día 1 del mes en que empiezan sus libros y el saldo deudor o acreedor de cada cuenta (por su número); las dos columnas suman lo mismo o contesta entry_unbalanced. Son los saldos finales de la balanza de su sistema anterior. Sin renglones, los borra. Nada antes de esa fecha cuenta.
+//
+// POST /v1/accounting/opening_balances
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/set-opening-balances
+func (s *OpeningBalancesService) Set(ctx context.Context, params *SetOpeningBalancesParams, opts ...RequestOption) (*OpeningBalances, error) {
+	out := new(OpeningBalances)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/opening_balances", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
