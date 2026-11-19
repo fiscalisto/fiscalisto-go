@@ -104,6 +104,8 @@ type services struct {
 	StockMovements *StockMovementsService
 	// Inventario.
 	StockAdjustments *StockAdjustmentsService
+	// Inventario.
+	ProductionOrders *ProductionOrdersService
 	// Catálogos del SAT.
 	SatCatalogs *SatCatalogsService
 	// Listas del SAT.
@@ -199,6 +201,7 @@ func (s *services) init(c *Client) {
 	s.Warehouses = &WarehousesService{c}
 	s.StockMovements = &StockMovementsService{c}
 	s.StockAdjustments = &StockAdjustmentsService{c}
+	s.ProductionOrders = &ProductionOrdersService{c}
 	s.SatCatalogs = &SatCatalogsService{c}
 	s.SatLists = &SatListsService{c}
 	s.CfdiVerifications = &CfdiVerificationsService{c}
@@ -1644,7 +1647,7 @@ type PayrollReceiptsService struct{ c *Client }
 
 // Create: Timbrar un recibo de nómina
 //
-// Nómina ordinaria (Nómina 1.2): Fiscalisto calcula sueldo, ISR con subsidio al empleo e IMSS del empleado y el periodo, como la app, y nada más: aguinaldo, PTU, finiquitos, bonos, horas extra, Infonavit o préstamos los calcula su sistema y se timbran con POST /v1/payroll_receipts/external (pedirlos aquí contesta payroll_calculation_unsupported). Revise antes el recibo con POST /v1/payroll_receipts/preview y mande su confirmation_token: así solo se timbra el recibo que revisó (si cambió, 409 payroll_calculation_changed). Queda como factura tipo N (GET /v1/invoices/{id}). El emisor necesita employer_registration.
+// Nómina ordinaria (Nómina 1.2): Fiscalisto calcula sueldo, ISR con subsidio al empleo e IMSS del empleado y el periodo, como la app, y nada más: el aguinaldo, la PTU y los finiquitos los calcula POST /v1/payroll_receipts/extraordinary; bonos, horas extra, Infonavit o préstamos los calcula su sistema y se timbran con POST /v1/payroll_receipts/external (pedirlos aquí contesta payroll_calculation_unsupported). Revise antes el recibo con POST /v1/payroll_receipts/preview y mande su confirmation_token: así solo se timbra el recibo que revisó (si cambió, 409 payroll_calculation_changed). Queda como factura tipo N (GET /v1/invoices/{id}). El emisor necesita employer_registration.
 //
 // POST /v1/payroll_receipts
 //
@@ -1667,6 +1670,36 @@ func (s *PayrollReceiptsService) Create(ctx context.Context, params *CreatePayro
 func (s *PayrollReceiptsService) Preview(ctx context.Context, params *PreviewPayrollReceiptParams, opts ...RequestOption) (*PayrollReceiptPreview, error) {
 	out := new(PayrollReceiptPreview)
 	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/preview", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CreateExtraordinary: Timbrar un aguinaldo, PTU o finiquito
+//
+// Nómina extraordinaria (TipoNomina E) que calcula Fiscalisto, como la app en Nómina › Aguinaldo, PTU y finiquitos: el aguinaldo (los días al año del empleado, al menos 15, en proporción a los trabajados, 30 UMA exentas), la PTU (la parte que le toca, 15 UMA exentas) o el finiquito al último día trabajado (end_date): aguinaldo, vacaciones y prima vacacional proporcionales, menos lo que ya se le pagó en el año, y con exit_reason dismissal la indemnización de 3 meses, opcionalmente 20 días por año, y la prima de antigüedad (90 UMA exentas por año de servicio). El ISR de un aguinaldo o PTU, con el cálculo que retenga menos (art. 96 LISR o 174 del Reglamento) salvo que pida uno. Uno por empleado, tipo y año (el finiquito, por fecha de baja): pedirlo otra vez devuelve el mismo; cancelado, se emite de nuevo. Revíselo antes con POST /v1/payroll_receipts/extraordinary/preview y mande su confirmation_token. Queda como factura tipo N.
+//
+// POST /v1/payroll_receipts/extraordinary
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-extraordinary-payroll-receipt
+func (s *PayrollReceiptsService) CreateExtraordinary(ctx context.Context, params *CreateExtraordinaryPayrollReceiptParams, opts ...RequestOption) (*Invoice, error) {
+	out := new(Invoice)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/extraordinary", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PreviewExtraordinary: Calcular un aguinaldo, PTU o finiquito sin timbrar
+//
+// El recibo extraordinario como se timbraría (lo que paga, su parte exenta, el ISR con los dos cálculos y el neto), sin timbrar ni usar timbres, con el confirmation_token que lo timbra tal cual.
+//
+// POST /v1/payroll_receipts/extraordinary/preview
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/preview-extraordinary-payroll-receipt
+func (s *PayrollReceiptsService) PreviewExtraordinary(ctx context.Context, params *PreviewExtraordinaryPayrollReceiptParams, opts ...RequestOption) (*ExtraordinaryPayrollReceiptPreview, error) {
+	out := new(ExtraordinaryPayrollReceiptPreview)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_receipts/extraordinary/preview", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -3096,6 +3129,100 @@ func (s *StockAdjustmentsService) ListAutoPaging(ctx context.Context, params *Li
 func (s *StockAdjustmentsService) Get(ctx context.Context, id string, opts ...RequestOption) (*StockAdjustment, error) {
 	out := new(StockAdjustment)
 	if err := s.c.do(ctx, "GET", "/v1/stock_adjustments/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ProductionOrdersService: Inventario (client.ProductionOrders).
+type ProductionOrdersService struct{ c *Client }
+
+// Create: Crear una orden de producción
+//
+// Una orden en borrador (status draft) para producir quantity de un producto con receta: sus components salen de la receta (la hoja de costo de Compras › Costos y márgenes) con su merma y rendimiento, y sus other_costs se escalan a la cantidad. Nada se mueve hasta iniciarla. Enciende Producción en el inventario si estaba apagada. Un producto sin receta: 400 inventory_refused.
+//
+// POST /v1/production_orders
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/create-production-order
+func (s *ProductionOrdersService) Create(ctx context.Context, params *CreateProductionOrderParams, opts ...RequestOption) (*ProductionOrder, error) {
+	out := new(ProductionOrder)
+	if err := s.c.do(ctx, "POST", "/v1/production_orders", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar órdenes de producción
+//
+// Las órdenes del emisor, las más recientes primero.
+//
+// GET /v1/production_orders
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/list-production-orders
+func (s *ProductionOrdersService) List(ctx context.Context, params *ListProductionOrdersParams, opts ...RequestOption) (*Page[ProductionOrder], error) {
+	return list[ProductionOrder](ctx, s.c, "/v1/production_orders", params, "", opts)
+}
+
+// ListAutoPaging: Listar órdenes de producción, todos, página por página: for x, err := range …
+func (s *ProductionOrdersService) ListAutoPaging(ctx context.Context, params *ListProductionOrdersParams, opts ...RequestOption) iter.Seq2[ProductionOrder, error] {
+	return listAll[ProductionOrder](ctx, s.c, "/v1/production_orders", params, opts)
+}
+
+// Get: Ver una orden de producción
+//
+// Una orden con sus componentes, sus otros costos y, al terminar, su costo por unidad.
+//
+// GET /v1/production_orders/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/get-production-order
+func (s *ProductionOrdersService) Get(ctx context.Context, id string, opts ...RequestOption) (*ProductionOrder, error) {
+	out := new(ProductionOrder)
+	if err := s.c.do(ctx, "GET", "/v1/production_orders/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Start: Iniciar una orden de producción
+//
+// Los componentes salen del almacén (status in_process), cada lote el que caduca primero, al costo del emisor (promedio o PEPS). Mande components para lo que de verdad se usó de alguno. Con existencias negativas en «No permitir», uno que no alcanza: 400 inventory_refused.
+//
+// POST /v1/production_orders/{id}/start
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/start-production-order
+func (s *ProductionOrdersService) Start(ctx context.Context, id string, params *StartProductionOrderParams, opts ...RequestOption) (*ProductionOrder, error) {
+	out := new(ProductionOrder)
+	if err := s.c.do(ctx, "POST", "/v1/production_orders/"+url.PathEscape(id)+"/start", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Complete: Terminar una orden de producción
+//
+// Lo producido entra al almacén destino a su costo real: (materials_cost + other_costs) ÷ quantity_made (status completed). Una en borrador se inicia antes con lo planeado.
+//
+// POST /v1/production_orders/{id}/complete
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/complete-production-order
+func (s *ProductionOrdersService) Complete(ctx context.Context, id string, params *CompleteProductionOrderParams, opts ...RequestOption) (*ProductionOrder, error) {
+	out := new(ProductionOrder)
+	if err := s.c.do(ctx, "POST", "/v1/production_orders/"+url.PathEscape(id)+"/complete", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Cancel: Cancelar una orden de producción
+//
+// Los componentes regresan a su almacén y lo producido sale (status cancelled). Una ya cancelada: 400 inventory_refused.
+//
+// POST /v1/production_orders/{id}/cancel
+//
+// https://fiscalisto.com/docs/api/referencia/inventario/cancel-production-order
+func (s *ProductionOrdersService) Cancel(ctx context.Context, id string, opts ...RequestOption) (*ProductionOrder, error) {
+	out := new(ProductionOrder)
+	if err := s.c.do(ctx, "POST", "/v1/production_orders/"+url.PathEscape(id)+"/cancel", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

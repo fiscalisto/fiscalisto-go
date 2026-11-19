@@ -559,6 +559,20 @@
 		"go": "PayrollReceipts.Preview",
 		"java": "payrollReceipts.preview"
 	},
+	"POST /v1/payroll_receipts/extraordinary": {
+		"python": "payroll_receipts.create_extraordinary",
+		"php": "payrollReceipts->createExtraordinary",
+		"dotnet": "PayrollReceipts.CreateExtraordinaryAsync",
+		"go": "PayrollReceipts.CreateExtraordinary",
+		"java": "payrollReceipts.createExtraordinary"
+	},
+	"POST /v1/payroll_receipts/extraordinary/preview": {
+		"python": "payroll_receipts.preview_extraordinary",
+		"php": "payrollReceipts->previewExtraordinary",
+		"dotnet": "PayrollReceipts.PreviewExtraordinaryAsync",
+		"go": "PayrollReceipts.PreviewExtraordinary",
+		"java": "payrollReceipts.previewExtraordinary"
+	},
 	"POST /v1/payroll_receipts/external": {
 		"python": "payroll_receipts.create_external",
 		"php": "payrollReceipts->createExternal",
@@ -1265,6 +1279,48 @@
 		"dotnet": "StockAdjustments.GetAsync",
 		"go": "StockAdjustments.Get",
 		"java": "stockAdjustments.get"
+	},
+	"POST /v1/production_orders": {
+		"python": "production_orders.create",
+		"php": "productionOrders->create",
+		"dotnet": "ProductionOrders.CreateAsync",
+		"go": "ProductionOrders.Create",
+		"java": "productionOrders.create"
+	},
+	"GET /v1/production_orders": {
+		"python": "production_orders.list",
+		"php": "productionOrders->list",
+		"dotnet": "ProductionOrders.ListAsync",
+		"go": "ProductionOrders.List",
+		"java": "productionOrders.list"
+	},
+	"GET /v1/production_orders/{id}": {
+		"python": "production_orders.get",
+		"php": "productionOrders->get",
+		"dotnet": "ProductionOrders.GetAsync",
+		"go": "ProductionOrders.Get",
+		"java": "productionOrders.get"
+	},
+	"POST /v1/production_orders/{id}/start": {
+		"python": "production_orders.start",
+		"php": "productionOrders->start",
+		"dotnet": "ProductionOrders.StartAsync",
+		"go": "ProductionOrders.Start",
+		"java": "productionOrders.start"
+	},
+	"POST /v1/production_orders/{id}/complete": {
+		"python": "production_orders.complete",
+		"php": "productionOrders->complete",
+		"dotnet": "ProductionOrders.CompleteAsync",
+		"go": "ProductionOrders.Complete",
+		"java": "productionOrders.complete"
+	},
+	"POST /v1/production_orders/{id}/cancel": {
+		"python": "production_orders.cancel",
+		"php": "productionOrders->cancel",
+		"dotnet": "ProductionOrders.CancelAsync",
+		"go": "ProductionOrders.Cancel",
+		"java": "productionOrders.cancel"
 	},
 	"GET /v1/sat_catalogs/{name}": {
 		"python": "sat_catalogs.get",

@@ -1285,6 +1285,26 @@ type CompanyReportYear struct {
 	Margin *float64 `json:"margin,omitempty"`
 }
 
+// CompleteProductionOrderParams: los campos de «Terminar una orden de producción».
+type CompleteProductionOrderParams struct {
+	// Cuántas unidades salieron. Por omisión, quantity.
+	QuantityMade *float64 `json:"quantity_made,omitempty"`
+	// El lote de lo producido, si el producto lleva lotes. Por omisión, OP-<folio>.
+	Lot *string `json:"lot,omitempty"`
+	// La caducidad de ese lote (AAAA-MM-DD).
+	ExpiresOn *string `json:"expires_on,omitempty"`
+	// Los otros costos como de verdad fueron; por omisión, los de la receta.
+	OtherCosts []CompleteProductionOrderParamsOtherCost `json:"other_costs,omitempty"`
+}
+
+// CompleteProductionOrderParamsOtherCost: CompleteProductionOrderParamsOtherCost.
+type CompleteProductionOrderParamsOtherCost struct {
+	// Qué fue: gas, mano de obra…
+	Description string `json:"description"`
+	// Cuánto, en pesos sin IVA.
+	Amount float64 `json:"amount"`
+}
+
 // ComplianceOpinion: La opinión de cumplimiento de obligaciones fiscales (32-D) más reciente del emisor, como la dio el SAT.
 type ComplianceOpinion struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -1831,6 +1851,42 @@ type CreateExportParams struct {
 	//
 	// Valores: xml, pdf, xml_and_pdf.
 	Files *string `json:"files,omitempty"`
+}
+
+// CreateExtraordinaryPayrollReceiptParams: los campos de «Timbrar un aguinaldo, PTU o finiquito».
+type CreateExtraordinaryPayrollReceiptParams struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// aguinaldo (sus días al año, al menos 15, en proporción a los trabajados), ptu (la parte que le toca de las utilidades) o finiquito (al último día trabajado, end_date del empleado: aguinaldo, vacaciones y prima vacacional proporcionales y, con exit_reason dismissal, la indemnización y la prima de antigüedad).
+	//
+	// Valores: aguinaldo, ptu, finiquito.
+	Kind string `json:"kind"`
+	// FechaPago del recibo.
+	PaymentDate string `json:"payment_date"`
+	// aguinaldo: el año que paga (por omisión, el de payment_date). ptu: el año de la utilidad (por omisión, el anterior a payment_date).
+	Year *int64 `json:"year,omitempty"`
+	// aguinaldo: los días trabajados en el año, si no son todos los que estuvo contratado (faltas o incapacidades que no cuentan).
+	DaysWorked *float64 `json:"days_worked,omitempty"`
+	// ptu: lo que le toca a este empleado (la mitad de la PTU por días trabajados y la mitad por salario, con el tope de tres meses de salario). Fiscalisto calcula su parte exenta (15 UMA) y su ISR.
+	PtuAmount *float64 `json:"ptu_amount,omitempty"`
+	// aguinaldo y ptu: cómo retener el ISR de la parte gravada. lower (por omisión) el que retenga menos; art96 sumada al sueldo del mes; art174 el procedimiento opcional del Reglamento de la LISR.
+	//
+	// Valores: lower, art96, art174.
+	ISRMethod *string `json:"isr_method,omitempty"`
+	// finiquito: resignation (renuncia o común acuerdo, por omisión) o dismissal (despido sin causa: suma 3 meses de salario integrado y la prima de antigüedad).
+	//
+	// Valores: resignation, dismissal.
+	ExitReason *string `json:"exit_reason,omitempty"`
+	// finiquito con dismissal: incluye 20 días por año de servicio (LFT art. 50), cuando el patrón no lo reinstala.
+	TwentyDaysPerYear *bool `json:"twenty_days_per_year,omitempty"`
+	// finiquito: los días de vacaciones del año de servicio en curso que ya tomó.
+	VacationDaysTaken *float64 `json:"vacation_days_taken,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// El confirmation_token de POST /v1/payroll_receipts/extraordinary/preview: timbra solo si el recibo calculado ahora es el que revisó (si no, 409 payroll_calculation_changed).
+	ConfirmationToken *string `json:"confirmation_token,omitempty"`
 }
 
 // CreateFixedAssetParams: los campos de «Agregar un activo fijo sin factura».
@@ -2389,6 +2445,24 @@ type CreateProductParamsLocalTax struct {
 	Name string `json:"name"`
 	// Tasa en por ciento (TasadeTraslado o TasadeRetencion).
 	Rate float64 `json:"rate"`
+}
+
+// CreateProductionOrderParams: los campos de «Crear una orden de producción».
+type CreateProductionOrderParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Lo que va a producir (prd_…): un producto con receta (su hoja de costo en Compras › Costos y márgenes).
+	Product string `json:"product"`
+	// Cuántas unidades, en la unidad del producto.
+	Quantity float64 `json:"quantity"`
+	// El almacén de donde salen los componentes (whs_…). Por omisión, el de la Matriz.
+	Warehouse *string `json:"warehouse,omitempty"`
+	// El almacén al que entra lo producido (whs_…). Por omisión, warehouse.
+	DestinationWarehouse *string `json:"destination_warehouse,omitempty"`
+	// Para cuándo (AAAA-MM-DD).
+	DueDate *string `json:"due_date,omitempty"`
+	// Una nota.
+	Note *string `json:"note,omitempty"`
 }
 
 // CreatePurchaseReceiptParams: los campos de «Guardar un ticket de compra».
@@ -4977,6 +5051,196 @@ type ExternalPayrollReceiptPreviewWarning struct {
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
+}
+
+// ExtraordinaryPayrollReceiptPreview: Un aguinaldo, PTU o finiquito como se timbraría (nómina extraordinaria): lo que paga, su parte exenta, el ISR y el neto.
+type ExtraordinaryPayrollReceiptPreview struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Lo calculó Fiscalisto, como nómina extraordinaria.
+	Calculation string `json:"calculation"`
+	// Mándelo en POST /v1/payroll_receipts/extraordinary para timbrar exactamente este recibo: si al timbrar se calcula otro, contesta 409 payroll_calculation_changed sin timbrar.
+	ConfirmationToken string `json:"confirmation_token"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Qué paga: aguinaldo, ptu o finiquito.
+	//
+	// Valores: aguinaldo, ptu, finiquito.
+	Kind string `json:"kind"`
+	// El periodo (FechaInicialPago, FechaFinalPago) de un recibo extraordinario es un solo día: payment_date (aguinaldo, PTU) o el último día trabajado (finiquito); payment_date es FechaPago.
+	Period ExtraordinaryPayrollReceiptPreviewPeriod `json:"period"`
+	// Salario base de cotización (SalarioBaseCotApor).
+	ContributionBaseSalary float64 `json:"contribution_base_salary"`
+	// Lo que paga, como lo muestra la app.
+	Lines []ExtraordinaryPayrollReceiptPreviewLine `json:"lines"`
+	// Percepciones (Percepcion): sueldo y demás, gravado y exento.
+	Perceptions []ExtraordinaryPayrollReceiptPreviewPerception `json:"perceptions"`
+	// Deducciones (Deduccion): ISR, cuotas IMSS y demás.
+	Deductions []ExtraordinaryPayrollReceiptPreviewDeduction `json:"deductions"`
+	// Otros pagos (OtroPago): subsidio para el empleo.
+	OtherPayments []ExtraordinaryPayrollReceiptPreviewOtherPayment `json:"other_payments"`
+	// SeparacionIndemnizacion: solo en una liquidación (indemnización y prima de antigüedad).
+	Separation *ExtraordinaryPayrollReceiptPreviewSeparation `json:"separation,omitempty"`
+	// El cálculo del ISR del periodo: base, tarifa, subsidio y resultado.
+	ISR ExtraordinaryPayrollReceiptPreviewISR `json:"isr"`
+	// Totales: percepciones, deducciones, otros pagos y el neto a pagar.
+	Totals ExtraordinaryPayrollReceiptPreviewTotals `json:"totals"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewDeduction: ExtraordinaryPayrollReceiptPreviewDeduction.
+type ExtraordinaryPayrollReceiptPreviewDeduction struct {
+	// Tipo de deducción (TipoDeduccion), c_TipoDeduccion: 001 IMSS, 002 ISR…
+	Type string `json:"type"`
+	// Clave del patrón (Clave).
+	Key string `json:"key"`
+	// Concepto (Concepto).
+	Concept string `json:"concept"`
+	// Importe (Importe).
+	Amount float64 `json:"amount"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewISR: El cálculo del ISR del periodo: base, tarifa, subsidio y resultado.
+type ExtraordinaryPayrollReceiptPreviewISR struct {
+	// ISR retenido.
+	Amount float64 `json:"amount"`
+	// aguinaldo y ptu: ISR con la parte gravada sumada al sueldo del mes.
+	Art96 *float64 `json:"art96,omitempty"`
+	// aguinaldo y ptu: ISR con el procedimiento del art. 174 del Reglamento.
+	Art174 *float64 `json:"art174,omitempty"`
+	// aguinaldo y ptu: el cálculo que se aplicó.
+	//
+	// Valores: art96, art174.
+	Method *string `json:"method,omitempty"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewLine: ExtraordinaryPayrollReceiptPreviewLine.
+type ExtraordinaryPayrollReceiptPreviewLine struct {
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept string `json:"concept"`
+	// Cómo se calculó (días, años, salario).
+	Detail string `json:"detail"`
+	// Importe.
+	Gross float64 `json:"gross"`
+	// De él, la parte exenta del ISR.
+	Exempt float64 `json:"exempt"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewOtherPayment: ExtraordinaryPayrollReceiptPreviewOtherPayment.
+type ExtraordinaryPayrollReceiptPreviewOtherPayment struct {
+	// Tipo de otro pago (TipoOtroPago), c_TipoOtroPago: 002 subsidio para el empleo.
+	Type string `json:"type"`
+	// Clave del patrón (Clave).
+	Key string `json:"key"`
+	// Concepto (Concepto).
+	Concept string `json:"concept"`
+	// Importe pagado (Importe).
+	Amount float64 `json:"amount"`
+	// Subsidio causado (SubsidioCausado).
+	SubsidyCaused *float64 `json:"subsidy_caused,omitempty"`
+	// Del subsidio causado, el ISR que evitó (no va en el XML).
+	SubsidyApplied *float64 `json:"subsidy_applied,omitempty"`
+	// Compensación del saldo a favor (CompensacionSaldosAFavor), con el 004.
+	BalanceCompensation *ExtraordinaryPayrollReceiptPreviewOtherPaymentBalanceCompensation `json:"balance_compensation,omitempty"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewOtherPaymentBalanceCompensation: Compensación del saldo a favor (CompensacionSaldosAFavor), con el 004.
+type ExtraordinaryPayrollReceiptPreviewOtherPaymentBalanceCompensation struct {
+	// Saldo a favor (SaldoAFavor).
+	Balance float64 `json:"balance"`
+	// Año del saldo a favor (Año).
+	Year int64 `json:"year"`
+	// Remanente del saldo a favor (RemanenteSalFav).
+	Remaining float64 `json:"remaining"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewPerception: ExtraordinaryPayrollReceiptPreviewPerception.
+type ExtraordinaryPayrollReceiptPreviewPerception struct {
+	// Tipo de percepción (TipoPercepcion), c_TipoPercepcion: 001 sueldos…
+	Type string `json:"type"`
+	// Clave del patrón (Clave).
+	Key string `json:"key"`
+	// Concepto (Concepto).
+	Concept string `json:"concept"`
+	// Importe gravado (ImporteGravado).
+	Taxed float64 `json:"taxed"`
+	// Importe exento (ImporteExento).
+	Exempt float64 `json:"exempt"`
+	// Horas extra (HorasExtra), con la percepción 019.
+	Overtime []ExtraordinaryPayrollReceiptPreviewPerceptionOvertimeItem `json:"overtime,omitempty"`
+	// Acciones o títulos (AccionesOTitulos), con la percepción 045.
+	StockOptions *ExtraordinaryPayrollReceiptPreviewPerceptionStockOptions `json:"stock_options,omitempty"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewPerceptionOvertimeItem: ExtraordinaryPayrollReceiptPreviewPerceptionOvertimeItem.
+type ExtraordinaryPayrollReceiptPreviewPerceptionOvertimeItem struct {
+	// Días con horas extra (Dias).
+	Days int64 `json:"days"`
+	// c_TipoHoras: 01 dobles, 02 triples, 03 simples.
+	HoursType string `json:"hours_type"`
+	// Horas extra (HorasExtra).
+	Hours int64 `json:"hours"`
+	// Importe pagado (ImportePagado).
+	AmountPaid float64 `json:"amount_paid"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewPerceptionStockOptions: Acciones o títulos (AccionesOTitulos), con la percepción 045.
+type ExtraordinaryPayrollReceiptPreviewPerceptionStockOptions struct {
+	// Valor de mercado (ValorMercado).
+	MarketValue float64 `json:"market_value"`
+	// Precio al otorgarse (PrecioAlOtorgarse).
+	GrantPrice float64 `json:"grant_price"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewPeriod: El periodo (FechaInicialPago, FechaFinalPago) de un recibo extraordinario es un solo día: payment_date (aguinaldo, PTU) o el último día trabajado (finiquito); payment_date es FechaPago.
+type ExtraordinaryPayrollReceiptPreviewPeriod struct {
+	// Primer día del periodo (FechaInicialPago), AAAA-MM-DD.
+	Start string `json:"start"`
+	// Último día del periodo (FechaFinalPago), AAAA-MM-DD.
+	End string `json:"end"`
+	// Fecha de pago (FechaPago), AAAA-MM-DD. Por omisión el último día del periodo.
+	PaymentDate string `json:"payment_date"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewSeparation: ExtraordinaryPayrollReceiptPreviewSeparation.
+type ExtraordinaryPayrollReceiptPreviewSeparation struct {
+	// Total pagado (TotalPagado).
+	TotalPaid float64 `json:"total_paid"`
+	// Años de servicio (NumAñosServicio).
+	YearsOfService int64 `json:"years_of_service"`
+	// Último sueldo mensual ordinario (UltimoSueldoMensOrd).
+	LastMonthlySalary float64 `json:"last_monthly_salary"`
+	// Ingreso acumulable (IngresoAcumulable).
+	AccumulableIncome float64 `json:"accumulable_income"`
+	// Ingreso no acumulable (IngresoNoAcumulable).
+	NonAccumulableIncome float64 `json:"non_accumulable_income"`
+}
+
+// ExtraordinaryPayrollReceiptPreviewTotals: Totales: percepciones, deducciones, otros pagos y el neto a pagar.
+type ExtraordinaryPayrollReceiptPreviewTotals struct {
+	// Total de sueldos, salarios y asimilados (TotalSueldos).
+	Salaries float64 `json:"salaries"`
+	// Total gravado (TotalGravado).
+	Taxed float64 `json:"taxed"`
+	// Total exento (TotalExento).
+	Exempt float64 `json:"exempt"`
+	// Total de separación e indemnización (TotalSeparacionIndemnizacion).
+	Separation float64 `json:"separation"`
+	// Total de jubilación, pensión o retiro (TotalJubilacionPensionRetiro).
+	Retirement float64 `json:"retirement"`
+	// Total de percepciones (TotalPercepciones).
+	Perceptions float64 `json:"perceptions"`
+	// Otras deducciones (TotalOtrasDeducciones).
+	OtherDeductions float64 `json:"other_deductions"`
+	// Impuestos retenidos (TotalImpuestosRetenidos).
+	TaxesWithheld float64 `json:"taxes_withheld"`
+	// Total de deducciones (TotalDeducciones).
+	Deductions float64 `json:"deductions"`
+	// Total de otros pagos (TotalOtrosPagos).
+	OtherPayments float64 `json:"other_payments"`
+	// Subtotal del comprobante: percepciones más otros pagos.
+	Subtotal float64 `json:"subtotal"`
+	// Neto a pagar al empleado.
+	Net float64 `json:"net"`
 }
 
 // FinancialStatements: El estado de resultados y el balance general de un mes, leídos de su balanza.
@@ -8009,6 +8273,22 @@ type ListPriceListsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListProductionOrdersParams: los campos de «Listar órdenes de producción».
+type ListProductionOrdersParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de este producto (prd_…).
+	Product *string `json:"product,omitempty"`
+	// draft, in_process, completed o cancelled.
+	//
+	// Valores: draft, in_process, completed, cancelled.
+	Status *string `json:"status,omitempty"`
+}
+
 // ListProductsParams: los campos de «Listar productos».
 type ListProductsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -8289,7 +8569,7 @@ type ListStockMovementsParams struct {
 	Warehouse *string `json:"warehouse,omitempty"`
 	// Solo los de este tipo.
 	//
-	// Valores: sale, purchase, customer_return, supplier_return, adjustment, count, transfer_out, transfer_in, initial, cost, reversal.
+	// Valores: sale, purchase, customer_return, supplier_return, adjustment, count, transfer_out, transfer_in, production_consumption, production_output, initial, cost, reversal.
 	Type *string `json:"type,omitempty"`
 	// Desde este día (AAAA-MM-DD) u hora (AAAA-MM-DDTHH:MM:SS) de la Ciudad de México.
 	DateGte *string `json:"date_gte,omitempty"`
@@ -9227,6 +9507,40 @@ type PortalSupplierScorePart struct {
 	Total int64 `json:"total"`
 }
 
+// PreviewExtraordinaryPayrollReceiptParams: los campos de «Calcular un aguinaldo, PTU o finiquito sin timbrar».
+type PreviewExtraordinaryPayrollReceiptParams struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// aguinaldo (sus días al año, al menos 15, en proporción a los trabajados), ptu (la parte que le toca de las utilidades) o finiquito (al último día trabajado, end_date del empleado: aguinaldo, vacaciones y prima vacacional proporcionales y, con exit_reason dismissal, la indemnización y la prima de antigüedad).
+	//
+	// Valores: aguinaldo, ptu, finiquito.
+	Kind string `json:"kind"`
+	// FechaPago del recibo.
+	PaymentDate string `json:"payment_date"`
+	// aguinaldo: el año que paga (por omisión, el de payment_date). ptu: el año de la utilidad (por omisión, el anterior a payment_date).
+	Year *int64 `json:"year,omitempty"`
+	// aguinaldo: los días trabajados en el año, si no son todos los que estuvo contratado (faltas o incapacidades que no cuentan).
+	DaysWorked *float64 `json:"days_worked,omitempty"`
+	// ptu: lo que le toca a este empleado (la mitad de la PTU por días trabajados y la mitad por salario, con el tope de tres meses de salario). Fiscalisto calcula su parte exenta (15 UMA) y su ISR.
+	PtuAmount *float64 `json:"ptu_amount,omitempty"`
+	// aguinaldo y ptu: cómo retener el ISR de la parte gravada. lower (por omisión) el que retenga menos; art96 sumada al sueldo del mes; art174 el procedimiento opcional del Reglamento de la LISR.
+	//
+	// Valores: lower, art96, art174.
+	ISRMethod *string `json:"isr_method,omitempty"`
+	// finiquito: resignation (renuncia o común acuerdo, por omisión) o dismissal (despido sin causa: suma 3 meses de salario integrado y la prima de antigüedad).
+	//
+	// Valores: resignation, dismissal.
+	ExitReason *string `json:"exit_reason,omitempty"`
+	// finiquito con dismissal: incluye 20 días por año de servicio (LFT art. 50), cuando el patrón no lo reinstala.
+	TwentyDaysPerYear *bool `json:"twenty_days_per_year,omitempty"`
+	// finiquito: los días de vacaciones del año de servicio en curso que ya tomó.
+	VacationDaysTaken *float64 `json:"vacation_days_taken,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
 // PreviewPayrollReceiptParams: los campos de «Calcular un recibo sin timbrar».
 type PreviewPayrollReceiptParams struct {
 	// El empleado (emp_…).
@@ -9457,6 +9771,90 @@ type ProductLocalTax struct {
 	Name string `json:"name"`
 	// Tasa en por ciento (TasadeTraslado o TasadeRetencion).
 	Rate float64 `json:"rate"`
+}
+
+// ProductionOrder: Una orden de producción: los componentes de la receta salen de un almacén y lo producido entra a otro a su costo real.
+type ProductionOrder struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Su folio, como OP-12.
+	Number string `json:"number"`
+	// draft (borrador, nada se ha movido), in_process (los componentes ya salieron), completed (lo producido ya entró) o cancelled (todo regresó).
+	//
+	// Valores: draft, in_process, completed, cancelled.
+	Status string `json:"status"`
+	// Lo que se produce (prd_…).
+	Product string `json:"product"`
+	// Cuántas unidades se planearon.
+	Quantity float64 `json:"quantity"`
+	// Cuántas salieron de verdad, o null si no ha terminado.
+	QuantityMade *float64 `json:"quantity_made,omitempty"`
+	// El almacén de donde salen los componentes (whs_…).
+	Warehouse string `json:"warehouse"`
+	// El almacén al que entra lo producido (whs_…).
+	DestinationWarehouse string `json:"destination_warehouse"`
+	// El lote de lo producido, o null.
+	Lot *string `json:"lot,omitempty"`
+	// Para cuándo (AAAA-MM-DD), o null.
+	DueDate *string `json:"due_date,omitempty"`
+	// Su nota, o null.
+	Note *string `json:"note,omitempty"`
+	// Lo que lleva, de la receta para quantity con su merma: quantity lo planeado, quantity_used lo que salió y value lo que costó (pesos sin IVA). tracks_stock false es un servicio: solo suma su costo.
+	Components []ProductionOrderComponent `json:"components"`
+	// Mano de obra, gas, empaque…: se suman al costo de lo producido.
+	OtherCosts []ProductionOrderOtherCost `json:"other_costs"`
+	// Lo que costaron los componentes que salieron, o null antes de iniciar.
+	MaterialsCost *float64 `json:"materials_cost,omitempty"`
+	// (materials_cost + other_costs) ÷ quantity_made: el costo con que entró cada unidad, o null si no ha terminado.
+	UnitCost *float64 `json:"unit_cost,omitempty"`
+	// Cuándo se hizo.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo salieron los componentes, o null.
+	StartedAt *string `json:"started_at,omitempty"`
+	// Cuándo entró lo producido, o null.
+	CompletedAt *string `json:"completed_at,omitempty"`
+	// Cuándo se canceló, o null.
+	CancelledAt *string `json:"cancelled_at,omitempty"`
+}
+
+// ProductionOrderComponent: ProductionOrderComponent.
+type ProductionOrderComponent struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product string `json:"product"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity float64 `json:"quantity"`
+	// Lo que de verdad salió de ese componente, o null antes de iniciar la orden.
+	QuantityUsed *float64 `json:"quantity_used,omitempty"`
+	// true si lleva existencias; false es un servicio, que solo suma su costo.
+	TracksStock bool `json:"tracks_stock"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *float64 `json:"value,omitempty"`
+}
+
+// ProductionOrderList: Una página de la lista.
+type ProductionOrderList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ProductionOrder `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ProductionOrderOtherCost: ProductionOrderOtherCost.
+type ProductionOrderOtherCost struct {
+	// Descripción.
+	Description string `json:"description"`
+	// Importe.
+	Amount float64 `json:"amount"`
 }
 
 // PurchaseReceipt: Un ticket de compra del emisor sin factura: lo que se leyó de su foto y si ya se pidió, llegó o no es deducible.
@@ -11325,6 +11723,20 @@ type SignEfirmaParams struct {
 	KeepForDownloads *bool `json:"keep_for_downloads,omitempty"`
 }
 
+// StartProductionOrderParams: los campos de «Iniciar una orden de producción».
+type StartProductionOrderParams struct {
+	// Lo que de verdad se usó de algún componente; los que no mande salen como dice la orden.
+	Components []StartProductionOrderParamsComponent `json:"components,omitempty"`
+}
+
+// StartProductionOrderParamsComponent: StartProductionOrderParamsComponent.
+type StartProductionOrderParamsComponent struct {
+	// El componente (prd_…) de la orden.
+	Product string `json:"product"`
+	// Lo que de verdad se usó, en la unidad del componente.
+	QuantityUsed float64 `json:"quantity_used"`
+}
+
 // StockAdjustment: Un ajuste de existencias: lo que entró o salió de un almacén por inventario inicial, merma, robo, conteo…
 type StockAdjustment struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -11429,9 +11841,9 @@ type StockMovement struct {
 	Product string `json:"product"`
 	// El almacén (whs_…).
 	Warehouse string `json:"warehouse"`
-	// sale (una factura), purchase (una compra), customer_return, supplier_return, adjustment, count (conteo físico), transfer_out, transfer_in, initial, cost (un ajuste de costo) o reversal (deshace otro, como una factura cancelada).
+	// sale (una factura), purchase (una compra), customer_return, supplier_return, adjustment, count (conteo físico), transfer_out, transfer_in, production_consumption (un componente que salió a producción), production_output (lo producido), initial, cost (un ajuste de costo) o reversal (deshace otro, como una factura cancelada).
 	//
-	// Valores: sale, purchase, customer_return, supplier_return, adjustment, count, transfer_out, transfer_in, initial, cost, reversal.
+	// Valores: sale, purchase, customer_return, supplier_return, adjustment, count, transfer_out, transfer_in, production_consumption, production_output, initial, cost, reversal.
 	Type string `json:"type"`
 	// Cuánto entró (positivo) o salió (negativo).
 	Quantity float64 `json:"quantity"`
@@ -11441,7 +11853,7 @@ type StockMovement struct {
 	Value float64 `json:"value"`
 	// El lote o número de serie, o null.
 	Lot *string `json:"lot,omitempty"`
-	// Lo que lo causó: type invoice (id es el UUID del CFDI), adjustment (adj_…), receipt, transfer, count o ticket.
+	// Lo que lo causó: type invoice (id es el UUID del CFDI), adjustment (adj_…), production (mfo_…), receipt, transfer, count o ticket.
 	Source StockMovementSource `json:"source"`
 	// El motivo de un ajuste, o null.
 	Reason *string `json:"reason,omitempty"`
@@ -11465,9 +11877,9 @@ type StockMovementList struct {
 	URL string `json:"url"`
 }
 
-// StockMovementSource: Lo que lo causó: type invoice (id es el UUID del CFDI), adjustment (adj_…), receipt, transfer, count o ticket.
+// StockMovementSource: Lo que lo causó: type invoice (id es el UUID del CFDI), adjustment (adj_…), production (mfo_…), receipt, transfer, count o ticket.
 type StockMovementSource struct {
-	// Qué lo movió: invoice (una factura; id es su UUID), adjustment (un ajuste, adj_…), count (un conteo) u otro origen.
+	// Qué lo movió: invoice (una factura; id es su UUID), adjustment (un ajuste, adj_…), production (una orden de producción, mfo_…), count (un conteo) u otro origen.
 	Type string `json:"type"`
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
 	ID string `json:"id"`
