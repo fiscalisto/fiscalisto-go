@@ -1675,6 +1675,16 @@ type CreateCustomerGroupParams struct {
 	MinOrder *float64 `json:"min_order,omitempty"`
 	// Sus clientes pueden hacer pedidos desde su Portal del cliente (true por omisión).
 	PortalOrdering *bool `json:"portal_ordering,omitempty"`
+	// Hasta cuándo sus clientes cambian o cancelan desde su portal un pedido que mandaron ahí: none, until_confirmed (hasta que usted lo confirme; por omisión) o until_delivered (hasta que se entregue o facture algo).
+	//
+	// Valores: none, until_confirmed, until_delivered.
+	PortalChanges *string `json:"portal_changes,omitempty"`
+	// Días de la semana en que les entrega (0 domingo a 6 sábado); null: cualquier día. El portal solo ofrece esos días.
+	DeliveryDays []int64 `json:"delivery_days,omitempty"`
+	// Hora de corte (0 a 23, Ciudad de México): un pedido del portal después de ella cuenta desde el día siguiente; null: sin hora de corte.
+	CutoffHour *int64 `json:"cutoff_hour,omitempty"`
+	// Días para preparar un pedido antes de poder entregarlo (0 por omisión).
+	PrepDays *int64 `json:"prep_days,omitempty"`
 }
 
 // CreateCustomerParams: los campos de «Crear un cliente».
@@ -4043,6 +4053,16 @@ type CustomerGroup struct {
 	MinOrder *float64 `json:"min_order,omitempty"`
 	// true si sus clientes pueden hacer pedidos desde su Portal del cliente.
 	PortalOrdering bool `json:"portal_ordering"`
+	// Hasta cuándo sus clientes cambian o cancelan desde su portal un pedido que mandaron ahí: none, until_confirmed (hasta que usted lo confirme) o until_delivered (hasta que se entregue o facture algo).
+	//
+	// Valores: none, until_confirmed, until_delivered.
+	PortalChanges string `json:"portal_changes"`
+	// Días de la semana en que les entrega (0 domingo a 6 sábado), o null si cualquier día. El Portal del cliente solo ofrece esos días.
+	DeliveryDays []int64 `json:"delivery_days,omitempty"`
+	// Hora de corte (0 a 23, Ciudad de México): un pedido del portal después de ella cuenta desde el día siguiente; null sin hora de corte.
+	CutoffHour *int64 `json:"cutoff_hour,omitempty"`
+	// Días para preparar un pedido antes de poder entregarlo.
+	PrepDays int64 `json:"prep_days"`
 	// Cuántos clientes hay en el grupo.
 	Customers int64 `json:"customers"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
@@ -12841,6 +12861,16 @@ type UpdateCustomerGroupParams struct {
 	MinOrder *float64 `json:"min_order,omitempty"`
 	// Sus clientes pueden hacer pedidos desde su Portal del cliente (true por omisión).
 	PortalOrdering *bool `json:"portal_ordering,omitempty"`
+	// Hasta cuándo sus clientes cambian o cancelan desde su portal un pedido que mandaron ahí: none, until_confirmed (hasta que usted lo confirme; por omisión) o until_delivered (hasta que se entregue o facture algo).
+	//
+	// Valores: none, until_confirmed, until_delivered.
+	PortalChanges *string `json:"portal_changes,omitempty"`
+	// Días de la semana en que les entrega (0 domingo a 6 sábado); null: cualquier día. El portal solo ofrece esos días.
+	DeliveryDays []int64 `json:"delivery_days,omitempty"`
+	// Hora de corte (0 a 23, Ciudad de México): un pedido del portal después de ella cuenta desde el día siguiente; null: sin hora de corte.
+	CutoffHour *int64 `json:"cutoff_hour,omitempty"`
+	// Días para preparar un pedido antes de poder entregarlo (0 por omisión).
+	PrepDays *int64 `json:"prep_days,omitempty"`
 }
 
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
