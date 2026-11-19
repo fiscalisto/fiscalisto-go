@@ -39,6 +39,60 @@ type AccountKey struct {
 	Sandbox *string `json:"sandbox,omitempty"`
 }
 
+// AccountingBankMovement: Un movimiento de banco que ninguna factura explica (un retiro, o un depósito clasificado como préstamo, traspaso o devolución) y su póliza de ingresos o egresos contra Bancos, cuando ya se registró.
+type AccountingBankMovement struct {
+	// btx_… para un depósito (el mismo de la conciliación) o bwd_… para un retiro.
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// deposit (depósito) o withdrawal (retiro).
+	//
+	// Valores: deposit, withdrawal.
+	Direction string `json:"direction"`
+	// El día del movimiento (AAAA-MM-DD), que es el de su póliza.
+	Date string `json:"date"`
+	// El texto del banco, como vino en el estado de cuenta.
+	Description string `json:"description"`
+	// La referencia o clave de rastreo, si la trae.
+	Reference *string `json:"reference,omitempty"`
+	// El importe, en positivo.
+	Amount float64 `json:"amount"`
+	// El banco del estado de cuenta.
+	Bank string `json:"bank"`
+	// Los últimos 4 dígitos de la cuenta, si se sabe.
+	BankAccount *string `json:"bank_account,omitempty"`
+	// Un depósito: lo que dijo la conciliación (loan, transfer o refund). null en un retiro.
+	//
+	// Valores: loan, transfer, refund.
+	Classification *string `json:"classification,omitempty"`
+	// pending (por registrar), posted (con póliza), paid_invoices (pagó facturas que ya están en la contabilidad) o ignored (no se registra).
+	//
+	// Valores: pending, posted, paid_invoices, ignored.
+	Status string `json:"status"`
+	// Su póliza (mje_…), que se ve y se corrige como cualquier póliza capturada, o null.
+	ManualEntry *string `json:"manual_entry,omitempty"`
+	// El número de la cuenta que va contra Bancos en su póliza, o null.
+	Account *string `json:"account,omitempty"`
+	// La cuenta que sugiere un movimiento anterior con el mismo texto registrado con remember, o null.
+	SuggestedAccount *string `json:"suggested_account,omitempty"`
+}
+
+// AccountingBankMovementList: Una página de la lista.
+type AccountingBankMovementList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []AccountingBankMovement `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // AdjustCashForecastParams: los campos de «Cambiar un renglón del flujo».
 type AdjustCashForecastParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -8039,6 +8093,14 @@ type ListAdvancesParams struct {
 	Customer *string `json:"customer,omitempty"`
 }
 
+// ListBankMovementsParams: los campos de «Listar los movimientos de banco sin factura».
+type ListBankMovementsParams struct {
+	// El mes (AAAA-MM). Por omisión, el actual.
+	Month *string `json:"month,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListBankTransactionsParams: los campos de «Listar depósitos».
 type ListBankTransactionsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -8805,6 +8867,14 @@ type ManualJournalEntryList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// MarkBankMovementParams: los campos de «Marcar un retiro».
+type MarkBankMovementParams struct {
+	// paid_invoices: pagó facturas que ya están en la contabilidad; ignored: no se registra; pending: vuelve a por registrar. Solo retiros.
+	//
+	// Valores: pending, paid_invoices, ignored.
+	Status string `json:"status"`
 }
 
 // MarkInvoicePaidParams: los campos de «Marcar pagada».
@@ -9587,6 +9657,16 @@ type PortalSupplierScorePart struct {
 	Good int64 `json:"good"`
 	// Total en la moneda del comprobante (Total).
 	Total int64 `json:"total"`
+}
+
+// PostBankMovementParams: los campos de «Registrar un movimiento de banco».
+type PostBankMovementParams struct {
+	// El número de la cuenta del catálogo que va contra Bancos (GET /v1/accounting/accounts).
+	Account string `json:"account"`
+	// El concepto de la póliza. Sin él, el texto del banco.
+	Description *string `json:"description,omitempty"`
+	// Sugerir esta cuenta para los movimientos con el mismo texto del banco (suggested_account).
+	Remember *bool `json:"remember,omitempty"`
 }
 
 // PreviewExtraordinaryPayrollReceiptParams: los campos de «Calcular un aguinaldo, PTU o finiquito sin timbrar».

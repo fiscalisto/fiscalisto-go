@@ -24,6 +24,12 @@ const (
 	CodeAssetNotDisposed = "asset_not_disposed"
 	// Asistencia no lo permite: el mensaje dice por qué (una hora en el futuro o de hace más de 400 días, un empleado con fecha de baja, un periodo de más de 92 días, una marca ya quitada).
 	CodeAttendanceInvalid = "attendance_invalid"
+	// Ese movimiento no va a la contabilidad así: un depósito tiene que estar clasificado en la conciliación como préstamo, traspaso o devolución (los demás los explica su factura), y un retiro marcado como pago de facturas o sin registrar vuelve primero a pending.
+	CodeBankMovementNotBookable = "bank_movement_not_bookable"
+	// Ese movimiento de banco no tiene póliza: no hay nada que quitar.
+	CodeBankMovementNotPosted = "bank_movement_not_posted"
+	// Ese movimiento de banco ya tiene su póliza: quítela con DELETE /v1/accounting/bank_movements/{id}/post para registrarlo con otra cuenta.
+	CodeBankMovementPosted = "bank_movement_posted"
 	// El depósito no se puede conciliar, clasificar o reabrir así (ya está conciliado, las facturas son de otro cliente o una está cancelada…). El mensaje dice por qué.
 	CodeBankTransactionInvalid = "bank_transaction_invalid"
 	// Una factura del lote no pasa la revisión; param dice cuál (invoices.3.items.0.unit_price). Ninguna del lote se timbró.

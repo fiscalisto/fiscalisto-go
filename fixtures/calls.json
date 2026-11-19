@@ -1840,6 +1840,34 @@
 		"go": "FixedAssets.Undispose",
 		"java": "fixedAssets.undispose"
 	},
+	"GET /v1/accounting/bank_movements": {
+		"python": "bank_movements.list",
+		"php": "bankMovements->list",
+		"dotnet": "BankMovements.ListAsync",
+		"go": "BankMovements.List",
+		"java": "bankMovements.list"
+	},
+	"POST /v1/accounting/bank_movements/{id}/post": {
+		"python": "bank_movements.post",
+		"php": "bankMovements->post",
+		"dotnet": "BankMovements.PostAsync",
+		"go": "BankMovements.Post",
+		"java": "bankMovements.post"
+	},
+	"DELETE /v1/accounting/bank_movements/{id}/post": {
+		"python": "bank_movements.unpost",
+		"php": "bankMovements->unpost",
+		"dotnet": "BankMovements.UnpostAsync",
+		"go": "BankMovements.Unpost",
+		"java": "bankMovements.unpost"
+	},
+	"POST /v1/accounting/bank_movements/{id}/mark": {
+		"python": "bank_movements.mark",
+		"php": "bankMovements->mark",
+		"dotnet": "BankMovements.MarkAsync",
+		"go": "BankMovements.Mark",
+		"java": "bankMovements.mark"
+	},
 	"GET /v1/accounting/electronic_accounting": {
 		"python": "accounting.electronic_accounting",
 		"php": "accounting->electronicAccounting",

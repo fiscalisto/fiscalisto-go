@@ -142,6 +142,8 @@ type services struct {
 	ManualEntries *ManualEntriesService
 	// Contabilidad.
 	FixedAssets *FixedAssetsService
+	// Contabilidad.
+	BankMovements *BankMovementsService
 	// Tiendas en línea.
 	StoreConnections *StoreConnectionsService
 	// Facturas recurrentes.
@@ -220,6 +222,7 @@ func (s *services) init(c *Client) {
 	s.Accounting = &AccountingService{c}
 	s.ManualEntries = &ManualEntriesService{c}
 	s.FixedAssets = &FixedAssetsService{c}
+	s.BankMovements = &BankMovementsService{c}
 	s.StoreConnections = &StoreConnectionsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
 	s.Quotes = &QuotesService{c}
@@ -4374,6 +4377,69 @@ func (s *FixedAssetsService) Dispose(ctx context.Context, id string, params *Dis
 func (s *FixedAssetsService) Undispose(ctx context.Context, id string, opts ...RequestOption) (*FixedAsset, error) {
 	out := new(FixedAsset)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/fixed_assets/"+url.PathEscape(id)+"/disposal", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// BankMovementsService: Contabilidad (client.BankMovements).
+type BankMovementsService struct{ c *Client }
+
+// List: Listar los movimientos de banco sin factura
+//
+// Los movimientos de banco de un mes que ninguna factura explica: los retiros de los estados de cuenta importados en la conciliación (comisiones, impuestos, pagos de préstamos, traspasos) y los depósitos que ahí se clasificaron como préstamo, traspaso o devolución. Cada uno con su póliza, si ya se registró, y la cuenta sugerida. Lo que pagó o cobró una factura ya está en la contabilidad por su CFDI.
+//
+// GET /v1/accounting/bank_movements
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-bank-movements
+func (s *BankMovementsService) List(ctx context.Context, params *ListBankMovementsParams, opts ...RequestOption) (*AccountingBankMovementList, error) {
+	out := new(AccountingBankMovementList)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/bank_movements", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Post: Registrar un movimiento de banco
+//
+// Le hace su póliza con fecha del movimiento: de ingresos (Bancos contra account) a un depósito, de egresos (account contra Bancos) a un retiro. Entra a la balanza, el auxiliar y la contabilidad electrónica como cualquier póliza capturada (manual_entry). Uno ya registrado contesta bank_movement_posted; un depósito sin clasificar o un retiro marcado, bank_movement_not_bookable.
+//
+// POST /v1/accounting/bank_movements/{id}/post
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/post-bank-movement
+func (s *BankMovementsService) Post(ctx context.Context, id string, params *PostBankMovementParams, opts ...RequestOption) (*AccountingBankMovement, error) {
+	out := new(AccountingBankMovement)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/bank_movements/"+url.PathEscape(id)+"/post", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Unpost: Quitar la póliza de un movimiento de banco
+//
+// Su póliza sale de la contabilidad y el movimiento vuelve a pending. Sin póliza contesta bank_movement_not_posted.
+//
+// DELETE /v1/accounting/bank_movements/{id}/post
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/unpost-bank-movement
+func (s *BankMovementsService) Unpost(ctx context.Context, id string, opts ...RequestOption) (*AccountingBankMovement, error) {
+	out := new(AccountingBankMovement)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/bank_movements/"+url.PathEscape(id)+"/post", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Mark: Marcar un retiro
+//
+// paid_invoices: pagó facturas que ya están en la contabilidad por su CFDI; ignored: no se registra; pending: vuelve a por registrar. Solo retiros sin póliza.
+//
+// POST /v1/accounting/bank_movements/{id}/mark
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/mark-bank-movement
+func (s *BankMovementsService) Mark(ctx context.Context, id string, params *MarkBankMovementParams, opts ...RequestOption) (*AccountingBankMovement, error) {
+	out := new(AccountingBankMovement)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/bank_movements/"+url.PathEscape(id)+"/mark", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
