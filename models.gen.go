@@ -10873,6 +10873,12 @@ type SATDeclaration struct {
 	Receipt *SATDeclarationReceipt `json:"receipt,omitempty"`
 	// Las mismas cifras con nombres fijos, por obligación (ISR, IVA, cada retención), para leerlas igual cada mes sin conocer el formato del SAT. Una cifra que no viene en la declaración o no se pudo leer es null, nunca 0. En Declaraciones y pagos solo trae lo del acuse.
 	Summary SATDeclarationSummary `json:"summary"`
+	// read: ya se leyó su PDF (sections, summary, receipt y los *_due vienen de él; una cifra en null es que la declaración no la trae). pending: está listada pero su PDF aún no se descarga, así que sus cifras vienen vacías o en null; se descarga sola, sin otro timbre, para figures_expected_at. unavailable: el SAT no ha dado el PDF (files_error dice por qué); se vuelve a pedir en la siguiente lectura.
+	//
+	// Valores: read, pending, unavailable.
+	FiguresStatus string `json:"figures_status"`
+	// Cuándo deberían estar sus cifras, si no están (la lectura en segundo plano que termina una consulta cortada por tiempo). null cuando ya están o cuando no hay una lectura programada: entonces llegan con el siguiente POST /v1/sat_declarations/refresh.
+	FiguresExpectedAt *string `json:"figures_expected_at,omitempty"`
 	// Su pago en el banco, de «Declaraciones pagadas» del SAT (solo las mensuales; null en las demás). status: paid (el SAT tiene el pago), unpaid (tiene algo a pagar y el SAT no lo tenía pagado en checked_at), overdue (igual, con la línea de captura vencida), nothing_to_pay o unchecked (aún no se revisa). paid_on, amount_paid y bank del pago más reciente, y cada pago en payments con su banco, día, línea de captura, medio (channel), importe, número de operación del banco y llave de pago.
 	Payment *SATDeclarationPayment `json:"payment,omitempty"`
 	// Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt), payment_record (GET …/payment_record, cuando el SAT la tiene como pagada) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
@@ -10951,7 +10957,7 @@ type SATDeclarationList struct {
 
 // SATDeclarationPayment: SATDeclarationPayment.
 type SATDeclarationPayment struct {
-	// paid, unpaid (algo a pagar que el SAT no tenía pagado), overdue (igual, línea de captura vencida), nothing_to_pay o unchecked.
+	// paid, unpaid (algo a pagar que el SAT no tenía pagado), overdue (igual, línea de captura vencida), nothing_to_pay o unchecked (aún no se sabe: sus cifras no se han leído, ver figures_status, o su pago no se ha buscado; checked_at viene en null).
 	//
 	// Valores: paid, unpaid, overdue, nothing_to_pay, unchecked.
 	Status string `json:"status"`
@@ -11073,6 +11079,8 @@ type SATDeclarationsRefresh struct {
 	Downloaded int64 `json:"downloaded"`
 	// Cuántas declaraciones quedan con archivos por bajar.
 	Pending int64 `json:"pending"`
+	// Con status processing: cuándo deberían estar los archivos y las cifras que faltan (pending), que se descargan solos sin otro timbre. Mientras, GET /v1/sat_declarations ya las lista, con figures_status pending. null con status completed.
+	CompletesAt *string `json:"completes_at,omitempty"`
 	// Si una parte del SAT falló (por ejemplo, la anual), lo que dijo; lo demás sí se trajo. null si todo salió.
 	Warning *string `json:"warning,omitempty"`
 	// Cuándo se consultó.
