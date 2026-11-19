@@ -4063,6 +4063,21 @@ func (s *AccountingService) TrialBalance(ctx context.Context, params *GetTrialBa
 	return out, nil
 }
 
+// GeneralLedger: Ver el auxiliar de cuentas
+//
+// El libro mayor de un periodo de hasta 12 meses: el saldo inicial de cada cuenta, cada cargo y abono con su póliza (journal_entry, el mismo id de journal_entries), su CFDI y el saldo que deja, y el saldo final. Solo las cuentas que se movieron, o la que pida con account aunque no tenga movimientos. Una cuenta que no está en el catálogo contesta account_missing.
+//
+// GET /v1/accounting/general_ledger
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-general-ledger
+func (s *AccountingService) GeneralLedger(ctx context.Context, params *GetGeneralLedgerParams, opts ...RequestOption) (*GeneralLedger, error) {
+	out := new(GeneralLedger)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/general_ledger", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FinancialStatements: Ver los estados financieros
 //
 // El estado de resultados (del mes y del año hasta ese mes) y el balance general al cierre del mes, leídos de la misma balanza, así que siempre suman las mismas pólizas.

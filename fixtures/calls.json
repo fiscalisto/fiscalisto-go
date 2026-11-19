@@ -1714,6 +1714,13 @@
 		"go": "Accounting.TrialBalance",
 		"java": "accounting.trialBalance"
 	},
+	"GET /v1/accounting/general_ledger": {
+		"python": "accounting.general_ledger",
+		"php": "accounting->generalLedger",
+		"dotnet": "Accounting.GeneralLedgerAsync",
+		"go": "Accounting.GeneralLedger",
+		"java": "accounting.generalLedger"
+	},
 	"GET /v1/accounting/financial_statements": {
 		"python": "accounting.financial_statements",
 		"php": "accounting->financialStatements",

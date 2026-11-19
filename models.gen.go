@@ -5533,6 +5533,72 @@ type FixedAssetList struct {
 	URL string `json:"url"`
 }
 
+// GeneralLedger: El auxiliar de cuentas (libro mayor) de un periodo de hasta 12 meses: cada cuenta con su saldo inicial, cada cargo y abono con su póliza y el saldo que deja, y su saldo final.
+type GeneralLedger struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El primer mes (AAAA-MM).
+	FromMonth string `json:"from_month"`
+	// El último mes (AAAA-MM).
+	ToMonth string `json:"to_month"`
+	// Cada cuenta que se movió en el periodo (o la que pidió con account): sus saldos, sus sumas y sus movimientos.
+	Accounts []GeneralLedgerAccount `json:"accounts"`
+}
+
+// GeneralLedgerAccount: GeneralLedgerAccount.
+type GeneralLedgerAccount struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// El código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// debit (deudora) o credit (acreedora).
+	//
+	// Valores: debit, credit.
+	Nature string `json:"nature"`
+	// El saldo al empezar el mes.
+	OpeningBalance float64 `json:"opening_balance"`
+	// Los cargos del mes.
+	Debit float64 `json:"debit"`
+	// Los abonos del mes.
+	Credit float64 `json:"credit"`
+	// El saldo al terminar el mes.
+	ClosingBalance float64 `json:"closing_balance"`
+	// Cada cargo y abono de la cuenta en el periodo, en el orden de sus pólizas, con el saldo que deja.
+	Movements []GeneralLedgerAccountMovement `json:"movements"`
+}
+
+// GeneralLedgerAccountMovement: GeneralLedgerAccountMovement.
+type GeneralLedgerAccountMovement struct {
+	// Fecha de emisión (Fecha), hora de la Ciudad de México.
+	Date string `json:"date"`
+	// La póliza (el mismo id de GET /v1/accounting/journal_entries).
+	JournalEntry string `json:"journal_entry"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal.
+	Type string `json:"type"`
+	// Descripción.
+	Description string `json:"description"`
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID *string `json:"tax_id,omitempty"`
+	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
+	UUID *string `json:"uuid,omitempty"`
+	// El cargo.
+	Debit float64 `json:"debit"`
+	// El abono.
+	Credit float64 `json:"credit"`
+	// El saldo de la cuenta después de este movimiento, en su naturaleza.
+	Balance float64 `json:"balance"`
+}
+
 // GetAttendanceParams: los campos de «Ver la asistencia de un periodo».
 type GetAttendanceParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -5649,6 +5715,18 @@ type GetExpensePolicyParams struct {
 type GetFinancialStatementsParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetGeneralLedgerParams: los campos de «Ver el auxiliar de cuentas».
+type GetGeneralLedgerParams struct {
+	// El primer mes (AAAA-MM).
+	FromMonth string `json:"from_month"`
+	// El último mes (AAAA-MM), hasta 12 meses después; por omisión, from_month.
+	ToMonth *string `json:"to_month,omitempty"`
+	// Solo esta cuenta, por su número en el catálogo.
+	Account *string `json:"account,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
