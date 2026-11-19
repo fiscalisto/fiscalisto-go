@@ -5681,6 +5681,22 @@ type InvoiceCancellation struct {
 	Error *string `json:"error,omitempty"`
 }
 
+// InvoiceConcepts: Los conceptos de la factura que se hace el comprador en el portal.
+type InvoiceConcepts struct {
+	// itemized: un concepto por renglón del ticket; single: uno solo (más uno por cada otro juego de impuestos, como una noche con ISH).
+	//
+	// Valores: itemized, single.
+	Mode string `json:"mode"`
+	// Si el comprador puede elegir en el portal entre desglosados y un solo concepto.
+	CustomerChoice bool `json:"customer_choice"`
+	// La descripción del concepto único, como «Consumo».
+	Description string `json:"description"`
+	// La ClaveProdServ del concepto único, o null para la del renglón más grande.
+	ProductKey *string `json:"product_key,omitempty"`
+	// Su ClaveUnidad, o null para la del renglón más grande.
+	UnitKey *string `json:"unit_key,omitempty"`
+}
+
 // InvoiceCreate: Una factura (CFDI 4.0). Un campo que no existe se rechaza con parameter_unknown, nunca se ignora.
 type InvoiceCreate struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -10977,6 +10993,8 @@ type SelfInvoicing struct {
 	PortalRadius *int64 `json:"portal_radius,omitempty"`
 	// Cómo se ve el portal además de su tema, color y esquinas: acomodo, encabezado, colores, letra, textos, formas de dar los datos, botón para volver y CSS.
 	PortalStyle PortalStyle `json:"portal_style"`
+	// Desglosados o en un solo concepto, y si el comprador puede elegir (Autofactura › Conceptos de la factura).
+	InvoiceConcepts InvoiceConcepts `json:"invoice_concepts"`
 	// Cuando se factura una persona moral que retiene (1.25% de ISR en RESICO, o lo del producto). keep_total: la base crece y la factura suma lo que se pagó. subtract: la base es la del ticket y el total es lo pagado menos la retención.
 	//
 	// Valores: keep_total, subtract.
@@ -12787,10 +12805,28 @@ type UpdateSelfInvoicingParams struct {
 	RetentionMode *string `json:"retention_mode,omitempty"`
 	// La serie de las facturas que los compradores se hacen en el portal (y las que se emiten desde un ticket), como `AF`: hasta 25 caracteres, sin `|`. `null` o una vacía usa la serie de facturas del emisor. La factura global sigue con la serie de siempre.
 	InvoiceSeries *string `json:"invoice_series,omitempty"`
+	// Los conceptos de la factura que se hace el comprador (Autofactura › Conceptos de la factura): desglosados o en uno solo, y si el comprador puede elegir. Mande solo lo que cambia; `null` regresa a desglosados sin elección.
+	InvoiceConcepts *UpdateSelfInvoicingParamsInvoiceConcepts `json:"invoice_concepts,omitempty"`
 	// Los conceptos de la factura global: `ticket` (por omisión), uno «Venta» por ticket con su folio como `NoIdentificacion`; `summary`, solo el monto total del periodo, uno por combinación de impuestos con `NoIdentificacion` «Resumen» (regla 2.7.1.21 de la RMF 2026). `summary` es solo para un emisor persona física en RESICO (626); otro contesta `invalid_request`.
 	//
 	// Valores: ticket, summary.
 	GlobalConcepts *string `json:"global_concepts,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsInvoiceConcepts: UpdateSelfInvoicingParamsInvoiceConcepts.
+type UpdateSelfInvoicingParamsInvoiceConcepts struct {
+	// `itemized` (por omisión): un concepto por renglón del ticket (Hospedaje, Restaurante, Bar…). `single`: uno solo, con `description`; los renglones con otros impuestos (una noche con ISH, IVA 0 %, retenciones) van en su propio concepto, porque un concepto lleva un solo juego de impuestos. El total y los impuestos no cambian.
+	//
+	// Valores: itemized, single.
+	Mode *string `json:"mode,omitempty"`
+	// `true`: el comprador elige en el portal entre desglosados y un solo concepto (empieza en `mode`), también en el portal dentro de su sitio.
+	CustomerChoice *bool `json:"customer_choice,omitempty"`
+	// La descripción del concepto único, como «Consumo» (por omisión) o «Servicios de hospedaje y alimentos».
+	Description *string `json:"description,omitempty"`
+	// Su ClaveProdServ. `null` (por omisión): la del renglón más grande del ticket.
+	ProductKey *string `json:"product_key,omitempty"`
+	// Su ClaveUnidad, con `product_key`, como `E48`. `null`: la del renglón más grande.
+	UnitKey *string `json:"unit_key,omitempty"`
 }
 
 // UpdateSelfInvoicingParamsPortalStyle: UpdateSelfInvoicingParamsPortalStyle.
