@@ -1917,6 +1917,48 @@
 		"go": "FxRevaluations.Delete",
 		"java": "fxRevaluations.delete"
 	},
+	"GET /v1/accounting/cost_of_sales/{month}": {
+		"python": "cost_of_sales.get",
+		"php": "costOfSales->get",
+		"dotnet": "CostOfSales.GetAsync",
+		"go": "CostOfSales.Get",
+		"java": "costOfSales.get"
+	},
+	"POST /v1/accounting/cost_of_sales/{month}": {
+		"python": "cost_of_sales.create",
+		"php": "costOfSales->create",
+		"dotnet": "CostOfSales.CreateAsync",
+		"go": "CostOfSales.Create",
+		"java": "costOfSales.create"
+	},
+	"DELETE /v1/accounting/cost_of_sales/{month}": {
+		"python": "cost_of_sales.delete",
+		"php": "costOfSales->delete",
+		"dotnet": "CostOfSales.DeleteAsync",
+		"go": "CostOfSales.Delete",
+		"java": "costOfSales.delete"
+	},
+	"GET /v1/accounting/tax_determinations/{month}": {
+		"python": "tax_determinations.get",
+		"php": "taxDeterminations->get",
+		"dotnet": "TaxDeterminations.GetAsync",
+		"go": "TaxDeterminations.Get",
+		"java": "taxDeterminations.get"
+	},
+	"POST /v1/accounting/tax_determinations/{month}": {
+		"python": "tax_determinations.create",
+		"php": "taxDeterminations->create",
+		"dotnet": "TaxDeterminations.CreateAsync",
+		"go": "TaxDeterminations.Create",
+		"java": "taxDeterminations.create"
+	},
+	"DELETE /v1/accounting/tax_determinations/{month}": {
+		"python": "tax_determinations.delete",
+		"php": "taxDeterminations->delete",
+		"dotnet": "TaxDeterminations.DeleteAsync",
+		"go": "TaxDeterminations.Delete",
+		"java": "taxDeterminations.delete"
+	},
 	"GET /v1/accounting/bank_movements": {
 		"python": "bank_movements.list",
 		"php": "bankMovements->list",

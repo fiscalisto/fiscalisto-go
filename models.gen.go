@@ -1435,6 +1435,48 @@ type CostCenterList struct {
 	URL string `json:"url"`
 }
 
+// CostOfSales: El costo de ventas de un mes en la contabilidad (sistema de inventarios periódico): las compras del mes, el inventario en libros y al cierre, y la póliza que lleva la diferencia a Costo de ventas, si ya se registró.
+type CostOfSales struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El último día del mes: la fecha de la póliza.
+	Date string `json:"date"`
+	// Las compras del mes por cuenta (código agrupador 502: cargos menos abonos), sin la póliza del mes.
+	Purchases []CostOfSalesPurchase `json:"purchases"`
+	// Las devoluciones y descuentos sobre compras del mes por cuenta (503: abonos menos cargos).
+	PurchaseReturns []CostOfSalesPurchaseReturn `json:"purchase_returns"`
+	// purchases − purchase_returns.
+	NetPurchases float64 `json:"net_purchases"`
+	// El saldo de las cuentas de inventario (115) al cierre del mes en sus libros, sin la póliza del mes.
+	BookInventory float64 `json:"book_inventory"`
+	// Lo que valen sus existencias al cierre del mes según Inventario (con su método de valuación), o null si no lleva existencias en Fiscalisto: entonces use su conteo físico.
+	SuggestedEndingInventory *float64 `json:"suggested_ending_inventory,omitempty"`
+	// La póliza de costo de ventas (mje_…) si ya se registró, o null. Es una póliza a mano de tipo adjustment.
+	ManualEntry *string `json:"manual_entry,omitempty"`
+}
+
+// CostOfSalesPurchase: CostOfSalesPurchase.
+type CostOfSalesPurchase struct {
+	// La cuenta: su número y nombre en el catálogo.
+	Account string `json:"account"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// CostOfSalesPurchaseReturn: CostOfSalesPurchaseReturn.
+type CostOfSalesPurchaseReturn struct {
+	// La cuenta: su número y nombre en el catálogo.
+	Account string `json:"account"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
 // CreateAdvanceParams: los campos de «Timbrar un anticipo».
 type CreateAdvanceParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -1615,6 +1657,14 @@ type CreateCostCenterParams struct {
 	Name string `json:"name"`
 	// Su clave, si su contabilidad usa claves (por ejemplo «CC-01»).
 	Code *string `json:"code,omitempty"`
+}
+
+// CreateCostOfSalesParams: los campos de «Registrar el costo de ventas de un mes».
+type CreateCostOfSalesParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Lo que vale el inventario al cierre del mes en pesos (0 si no hay). Por lo general, suggested_ending_inventory o el de su conteo físico.
+	EndingInventory float64 `json:"ending_inventory"`
 }
 
 // CreateCreditNoteParams: los campos de «Timbrar una nota de crédito».
@@ -3625,6 +3675,14 @@ type CreateStoreConnectionParamsSettings struct {
 	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
 }
 
+// CreateTaxDeterminationParams: los campos de «Registrar la determinación de impuestos de un mes».
+type CreateTaxDeterminationParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El pago provisional de ISR del mes en pesos (0 si no hay). Por lo general, suggested_isr.
+	ISR float64 `json:"isr"`
+}
+
 // CreateTestClockParams: los campos de «Crear un reloj de prueba».
 type CreateTestClockParams struct {
 	// Dónde empieza el reloj; si no la manda, ahora.
@@ -4247,6 +4305,12 @@ type DeleteCostCenterParams struct {
 	MoveTo *string `json:"move_to,omitempty"`
 }
 
+// DeleteCostOfSalesParams: los campos de «Quitar el costo de ventas de un mes».
+type DeleteCostOfSalesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // DeleteFxRevaluationParams: los campos de «Quitar la revaluación cambiaria de un mes».
 type DeleteFxRevaluationParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -4261,6 +4325,12 @@ type DeleteMemberParams struct {
 
 // DeleteRoleParams: los campos de «Borrar un rol».
 type DeleteRoleParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// DeleteTaxDeterminationParams: los campos de «Quitar la determinación de impuestos de un mes».
+type DeleteTaxDeterminationParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -5843,6 +5913,12 @@ type GetCompanyReportParams struct {
 	Version *string `json:"version,omitempty"`
 }
 
+// GetCostOfSalesParams: los campos de «Ver el costo de ventas de un mes».
+type GetCostOfSalesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetCrossCheckCfdiParams: los campos de «Ver los CFDI de una cifra del cruce».
 type GetCrossCheckCfdiParams struct {
 	// El mes (AAAA-MM), cuya declaración ya venció.
@@ -6013,6 +6089,12 @@ type GetSatDeclarationCalendarParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El ejercicio, como 2026. Por omisión, el actual.
 	Year *int64 `json:"year,omitempty"`
+}
+
+// GetTaxDeterminationParams: los campos de «Ver la determinación de impuestos de un mes».
+type GetTaxDeterminationParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetTrialBalanceParams: los campos de «Ver la balanza de comprobación».
@@ -12559,6 +12641,32 @@ type SupplierInvoiceWarning struct {
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
+}
+
+// TaxDetermination: La determinación de impuestos de un mes en la contabilidad: el IVA cobrado y pagado del mes (de sus pólizas) que pasa a IVA por pagar o a favor, el pago provisional de ISR sugerido y la póliza que los registra, si ya se registró.
+type TaxDetermination struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El último día del mes: la fecha de la póliza.
+	Date string `json:"date"`
+	// El IVA trasladado cobrado en el mes, según sus pólizas.
+	VatCollected float64 `json:"vat_collected"`
+	// El IVA acreditable pagado en el mes, según sus pólizas.
+	VatCreditable float64 `json:"vat_creditable"`
+	// El IVA que le retuvieron sus clientes en el mes.
+	VatWithheldByCustomers float64 `json:"vat_withheld_by_customers"`
+	// vat_collected − vat_creditable − vat_withheld_by_customers: positivo, IVA por pagar; negativo, IVA a favor.
+	Vat float64 `json:"vat"`
+	// El pago provisional de ISR que calcula Impuestos con su configuración, o null si no está configurado.
+	SuggestedISR *float64 `json:"suggested_isr,omitempty"`
+	// La póliza de determinación (mje_…) si ya se registró, o null. Es una póliza a mano de tipo adjustment.
+	ManualEntry *string `json:"manual_entry,omitempty"`
 }
 
 // TaxIDValidation: Si los datos fiscales de un cliente van a pasar el SAT.

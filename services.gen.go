@@ -151,6 +151,10 @@ type services struct {
 	// Contabilidad.
 	FxRevaluations *FxRevaluationsService
 	// Contabilidad.
+	CostOfSales *CostOfSalesService
+	// Contabilidad.
+	TaxDeterminations *TaxDeterminationsService
+	// Contabilidad.
 	BankMovements *BankMovementsService
 	// Tiendas en línea.
 	StoreConnections *StoreConnectionsService
@@ -234,6 +238,8 @@ func (s *services) init(c *Client) {
 	s.FixedAssets = &FixedAssetsService{c}
 	s.ClosedPeriod = &ClosedPeriodService{c}
 	s.FxRevaluations = &FxRevaluationsService{c}
+	s.CostOfSales = &CostOfSalesService{c}
+	s.TaxDeterminations = &TaxDeterminationsService{c}
 	s.BankMovements = &BankMovementsService{c}
 	s.StoreConnections = &StoreConnectionsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
@@ -4567,6 +4573,102 @@ func (s *FxRevaluationsService) Create(ctx context.Context, month string, params
 func (s *FxRevaluationsService) Delete(ctx context.Context, month string, params *DeleteFxRevaluationParams, opts ...RequestOption) (*FxRevaluation, error) {
 	out := new(FxRevaluation)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/fx_revaluations/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CostOfSalesService: Contabilidad (client.CostOfSales).
+type CostOfSalesService struct{ c *Client }
+
+// Get: Ver el costo de ventas de un mes
+//
+// Las compras netas del mes según sus pólizas, el inventario en libros, lo que vale el inventario según Inventario y la póliza de costo de ventas, si ya se registró. Como Cierre del mes › Inventario y costo de ventas en la app.
+//
+// GET /v1/accounting/cost_of_sales/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-cost-of-sales
+func (s *CostOfSalesService) Get(ctx context.Context, month string, params *GetCostOfSalesParams, opts ...RequestOption) (*CostOfSales, error) {
+	out := new(CostOfSales)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/cost_of_sales/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Registrar el costo de ventas de un mes
+//
+// Registra (o reemplaza) la póliza del último día del mes en el sistema de inventarios periódico: Inventario queda en ending_inventory, las compras (502) y sus devoluciones (503) se cancelan y la diferencia va a Costo de ventas (501.01): inventario inicial + compras netas − inventario final, el costo de lo vendido que se deduce (LISR arts. 25-II y 39). Sin compras ni cambio de inventario contesta parameter_invalid en month; en un mes cerrado, period_closed.
+//
+// POST /v1/accounting/cost_of_sales/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-cost-of-sales
+func (s *CostOfSalesService) Create(ctx context.Context, month string, params *CreateCostOfSalesParams, opts ...RequestOption) (*CostOfSales, error) {
+	out := new(CostOfSales)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/cost_of_sales/"+url.PathEscape(month), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar el costo de ventas de un mes
+//
+// Quita la póliza de costo de ventas del mes. En un mes cerrado contesta period_closed.
+//
+// DELETE /v1/accounting/cost_of_sales/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/delete-cost-of-sales
+func (s *CostOfSalesService) Delete(ctx context.Context, month string, params *DeleteCostOfSalesParams, opts ...RequestOption) (*CostOfSales, error) {
+	out := new(CostOfSales)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/cost_of_sales/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TaxDeterminationsService: Contabilidad (client.TaxDeterminations).
+type TaxDeterminationsService struct{ c *Client }
+
+// Get: Ver la determinación de impuestos de un mes
+//
+// El IVA cobrado y pagado del mes según sus pólizas (y el que le retuvieron sus clientes), el IVA por pagar o a favor que resulta, el pago provisional de ISR que sugiere Impuestos y la póliza de determinación, si ya se registró. Como Cierre del mes › Impuestos del mes en la app.
+//
+// GET /v1/accounting/tax_determinations/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-tax-determination
+func (s *TaxDeterminationsService) Get(ctx context.Context, month string, params *GetTaxDeterminationParams, opts ...RequestOption) (*TaxDetermination, error) {
+	out := new(TaxDetermination)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/tax_determinations/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Registrar la determinación de impuestos de un mes
+//
+// Registra (o reemplaza) la póliza del último día del mes: IVA trasladado cobrado contra IVA acreditable pagado y el IVA retenido por clientes, la diferencia a IVA por pagar o IVA a favor, e isr a Pagos provisionales de ISR contra ISR por pagar. Al pagarlos, registre el retiro del banco contra esas cuentas (POST /v1/accounting/bank_movements/{id}/post). Sin IVA ni ISR contesta parameter_invalid en month; en un mes cerrado, period_closed.
+//
+// POST /v1/accounting/tax_determinations/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-tax-determination
+func (s *TaxDeterminationsService) Create(ctx context.Context, month string, params *CreateTaxDeterminationParams, opts ...RequestOption) (*TaxDetermination, error) {
+	out := new(TaxDetermination)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/tax_determinations/"+url.PathEscape(month), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar la determinación de impuestos de un mes
+//
+// Quita la póliza de determinación del mes. En un mes cerrado contesta period_closed.
+//
+// DELETE /v1/accounting/tax_determinations/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/delete-tax-determination
+func (s *TaxDeterminationsService) Delete(ctx context.Context, month string, params *DeleteTaxDeterminationParams, opts ...RequestOption) (*TaxDetermination, error) {
+	out := new(TaxDetermination)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/tax_determinations/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
