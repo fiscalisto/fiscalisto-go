@@ -178,6 +178,8 @@ const (
 	CodePayrollReplacementInvalid = "payroll_replacement_invalid"
 	// No se pudo dibujar el PDF de ese CFDI (su XML trae algo que el generador no lee). Descargue el XML: es el documento válido ante el SAT.
 	CodePDFUnavailable = "pdf_unavailable"
+	// Ese mes de la contabilidad está cerrado: no se registra, corrige ni borra nada con fecha en él. Reábralo con POST /v1/accounting/closed_period si hay que corregirlo.
+	CodePeriodClosed = "period_closed"
 	// El ticket de compra no se puede guardar, corregir o pedir así (un archivo que no es foto ni PDF, un RFC o uso que no corresponde, una tienda que no factura con Fiscalisto, faltan datos fiscales del emisor…). El mensaje dice por qué.
 	CodePurchaseReceiptInvalid = "purchase_receipt_invalid"
 	// La cotización no tiene los datos fiscales del cliente: agrégueselos con POST /v1/quotes/{id} (customer) o mándela con auto_invoice para que los dé al aceptarla.

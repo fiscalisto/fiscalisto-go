@@ -143,6 +143,8 @@ type services struct {
 	// Contabilidad.
 	FixedAssets *FixedAssetsService
 	// Contabilidad.
+	ClosedPeriod *ClosedPeriodService
+	// Contabilidad.
 	BankMovements *BankMovementsService
 	// Tiendas en línea.
 	StoreConnections *StoreConnectionsService
@@ -222,6 +224,7 @@ func (s *services) init(c *Client) {
 	s.Accounting = &AccountingService{c}
 	s.ManualEntries = &ManualEntriesService{c}
 	s.FixedAssets = &FixedAssetsService{c}
+	s.ClosedPeriod = &ClosedPeriodService{c}
 	s.BankMovements = &BankMovementsService{c}
 	s.StoreConnections = &StoreConnectionsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
@@ -4377,6 +4380,39 @@ func (s *FixedAssetsService) Dispose(ctx context.Context, id string, params *Dis
 func (s *FixedAssetsService) Undispose(ctx context.Context, id string, opts ...RequestOption) (*FixedAsset, error) {
 	out := new(FixedAsset)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/fixed_assets/"+url.PathEscape(id)+"/disposal", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ClosedPeriodService: Contabilidad (client.ClosedPeriod).
+type ClosedPeriodService struct{ c *Client }
+
+// Get: Ver hasta qué mes está cerrada la contabilidad
+//
+// El último mes cerrado del emisor (closed_through), como Cierre del mes › Cerrar la contabilidad en la app.
+//
+// GET /v1/accounting/closed_period
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-closed-period
+func (s *ClosedPeriodService) Get(ctx context.Context, params *GetClosedPeriodParams, opts ...RequestOption) (*ClosedPeriod, error) {
+	out := new(ClosedPeriod)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/closed_period", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Set: Cerrar o reabrir meses de la contabilidad
+//
+// Cierra la contabilidad hasta closed_through (y los meses anteriores), o la reabre con un mes anterior o null. En un mes cerrado, crear, corregir o borrar una póliza a mano, registrar o quitar la póliza de un movimiento de banco y dar de baja un activo contestan period_closed. Las facturas siguen llegando del SAT.
+//
+// POST /v1/accounting/closed_period
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/set-closed-period
+func (s *ClosedPeriodService) Set(ctx context.Context, params *SetClosedPeriodParams, opts ...RequestOption) (*ClosedPeriod, error) {
+	out := new(ClosedPeriod)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/closed_period", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

@@ -1085,6 +1085,20 @@ type CloseSalesOrderParams struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// ClosedPeriod: Hasta qué mes está cerrada la contabilidad del emisor: lo capturado (pólizas a mano y de banco, bajas de activos, saldos iniciales) con fecha en un mes cerrado no se registra, corrige ni borra.
+type ClosedPeriod struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El último mes cerrado (AAAA-MM), con todos los anteriores; null si ninguno está cerrado.
+	ClosedThrough *string `json:"closed_through,omitempty"`
+	// Cuándo se cerró, o null.
+	ClosedAt *string `json:"closed_at,omitempty"`
+}
+
 // CompanyReport: El Reporte de la empresa de un emisor en un periodo: su salud fiscal, sus indicadores de riesgo, sus años, sus clientes y proveedores, sus socios y los avisos de sus contrapartes.
 type CompanyReport struct {
 	// Siempre company_report.
@@ -5683,6 +5697,12 @@ type GetCashForecastParams struct {
 	IncludeRecurring *bool `json:"include_recurring,omitempty"`
 	// Escenario: por ciento que cambian sus recurrentes (−100 a 100).
 	RecurringSalesChange *int64 `json:"recurring_sales_change,omitempty"`
+}
+
+// GetClosedPeriodParams: los campos de «Ver hasta qué mes está cerrada la contabilidad».
+type GetClosedPeriodParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCompanyReportParams: los campos de «Ver el reporte de la empresa».
@@ -11875,6 +11895,14 @@ type SendSalesOrderParams struct {
 	To *string `json:"to,omitempty"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message *string `json:"message,omitempty"`
+}
+
+// SetClosedPeriodParams: los campos de «Cerrar o reabrir meses de la contabilidad».
+type SetClosedPeriodParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El último mes cerrado (AAAA-MM); los anteriores quedan cerrados también. null reabre todos.
+	ClosedThrough *string `json:"closed_through,omitempty"`
 }
 
 // SignEfirmaParams: los campos de «Firmar el contrato con el PAC».

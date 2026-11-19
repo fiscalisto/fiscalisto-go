@@ -1840,6 +1840,20 @@
 		"go": "FixedAssets.Undispose",
 		"java": "fixedAssets.undispose"
 	},
+	"GET /v1/accounting/closed_period": {
+		"python": "closed_period.get",
+		"php": "closedPeriod->get",
+		"dotnet": "ClosedPeriod.GetAsync",
+		"go": "ClosedPeriod.Get",
+		"java": "closedPeriod.get"
+	},
+	"POST /v1/accounting/closed_period": {
+		"python": "closed_period.set",
+		"php": "closedPeriod->set",
+		"dotnet": "ClosedPeriod.SetAsync",
+		"go": "ClosedPeriod.Set",
+		"java": "closedPeriod.set"
+	},
 	"GET /v1/accounting/bank_movements": {
 		"python": "bank_movements.list",
 		"php": "bankMovements->list",
