@@ -1896,6 +1896,27 @@
 		"go": "ClosedPeriod.Set",
 		"java": "closedPeriod.set"
 	},
+	"GET /v1/accounting/fx_revaluations/{month}": {
+		"python": "fx_revaluations.get",
+		"php": "fxRevaluations->get",
+		"dotnet": "FxRevaluations.GetAsync",
+		"go": "FxRevaluations.Get",
+		"java": "fxRevaluations.get"
+	},
+	"POST /v1/accounting/fx_revaluations/{month}": {
+		"python": "fx_revaluations.create",
+		"php": "fxRevaluations->create",
+		"dotnet": "FxRevaluations.CreateAsync",
+		"go": "FxRevaluations.Create",
+		"java": "fxRevaluations.create"
+	},
+	"DELETE /v1/accounting/fx_revaluations/{month}": {
+		"python": "fx_revaluations.delete",
+		"php": "fxRevaluations->delete",
+		"dotnet": "FxRevaluations.DeleteAsync",
+		"go": "FxRevaluations.Delete",
+		"java": "fxRevaluations.delete"
+	},
 	"GET /v1/accounting/bank_movements": {
 		"python": "bank_movements.list",
 		"php": "bankMovements->list",

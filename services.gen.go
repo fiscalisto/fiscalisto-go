@@ -149,6 +149,8 @@ type services struct {
 	// Contabilidad.
 	ClosedPeriod *ClosedPeriodService
 	// Contabilidad.
+	FxRevaluations *FxRevaluationsService
+	// Contabilidad.
 	BankMovements *BankMovementsService
 	// Tiendas en línea.
 	StoreConnections *StoreConnectionsService
@@ -231,6 +233,7 @@ func (s *services) init(c *Client) {
 	s.OpeningBalances = &OpeningBalancesService{c}
 	s.FixedAssets = &FixedAssetsService{c}
 	s.ClosedPeriod = &ClosedPeriodService{c}
+	s.FxRevaluations = &FxRevaluationsService{c}
 	s.BankMovements = &BankMovementsService{c}
 	s.StoreConnections = &StoreConnectionsService{c}
 	s.RecurringInvoices = &RecurringInvoicesService{c}
@@ -4516,6 +4519,54 @@ func (s *ClosedPeriodService) Get(ctx context.Context, params *GetClosedPeriodPa
 func (s *ClosedPeriodService) Set(ctx context.Context, params *SetClosedPeriodParams, opts ...RequestOption) (*ClosedPeriod, error) {
 	out := new(ClosedPeriod)
 	if err := s.c.do(ctx, "POST", "/v1/accounting/closed_period", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FxRevaluationsService: Contabilidad (client.FxRevaluations).
+type FxRevaluationsService struct{ c *Client }
+
+// Get: Ver la revaluación cambiaria de un mes
+//
+// Las facturas PPD en otra moneda que seguían pendientes al cierre del mes, lo pendiente por moneda con el tipo de cambio de cierre que sugerimos (el FIX del DOF) y la póliza de revaluación, si ya se registró. Como Cierre del mes › Revaluación cambiaria en la app.
+//
+// GET /v1/accounting/fx_revaluations/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-fx-revaluation
+func (s *FxRevaluationsService) Get(ctx context.Context, month string, params *GetFxRevaluationParams, opts ...RequestOption) (*FxRevaluation, error) {
+	out := new(FxRevaluation)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/fx_revaluations/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Registrar la revaluación cambiaria de un mes
+//
+// Registra (o reemplaza) la póliza de ajuste del último día del mes que lleva lo pendiente en otra moneda al tipo de cambio de cierre (rates): Clientes contra Utilidad o Pérdida cambiaria, y Proveedores contra Pérdida o Utilidad cambiaria. Se revierte sola el día 1 del mes siguiente, para que cada pago siga calculando su diferencia cambiaria desde el tipo de cambio de la factura. Sin facturas pendientes, o sin diferencia a esos tipos de cambio, contesta parameter_invalid en month; en un mes cerrado, period_closed.
+//
+// POST /v1/accounting/fx_revaluations/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-fx-revaluation
+func (s *FxRevaluationsService) Create(ctx context.Context, month string, params *CreateFxRevaluationParams, opts ...RequestOption) (*FxRevaluation, error) {
+	out := new(FxRevaluation)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/fx_revaluations/"+url.PathEscape(month), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar la revaluación cambiaria de un mes
+//
+// Quita la póliza de revaluación del mes y su reversión. En un mes cerrado contesta period_closed.
+//
+// DELETE /v1/accounting/fx_revaluations/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/delete-fx-revaluation
+func (s *FxRevaluationsService) Delete(ctx context.Context, month string, params *DeleteFxRevaluationParams, opts ...RequestOption) (*FxRevaluation, error) {
+	out := new(FxRevaluation)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/fx_revaluations/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

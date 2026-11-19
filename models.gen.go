@@ -1985,6 +1985,14 @@ type CreateFixedAssetParams struct {
 	InUseSince *string `json:"in_use_since,omitempty"`
 }
 
+// CreateFxRevaluationParams: los campos de «Registrar la revaluación cambiaria de un mes».
+type CreateFxRevaluationParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El tipo de cambio de cierre (pesos por unidad) de cada moneda que aparece en currencies, por ejemplo {"USD": 18.2915}. Por lo general, el FIX que trae closing_rate.
+	Rates map[string]any `json:"rates"`
+}
+
 // CreateImssFilesParams: los campos de «Archivos para IDSE o SUA».
 type CreateImssFilesParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -2201,7 +2209,7 @@ type CreateManualEntryParams struct {
 	//
 	// Valores: journal, income, expense.
 	JournalType *string `json:"journal_type,omitempty"`
-	// Solo con kind accrual: la póliza se revierte sola el día 1 del mes siguiente (para cuando llegue la factura).
+	// Solo con kind accrual o adjustment: la póliza se revierte sola el día 1 del mes siguiente (una provisión, para cuando llegue la factura; un ajuste de cierre como la revaluación cambiaria).
 	ReverseNextMonth *bool `json:"reverse_next_month,omitempty"`
 	// El UUID del CFDI con el que se relaciona, si hay uno.
 	UUID *string `json:"uuid,omitempty"`
@@ -4239,6 +4247,12 @@ type DeleteCostCenterParams struct {
 	MoveTo *string `json:"move_to,omitempty"`
 }
 
+// DeleteFxRevaluationParams: los campos de «Quitar la revaluación cambiaria de un mes».
+type DeleteFxRevaluationParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // DeleteMemberParams: los campos de «Quitar a un miembro».
 type DeleteMemberParams struct {
 	// El miembro (mem_…) que recibe su trabajo; sin él, cualquiera con permiso.
@@ -5657,6 +5671,64 @@ type FixedAssetList struct {
 	URL string `json:"url"`
 }
 
+// FxRevaluation: La revaluación cambiaria de un mes (NIF B-15): las facturas PPD en otra moneda que seguían pendientes al cierre, lo que se debe por moneda con el tipo de cambio de cierre que sugerimos (el FIX del DOF) y la póliza de ajuste que registra la diferencia, si ya se registró.
+type FxRevaluation struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El último día del mes: la fecha de la póliza. Su reversión es del día 1 del mes siguiente.
+	Date string `json:"date"`
+	// Cada moneda con saldos pendientes: receivable (lo que le deben sus clientes, en esa moneda), payable (lo que usted debe a sus proveedores), closing_rate (el FIX publicado en el DOF el día hábil siguiente al cierre, o null si no se pudo leer) y closing_rate_date (el día de esa publicación).
+	Currencies []FxRevaluationCurrency `json:"currencies"`
+	// Las facturas PPD en otra moneda aún pendientes al cierre: direction issued (de un cliente) o received (de un proveedor), balance (lo que faltaba pagar, en su moneda) y booked_rate (su TipoCambio, al que se registró).
+	Documents []FxRevaluationDocument `json:"documents"`
+	// La póliza de revaluación (mje_…) si ya se registró, o null. Es una póliza a mano de tipo adjustment con reverse_next_month.
+	ManualEntry *string `json:"manual_entry,omitempty"`
+}
+
+// FxRevaluationCurrency: FxRevaluationCurrency.
+type FxRevaluationCurrency struct {
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency string `json:"currency"`
+	// Lo que le deben sus clientes al cierre, en esa moneda.
+	Receivable float64 `json:"receivable"`
+	// Lo que usted debe a sus proveedores al cierre, en esa moneda.
+	Payable float64 `json:"payable"`
+	// El tipo de cambio de cierre que sugerimos (pesos por unidad): el FIX publicado en el DOF el día hábil siguiente al cierre, o null si no se pudo leer.
+	ClosingRate *float64 `json:"closing_rate,omitempty"`
+	// El día en que se publicó ese FIX, o null.
+	ClosingRateDate *string `json:"closing_rate_date,omitempty"`
+}
+
+// FxRevaluationDocument: FxRevaluationDocument.
+type FxRevaluationDocument struct {
+	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
+	UUID string `json:"uuid"`
+	// EntradaSalidaMerc: Entrada o Salida.
+	//
+	// Valores: issued, received.
+	Direction string `json:"direction"`
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre.
+	Name string `json:"name"`
+	// Su serie y folio, o null si no tiene.
+	SeriesFolio *string `json:"series_folio,omitempty"`
+	// Fecha de emisión (Fecha), hora de la Ciudad de México.
+	Date string `json:"date"`
+	// Moneda de la factura pagada (MonedaDR).
+	Currency string `json:"currency"`
+	// Lo que faltaba pagar al cierre del mes, en su moneda.
+	Balance float64 `json:"balance"`
+	// Su TipoCambio: los pesos por unidad a los que se registró.
+	BookedRate float64 `json:"booked_rate"`
+}
+
 // GeneralLedger: El auxiliar de cuentas (libro mayor) de un periodo de hasta 12 meses: cada cuenta con su saldo inicial, cada cargo y abono con su póliza y el saldo que deja, y su saldo final.
 type GeneralLedger struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -5845,6 +5917,12 @@ type GetExpensePolicyParams struct {
 type GetFinancialStatementsParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetFxRevaluationParams: los campos de «Ver la revaluación cambiaria de un mes».
+type GetFxRevaluationParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -8977,7 +9055,7 @@ type ManualJournalEntry struct {
 	//
 	// Valores: journal, income, expense.
 	JournalType string `json:"journal_type"`
-	// true: una provisión que se revierte sola el día 1 del mes siguiente.
+	// true: una provisión o un ajuste de cierre (como la revaluación cambiaria) que se revierte solo el día 1 del mes siguiente.
 	ReverseNextMonth bool `json:"reverse_next_month"`
 	// El día de su reversión, o null si no se revierte.
 	ReversesOn *string `json:"reverses_on,omitempty"`
@@ -13217,7 +13295,7 @@ type UpdateManualEntryParams struct {
 	//
 	// Valores: journal, income, expense.
 	JournalType *string `json:"journal_type,omitempty"`
-	// Solo con kind accrual: la póliza se revierte sola el día 1 del mes siguiente (para cuando llegue la factura).
+	// Solo con kind accrual o adjustment: la póliza se revierte sola el día 1 del mes siguiente (una provisión, para cuando llegue la factura; un ajuste de cierre como la revaluación cambiaria).
 	ReverseNextMonth *bool `json:"reverse_next_month,omitempty"`
 	// El UUID del CFDI con el que se relaciona, si hay uno.
 	UUID *string `json:"uuid,omitempty"`
