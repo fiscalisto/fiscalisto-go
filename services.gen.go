@@ -806,7 +806,7 @@ func (s *InvoicesService) Get(ctx context.Context, id string, params *GetInvoice
 
 // Update: Actualizar una factura
 //
-// Lo que se puede cambiar de una factura timbrada sin tocar el CFDI: su centro de costo (cost_center, o null para quitárselo). Los complementos de pago y los traslados no llevan.
+// Lo que se puede cambiar de una factura timbrada sin tocar el CFDI: su centro de costo (cost_center, o null para quitárselo; los complementos de pago y los traslados no llevan) y la nota para el cliente del PDF (notes, o null para quitarla; el XML no cambia y el siguiente PDF y correo ya la llevan).
 //
 // POST /v1/invoices/{id}
 //

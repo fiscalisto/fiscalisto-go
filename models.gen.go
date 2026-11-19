@@ -5523,6 +5523,8 @@ type Invoice struct {
 	PaymentMethod *string `json:"payment_method,omitempty"`
 	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
 	PaymentTerms *string `json:"payment_terms,omitempty"`
+	// Nota para el cliente: sale en el PDF, no en el XML. Se cambia después de timbrar con POST /v1/invoices/{id} (el XML no cambia; el siguiente PDF ya la lleva).
+	Notes *string `json:"notes,omitempty"`
 	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
 	Currency string `json:"currency"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
@@ -8841,6 +8843,10 @@ type PortalStyle struct {
 	Css string `json:"css"`
 	// Los colores de la página; null usa el del tema.
 	Colors PortalStyleColors `json:"colors"`
+	// Cómo llama el portal a lo que se factura («reservacion» en un hotel).
+	//
+	// Valores: ticket, nota, cuenta, compra, pedido, orden, reservacion, estancia, boleto.
+	Noun string `json:"noun"`
 	// Los textos propios por llave (step_ticket, submit, success_title, concepts_title…), cada uno con es y en. Uno que falta lleva el de Fiscalisto.
 	Texts map[string]any `json:"texts"`
 }
@@ -8877,6 +8883,8 @@ type PortalStyleWays struct {
 	Recall bool `json:"recall"`
 	// Facturar a clientes en el extranjero.
 	Abroad bool `json:"abroad"`
+	// «No tengo RFC»: a nombre de la persona, con XAXX010101000.
+	Norfc bool `json:"norfc"`
 }
 
 // PortalSupplier: Un proveedor del Portal de proveedores del emisor: su alta, sus documentos, la cuenta a la que se le paga y su calificación.
@@ -11025,6 +11033,8 @@ type SelfInvoicing struct {
 	RetentionMode string `json:"retention_mode"`
 	// La serie de las facturas que se emiten desde el portal y desde un ticket, como AF, o null para la serie de facturas del emisor. La factura global no la usa.
 	InvoiceSeries *string `json:"invoice_series,omitempty"`
+	// true: el portal le pide al comprador una nota para el PDF de su factura (hasta 500 caracteres). Solo sale en el PDF, nunca en el XML.
+	CustomerNotes bool `json:"customer_notes"`
 	// ticket: la factura global lleva un concepto «Venta» por ticket, con su folio. summary: solo el monto total del periodo, uno por combinación de impuestos (NoIdentificacion «Resumen»), para una persona física en RESICO (regla 2.7.1.21 de la RMF 2026).
 	//
 	// Valores: ticket, summary.
@@ -12089,6 +12099,8 @@ type UpdateImssMovementParams struct {
 type UpdateInvoiceParams struct {
 	// Su centro de costo (ccn_…), o null para quitárselo. Solo facturas, notas de crédito y recibos de nómina timbrados.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Nota para el cliente en el PDF (hasta 1,000 caracteres), o null para quitarla. No va en el XML: la factura timbrada no cambia y el siguiente PDF (GET /v1/invoices/{id}/pdf, el correo) ya la lleva. Cada cambio queda en el historial de la factura en Fiscalisto.
+	Notes *string `json:"notes,omitempty"`
 }
 
 // UpdateIssuerBrandingParams: los campos de «Cambiar el diseño del PDF».
@@ -12829,6 +12841,8 @@ type UpdateSelfInvoicingParams struct {
 	RetentionMode *string `json:"retention_mode,omitempty"`
 	// La serie de las facturas que los compradores se hacen en el portal (y las que se emiten desde un ticket), como `AF`: hasta 25 caracteres, sin `|`. `null` o una vacía usa la serie de facturas del emisor. La factura global sigue con la serie de siempre.
 	InvoiceSeries *string `json:"invoice_series,omitempty"`
+	// `true`: el portal le pide al comprador una nota para el PDF de su factura (hasta 500 caracteres; Autofactura › Nota del cliente). Solo sale en el PDF, nunca en el XML. Por omisión `false`.
+	CustomerNotes *bool `json:"customer_notes,omitempty"`
 	// Los conceptos de la factura que se hace el comprador (Autofactura › Conceptos de la factura): desglosados o en uno solo, y si el comprador puede elegir. Mande solo lo que cambia; `null` regresa a desglosados sin elección.
 	InvoiceConcepts *UpdateSelfInvoicingParamsInvoiceConcepts `json:"invoice_concepts,omitempty"`
 	// Los conceptos de la factura global: `ticket` (por omisión), uno «Venta» por ticket con su folio como `NoIdentificacion`; `summary`, solo el monto total del periodo, uno por combinación de impuestos con `NoIdentificacion` «Resumen» (regla 2.7.1.21 de la RMF 2026). `summary` es solo para un emisor persona física en RESICO (626); otro contesta `invalid_request`.
@@ -12921,9 +12935,13 @@ type UpdateSelfInvoicingParamsPortalStyle struct {
 	//
 	// Valores: none, soft, strong.
 	Shadow *string `json:"shadow,omitempty"`
+	// Cómo llama el portal a lo que se factura, en todos sus textos: `ticket` (por omisión), `nota`, `cuenta`, `compra`, `pedido`, `orden`, `reservacion`, `estancia` o `boleto`. Un hotel usa `reservacion`: «Esta reservación ya se facturó».
+	//
+	// Valores: ticket, nota, cuenta, compra, pedido, orden, reservacion, estancia, boleto.
+	Noun *string `json:"noun,omitempty"`
 	// Los textos, cada uno con `es` y `en`, combinados por llave con lo guardado. El título, el mensaje y dónde viene el código en español son `portal_title`, `portal_message` y `code_hint`; aquí van en inglés.
 	Texts *UpdateSelfInvoicingParamsPortalStyleTexts `json:"texts,omitempty"`
-	// Las formas de dar sus datos además de escribirlos. Todas `true` por omisión.
+	// Las formas de dar sus datos además de escribirlos. Todas `true` por omisión menos `norfc`.
 	Ways *UpdateSelfInvoicingParamsPortalStyleWays `json:"ways,omitempty"`
 	// `true`: no se factura sin correo. Por omisión `false`.
 	EmailRequired *bool `json:"email_required,omitempty"`
@@ -13103,7 +13121,7 @@ type UpdateSelfInvoicingParamsPortalStyleTextsTitle struct {
 	En *string `json:"en,omitempty"`
 }
 
-// UpdateSelfInvoicingParamsPortalStyleWays: Las formas de dar sus datos además de escribirlos. Todas `true` por omisión.
+// UpdateSelfInvoicingParamsPortalStyleWays: Las formas de dar sus datos además de escribirlos. Todas `true` por omisión menos `norfc`.
 type UpdateSelfInvoicingParamsPortalStyleWays struct {
 	// Ofrecer subir la constancia (PDF).
 	Constancia *bool `json:"constancia,omitempty"`
@@ -13113,8 +13131,10 @@ type UpdateSelfInvoicingParamsPortalStyleWays struct {
 	Cif *bool `json:"cif,omitempty"`
 	// Ofrecer «Ya le hemos facturado antes» (RFC y correo).
 	Recall *bool `json:"recall,omitempty"`
-	// Ofrecer facturar a clientes en el extranjero.
+	// Ofrecer facturar a clientes en el extranjero (el tax ID es opcional).
 	Abroad *bool `json:"abroad,omitempty"`
+	// Ofrecer «No tengo RFC»: facturar a nombre de la persona con XAXX010101000, régimen 616, uso S01 y el CP del emisor. `false` por omisión.
+	Norfc *bool `json:"norfc,omitempty"`
 }
 
 // UpdateStoreConnectionParams: los campos de «Cambiar cómo se vuelven tickets sus pedidos».
