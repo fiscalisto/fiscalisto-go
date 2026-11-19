@@ -5683,18 +5683,42 @@ type InvoiceCancellation struct {
 
 // InvoiceConcepts: Los conceptos de la factura que se hace el comprador en el portal.
 type InvoiceConcepts struct {
-	// itemized: un concepto por renglón del ticket; single: uno solo (más uno por cada otro juego de impuestos, como una noche con ISH).
+	// itemized: un concepto por renglón del ticket; single: uno solo; grouped: uno por cada grupo de groups. Lo que lleva otro juego de impuestos (como una noche con ISH) va siempre en su propio concepto.
 	//
-	// Valores: itemized, single.
+	// Valores: itemized, single, grouped.
 	Mode string `json:"mode"`
-	// Si el comprador puede elegir en el portal entre desglosados y un solo concepto.
+	// Si el comprador puede elegir en el portal entre las opciones de customer_options.
 	CustomerChoice bool `json:"customer_choice"`
+	// Las opciones que ve el comprador cuando puede elegir (incluye siempre mode, que llega elegida).
+	CustomerOptions []string `json:"customer_options"`
 	// La descripción del concepto único, como «Consumo».
 	Description string `json:"description"`
 	// La ClaveProdServ del concepto único, o null para la del renglón más grande.
 	ProductKey *string `json:"product_key,omitempty"`
 	// Su ClaveUnidad, o null para la del renglón más grande.
 	UnitKey *string `json:"unit_key,omitempty"`
+	// Los grupos de «Por categoría», en orden: cada renglón va en el primero que lo tome.
+	Groups []InvoiceConceptsGroup `json:"groups"`
+	// Lo que ningún grupo toma: itemized, desglosado; group, en un concepto más llamado ungrouped_name.
+	//
+	// Valores: itemized, group.
+	Ungrouped string `json:"ungrouped"`
+	// El nombre del concepto para lo que ningún grupo toma.
+	UngroupedName string `json:"ungrouped_name"`
+}
+
+// InvoiceConceptsGroup: InvoiceConceptsGroup.
+type InvoiceConceptsGroup struct {
+	// El nombre del concepto, como «Alimentos y bebidas».
+	Name string `json:"name"`
+	// Su ClaveProdServ, o null para la del renglón más grande del grupo.
+	ProductKey *string `json:"product_key,omitempty"`
+	// Su ClaveUnidad, o null para la del renglón más grande.
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Las claves del SAT que toma, completas o su inicio (de 2 a 8 dígitos, como 9010).
+	SATKeys []string `json:"sat_keys"`
+	// Las categorías de producto que toma, por su ruta («Hotel › Habitaciones»); una categoría toma también las de adentro.
+	Categories []string `json:"categories"`
 }
 
 // InvoiceCreate: Una factura (CFDI 4.0). Un campo que no existe se rechaza con parameter_unknown, nunca se ignora.
@@ -8817,7 +8841,7 @@ type PortalStyle struct {
 	Css string `json:"css"`
 	// Los colores de la página; null usa el del tema.
 	Colors PortalStyleColors `json:"colors"`
-	// Los textos propios por llave (step_ticket, submit, success_title…), cada uno con es y en. Uno que falta lleva el de Fiscalisto.
+	// Los textos propios por llave (step_ticket, submit, success_title, concepts_title…), cada uno con es y en. Uno que falta lleva el de Fiscalisto.
 	Texts map[string]any `json:"texts"`
 }
 
@@ -10993,7 +11017,7 @@ type SelfInvoicing struct {
 	PortalRadius *int64 `json:"portal_radius,omitempty"`
 	// Cómo se ve el portal además de su tema, color y esquinas: acomodo, encabezado, colores, letra, textos, formas de dar los datos, botón para volver y CSS.
 	PortalStyle PortalStyle `json:"portal_style"`
-	// Desglosados o en un solo concepto, y si el comprador puede elegir (Autofactura › Conceptos de la factura).
+	// Desglosados, en un solo concepto o por los grupos de la empresa, y qué puede elegir el comprador (Autofactura › Conceptos de la factura).
 	InvoiceConcepts InvoiceConcepts `json:"invoice_concepts"`
 	// Cuando se factura una persona moral que retiene (1.25% de ISR en RESICO, o lo del producto). keep_total: la base crece y la factura suma lo que se pagó. subtract: la base es la del ticket y el total es lo pagado menos la retención.
 	//
@@ -12815,18 +12839,42 @@ type UpdateSelfInvoicingParams struct {
 
 // UpdateSelfInvoicingParamsInvoiceConcepts: UpdateSelfInvoicingParamsInvoiceConcepts.
 type UpdateSelfInvoicingParamsInvoiceConcepts struct {
-	// `itemized` (por omisión): un concepto por renglón del ticket (Hospedaje, Restaurante, Bar…). `single`: uno solo, con `description`; los renglones con otros impuestos (una noche con ISH, IVA 0 %, retenciones) van en su propio concepto, porque un concepto lleva un solo juego de impuestos. El total y los impuestos no cambian.
+	// `itemized` (por omisión): un concepto por renglón del ticket (Hospedaje, Restaurante, Bar…). `single`: uno solo, con `description`. `grouped`: los conceptos de `groups`. Un concepto lleva un solo juego de impuestos, así que los renglones con otros (una noche con ISH, IVA 0 %, retenciones) van aparte. El total y los impuestos no cambian.
 	//
-	// Valores: itemized, single.
+	// Valores: itemized, single, grouped.
 	Mode *string `json:"mode,omitempty"`
-	// `true`: el comprador elige en el portal entre desglosados y un solo concepto (empieza en `mode`), también en el portal dentro de su sitio.
+	// `true`: el comprador elige en el portal (también dentro de su sitio) entre `customer_options`, empezando en `mode`.
 	CustomerChoice *bool `json:"customer_choice,omitempty"`
+	// Entre qué puede elegir el comprador, por omisión `itemized` y `single`. `mode` va siempre; `grouped` necesita `groups`.
+	CustomerOptions []string `json:"customer_options,omitempty"`
 	// La descripción del concepto único, como «Consumo» (por omisión) o «Servicios de hospedaje y alimentos».
 	Description *string `json:"description,omitempty"`
-	// Su ClaveProdServ. `null` (por omisión): la del renglón más grande del ticket.
+	// La ClaveProdServ del concepto único. `null` (por omisión): la del renglón más grande del ticket.
 	ProductKey *string `json:"product_key,omitempty"`
 	// Su ClaveUnidad, con `product_key`, como `E48`. `null`: la del renglón más grande.
 	UnitKey *string `json:"unit_key,omitempty"`
+	// Los conceptos de `grouped`, hasta 12: cada renglón va al primero que lo toma, por su clave del SAT (`sat_keys`) o la categoría de su producto (`categories`). Reemplaza la lista guardada.
+	Groups []UpdateSelfInvoicingParamsInvoiceConceptsGroup `json:"groups,omitempty"`
+	// Con `grouped`, los renglones que ningún grupo toma: `itemized` (por omisión) como vienen, o `group` en un concepto más llamado `ungrouped_name`.
+	//
+	// Valores: itemized, group.
+	Ungrouped *string `json:"ungrouped,omitempty"`
+	// El nombre de ese concepto, por omisión «Otros».
+	UngroupedName *string `json:"ungrouped_name,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsInvoiceConceptsGroup: UpdateSelfInvoicingParamsInvoiceConceptsGroup.
+type UpdateSelfInvoicingParamsInvoiceConceptsGroup struct {
+	// La descripción del concepto, como «Alimentos y bebidas».
+	Name string `json:"name"`
+	// Su ClaveProdServ. `null` (por omisión): la de su renglón más grande.
+	ProductKey *string `json:"product_key,omitempty"`
+	// Su ClaveUnidad, con `product_key`, como `E48`.
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Los renglones cuya clave del SAT empieza así: `9010` toma 90101501 (restaurante) y 90101503 (bar); `90111800`, solo hospedaje.
+	SATKeys []string `json:"sat_keys,omitempty"`
+	// Los renglones de los productos de estas categorías y sus subcategorías, por su ruta como la da `category` del producto («Alimentos › Bebidas»).
+	Categories []string `json:"categories,omitempty"`
 }
 
 // UpdateSelfInvoicingParamsPortalStyle: UpdateSelfInvoicingParamsPortalStyle.
@@ -12931,11 +12979,51 @@ type UpdateSelfInvoicingParamsPortalStyleTexts struct {
 	SuccessTitle *UpdateSelfInvoicingParamsPortalStyleTextsSuccessTitle `json:"success_title,omitempty"`
 	// El mensaje al terminar; `null` vuelve al de Fiscalisto.
 	SuccessMessage *UpdateSelfInvoicingParamsPortalStyleTextsSuccessMessage `json:"success_message,omitempty"`
+	// El título de la elección de conceptos («Conceptos en su factura»; ver `invoice_concepts`); `null` vuelve al de Fiscalisto.
+	ConceptsTitle *UpdateSelfInvoicingParamsPortalStyleTextsConceptsTitle `json:"concepts_title,omitempty"`
+	// La opción de conceptos desglosados («Desglosados»); `null` vuelve al de Fiscalisto.
+	ConceptsItemized *UpdateSelfInvoicingParamsPortalStyleTextsConceptsItemized `json:"concepts_itemized,omitempty"`
+	// La opción de un solo concepto («Un solo concepto»); `null` vuelve al de Fiscalisto.
+	ConceptsSingle *UpdateSelfInvoicingParamsPortalStyleTextsConceptsSingle `json:"concepts_single,omitempty"`
+	// La opción de conceptos por categoría («Por categoría»); `null` vuelve al de Fiscalisto.
+	ConceptsGrouped *UpdateSelfInvoicingParamsPortalStyleTextsConceptsGrouped `json:"concepts_grouped,omitempty"`
 }
 
 // UpdateSelfInvoicingParamsPortalStyleTextsCodeHint: UpdateSelfInvoicingParamsPortalStyleTextsCodeHint.
 type UpdateSelfInvoicingParamsPortalStyleTextsCodeHint struct {
 	// Dónde viene el código (en español es `code_hint`) en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsConceptsGrouped: UpdateSelfInvoicingParamsPortalStyleTextsConceptsGrouped.
+type UpdateSelfInvoicingParamsPortalStyleTextsConceptsGrouped struct {
+	// La opción de conceptos por categoría («Por categoría») en español.
+	Es *string `json:"es,omitempty"`
+	// La opción de conceptos por categoría («Por categoría») en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsConceptsItemized: UpdateSelfInvoicingParamsPortalStyleTextsConceptsItemized.
+type UpdateSelfInvoicingParamsPortalStyleTextsConceptsItemized struct {
+	// La opción de conceptos desglosados («Desglosados») en español.
+	Es *string `json:"es,omitempty"`
+	// La opción de conceptos desglosados («Desglosados») en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsConceptsSingle: UpdateSelfInvoicingParamsPortalStyleTextsConceptsSingle.
+type UpdateSelfInvoicingParamsPortalStyleTextsConceptsSingle struct {
+	// La opción de un solo concepto («Un solo concepto») en español.
+	Es *string `json:"es,omitempty"`
+	// La opción de un solo concepto («Un solo concepto») en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsConceptsTitle: UpdateSelfInvoicingParamsPortalStyleTextsConceptsTitle.
+type UpdateSelfInvoicingParamsPortalStyleTextsConceptsTitle struct {
+	// El título de la elección de conceptos («Conceptos en su factura»; ver `invoice_concepts`) en español.
+	Es *string `json:"es,omitempty"`
+	// El título de la elección de conceptos («Conceptos en su factura»; ver `invoice_concepts`) en inglés.
 	En *string `json:"en,omitempty"`
 }
 
