@@ -177,6 +177,8 @@ type services struct {
 	// Contabilidad.
 	BookDepreciationRates *BookDepreciationRatesService
 	// Contabilidad.
+	EntryTemplates *EntryTemplatesService
+	// Contabilidad.
 	CostCenterResults *CostCenterResultsService
 	// Contabilidad.
 	PayrollProvisions *PayrollProvisionsService
@@ -281,6 +283,7 @@ func (s *services) init(c *Client) {
 	s.InflationAccounts = &InflationAccountsService{c}
 	s.DepreciationReconciliations = &DepreciationReconciliationsService{c}
 	s.BookDepreciationRates = &BookDepreciationRatesService{c}
+	s.EntryTemplates = &EntryTemplatesService{c}
 	s.CostCenterResults = &CostCenterResultsService{c}
 	s.PayrollProvisions = &PayrollProvisionsService{c}
 	s.TaxDeterminations = &TaxDeterminationsService{c}
@@ -5209,6 +5212,84 @@ type BookDepreciationRatesService struct{ c *Client }
 func (s *BookDepreciationRatesService) Save(ctx context.Context, params *SaveBookDepreciationRateParams, opts ...RequestOption) (*BookDepreciationRate, error) {
 	out := new(BookDepreciationRate)
 	if err := s.c.do(ctx, "POST", "/v1/accounting/book_depreciation_rates", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// EntryTemplatesService: Contabilidad (client.EntryTemplates).
+type EntryTemplatesService struct{ c *Client }
+
+// List: Listar las pólizas modelo
+//
+// Las pólizas modelo del emisor, por nombre: las cuentas de una póliza que captura seguido con el porcentaje del total de cada renglón. Como «Usar un modelo» en Nueva póliza.
+//
+// GET /v1/accounting/entry_templates
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-entry-templates
+func (s *EntryTemplatesService) List(ctx context.Context, params *ListEntryTemplatesParams, opts ...RequestOption) (*EntryTemplateList, error) {
+	out := new(EntryTemplateList)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/entry_templates", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Guardar una póliza modelo
+//
+// Guarda las cuentas de una póliza bajo un nombre, cada renglón en su lado con el porcentaje del total (percentage), un importe fijo (amount) o ninguno, para escribirlo cada vez. Los porcentajes de un lado suman hasta 100. El nombre es único en el emisor.
+//
+// POST /v1/accounting/entry_templates
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-entry-template
+func (s *EntryTemplatesService) Create(ctx context.Context, params *CreateEntryTemplateParams, opts ...RequestOption) (*EntryTemplate, error) {
+	out := new(EntryTemplate)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/entry_templates", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar una póliza modelo
+//
+// La reemplaza con lo que manda. Las pólizas que ya se hicieron con ella no cambian.
+//
+// POST /v1/accounting/entry_templates/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/update-entry-template
+func (s *EntryTemplatesService) Update(ctx context.Context, id string, params *UpdateEntryTemplateParams, opts ...RequestOption) (*EntryTemplate, error) {
+	out := new(EntryTemplate)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/entry_templates/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una póliza modelo
+//
+// Las pólizas que ya se hicieron con ella no cambian.
+//
+// DELETE /v1/accounting/entry_templates/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/delete-entry-template
+func (s *EntryTemplatesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/entry_templates/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Apply: Calcular los renglones de una póliza modelo
+//
+// Los renglones de la póliza modelo para un total: cada porcentaje al centavo, los importes fijos como están y 0 donde no hay ninguno. El centavo del redondeo va al renglón más grande de un lado que suma 100%, para que cuadre. Mándelos como lines en POST /v1/accounting/manual_entries; aquí no se guarda nada.
+//
+// POST /v1/accounting/entry_templates/{id}/apply
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/apply-entry-template
+func (s *EntryTemplatesService) Apply(ctx context.Context, id string, params *ApplyEntryTemplateParams, opts ...RequestOption) (*EntryTemplateLines, error) {
+	out := new(EntryTemplateLines)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/entry_templates/"+url.PathEscape(id)+"/apply", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

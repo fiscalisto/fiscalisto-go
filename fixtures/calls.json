@@ -2176,6 +2176,41 @@
 		"go": "BookDepreciationRates.Save",
 		"java": "bookDepreciationRates.save"
 	},
+	"GET /v1/accounting/entry_templates": {
+		"python": "entry_templates.list",
+		"php": "entryTemplates->list",
+		"dotnet": "EntryTemplates.ListAsync",
+		"go": "EntryTemplates.List",
+		"java": "entryTemplates.list"
+	},
+	"POST /v1/accounting/entry_templates": {
+		"python": "entry_templates.create",
+		"php": "entryTemplates->create",
+		"dotnet": "EntryTemplates.CreateAsync",
+		"go": "EntryTemplates.Create",
+		"java": "entryTemplates.create"
+	},
+	"POST /v1/accounting/entry_templates/{id}": {
+		"python": "entry_templates.update",
+		"php": "entryTemplates->update",
+		"dotnet": "EntryTemplates.UpdateAsync",
+		"go": "EntryTemplates.Update",
+		"java": "entryTemplates.update"
+	},
+	"DELETE /v1/accounting/entry_templates/{id}": {
+		"python": "entry_templates.delete",
+		"php": "entryTemplates->delete",
+		"dotnet": "EntryTemplates.DeleteAsync",
+		"go": "EntryTemplates.Delete",
+		"java": "entryTemplates.delete"
+	},
+	"POST /v1/accounting/entry_templates/{id}/apply": {
+		"python": "entry_templates.apply",
+		"php": "entryTemplates->apply",
+		"dotnet": "EntryTemplates.ApplyAsync",
+		"go": "EntryTemplates.Apply",
+		"java": "entryTemplates.apply"
+	},
 	"GET /v1/accounting/cost_center_results/{month}": {
 		"python": "cost_center_results.get",
 		"php": "costCenterResults->get",

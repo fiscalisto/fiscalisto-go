@@ -313,6 +313,12 @@ type ApplyAdvanceParamsRemainder struct {
 	PaymentForm *string `json:"payment_form,omitempty"`
 }
 
+// ApplyEntryTemplateParams: los campos de «Calcular los renglones de una póliza modelo».
+type ApplyEntryTemplateParams struct {
+	// El total de la póliza: cada porcentaje se calcula sobre él, al centavo.
+	Total float64 `json:"total"`
+}
+
 // ApplyVariableSalaryParams: los campos de «Aplicar el salario variable de un bimestre».
 type ApplyVariableSalaryParams struct {
 	// El emisor (iss_…); por omisión, el único de la cuenta.
@@ -2433,6 +2439,42 @@ type CreateEmployeeParams struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 }
 
+// CreateEntryTemplateParams: los campos de «Guardar una póliza modelo».
+type CreateEntryTemplateParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El nombre del modelo, único en el emisor: «Compra con IVA al 16%».
+	Name string `json:"name"`
+	// El concepto de las pólizas que se hacen con él.
+	Description string `json:"description"`
+	// adjustment (ajuste), accrual (provisión), reclassification (reclasificación) u other.
+	//
+	// Valores: adjustment, accrual, reclassification, other.
+	Kind *string `json:"kind,omitempty"`
+	// El tipo de póliza: journal (diario), income (ingresos) o expense (egresos).
+	//
+	// Valores: journal, income, expense.
+	JournalType *string `json:"journal_type,omitempty"`
+	// Sus renglones: la cuenta, el lado y el porcentaje del total o el importe fijo.
+	Lines []CreateEntryTemplateParamsLine `json:"lines"`
+}
+
+// CreateEntryTemplateParamsLine: CreateEntryTemplateParamsLine.
+type CreateEntryTemplateParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts).
+	Account string `json:"account"`
+	// Si el renglón es cargo (debit) o abono (credit).
+	//
+	// Valores: debit, credit.
+	Side string `json:"side"`
+	// El porcentaje del total que lleva (86.2069 es 86.2069%). Los de un lado suman hasta 100.
+	Percentage *float64 `json:"percentage,omitempty"`
+	// Un importe fijo, cuando no depende del total. Sin percentage ni amount, el renglón sale en 0 para escribirlo cada vez.
+	Amount *float64 `json:"amount,omitempty"`
+	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional.
+	CostCenter *string `json:"cost_center,omitempty"`
+}
+
 // CreateExpenseItemParams: los campos de «Agregar un gasto».
 type CreateExpenseItemParams struct {
 	// El UUID de una factura recibida del emisor (GET /v1/sat_invoices): la fecha, el monto, el proveedor y la forma de pago salen de ella.
@@ -2865,6 +2907,16 @@ type CreateManualEntryParamsLine struct {
 	Credit *float64 `json:"credit,omitempty"`
 	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional: los resultados por centro de costo y los presupuestos lo leen.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Un renglón en otra moneda: su clave ISO 4217 (USD, EUR…). Con ella van foreign_amount y exchange_rate, y debit o credit es su producto en pesos.
+	Currency *string `json:"currency,omitempty"`
+	// El importe del renglón en su moneda.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// El tipo de cambio del renglón: pesos por una unidad de su moneda.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// El CFDI que documenta este renglón, aparte del de la póliza: así una póliza lleva varios.
+	CFDIUUID *string `json:"cfdi_uuid,omitempty"`
+	// El RFC de quien emitió o recibió el CFDI del renglón.
+	CFDITaxID *string `json:"cfdi_tax_id,omitempty"`
 }
 
 // CreatePaymentParams: los campos de «Timbrar un complemento de pago».
@@ -5385,6 +5437,100 @@ type EmployeeVacationsYear struct {
 	Status string `json:"status"`
 }
 
+// EntryTemplate: Una póliza modelo: las cuentas de una póliza que se captura seguido (una compra, una renta) con el porcentaje del total o el importe fijo de cada renglón, para hacerla otra vez con otro total.
+type EntryTemplate struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El nombre del modelo.
+	Name string `json:"name"`
+	// El concepto de las pólizas que se hacen con él.
+	Description string `json:"description"`
+	// La clase de las pólizas que se hacen con él: adjustment, accrual, reclassification u other.
+	//
+	// Valores: adjustment, accrual, reclassification, other.
+	Kind string `json:"kind"`
+	// Su tipo de póliza: journal, income o expense.
+	//
+	// Valores: journal, income, expense.
+	JournalType string `json:"journal_type"`
+	// Sus renglones: la cuenta, el lado y el porcentaje o el importe fijo.
+	Lines []EntryTemplateLine `json:"lines"`
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// EntryTemplateLine: EntryTemplateLine.
+type EntryTemplateLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// Si el renglón es cargo (debit) o abono (credit).
+	//
+	// Valores: debit, credit.
+	Side string `json:"side"`
+	// El porcentaje del total que lleva, o null.
+	Percentage *float64 `json:"percentage,omitempty"`
+	// Su importe fijo, o null.
+	Amount *float64 `json:"amount,omitempty"`
+	// Su centro de costo (ccn_…), o null.
+	CostCenter *string `json:"cost_center,omitempty"`
+}
+
+// EntryTemplateLines: Los renglones de una póliza modelo para un total, listos para POST /v1/accounting/manual_entries. No se guarda nada.
+type EntryTemplateLines struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// La póliza modelo (mjt_…).
+	EntryTemplate string `json:"entry_template"`
+	// El total con que se calcularon.
+	Total float64 `json:"total"`
+	// El concepto del modelo.
+	Description string `json:"description"`
+	// La clase de la póliza, la del modelo.
+	//
+	// Valores: adjustment, accrual, reclassification, other.
+	Kind string `json:"kind"`
+	// El tipo de póliza, el del modelo.
+	//
+	// Valores: journal, income, expense.
+	JournalType string `json:"journal_type"`
+	// Los renglones, como los recibe POST /v1/accounting/manual_entries.
+	Lines []EntryTemplateLinesLine `json:"lines"`
+}
+
+// EntryTemplateLinesLine: EntryTemplateLinesLine.
+type EntryTemplateLinesLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El cargo, en pesos.
+	Debit float64 `json:"debit"`
+	// El abono, en pesos.
+	Credit float64 `json:"credit"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
+}
+
+// EntryTemplateList: Una página de la lista.
+type EntryTemplateList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []EntryTemplate `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // EquityChanges: El estado de cambios en el capital contable (NIF B-4) de enero al mes.
 type EquityChanges struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -7253,6 +7399,16 @@ type ImportManualEntriesParamsEntryLine struct {
 	Credit *float64 `json:"credit,omitempty"`
 	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional: los resultados por centro de costo y los presupuestos lo leen.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Un renglón en otra moneda: su clave ISO 4217 (USD, EUR…). Con ella van foreign_amount y exchange_rate, y debit o credit es su producto en pesos.
+	Currency *string `json:"currency,omitempty"`
+	// El importe del renglón en su moneda.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// El tipo de cambio del renglón: pesos por una unidad de su moneda.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// El CFDI que documenta este renglón, aparte del de la póliza: así una póliza lleva varios.
+	CFDIUUID *string `json:"cfdi_uuid,omitempty"`
+	// El RFC de quien emitió o recibió el CFDI del renglón.
+	CFDITaxID *string `json:"cfdi_tax_id,omitempty"`
 }
 
 // ImportStoreOrdersParams: los campos de «Traer pedidos pagados».
@@ -9701,6 +9857,12 @@ type ListEmployeesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListEntryTemplatesParams: los campos de «Listar las pólizas modelo».
+type ListEntryTemplatesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListEventsParams: los campos de «Listar eventos».
 type ListEventsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -10429,6 +10591,16 @@ type ManualJournalEntryLine struct {
 	Credit float64 `json:"credit"`
 	// Su centro de costo (ccn_…), o null.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Su moneda (ISO 4217) si es en otra, o null si es en pesos.
+	Currency *string `json:"currency,omitempty"`
+	// Su importe en esa moneda, o null.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// Su tipo de cambio, o null.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// El UUID del CFDI de este renglón, o null.
+	CFDIUUID *string `json:"cfdi_uuid,omitempty"`
+	// El RFC de la otra parte de ese CFDI, o null.
+	CFDITaxID *string `json:"cfdi_tax_id,omitempty"`
 }
 
 // ManualJournalEntryList: Una página de la lista.
@@ -15035,6 +15207,40 @@ type UpdateEmployeeVacationsParams struct {
 	OpeningTakenDays *float64 `json:"opening_taken_days,omitempty"`
 }
 
+// UpdateEntryTemplateParams: los campos de «Cambiar una póliza modelo».
+type UpdateEntryTemplateParams struct {
+	// El nombre del modelo, único en el emisor: «Compra con IVA al 16%».
+	Name string `json:"name"`
+	// El concepto de las pólizas que se hacen con él.
+	Description string `json:"description"`
+	// adjustment (ajuste), accrual (provisión), reclassification (reclasificación) u other.
+	//
+	// Valores: adjustment, accrual, reclassification, other.
+	Kind *string `json:"kind,omitempty"`
+	// El tipo de póliza: journal (diario), income (ingresos) o expense (egresos).
+	//
+	// Valores: journal, income, expense.
+	JournalType *string `json:"journal_type,omitempty"`
+	// Sus renglones: la cuenta, el lado y el porcentaje del total o el importe fijo.
+	Lines []UpdateEntryTemplateParamsLine `json:"lines"`
+}
+
+// UpdateEntryTemplateParamsLine: UpdateEntryTemplateParamsLine.
+type UpdateEntryTemplateParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts).
+	Account string `json:"account"`
+	// Si el renglón es cargo (debit) o abono (credit).
+	//
+	// Valores: debit, credit.
+	Side string `json:"side"`
+	// El porcentaje del total que lleva (86.2069 es 86.2069%). Los de un lado suman hasta 100.
+	Percentage *float64 `json:"percentage,omitempty"`
+	// Un importe fijo, cuando no depende del total. Sin percentage ni amount, el renglón sale en 0 para escribirlo cada vez.
+	Amount *float64 `json:"amount,omitempty"`
+	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional.
+	CostCenter *string `json:"cost_center,omitempty"`
+}
+
 // UpdateExpenseItemParams: los campos de «Actualizar un gasto».
 type UpdateExpenseItemParams struct {
 	// De qué es: hospedaje, alimentos, avion, transporte, auto, combustible (gasolina, casetas y estacionamiento), comidas (en restaurante, fuera de viaje), papeleria, mensajeria, software u otros.
@@ -15237,6 +15443,16 @@ type UpdateManualEntryParamsLine struct {
 	Credit *float64 `json:"credit,omitempty"`
 	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional: los resultados por centro de costo y los presupuestos lo leen.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Un renglón en otra moneda: su clave ISO 4217 (USD, EUR…). Con ella van foreign_amount y exchange_rate, y debit o credit es su producto en pesos.
+	Currency *string `json:"currency,omitempty"`
+	// El importe del renglón en su moneda.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// El tipo de cambio del renglón: pesos por una unidad de su moneda.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// El CFDI que documenta este renglón, aparte del de la póliza: así una póliza lleva varios.
+	CFDIUUID *string `json:"cfdi_uuid,omitempty"`
+	// El RFC de quien emitió o recibió el CFDI del renglón.
+	CFDITaxID *string `json:"cfdi_tax_id,omitempty"`
 }
 
 // UpdateMemberParams: los campos de «Cambiar el acceso de un miembro».
