@@ -385,6 +385,14 @@ type ApproveExpenseReportParams struct {
 	Note *string `json:"note,omitempty"`
 }
 
+// ApproveVacationRequestParams: los campos de «Aprobar una solicitud de vacaciones».
+type ApproveVacationRequestParams struct {
+	// Los días que descuenta de sus vacaciones, si no son los que se calcularon (sin domingos ni festivos), por ejemplo sin los sábados de quien descansa.
+	Days *float64 `json:"days,omitempty"`
+	// Una nota que el empleado ve en su enlace.
+	Note *string `json:"note,omitempty"`
+}
+
 // AttendanceMark: Una marca de entrada o salida de Asistencia (registro electrónico de jornada, LFT art. 132).
 type AttendanceMark struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -777,7 +785,7 @@ type BooksLogEntryActor struct {
 	Type string `json:"type"`
 	// Nombre.
 	Name *string `json:"name,omitempty"`
-	// label.
+	// El nombre y el id de la llave de la API, o el del asistente («ChatGPT»); null para un usuario del panel.
 	Label *string `json:"label,omitempty"`
 }
 
@@ -5861,6 +5869,34 @@ type EmployeeList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// EmployeePortal: El portal del empleado: su enlace y los recibos que firmó de recibido.
+type EmployeePortal struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su enlace personal (sin cuenta) para ver, descargar y firmar de recibido sus recibos y pedir vacaciones; null si está apagado.
+	URL *string `json:"url,omitempty"`
+	// Cuándo se hizo el enlace.
+	EnabledAt *string `json:"enabled_at,omitempty"`
+	// Los celulares ligados: el primero que lo abre y los que lo abren en la hora siguiente, hasta 3.
+	Phones int64 `json:"phones"`
+	// La última vez que lo abrió.
+	LastSeenAt *string `json:"last_seen_at,omitempty"`
+	// Los recibos que firmó de recibido desde su enlace (con el día, su celular y su IP guardados), los más recientes primero.
+	SignedReceipts []EmployeePortalSignedReceipt `json:"signed_receipts"`
+}
+
+// EmployeePortalSignedReceipt: EmployeePortalSignedReceipt.
+type EmployeePortalSignedReceipt struct {
+	// El folio fiscal del recibo.
+	UUID string `json:"uuid"`
+	// Cuándo lo firmó de recibido.
+	SignedAt string `json:"signed_at"`
 }
 
 // EmployeeVacations: Las vacaciones de un empleado por año de servicio (LFT 76, 81 y 516).
@@ -11031,6 +11067,20 @@ type ListTicketsParams struct {
 	SoldAtLte *string `json:"sold_at_lte,omitempty"`
 }
 
+// ListVacationRequestsParams: los campos de «Listar solicitudes de vacaciones».
+type ListVacationRequestsParams struct {
+	// Solo las de este empleado (emp_…).
+	Employee *string `json:"employee,omitempty"`
+	// pending, approved, rejected o canceled.
+	//
+	// Valores: pending, approved, rejected, canceled.
+	Status *string `json:"status,omitempty"`
+	// Cuántas, de 1 a 500. Por omisión 100.
+	Limit *int64 `json:"limit,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListWarehouseStockParams: los campos de «Ver las existencias de un almacén».
 type ListWarehouseStockParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -12951,6 +13001,12 @@ type RefreshSatDeclarationsParams struct {
 type RejectQuoteParams struct {
 	// Por qué (queda en customer_comment; el cliente no la ve).
 	Note *string `json:"note,omitempty"`
+}
+
+// RejectVacationRequestParams: los campos de «Rechazar una solicitud de vacaciones».
+type RejectVacationRequestParams struct {
+	// Por qué no se aprueba: el empleado lo ve en su enlace.
+	Note string `json:"note"`
 }
 
 // RenumberAccountsParams: los campos de «Renumerar el catálogo».
@@ -15809,6 +15865,16 @@ type UpdateEmployeeParams struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 }
 
+// UpdateEmployeePortalParams: los campos de «Activar, cambiar o apagar el portal».
+type UpdateEmployeePortalParams struct {
+	// enable: crea el enlace (o deja el que tiene); renew: uno nuevo (el anterior deja de funcionar y sus celulares se desligan); disable: lo apaga (lo firmado se queda).
+	//
+	// Valores: enable, renew, disable.
+	Action string `json:"action"`
+	// Con enable o renew, le manda el enlace al correo del empleado. Falla si el empleado no tiene correo.
+	SendEmail *bool `json:"send_email,omitempty"`
+}
+
 // UpdateEmployeeVacationsParams: los campos de «Saldo de vacaciones antes de Fiscalisto».
 type UpdateEmployeeVacationsParams struct {
 	// El día del saldo, según sus registros de antes de Fiscalisto; null lo quita. Los recibos timbrados antes de ese día no se cuentan.
@@ -17219,6 +17285,50 @@ type Usage struct {
 	//
 	// Valores: refused, slowed.
 	OverAllowance string `json:"over_allowance"`
+}
+
+// VacationRequest: Días de vacaciones que un empleado pidió desde su enlace.
+type VacationRequest struct {
+	// vrq_…
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// El nombre del empleado.
+	EmployeeName *string `json:"employee_name,omitempty"`
+	// El primer día (AAAA-MM-DD).
+	From string `json:"from"`
+	// El último día (AAAA-MM-DD).
+	To string `json:"to"`
+	// Los días que descuenta de sus vacaciones: los laborables entre las fechas (sin domingos ni días de descanso obligatorio), o los que se aprobaron.
+	Days float64 `json:"days"`
+	// La nota del empleado.
+	Note *string `json:"note,omitempty"`
+	// pending, por revisar; approved, aprobada; rejected, rechazada; canceled, el empleado la retiró.
+	//
+	// Valores: pending, approved, rejected, canceled.
+	Status string `json:"status"`
+	// Cuándo se aprobó o rechazó.
+	DecidedAt *string `json:"decided_at,omitempty"`
+	// La nota de quien la decidió: el empleado la ve.
+	DecisionNote *string `json:"decision_note,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+}
+
+// VacationRequestList: Una página de la lista.
+type VacationRequestList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []VacationRequest `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // ValidateTaxIdParams: los campos de «Validar los datos fiscales de un cliente».

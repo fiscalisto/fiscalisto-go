@@ -51,6 +51,8 @@ type services struct {
 	// Nómina.
 	Employees *EmployeesService
 	// Nómina.
+	VacationRequests *VacationRequestsService
+	// Nómina.
 	PayrollReceipts *PayrollReceiptsService
 	// Nómina.
 	PayrollBatches *PayrollBatchesService
@@ -228,6 +230,7 @@ func (s *services) init(c *Client) {
 	s.Advances = &AdvancesService{c}
 	s.Retentions = &RetentionsService{c}
 	s.Employees = &EmployeesService{c}
+	s.VacationRequests = &VacationRequestsService{c}
 	s.PayrollReceipts = &PayrollReceiptsService{c}
 	s.PayrollBatches = &PayrollBatchesService{c}
 	s.PayrollBankFiles = &PayrollBankFilesService{c}
@@ -1762,6 +1765,99 @@ func (s *EmployeesService) UpdateVacations(ctx context.Context, id string, param
 // https://fiscalisto.com/docs/api/referencia/nomina/get-employee-vacation-certificate
 func (s *EmployeesService) VacationCertificate(ctx context.Context, id string, params *GetEmployeeVacationCertificateParams, opts ...RequestOption) ([]byte, error) {
 	return s.c.raw(ctx, "GET", "/v1/employees/"+url.PathEscape(id)+"/vacations/certificate", nil, params, false, opts)
+}
+
+// Portal: Portal del empleado
+//
+// El enlace personal del empleado (sin cuenta) para ver, descargar y firmar de recibido sus recibos de nómina, ver sus vacaciones y pedir días; los celulares ligados y los recibos que firmó.
+//
+// GET /v1/employees/{id}/portal
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-employee-portal
+func (s *EmployeesService) Portal(ctx context.Context, id string, opts ...RequestOption) (*EmployeePortal, error) {
+	out := new(EmployeePortal)
+	if err := s.c.do(ctx, "GET", "/v1/employees/"+url.PathEscape(id)+"/portal", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdatePortal: Activar, cambiar o apagar el portal
+//
+// enable crea el enlace (o deja el que tiene), renew hace uno nuevo (el anterior deja de funcionar y sus celulares se desligan) y disable lo apaga. Lo firmado se queda. Con send_email se lo manda a su correo.
+//
+// POST /v1/employees/{id}/portal
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-employee-portal
+func (s *EmployeesService) UpdatePortal(ctx context.Context, id string, params *UpdateEmployeePortalParams, opts ...RequestOption) (*EmployeePortal, error) {
+	out := new(EmployeePortal)
+	if err := s.c.do(ctx, "POST", "/v1/employees/"+url.PathEscape(id)+"/portal", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VacationRequestsService: Nómina (client.VacationRequests).
+type VacationRequestsService struct{ c *Client }
+
+// List: Listar solicitudes de vacaciones
+//
+// Los días que los empleados pidieron desde su enlace, las más recientes primero.
+//
+// GET /v1/vacation_requests
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-vacation-requests
+func (s *VacationRequestsService) List(ctx context.Context, params *ListVacationRequestsParams, opts ...RequestOption) (*VacationRequestList, error) {
+	out := new(VacationRequestList)
+	if err := s.c.do(ctx, "GET", "/v1/vacation_requests", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver una solicitud de vacaciones
+//
+// Una solicitud de vacaciones con su estado.
+//
+// GET /v1/vacation_requests/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-vacation-request
+func (s *VacationRequestsService) Get(ctx context.Context, id string, opts ...RequestOption) (*VacationRequest, error) {
+	out := new(VacationRequest)
+	if err := s.c.do(ctx, "GET", "/v1/vacation_requests/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Approve: Aprobar una solicitud de vacaciones
+//
+// La aprueba con los días calculados o los que mande en days. Los días aprobados se sugieren en las Incidencias del recibo del periodo; no se agregan solos.
+//
+// POST /v1/vacation_requests/{id}/approve
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/approve-vacation-request
+func (s *VacationRequestsService) Approve(ctx context.Context, id string, params *ApproveVacationRequestParams, opts ...RequestOption) (*VacationRequest, error) {
+	out := new(VacationRequest)
+	if err := s.c.do(ctx, "POST", "/v1/vacation_requests/"+url.PathEscape(id)+"/approve", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reject: Rechazar una solicitud de vacaciones
+//
+// La rechaza; note (por qué) es obligatoria y el empleado la ve.
+//
+// POST /v1/vacation_requests/{id}/reject
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/reject-vacation-request
+func (s *VacationRequestsService) Reject(ctx context.Context, id string, params *RejectVacationRequestParams, opts ...RequestOption) (*VacationRequest, error) {
+	out := new(VacationRequest)
+	if err := s.c.do(ctx, "POST", "/v1/vacation_requests/"+url.PathEscape(id)+"/reject", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // PayrollReceiptsService: Nómina (client.PayrollReceipts).

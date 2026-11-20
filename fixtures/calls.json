@@ -566,6 +566,48 @@
 		"go": "Employees.VacationCertificate",
 		"java": "employees.vacationCertificate"
 	},
+	"GET /v1/employees/{id}/portal": {
+		"python": "employees.portal",
+		"php": "employees->portal",
+		"dotnet": "Employees.PortalAsync",
+		"go": "Employees.Portal",
+		"java": "employees.portal"
+	},
+	"POST /v1/employees/{id}/portal": {
+		"python": "employees.update_portal",
+		"php": "employees->updatePortal",
+		"dotnet": "Employees.UpdatePortalAsync",
+		"go": "Employees.UpdatePortal",
+		"java": "employees.updatePortal"
+	},
+	"GET /v1/vacation_requests": {
+		"python": "vacation_requests.list",
+		"php": "vacationRequests->list",
+		"dotnet": "VacationRequests.ListAsync",
+		"go": "VacationRequests.List",
+		"java": "vacationRequests.list"
+	},
+	"GET /v1/vacation_requests/{id}": {
+		"python": "vacation_requests.get",
+		"php": "vacationRequests->get",
+		"dotnet": "VacationRequests.GetAsync",
+		"go": "VacationRequests.Get",
+		"java": "vacationRequests.get"
+	},
+	"POST /v1/vacation_requests/{id}/approve": {
+		"python": "vacation_requests.approve",
+		"php": "vacationRequests->approve",
+		"dotnet": "VacationRequests.ApproveAsync",
+		"go": "VacationRequests.Approve",
+		"java": "vacationRequests.approve"
+	},
+	"POST /v1/vacation_requests/{id}/reject": {
+		"python": "vacation_requests.reject",
+		"php": "vacationRequests->reject",
+		"dotnet": "VacationRequests.RejectAsync",
+		"go": "VacationRequests.Reject",
+		"java": "vacationRequests.reject"
+	},
 	"POST /v1/payroll_receipts": {
 		"python": "payroll_receipts.create",
 		"php": "payrollReceipts->create",
