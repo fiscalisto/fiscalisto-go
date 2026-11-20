@@ -804,6 +804,20 @@
 		"go": "Branches.Delete",
 		"java": "branches.delete"
 	},
+	"POST /v1/branches/{id}/logo": {
+		"python": "branches.upload_logo",
+		"php": "branches->uploadLogo",
+		"dotnet": "Branches.UploadLogoAsync",
+		"go": "Branches.UploadLogo",
+		"java": "branches.uploadLogo"
+	},
+	"DELETE /v1/branches/{id}/logo": {
+		"python": "branches.delete_logo",
+		"php": "branches->deleteLogo",
+		"dotnet": "Branches.DeleteLogoAsync",
+		"go": "Branches.DeleteLogo",
+		"java": "branches.deleteLogo"
+	},
 	"POST /v1/cost_centers": {
 		"python": "cost_centers.create",
 		"php": "costCenters->create",
@@ -2015,6 +2029,27 @@
 		"go": "CostOfSales.Delete",
 		"java": "costOfSales.delete"
 	},
+	"GET /v1/accounting/payroll_provisions/{month}": {
+		"python": "payroll_provisions.get",
+		"php": "payrollProvisions->get",
+		"dotnet": "PayrollProvisions.GetAsync",
+		"go": "PayrollProvisions.Get",
+		"java": "payrollProvisions.get"
+	},
+	"POST /v1/accounting/payroll_provisions/{month}": {
+		"python": "payroll_provisions.create",
+		"php": "payrollProvisions->create",
+		"dotnet": "PayrollProvisions.CreateAsync",
+		"go": "PayrollProvisions.Create",
+		"java": "payrollProvisions.create"
+	},
+	"DELETE /v1/accounting/payroll_provisions/{month}": {
+		"python": "payroll_provisions.delete",
+		"php": "payrollProvisions->delete",
+		"dotnet": "PayrollProvisions.DeleteAsync",
+		"go": "PayrollProvisions.Delete",
+		"java": "payrollProvisions.delete"
+	},
 	"GET /v1/accounting/tax_determinations/{month}": {
 		"python": "tax_determinations.get",
 		"php": "taxDeterminations->get",
@@ -2035,6 +2070,20 @@
 		"dotnet": "TaxDeterminations.DeleteAsync",
 		"go": "TaxDeterminations.Delete",
 		"java": "taxDeterminations.delete"
+	},
+	"GET /v1/accounting/bank_accounts": {
+		"python": "ledger_bank_accounts.list",
+		"php": "ledgerBankAccounts->list",
+		"dotnet": "LedgerBankAccounts.ListAsync",
+		"go": "LedgerBankAccounts.List",
+		"java": "ledgerBankAccounts.list"
+	},
+	"POST /v1/accounting/bank_accounts/{last_four}": {
+		"python": "ledger_bank_accounts.update",
+		"php": "ledgerBankAccounts->update",
+		"dotnet": "LedgerBankAccounts.UpdateAsync",
+		"go": "LedgerBankAccounts.Update",
+		"java": "ledgerBankAccounts.update"
 	},
 	"GET /v1/accounting/bank_movements": {
 		"python": "bank_movements.list",

@@ -2531,6 +2531,22 @@ type CreatePayrollBatchParamsReceiptPeriod struct {
 	PaymentDate *string `json:"payment_date,omitempty"`
 }
 
+// CreatePayrollProvisionParams: los campos de «Registrar las cuotas patronales de un mes».
+type CreatePayrollProvisionParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// La prima de riesgo de trabajo de su determinación anual, como fracción (0.0054355 es 0.54355%). Se guarda para los meses siguientes. Sin ella, la guardada o la prima media de la clase.
+	EmployerRiskPremium *float64 `json:"employer_risk_premium,omitempty"`
+	// Las cuotas patronales al IMSS en pesos, si no quiere el calculado (el del SUA, por ejemplo).
+	Imss *float64 `json:"imss,omitempty"`
+	// Retiro y cesantía y vejez en pesos, si no quiere el calculado (el del SUA, por ejemplo).
+	Sar *float64 `json:"sar,omitempty"`
+	// La aportación al Infonavit en pesos, si no quiere el calculado (el del SUA, por ejemplo).
+	Infonavit *float64 `json:"infonavit,omitempty"`
+	// El impuesto sobre nómina en pesos, si no quiere el calculado (el del SUA, por ejemplo).
+	PayrollTax *float64 `json:"payroll_tax,omitempty"`
+}
+
 // CreatePayrollReceiptParams: los campos de «Timbrar un recibo de nómina».
 type CreatePayrollReceiptParams struct {
 	// El empleado (emp_…).
@@ -3811,6 +3827,8 @@ type CreateTicketParams struct {
 	LocalTaxes []CreateTicketParamsLocalTax `json:"local_taxes,omitempty"`
 	// Quién pagó, para reconocer la venta en Tickets. No es el receptor de la factura (eso lo escribe el comprador en el portal) y no se le manda nada.
 	Buyer *CreateTicketParamsBuyer `json:"buyer,omitempty"`
+	// Sucursal (brn_…) donde se hizo la venta: su factura se timbra desde ahí (su código postal en LugarExpedicion) y el portal muestra el nombre comercial y el logo de la sucursal. Sin ella, la Matriz.
+	Branch *string `json:"branch,omitempty"`
 	// Una venta de varios conceptos (el folio de un hotel: noches, desayunos, lavandería), cada uno con su producto o sus claves, sus impuestos y lo que se cobró por él; hasta 200. En lugar de `product`, `description`, `product_key`, `unit_key` e `iva`. La factura del cliente lleva un concepto por línea; la factura global, uno por cada combinación de impuestos del ticket.
 	Lines []CreateTicketParamsLine `json:"lines,omitempty"`
 }
@@ -4413,6 +4431,12 @@ type DeleteFxRevaluationParams struct {
 type DeleteMemberParams struct {
 	// El miembro (mem_…) que recibe su trabajo; sin él, cualquiera con permiso.
 	TransferTo *string `json:"transfer_to,omitempty"`
+}
+
+// DeletePayrollProvisionParams: los campos de «Quitar las cuotas patronales de un mes».
+type DeletePayrollProvisionParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // DeleteRoleParams: los campos de «Borrar un rol».
@@ -5907,8 +5931,24 @@ type FxRevaluation struct {
 	Currencies []FxRevaluationCurrency `json:"currencies"`
 	// Las facturas PPD en otra moneda aún pendientes al cierre: direction issued (de un cliente) o received (de un proveedor), balance (lo que faltaba pagar, en su moneda) y booked_rate (su TipoCambio, al que se registró).
 	Documents []FxRevaluationDocument `json:"documents"`
+	// Sus cuentas de banco en otra moneda: statement_balance (el saldo del último estado de cuenta al cierre, en su moneda, o null si no hay), statement_date y book_balance (lo que sus libros traen en pesos antes de la revaluación). La diferencia contra statement_balance × el tipo de cambio de cierre va a Utilidad o Pérdida cambiaria.
+	BankAccounts []FxRevaluationBankAccount `json:"bank_accounts"`
 	// La póliza de revaluación (mje_…) si ya se registró, o null. Es una póliza a mano de tipo adjustment con reverse_next_month.
 	ManualEntry *string `json:"manual_entry,omitempty"`
+}
+
+// FxRevaluationBankAccount: FxRevaluationBankAccount.
+type FxRevaluationBankAccount struct {
+	// Nombre.
+	Name string `json:"name"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency string `json:"currency"`
+	// El saldo de su último estado de cuenta del mes, en su moneda, o null si no hay.
+	StatementBalance *float64 `json:"statement_balance,omitempty"`
+	// La fecha de ese saldo, o null.
+	StatementDate *string `json:"statement_date,omitempty"`
+	// Los pesos que la cuenta lleva en los libros al cierre, sin la póliza de revaluación.
+	BookBalance float64 `json:"book_balance"`
 }
 
 // FxRevaluationCurrency: FxRevaluationCurrency.
@@ -5999,7 +6039,7 @@ type GeneralLedgerAccountMovement struct {
 	JournalEntry string `json:"journal_entry"`
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification.
 	Type string `json:"type"`
 	// Descripción.
 	Description string `json:"description"`
@@ -6201,6 +6241,12 @@ type GetInvoiceXmlParams struct {
 
 // GetOpeningBalancesParams: los campos de «Ver los saldos iniciales».
 type GetOpeningBalancesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetPayrollProvisionParams: los campos de «Ver las cuotas patronales de un mes».
+type GetPayrollProvisionParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -8457,7 +8503,7 @@ type JournalEntry struct {
 	Issuer string `json:"issuer"`
 	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina), employee_expenses (un anticipo, reembolso, devolución o comprobación de viáticos, contra 107.01 «Funcionarios y empleados»), depreciation (la depreciación del mes de los activos fijos), manual (una póliza capturada a mano, o la reversión de una provisión) o asset_disposal (la venta o baja de un activo fijo).
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification.
 	Type string `json:"type"`
 	// Con type manual: la póliza capturada (mje_…), también en su reversión; null en las demás.
 	ManualEntry *string `json:"manual_entry,omitempty"`
@@ -8529,6 +8575,36 @@ type LedgerAccountList struct {
 	Object string `json:"object"`
 	// Los objetos de esta página.
 	Data []LedgerAccount `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// LedgerBankAccount: Una cuenta de banco que la contabilidad lleva aparte: su propia subcuenta de Bancos, con la moneda en que se revalúa.
+type LedgerBankAccount struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Los últimos 4 dígitos de la cuenta, como los muestra su estado de cuenta.
+	Last4 string `json:"last4"`
+	// Su nombre en el catálogo.
+	Name string `json:"name"`
+	// Su número de cuenta en el catálogo (código agrupador 102.01).
+	Account string `json:"account"`
+	// Su moneda (MXN, USD…).
+	Currency string `json:"currency"`
+}
+
+// LedgerBankAccountList: Una página de la lista.
+type LedgerBankAccountList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []LedgerBankAccount `json:"data"`
 	// true si hay más: pida la siguiente con starting_after igual al id del último.
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
@@ -8787,6 +8863,12 @@ type ListJournalEntriesParams struct {
 
 // ListLedgerAccountsParams: los campos de «Ver el catálogo de cuentas».
 type ListLedgerAccountsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListLedgerBankAccountsParams: los campos de «Listar las cuentas de banco de la contabilidad».
+type ListLedgerBankAccountsParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -9761,6 +9843,92 @@ type PayrollBatchReceiptError struct {
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
+}
+
+// PayrollProvision: Las cuotas patronales de un mes en la contabilidad: lo que la empresa debe al IMSS, al SAR y al Infonavit por los días del mes según sus recibos de nómina timbrados, el impuesto sobre nómina del mes y la póliza de provisión que los registra, si ya se registró.
+type PayrollProvision struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El último día del mes: la fecha de la póliza.
+	Date string `json:"date"`
+	// La prima de riesgo de trabajo del cálculo, como fracción (0.0054355 es 0.54355%).
+	EmployerRiskPremium float64 `json:"employer_risk_premium"`
+	// true si es la que se guardó al registrar; false si es la prima media de la clase de sus empleados.
+	EmployerRiskPremiumSaved bool `json:"employer_risk_premium_saved"`
+	// Lo calculado: imss (enfermedades y maternidad, invalidez y vida, riesgos de trabajo y guarderías), sar (retiro y cesantía y vejez), infonavit y payroll_tax (el impuesto sobre nómina del mes, como GET /v1/payroll_taxes).
+	Calculated PayrollProvisionCalculated `json:"calculated"`
+	// Los importes de la póliza registrada (pueden ser los que escribió), o null si no se ha registrado.
+	Posted *PayrollProvisionPosted `json:"posted,omitempty"`
+	// El cálculo por empleado: su salario base de cotización, los días de cada ramo (las faltas solo cotizan en enfermedades y maternidad; las incapacidades solo en retiro e Infonavit) y lo que toca a cada parte. minimum_wage: la empresa paga también la parte del trabajador (LSS art. 36).
+	Employees []PayrollProvisionEmployee `json:"employees"`
+	// El impuesto sobre nómina de cada estado.
+	PayrollTaxStates []PayrollProvisionPayrollTaxState `json:"payroll_tax_states"`
+	// La póliza de provisión (mje_…) si ya se registró, o null. Es una póliza a mano de tipo adjustment.
+	ManualEntry *string `json:"manual_entry,omitempty"`
+}
+
+// PayrollProvisionCalculated: Lo calculado: imss (enfermedades y maternidad, invalidez y vida, riesgos de trabajo y guarderías), sar (retiro y cesantía y vejez), infonavit y payroll_tax (el impuesto sobre nómina del mes, como GET /v1/payroll_taxes).
+type PayrollProvisionCalculated struct {
+	// Calculado: enfermedades y maternidad, invalidez y vida, riesgos de trabajo y guarderías.
+	Imss float64 `json:"imss"`
+	// Calculado: retiro y cesantía en edad avanzada y vejez.
+	Sar float64 `json:"sar"`
+	// Calculado: la aportación al Infonavit (5%).
+	Infonavit float64 `json:"infonavit"`
+	// Calculado: el impuesto sobre nómina del mes.
+	PayrollTax float64 `json:"payroll_tax"`
+}
+
+// PayrollProvisionEmployee: PayrollProvisionEmployee.
+type PayrollProvisionEmployee struct {
+	// El empleado (emp_…).
+	Employee *string `json:"employee,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
+	// Su salario base de cotización: el SDI del recibo, entre el salario mínimo y 25 UMA.
+	Sbc float64 `json:"sbc"`
+	// Días del mes en enfermedades y maternidad: menos las incapacidades.
+	DaysHealth float64 `json:"days_health"`
+	// Días en invalidez y vida, riesgos de trabajo, guarderías y cesantía y vejez: menos faltas (hasta 7 al mes) e incapacidades.
+	DaysDisabilityLife float64 `json:"days_disability_life"`
+	// Días en retiro e Infonavit: menos las faltas; las incapacidades sí cuentan.
+	DaysRetirement float64 `json:"days_retirement"`
+	// Gana el salario mínimo: la empresa paga también su parte (LSS art. 36).
+	MinimumWage bool `json:"minimum_wage"`
+	// Sus cuotas patronales al IMSS.
+	Imss float64 `json:"imss"`
+	// Su retiro y cesantía y vejez.
+	Sar float64 `json:"sar"`
+	// Su aportación al Infonavit.
+	Infonavit float64 `json:"infonavit"`
+}
+
+// PayrollProvisionPayrollTaxState: PayrollProvisionPayrollTaxState.
+type PayrollProvisionPayrollTaxState struct {
+	// Entidad federativa donde trabaja (ClaveEntFed): JAL, CMX, NLE…
+	State string `json:"state"`
+	// Base del impuesto retenido (BaseRet).
+	Base float64 `json:"base"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// PayrollProvisionPosted: PayrollProvisionPosted.
+type PayrollProvisionPosted struct {
+	// Registrado: enfermedades y maternidad, invalidez y vida, riesgos de trabajo y guarderías.
+	Imss float64 `json:"imss"`
+	// Registrado: retiro y cesantía en edad avanzada y vejez.
+	Sar float64 `json:"sar"`
+	// Registrado: la aportación al Infonavit (5%).
+	Infonavit float64 `json:"infonavit"`
+	// Registrado: el impuesto sobre nómina del mes.
+	PayrollTax float64 `json:"payroll_tax"`
 }
 
 // PayrollReceiptPreview: El recibo como se timbraría: percepciones, deducciones (ISR, IMSS), otros pagos (subsidio) y el neto.
@@ -13147,6 +13315,8 @@ type Ticket struct {
 	GlobalInvoice *string `json:"global_invoice,omitempty"`
 	// A quién se facturó, o null.
 	Customer *TicketCustomer `json:"customer,omitempty"`
+	// La sucursal (brn_…) donde se hizo la venta, o null (la Matriz). Su factura se timbra desde ahí y el portal muestra su nombre y su logo.
+	Branch *string `json:"branch,omitempty"`
 	// Quién pagó, como lo conoce el origen de la venta (el `buyer` que mandó, o el cliente de un pago de Stripe). No es el receptor de la factura (`customer`).
 	Buyer *TicketBuyer `json:"buyer,omitempty"`
 	// Cuándo se registró.
@@ -13703,6 +13873,16 @@ type UpdateIssuerParamsDonationAuthorization struct {
 	Number string `json:"number"`
 	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
 	Date string `json:"date"`
+}
+
+// UpdateLedgerBankAccountParams: los campos de «Cambiar la moneda de una cuenta de banco».
+type UpdateLedgerBankAccountParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// La moneda de la cuenta (ISO 4217: MXN, USD…). Una en otra moneda se revalúa con las revaluaciones cambiarias.
+	Currency string `json:"currency"`
+	// Su nombre en el catálogo.
+	Name *string `json:"name,omitempty"`
 }
 
 // UpdateManualEntryParams: los campos de «Corregir una póliza capturada».
@@ -14789,6 +14969,12 @@ type UpdateWebhookEndpointParams struct {
 	Disabled *bool `json:"disabled,omitempty"`
 	// La versión de la API en que llegan sus eventos (por ejemplo 2026-10-24); null o sin mandar: la de la cuenta. Así actualiza un endpoint a la vez.
 	APIVersion *string `json:"api_version,omitempty"`
+}
+
+// UploadBranchLogoParams: los campos de «Subir el logo de la sucursal».
+type UploadBranchLogoParams struct {
+	// El logo, PNG o JPG de hasta 1 MB, en base64 (con o sin el prefijo data:image/png;base64,). Uno muy grande se reduce para el PDF.
+	File string `json:"file"`
 }
 
 // UploadCertificateParams: los campos de «Subir el CSD».
