@@ -177,6 +177,10 @@ type services struct {
 	// Contabilidad.
 	BookDepreciationRates *BookDepreciationRatesService
 	// Contabilidad.
+	ChartTemplates *ChartTemplatesService
+	// Contabilidad.
+	AccountRenumberings *AccountRenumberingsService
+	// Contabilidad.
 	EntryTemplates *EntryTemplatesService
 	// Contabilidad.
 	CostCenterResults *CostCenterResultsService
@@ -283,6 +287,8 @@ func (s *services) init(c *Client) {
 	s.InflationAccounts = &InflationAccountsService{c}
 	s.DepreciationReconciliations = &DepreciationReconciliationsService{c}
 	s.BookDepreciationRates = &BookDepreciationRatesService{c}
+	s.ChartTemplates = &ChartTemplatesService{c}
+	s.AccountRenumberings = &AccountRenumberingsService{c}
 	s.EntryTemplates = &EntryTemplatesService{c}
 	s.CostCenterResults = &CostCenterResultsService{c}
 	s.PayrollProvisions = &PayrollProvisionsService{c}
@@ -5223,6 +5229,57 @@ type BookDepreciationRatesService struct{ c *Client }
 func (s *BookDepreciationRatesService) Save(ctx context.Context, params *SaveBookDepreciationRateParams, opts ...RequestOption) (*BookDepreciationRate, error) {
 	out := new(BookDepreciationRate)
 	if err := s.c.do(ctx, "POST", "/v1/accounting/book_depreciation_rates", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ChartTemplatesService: Contabilidad (client.ChartTemplates).
+type ChartTemplatesService struct{ c *Client }
+
+// List: Listar los catálogos por giro
+//
+// Los catálogos por giro (comercio, restaurante, construcción, servicios profesionales, manufactura, transporte, arrendamiento, agropecuario) con las cuentas que agregaría cada uno a su catálogo y cuáles ya tiene.
+//
+// GET /v1/accounting/chart_templates
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-chart-templates
+func (s *ChartTemplatesService) List(ctx context.Context, params *ListChartTemplatesParams, opts ...RequestOption) (*ChartTemplateList, error) {
+	out := new(ChartTemplateList)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/chart_templates", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Apply: Agregar las cuentas de un giro
+//
+// Agrega a su catálogo las cuentas del giro que faltan, cada una bajo su código agrupador. Un código que ya tiene cuenta la conserva y nada se borra ni se renombra, así que se puede llamar otra vez sin duplicar.
+//
+// POST /v1/accounting/chart_templates/{id}/apply
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/apply-chart-template
+func (s *ChartTemplatesService) Apply(ctx context.Context, id string, params *ApplyChartTemplateParams, opts ...RequestOption) (*ChartTemplateResult, error) {
+	out := new(ChartTemplateResult)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/chart_templates/"+url.PathEscape(id)+"/apply", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AccountRenumberingsService: Contabilidad (client.AccountRenumberings).
+type AccountRenumberingsService struct{ c *Client }
+
+// Create: Renumerar el catálogo
+//
+// Cambia el número de todas las cuentas a la vez: con separator y widths (cada nivel rellenado con ceros) o con mapping (el número nuevo de cada una). Las pólizas, saldos iniciales y presupuestos siguen en las mismas cuentas. Si alguna no puede tomar su número (un nivel que no cabe, el de una cuenta de mayor, dos cuentas en un número) no cambia ninguna y contesta parameter_invalid; con dry_run solo dice qué cambiaría. Las subcuentas de banco conservan el suyo.
+//
+// POST /v1/accounting/account_renumberings
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/renumber-accounts
+func (s *AccountRenumberingsService) Create(ctx context.Context, params *RenumberAccountsParams, opts ...RequestOption) (*AccountRenumbering, error) {
+	out := new(AccountRenumbering)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/account_renumberings", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

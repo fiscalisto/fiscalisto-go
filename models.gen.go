@@ -39,6 +39,36 @@ type AccountKey struct {
 	Sandbox *string `json:"sandbox,omitempty"`
 }
 
+// AccountRenumbering: Una renumeración del catálogo: cada cuenta que cambia de número (o no puede) con el de antes y el nuevo.
+type AccountRenumbering struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// true si solo dijo qué cambiaría.
+	DryRun bool `json:"dry_run"`
+	// Cuántas cuentas cambian de número.
+	Changes int64 `json:"changes"`
+	// Cuántas no pueden tomar su número nuevo (si hay, no cambia ninguna).
+	Problems int64 `json:"problems"`
+	// Las cuentas que cambian o no pueden.
+	Accounts []AccountRenumberingAccount `json:"accounts"`
+}
+
+// AccountRenumberingAccount: AccountRenumberingAccount.
+type AccountRenumberingAccount struct {
+	// El número de la cuenta en su catálogo.
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// Su número antes.
+	PreviousNumber string `json:"previous_number"`
+	// Por qué no puede tomar el número nuevo, o null.
+	Problem *string `json:"problem,omitempty"`
+}
+
 // AccountingBankMovement: Un movimiento de banco que ninguna factura explica (un retiro, o un depósito clasificado como préstamo, traspaso o devolución) y su póliza de ingresos o egresos contra Bancos, cuando ya se registró.
 type AccountingBankMovement struct {
 	// btx_… para un depósito (el mismo de la conciliación) o bwd_… para un retiro.
@@ -311,6 +341,12 @@ type ApplyAdvanceParamsRemainder struct {
 	PaidNow bool `json:"paid_now"`
 	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
 	PaymentForm *string `json:"payment_form,omitempty"`
+}
+
+// ApplyChartTemplateParams: los campos de «Agregar las cuentas de un giro».
+type ApplyChartTemplateParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // ApplyEntryTemplateParams: los campos de «Calcular los renglones de una póliza modelo».
@@ -1361,6 +1397,78 @@ type CashForecastWeek struct {
 	EndingBalance float64 `json:"ending_balance"`
 	// Lo de cada tipo de renglón (lines[].type) esa semana, en pesos.
 	ByType map[string]any `json:"by_type"`
+}
+
+// ChartTemplate: Un catálogo por giro: las cuentas que usa un negocio de ese tipo además de las que la app ya lleva.
+type ChartTemplate struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El nombre del giro.
+	Name string `json:"name"`
+	// Para qué negocio es.
+	Description string `json:"description"`
+	// Las cuentas del giro.
+	Accounts []ChartTemplateAccount `json:"accounts"`
+}
+
+// ChartTemplateAccount: ChartTemplateAccount.
+type ChartTemplateAccount struct {
+	// El número de la cuenta en su catálogo.
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// true si su código agrupador ya tiene cuenta en su catálogo (number y name son los de esa); no se agrega.
+	InChart bool `json:"in_chart"`
+}
+
+// ChartTemplateList: Una página de la lista.
+type ChartTemplateList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ChartTemplate `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ChartTemplateResult: Lo que agregó un catálogo por giro y lo que ya estaba.
+type ChartTemplateResult struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El giro.
+	ChartTemplate string `json:"chart_template"`
+	// Las cuentas que se agregaron.
+	Added []ChartTemplateResultAddedItem `json:"added"`
+	// Las que ya estaban (su código ya tenía cuenta).
+	Existing []ChartTemplateResultExistingItem `json:"existing"`
+}
+
+// ChartTemplateResultAddedItem: ChartTemplateResultAddedItem.
+type ChartTemplateResultAddedItem struct {
+	// El número de la cuenta en su catálogo.
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+}
+
+// ChartTemplateResultExistingItem: ChartTemplateResultExistingItem.
+type ChartTemplateResultExistingItem struct {
+	// El número de la cuenta en su catálogo.
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
 }
 
 // CheckSatListsParams: los campos de «Revisar varios RFC en las listas del SAT».
@@ -9817,6 +9925,12 @@ type ListBranchesParams struct {
 	Zip *string `json:"zip,omitempty"`
 }
 
+// ListChartTemplatesParams: los campos de «Listar los catálogos por giro».
+type ListChartTemplatesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListCostCentersParams: los campos de «Listar centros de costo».
 type ListCostCentersParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -12419,6 +12533,30 @@ type RefreshSatDeclarationsParams struct {
 type RejectQuoteParams struct {
 	// Por qué (queda en customer_comment; el cliente no la ve).
 	Note *string `json:"note,omitempty"`
+}
+
+// RenumberAccountsParams: los campos de «Renumerar el catálogo».
+type RenumberAccountsParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Lo que separa los niveles: «-» (601-48), «.» (601.48) o «» (60148).
+	//
+	// Valores: -, ., .
+	Separator *string `json:"separator,omitempty"`
+	// Los dígitos de cada nivel, rellenados con ceros a la izquierda: [4, 3] hace 601-48 0601-048. Los niveles que no lleva conservan los suyos.
+	Widths []int64 `json:"widths,omitempty"`
+	// En vez de separator y widths: el número nuevo de cada cuenta que cambia, por ejemplo los del sistema de su contador.
+	Mapping []RenumberAccountsParamsMappingItem `json:"mapping,omitempty"`
+	// true: dice qué cambiaría, sin cambiar nada.
+	DryRun *bool `json:"dry_run,omitempty"`
+}
+
+// RenumberAccountsParamsMappingItem: RenumberAccountsParamsMappingItem.
+type RenumberAccountsParamsMappingItem struct {
+	// El número de hoy.
+	From string `json:"from"`
+	// Su número nuevo.
+	To string `json:"to"`
 }
 
 // ReportImssMovementsParams: los campos de «Marcar movimientos como presentados».

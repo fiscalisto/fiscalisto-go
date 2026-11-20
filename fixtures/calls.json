@@ -2183,6 +2183,27 @@
 		"go": "BookDepreciationRates.Save",
 		"java": "bookDepreciationRates.save"
 	},
+	"GET /v1/accounting/chart_templates": {
+		"python": "chart_templates.list",
+		"php": "chartTemplates->list",
+		"dotnet": "ChartTemplates.ListAsync",
+		"go": "ChartTemplates.List",
+		"java": "chartTemplates.list"
+	},
+	"POST /v1/accounting/chart_templates/{id}/apply": {
+		"python": "chart_templates.apply",
+		"php": "chartTemplates->apply",
+		"dotnet": "ChartTemplates.ApplyAsync",
+		"go": "ChartTemplates.Apply",
+		"java": "chartTemplates.apply"
+	},
+	"POST /v1/accounting/account_renumberings": {
+		"python": "account_renumberings.create",
+		"php": "accountRenumberings->create",
+		"dotnet": "AccountRenumberings.CreateAsync",
+		"go": "AccountRenumberings.Create",
+		"java": "accountRenumberings.create"
+	},
 	"GET /v1/accounting/entry_templates": {
 		"python": "entry_templates.list",
 		"php": "entryTemplates->list",
