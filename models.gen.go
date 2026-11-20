@@ -1999,6 +1999,308 @@ type ComplianceOpinion struct {
 	LastError *string `json:"last_error,omitempty"`
 }
 
+// ConsolidatedStatements: Los estados financieros consolidados de varios RFC de un mes: sus balanzas sumadas cuenta por cuenta menos las eliminaciones del mes.
+type ConsolidatedStatements struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// Los RFC que consolida.
+	Rfcs []string `json:"rfcs"`
+	// El estado de resultados consolidado: del mes y de enero al mes.
+	IncomeStatement ConsolidatedStatementsIncomeStatement `json:"income_statement"`
+	// El balance general consolidado al cierre del mes.
+	BalanceSheet ConsolidatedStatementsBalanceSheet `json:"balance_sheet"`
+	// La hoja de consolidación: cada cuenta en cada RFC, lo eliminado y el consolidado.
+	Worksheet []ConsolidatedStatementsWorksheetItem `json:"worksheet"`
+	// Las eliminaciones del mes que se aplicaron.
+	Eliminations []ConsolidationElimination `json:"eliminations"`
+	// Lo que los RFC se facturaron entre ellos en el año: lo que normalmente se elimina.
+	Intercompany []ConsolidatedStatementsIntercompanyItem `json:"intercompany"`
+}
+
+// ConsolidatedStatementsBalanceSheet: El balance general consolidado al cierre del mes.
+type ConsolidatedStatementsBalanceSheet struct {
+	// El activo: su total y sus grupos.
+	Assets ConsolidatedStatementsBalanceSheetAssets `json:"assets"`
+	// El pasivo: su total y sus grupos.
+	Liabilities ConsolidatedStatementsBalanceSheetLiabilities `json:"liabilities"`
+	// El capital contable sin el resultado del ejercicio: su total y sus grupos.
+	Equity ConsolidatedStatementsBalanceSheetEquity `json:"equity"`
+	// El resultado del ejercicio hasta el mes, parte del capital.
+	NetIncomeYearToDate float64 `json:"net_income_year_to_date"`
+	// Pasivo más capital más el resultado del ejercicio.
+	LiabilitiesAndEquity float64 `json:"liabilities_and_equity"`
+	// Activo menos pasivo y capital: 0 cuando los libros cuadran.
+	Difference float64 `json:"difference"`
+}
+
+// ConsolidatedStatementsBalanceSheetAssets: El activo: su total y sus grupos.
+type ConsolidatedStatementsBalanceSheetAssets struct {
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []ConsolidatedStatementsBalanceSheetAssetsGroup `json:"groups"`
+}
+
+// ConsolidatedStatementsBalanceSheetAssetsGroup: ConsolidatedStatementsBalanceSheetAssetsGroup.
+type ConsolidatedStatementsBalanceSheetAssetsGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []ConsolidatedStatementsBalanceSheetAssetsGroupAccount `json:"accounts"`
+}
+
+// ConsolidatedStatementsBalanceSheetAssetsGroupAccount: ConsolidatedStatementsBalanceSheetAssetsGroupAccount.
+type ConsolidatedStatementsBalanceSheetAssetsGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// ConsolidatedStatementsBalanceSheetEquity: El capital contable sin el resultado del ejercicio: su total y sus grupos.
+type ConsolidatedStatementsBalanceSheetEquity struct {
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []ConsolidatedStatementsBalanceSheetEquityGroup `json:"groups"`
+}
+
+// ConsolidatedStatementsBalanceSheetEquityGroup: ConsolidatedStatementsBalanceSheetEquityGroup.
+type ConsolidatedStatementsBalanceSheetEquityGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []ConsolidatedStatementsBalanceSheetEquityGroupAccount `json:"accounts"`
+}
+
+// ConsolidatedStatementsBalanceSheetEquityGroupAccount: ConsolidatedStatementsBalanceSheetEquityGroupAccount.
+type ConsolidatedStatementsBalanceSheetEquityGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// ConsolidatedStatementsBalanceSheetLiabilities: El pasivo: su total y sus grupos.
+type ConsolidatedStatementsBalanceSheetLiabilities struct {
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []ConsolidatedStatementsBalanceSheetLiabilitiesGroup `json:"groups"`
+}
+
+// ConsolidatedStatementsBalanceSheetLiabilitiesGroup: ConsolidatedStatementsBalanceSheetLiabilitiesGroup.
+type ConsolidatedStatementsBalanceSheetLiabilitiesGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []ConsolidatedStatementsBalanceSheetLiabilitiesGroupAccount `json:"accounts"`
+}
+
+// ConsolidatedStatementsBalanceSheetLiabilitiesGroupAccount: ConsolidatedStatementsBalanceSheetLiabilitiesGroupAccount.
+type ConsolidatedStatementsBalanceSheetLiabilitiesGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// ConsolidatedStatementsIncomeStatement: El estado de resultados consolidado: del mes y de enero al mes.
+type ConsolidatedStatementsIncomeStatement struct {
+	// El estado de resultados del mes.
+	Month ConsolidatedStatementsIncomeStatementMonth `json:"month"`
+	// El estado de resultados de enero al mes.
+	YearToDate ConsolidatedStatementsIncomeStatementYearToDate `json:"year_to_date"`
+}
+
+// ConsolidatedStatementsIncomeStatementMonth: El estado de resultados del mes.
+type ConsolidatedStatementsIncomeStatementMonth struct {
+	// Ingresos, costos, gastos, financiamiento y otros, cada uno con su total.
+	Sections []ConsolidatedStatementsIncomeStatementMonthSection `json:"sections"`
+	// La utilidad (o pérdida, negativa) antes de impuestos del mes.
+	NetIncome float64 `json:"net_income"`
+}
+
+// ConsolidatedStatementsIncomeStatementMonthSection: ConsolidatedStatementsIncomeStatementMonthSection.
+type ConsolidatedStatementsIncomeStatementMonthSection struct {
+	// La sección: ingresos, costos, gastos, financiamiento u otros.
+	//
+	// Valores: ingresos, costos, gastos, financiamiento, otros.
+	Key string `json:"key"`
+	// Nombre.
+	Name string `json:"name"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []ConsolidatedStatementsIncomeStatementMonthSectionGroup `json:"groups"`
+}
+
+// ConsolidatedStatementsIncomeStatementMonthSectionGroup: ConsolidatedStatementsIncomeStatementMonthSectionGroup.
+type ConsolidatedStatementsIncomeStatementMonthSectionGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []ConsolidatedStatementsIncomeStatementMonthSectionGroupAccount `json:"accounts"`
+}
+
+// ConsolidatedStatementsIncomeStatementMonthSectionGroupAccount: ConsolidatedStatementsIncomeStatementMonthSectionGroupAccount.
+type ConsolidatedStatementsIncomeStatementMonthSectionGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// ConsolidatedStatementsIncomeStatementYearToDate: El estado de resultados de enero al mes.
+type ConsolidatedStatementsIncomeStatementYearToDate struct {
+	// Ingresos, costos, gastos, financiamiento y otros, cada uno con su total.
+	Sections []ConsolidatedStatementsIncomeStatementYearToDateSection `json:"sections"`
+	// La utilidad (o pérdida, negativa) antes de impuestos de enero al mes.
+	NetIncome float64 `json:"net_income"`
+}
+
+// ConsolidatedStatementsIncomeStatementYearToDateSection: ConsolidatedStatementsIncomeStatementYearToDateSection.
+type ConsolidatedStatementsIncomeStatementYearToDateSection struct {
+	// La sección: ingresos, costos, gastos, financiamiento u otros.
+	//
+	// Valores: ingresos, costos, gastos, financiamiento, otros.
+	Key string `json:"key"`
+	// Nombre.
+	Name string `json:"name"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Su monto por el primer nivel del código agrupador.
+	Groups []ConsolidatedStatementsIncomeStatementYearToDateSectionGroup `json:"groups"`
+}
+
+// ConsolidatedStatementsIncomeStatementYearToDateSectionGroup: ConsolidatedStatementsIncomeStatementYearToDateSectionGroup.
+type ConsolidatedStatementsIncomeStatementYearToDateSectionGroup struct {
+	// El primer nivel del código agrupador (401, 601…).
+	GroupingCode string `json:"grouping_code"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Las cuentas del grupo con su monto.
+	Accounts []ConsolidatedStatementsIncomeStatementYearToDateSectionGroupAccount `json:"accounts"`
+}
+
+// ConsolidatedStatementsIncomeStatementYearToDateSectionGroupAccount: ConsolidatedStatementsIncomeStatementYearToDateSectionGroupAccount.
+type ConsolidatedStatementsIncomeStatementYearToDateSectionGroupAccount struct {
+	// Número de empleado (NumEmpleado).
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
+// ConsolidatedStatementsIntercompanyItem: ConsolidatedStatementsIntercompanyItem.
+type ConsolidatedStatementsIntercompanyItem struct {
+	// El RFC que facturó.
+	IssuerRFC string `json:"issuer_rfc"`
+	// El RFC que recibió.
+	ReceiverRFC string `json:"receiver_rfc"`
+	// Lo facturado en el mes, sin impuestos, en pesos (egresos restan).
+	MonthAmount float64 `json:"month_amount"`
+	// Lo facturado de enero al mes, sin impuestos, en pesos.
+	YearToDateAmount float64 `json:"year_to_date_amount"`
+	// Cuántos CFDI en el año.
+	Invoices int64 `json:"invoices"`
+}
+
+// ConsolidatedStatementsWorksheetItem: ConsolidatedStatementsWorksheetItem.
+type ConsolidatedStatementsWorksheetItem struct {
+	// El número de la cuenta.
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// Su saldo final en cada RFC, por RFC (las acreedoras en positivo).
+	ByRFC map[string]any `json:"by_rfc"`
+	// Lo que las eliminaciones le suman (positivo) o restan.
+	Eliminations float64 `json:"eliminations"`
+	// Su saldo final consolidado.
+	Balance float64 `json:"balance"`
+}
+
+// ConsolidationElimination: Una eliminación de consolidación: lo que el consolidado de varios RFC resta al cierre de un mes (ventas, saldos o inversiones entre ellos). Nunca cambia los libros de un RFC.
+type ConsolidationElimination struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM) a cuyo cierre se elimina.
+	Month string `json:"month"`
+	// Su concepto.
+	Description string `json:"description"`
+	// Los RFC entre los que es: se aplica cuando todos están en el consolidado.
+	Rfcs []string `json:"rfcs"`
+	// Sus renglones de cargo y abono.
+	Lines []ConsolidationEliminationLine `json:"lines"`
+	// Cuándo se cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// ConsolidationEliminationLine: ConsolidationEliminationLine.
+type ConsolidationEliminationLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// El cargo.
+	Debit float64 `json:"debit"`
+	// El abono.
+	Credit float64 `json:"credit"`
+}
+
+// ConsolidationEliminationList: Una página de la lista.
+type ConsolidationEliminationList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ConsolidationElimination `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // CostCenter: Un centro de costo del emisor: una obra, proyecto, sucursal o área por la que separa sus ingresos y gastos.
 type CostCenter struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -2307,6 +2609,30 @@ type CreateCashForecastItemParams struct {
 	Frequency *string `json:"frequency,omitempty"`
 	// El último día en que se repite; null sin fin.
 	Until *string `json:"until,omitempty"`
+}
+
+// CreateConsolidationEliminationParams: los campos de «Capturar una eliminación de consolidación».
+type CreateConsolidationEliminationParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El mes (AAAA-MM) a cuyo cierre se elimina.
+	Month string `json:"month"`
+	// El concepto: «Ventas entre empresas del grupo».
+	Description string `json:"description"`
+	// Los RFC entre los que es, del espacio del emisor: se aplica cuando todos están en el consolidado.
+	Rfcs []string `json:"rfcs"`
+	// Sus renglones: los cargos suman lo mismo que los abonos.
+	Lines []CreateConsolidationEliminationParamsLine `json:"lines"`
+}
+
+// CreateConsolidationEliminationParamsLine: CreateConsolidationEliminationParamsLine.
+type CreateConsolidationEliminationParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts).
+	Account string `json:"account"`
+	// El cargo.
+	Debit *float64 `json:"debit,omitempty"`
+	// El abono.
+	Credit *float64 `json:"credit,omitempty"`
 }
 
 // CreateCostCenterParams: los campos de «Crear un centro de costo».
@@ -7203,6 +7529,16 @@ type GetComparativeStatementsParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetConsolidatedStatementsParams: los campos de «Ver los estados financieros consolidados».
+type GetConsolidatedStatementsParams struct {
+	// Los RFC que consolida, separados por coma (de 2 a 20).
+	Rfcs string `json:"rfcs"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetCostCenterResultsParams: los campos de «Ver el estado de resultados por centro de costo».
 type GetCostCenterResultsParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -9927,6 +10263,14 @@ type ListBranchesParams struct {
 
 // ListChartTemplatesParams: los campos de «Listar los catálogos por giro».
 type ListChartTemplatesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListConsolidationEliminationsParams: los campos de «Listar las eliminaciones de consolidación de un mes».
+type ListConsolidationEliminationsParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -15183,6 +15527,28 @@ type UpdateCashForecastParamsStartingBalance struct {
 	Amount float64 `json:"amount"`
 	// El día de ese saldo (AAAA-MM-DD); hoy si no se indica.
 	Date *string `json:"date,omitempty"`
+}
+
+// UpdateConsolidationEliminationParams: los campos de «Cambiar una eliminación de consolidación».
+type UpdateConsolidationEliminationParams struct {
+	// El mes (AAAA-MM) a cuyo cierre se elimina.
+	Month string `json:"month"`
+	// El concepto: «Ventas entre empresas del grupo».
+	Description string `json:"description"`
+	// Los RFC entre los que es, del espacio del emisor: se aplica cuando todos están en el consolidado.
+	Rfcs []string `json:"rfcs"`
+	// Sus renglones: los cargos suman lo mismo que los abonos.
+	Lines []UpdateConsolidationEliminationParamsLine `json:"lines"`
+}
+
+// UpdateConsolidationEliminationParamsLine: UpdateConsolidationEliminationParamsLine.
+type UpdateConsolidationEliminationParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts).
+	Account string `json:"account"`
+	// El cargo.
+	Debit *float64 `json:"debit,omitempty"`
+	// El abono.
+	Credit *float64 `json:"credit,omitempty"`
 }
 
 // UpdateCostCenterParams: los campos de «Actualizar un centro de costo».

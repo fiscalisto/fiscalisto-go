@@ -2204,6 +2204,41 @@
 		"go": "AccountRenumberings.Create",
 		"java": "accountRenumberings.create"
 	},
+	"GET /v1/accounting/consolidated_statements": {
+		"python": "accounting.consolidated_statements",
+		"php": "accounting->consolidatedStatements",
+		"dotnet": "Accounting.ConsolidatedStatementsAsync",
+		"go": "Accounting.ConsolidatedStatements",
+		"java": "accounting.consolidatedStatements"
+	},
+	"GET /v1/accounting/consolidation_eliminations": {
+		"python": "consolidation_eliminations.list",
+		"php": "consolidationEliminations->list",
+		"dotnet": "ConsolidationEliminations.ListAsync",
+		"go": "ConsolidationEliminations.List",
+		"java": "consolidationEliminations.list"
+	},
+	"POST /v1/accounting/consolidation_eliminations": {
+		"python": "consolidation_eliminations.create",
+		"php": "consolidationEliminations->create",
+		"dotnet": "ConsolidationEliminations.CreateAsync",
+		"go": "ConsolidationEliminations.Create",
+		"java": "consolidationEliminations.create"
+	},
+	"POST /v1/accounting/consolidation_eliminations/{id}": {
+		"python": "consolidation_eliminations.update",
+		"php": "consolidationEliminations->update",
+		"dotnet": "ConsolidationEliminations.UpdateAsync",
+		"go": "ConsolidationEliminations.Update",
+		"java": "consolidationEliminations.update"
+	},
+	"DELETE /v1/accounting/consolidation_eliminations/{id}": {
+		"python": "consolidation_eliminations.delete",
+		"php": "consolidationEliminations->delete",
+		"dotnet": "ConsolidationEliminations.DeleteAsync",
+		"go": "ConsolidationEliminations.Delete",
+		"java": "consolidationEliminations.delete"
+	},
 	"GET /v1/accounting/entry_templates": {
 		"python": "entry_templates.list",
 		"php": "entryTemplates->list",

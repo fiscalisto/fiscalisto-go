@@ -181,6 +181,8 @@ type services struct {
 	// Contabilidad.
 	AccountRenumberings *AccountRenumberingsService
 	// Contabilidad.
+	ConsolidationEliminations *ConsolidationEliminationsService
+	// Contabilidad.
 	EntryTemplates *EntryTemplatesService
 	// Contabilidad.
 	CostCenterResults *CostCenterResultsService
@@ -289,6 +291,7 @@ func (s *services) init(c *Client) {
 	s.BookDepreciationRates = &BookDepreciationRatesService{c}
 	s.ChartTemplates = &ChartTemplatesService{c}
 	s.AccountRenumberings = &AccountRenumberingsService{c}
+	s.ConsolidationEliminations = &ConsolidationEliminationsService{c}
 	s.EntryTemplates = &EntryTemplatesService{c}
 	s.CostCenterResults = &CostCenterResultsService{c}
 	s.PayrollProvisions = &PayrollProvisionsService{c}
@@ -4726,6 +4729,21 @@ func (s *AccountingService) CreateAccount(ctx context.Context, params *CreateLed
 	return out, nil
 }
 
+// ConsolidatedStatements: Ver los estados financieros consolidados
+//
+// El estado de resultados y el balance general de varios RFC del espacio del emisor sumados cuenta por cuenta (comparten el catálogo), menos las eliminaciones del mes (POST /v1/accounting/consolidation_eliminations), con la hoja de consolidación (el saldo de cada cuenta en cada RFC, lo eliminado y el consolidado) y lo que los RFC se facturaron entre ellos sin impuestos. Los libros de cada RFC no cambian. Un emisor con un solo RFC contesta parameter_invalid en rfcs.
+//
+// GET /v1/accounting/consolidated_statements
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-consolidated-statements
+func (s *AccountingService) ConsolidatedStatements(ctx context.Context, params *GetConsolidatedStatementsParams, opts ...RequestOption) (*ConsolidatedStatements, error) {
+	out := new(ConsolidatedStatements)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/consolidated_statements", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ElectronicAccounting: Descargar la contabilidad electrónica
 //
 // El ZIP del mes para el Buzón Tributario: el catálogo (CT) y la balanza (BN, o BC si es complementaria), cada uno en su ZIP con el nombre que espera el SAT, en el formato 1.3 del Anexo 24. Con journal_request, también las pólizas (PL), que se entregan cuando el SAT las pide. Con month AAAA-13, la balanza de comprobación ajustada al cierre del ejercicio (regla 2.8.1.6 RMF): solo la balanza, con los saldos finales de diciembre como saldos iniciales y, con closing_entry, la póliza de cierre.
@@ -5280,6 +5298,69 @@ type AccountRenumberingsService struct{ c *Client }
 func (s *AccountRenumberingsService) Create(ctx context.Context, params *RenumberAccountsParams, opts ...RequestOption) (*AccountRenumbering, error) {
 	out := new(AccountRenumbering)
 	if err := s.c.do(ctx, "POST", "/v1/accounting/account_renumberings", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ConsolidationEliminationsService: Contabilidad (client.ConsolidationEliminations).
+type ConsolidationEliminationsService struct{ c *Client }
+
+// List: Listar las eliminaciones de consolidación de un mes
+//
+// Las eliminaciones capturadas para el mes: lo que el consolidado resta al cierre de ese mes (ventas, saldos e inversiones entre los RFC).
+//
+// GET /v1/accounting/consolidation_eliminations
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-consolidation-eliminations
+func (s *ConsolidationEliminationsService) List(ctx context.Context, params *ListConsolidationEliminationsParams, opts ...RequestOption) (*ConsolidationEliminationList, error) {
+	out := new(ConsolidationEliminationList)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/consolidation_eliminations", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Create: Capturar una eliminación de consolidación
+//
+// Guarda una eliminación del mes entre los RFC que dice: renglones de cargo y abono que cuadran, sobre cuentas de su catálogo. Cada mes lleva sus eliminaciones completas a esa fecha (las ventas entre ellos del año hasta ese mes y los saldos entre ellos al cierre), como una hoja de consolidación. Solo cambia el consolidado, nunca los libros de un RFC.
+//
+// POST /v1/accounting/consolidation_eliminations
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/create-consolidation-elimination
+func (s *ConsolidationEliminationsService) Create(ctx context.Context, params *CreateConsolidationEliminationParams, opts ...RequestOption) (*ConsolidationElimination, error) {
+	out := new(ConsolidationElimination)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/consolidation_eliminations", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar una eliminación de consolidación
+//
+// La reemplaza con lo que manda.
+//
+// POST /v1/accounting/consolidation_eliminations/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/update-consolidation-elimination
+func (s *ConsolidationEliminationsService) Update(ctx context.Context, id string, params *UpdateConsolidationEliminationParams, opts ...RequestOption) (*ConsolidationElimination, error) {
+	out := new(ConsolidationElimination)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/consolidation_eliminations/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una eliminación de consolidación
+//
+// Solo cambia el consolidado: los libros de cada RFC siguen igual.
+//
+// DELETE /v1/accounting/consolidation_eliminations/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/delete-consolidation-elimination
+func (s *ConsolidationEliminationsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/consolidation_eliminations/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
