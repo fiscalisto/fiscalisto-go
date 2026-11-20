@@ -259,6 +259,16 @@ type ApplyAdvanceParamsRemainder struct {
 	PaymentForm *string `json:"payment_form,omitempty"`
 }
 
+// ApplyVariableSalaryParams: los campos de «Aplicar el salario variable de un bimestre».
+type ApplyVariableSalaryParams struct {
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// El bimestre: AAAA-B, de 1 (enero–febrero) a 6 (noviembre–diciembre).
+	Bimester string `json:"bimester"`
+	// Los empleados (emp_…) a los que se aplica.
+	Employees []string `json:"employees"`
+}
+
 // ApproveAttendanceOvertimeParams: los campos de «Autorizar o rechazar horas extra».
 type ApproveAttendanceOvertimeParams struct {
 	// El empleado (emp_…).
@@ -1775,6 +1785,34 @@ type CreateCustomerParamsForeign struct {
 	Country string `json:"country"`
 	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
 	TaxID string `json:"tax_id"`
+}
+
+// CreateEmployeeDeductionParams: los campos de «Agregar un descuento a un empleado».
+type CreateEmployeeDeductionParams struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// infonavit (deducción 010), fonacot (011), pension (pensión alimenticia, 007), prestamo (préstamo del patrón, 004), anticipo (anticipo de salarios, 012), caja (caja de ahorro, 018) o sindical (cuota sindical, 019).
+	//
+	// Valores: infonavit, fonacot, pension, prestamo, anticipo, caja, sindical.
+	Kind string `json:"kind"`
+	// Cómo se calcula. infonavit: percent_sbc (porcentaje del SBC por día), fixed_month (cuota fija al mes) o vsm (factor de VSM al mes, por la UMI de 100.81), como dice el aviso de retención. fonacot: fixed_month (la retención mensual de la cédula). pension: percent_net (del neto después de ISR e IMSS), percent_gross (de todas las percepciones) o fixed_month. prestamo, anticipo y caja: fixed_period (monto por recibo). sindical: percent_salary (del sueldo) o fixed_period.
+	//
+	// Valores: percent_sbc, fixed_month, vsm, percent_net, percent_gross, fixed_period, percent_salary.
+	Mode string `json:"mode"`
+	// El porcentaje (de más de 0 a 100), el factor de VSM o el monto en pesos, según mode.
+	Value float64 `json:"value"`
+	// Solo prestamo y anticipo: el monto prestado. Se descuenta hasta pagarlo; no puede pasar de un mes de salario (artículo 110 de la LFT).
+	Total *float64 `json:"total,omitempty"`
+	// El número de crédito de Infonavit o Fonacot, el expediente o una nota.
+	Reference *string `json:"reference,omitempty"`
+	// Solo pension, y obligatorio: a quién se paga.
+	Beneficiary *string `json:"beneficiary,omitempty"`
+	// Desde qué día se descuenta (AAAA-MM-DD).
+	StartDate string `json:"start_date"`
+	// Hasta qué día (incluido). Sin él, hasta que se borre (o se pague el préstamo).
+	EndDate *string `json:"end_date,omitempty"`
+	// Solo pension: también se descuenta del aguinaldo, la PTU y el finiquito (por omisión, true).
+	Extraordinary *bool `json:"extraordinary,omitempty"`
 }
 
 // CreateEmployeeParams: los campos de «Crear un empleado».
@@ -4459,8 +4497,12 @@ type Employee struct {
 	EndDate *string `json:"end_date,omitempty"`
 	// Salario diario.
 	DailySalary float64 `json:"daily_salary"`
-	// Salario diario integrado (SalarioDiarioIntegrado): no menor al salario diario.
+	// El SDI de los elementos fijos (cuota diaria con aguinaldo, prima vacacional y demás prestaciones fijas).
 	IntegratedDailySalary float64 `json:"integrated_daily_salary"`
+	// La parte variable del SDI desde variable_salary_from: lo que las horas extra triples, la prima dominical y los premios del bimestre anterior suman por día (artículo 30 de la LSS). Se fija con POST /v1/variable_salaries; los recibos usan integrated_daily_salary más esta.
+	VariableIntegratedDailySalary float64 `json:"variable_integrated_daily_salary"`
+	// Desde cuándo aplica variable_integrated_daily_salary (AAAA-MM-DD).
+	VariableSalaryFrom *string `json:"variable_salary_from,omitempty"`
 	// Tipo de contrato (TipoContrato), c_TipoContrato. Por omisión 01, por tiempo indeterminado.
 	ContractType string `json:"contract_type"`
 	// Tipo de jornada (TipoJornada), c_TipoJornada. Por omisión 01, diurna.
@@ -4503,6 +4545,60 @@ type Employee struct {
 	Warnings []string `json:"warnings"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
+}
+
+// EmployeeDeduction: Un descuento que se repite en cada recibo ordinario de un empleado: Infonavit, Fonacot, pensión alimenticia, préstamo, caja de ahorro o cuota sindical. Cada recibo lo toma con los límites de la Ley Federal del Trabajo.
+type EmployeeDeduction struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// infonavit, fonacot, pension (pensión alimenticia), prestamo, anticipo (de salarios), caja (de ahorro) o sindical.
+	//
+	// Valores: infonavit, fonacot, pension, prestamo, anticipo, caja, sindical.
+	Kind string `json:"kind"`
+	// La clave del SAT con que va en el recibo (c_TipoDeduccion): 010, 011, 007, 004, 012, 018 o 019.
+	DeductionType string `json:"deduction_type"`
+	// Cómo se calcula (vea POST /v1/employee_deductions).
+	//
+	// Valores: percent_sbc, fixed_month, vsm, percent_net, percent_gross, fixed_period, percent_salary.
+	Mode string `json:"mode"`
+	// El porcentaje, el factor de VSM o el monto.
+	Value float64 `json:"value"`
+	// El monto de un préstamo o anticipo.
+	Total *float64 `json:"total,omitempty"`
+	// Lo que ya descontaron los recibos timbrados.
+	Paid float64 `json:"paid"`
+	// Lo que falta de un préstamo o anticipo.
+	Balance *float64 `json:"balance,omitempty"`
+	// El número de crédito, el expediente o una nota.
+	Reference *string `json:"reference,omitempty"`
+	// A quién se paga una pensión.
+	Beneficiary *string `json:"beneficiary,omitempty"`
+	// Desde qué día se descuenta.
+	StartDate string `json:"start_date"`
+	// Hasta qué día, o null.
+	EndDate *string `json:"end_date,omitempty"`
+	// Una pensión que también se descuenta del aguinaldo, la PTU y el finiquito.
+	Extraordinary bool `json:"extraordinary"`
+}
+
+// EmployeeDeductionList: Una página de la lista.
+type EmployeeDeductionList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []EmployeeDeduction `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // EmployeeList: Una página de la lista.
@@ -6103,6 +6199,14 @@ type GetTrialBalanceParams struct {
 	Month string `json:"month"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetVariableSalaryParams: los campos de «Salario variable de un bimestre».
+type GetVariableSalaryParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// AAAA-B: 2026-5 es septiembre–octubre de 2026.
+	Bimester string `json:"bimester"`
 }
 
 // GetVatRefundParams: los campos de «Ver el IVA a favor y preparar su devolución».
@@ -8447,6 +8551,14 @@ type ListCustomersParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo el de este RFC.
 	TaxID *string `json:"tax_id,omitempty"`
+}
+
+// ListEmployeeDeductionsParams: los campos de «Listar descuentos».
+type ListEmployeeDeductionsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo los de este empleado (emp_…).
+	Employee *string `json:"employee,omitempty"`
 }
 
 // ListEmployeesParams: los campos de «Listar empleados».
@@ -13161,6 +13273,32 @@ type UpdateCustomerParamsForeign struct {
 	TaxID string `json:"tax_id"`
 }
 
+// UpdateEmployeeDeductionParams: los campos de «Cambiar un descuento».
+type UpdateEmployeeDeductionParams struct {
+	// infonavit (deducción 010), fonacot (011), pension (pensión alimenticia, 007), prestamo (préstamo del patrón, 004), anticipo (anticipo de salarios, 012), caja (caja de ahorro, 018) o sindical (cuota sindical, 019).
+	//
+	// Valores: infonavit, fonacot, pension, prestamo, anticipo, caja, sindical.
+	Kind *string `json:"kind,omitempty"`
+	// Cómo se calcula. infonavit: percent_sbc (porcentaje del SBC por día), fixed_month (cuota fija al mes) o vsm (factor de VSM al mes, por la UMI de 100.81), como dice el aviso de retención. fonacot: fixed_month (la retención mensual de la cédula). pension: percent_net (del neto después de ISR e IMSS), percent_gross (de todas las percepciones) o fixed_month. prestamo, anticipo y caja: fixed_period (monto por recibo). sindical: percent_salary (del sueldo) o fixed_period.
+	//
+	// Valores: percent_sbc, fixed_month, vsm, percent_net, percent_gross, fixed_period, percent_salary.
+	Mode *string `json:"mode,omitempty"`
+	// El porcentaje (de más de 0 a 100), el factor de VSM o el monto en pesos, según mode.
+	Value *float64 `json:"value,omitempty"`
+	// Solo prestamo y anticipo: el monto prestado. Se descuenta hasta pagarlo; no puede pasar de un mes de salario (artículo 110 de la LFT).
+	Total *float64 `json:"total,omitempty"`
+	// El número de crédito de Infonavit o Fonacot, el expediente o una nota.
+	Reference *string `json:"reference,omitempty"`
+	// Solo pension, y obligatorio: a quién se paga.
+	Beneficiary *string `json:"beneficiary,omitempty"`
+	// Desde qué día se descuenta (AAAA-MM-DD).
+	StartDate *string `json:"start_date,omitempty"`
+	// Hasta qué día (incluido). Sin él, hasta que se borre (o se pague el préstamo).
+	EndDate *string `json:"end_date,omitempty"`
+	// Solo pension: también se descuenta del aguinaldo, la PTU y el finiquito (por omisión, true).
+	Extraordinary *bool `json:"extraordinary,omitempty"`
+}
+
 // UpdateEmployeeParams: los campos de «Actualizar un empleado».
 type UpdateEmployeeParams struct {
 	// Número de empleado (NumEmpleado).
@@ -14519,6 +14657,66 @@ type ValidateTaxIdParams struct {
 	Use *string `json:"use,omitempty"`
 	// El idCIF de su constancia de situación fiscal (11 dígitos, arriba a la izquierda, junto al QR). Con él se compara todo con lo que tiene el SAT.
 	CifID *string `json:"cif_id,omitempty"`
+}
+
+// VariableSalary: La parte variable del SDI de un bimestre (artículo 30 de la LSS): las horas extra triples, la prima dominical, otros ingresos y lo que los premios de puntualidad y asistencia pasan del 10% del SBC, entre los días trabajados.
+type VariableSalary struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// AAAA-B: 1 es enero–febrero, 6 noviembre–diciembre.
+	Bimester string `json:"bimester"`
+	// El primer día del bimestre.
+	PeriodStart string `json:"period_start"`
+	// El último día del bimestre.
+	PeriodEnd string `json:"period_end"`
+	// Desde cuándo aplica: el primer día del bimestre siguiente.
+	EffectiveDate string `json:"effective_date"`
+	// El último día para presentar la modificación en IDSE: el quinto día hábil del mes (artículo 34 de la LSS).
+	Deadline string `json:"deadline"`
+	// Cada empleado con ingresos variables, o con una parte variable que cambia.
+	Employees []VariableSalaryEmployee `json:"employees"`
+}
+
+// VariableSalaryEmployee: VariableSalaryEmployee.
+type VariableSalaryEmployee struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su número de empleado.
+	EmployeeNumber string `json:"employee_number"`
+	// Su nombre.
+	EmployeeName string `json:"employee_name"`
+	// Lo que se integra del bimestre (artículo 27 de la LSS).
+	VariableIncome float64 `json:"variable_income"`
+	// Los días de salario devengado: los del bimestre menos faltas e incapacidades.
+	Days float64 `json:"days"`
+	// variable_income entre days.
+	DailyVariable float64 `json:"daily_variable"`
+	// El SDI de los elementos fijos.
+	FixedIntegratedDailySalary float64 `json:"fixed_integrated_daily_salary"`
+	// La parte variable que tiene hoy.
+	CurrentVariable float64 `json:"current_variable"`
+	// El SDI desde effective_date: el fijo más daily_variable.
+	NewIntegratedDailySalary float64 `json:"new_integrated_daily_salary"`
+	// Si cambia lo que tiene.
+	Changes bool `json:"changes"`
+	// Si ya se aplicó este bimestre.
+	Applied bool `json:"applied"`
+	// De dónde sale variable_income.
+	Lines []VariableSalaryEmployeeLine `json:"lines"`
+}
+
+// VariableSalaryEmployeeLine: VariableSalaryEmployeeLine.
+type VariableSalaryEmployeeLine struct {
+	// El tipo de percepción (019, 020, 010, 049, 038).
+	Type string `json:"type"`
+	// Qué es.
+	Label string `json:"label"`
+	// Lo que se integra.
+	Amount float64 `json:"amount"`
 }
 
 // VatRefund: El IVA a favor del emisor mes por mes, qué pasó con cada saldo y, con un mes, la revisión antes de pedir su devolución.

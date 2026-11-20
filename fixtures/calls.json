@@ -664,6 +664,55 @@
 		"go": "ImssFiles.Create",
 		"java": "imssFiles.create"
 	},
+	"POST /v1/employee_deductions": {
+		"python": "employee_deductions.create",
+		"php": "employeeDeductions->create",
+		"dotnet": "EmployeeDeductions.CreateAsync",
+		"go": "EmployeeDeductions.Create",
+		"java": "employeeDeductions.create"
+	},
+	"GET /v1/employee_deductions": {
+		"python": "employee_deductions.list",
+		"php": "employeeDeductions->list",
+		"dotnet": "EmployeeDeductions.ListAsync",
+		"go": "EmployeeDeductions.List",
+		"java": "employeeDeductions.list"
+	},
+	"GET /v1/employee_deductions/{id}": {
+		"python": "employee_deductions.get",
+		"php": "employeeDeductions->get",
+		"dotnet": "EmployeeDeductions.GetAsync",
+		"go": "EmployeeDeductions.Get",
+		"java": "employeeDeductions.get"
+	},
+	"POST /v1/employee_deductions/{id}": {
+		"python": "employee_deductions.update",
+		"php": "employeeDeductions->update",
+		"dotnet": "EmployeeDeductions.UpdateAsync",
+		"go": "EmployeeDeductions.Update",
+		"java": "employeeDeductions.update"
+	},
+	"DELETE /v1/employee_deductions/{id}": {
+		"python": "employee_deductions.delete",
+		"php": "employeeDeductions->delete",
+		"dotnet": "EmployeeDeductions.DeleteAsync",
+		"go": "EmployeeDeductions.Delete",
+		"java": "employeeDeductions.delete"
+	},
+	"GET /v1/variable_salaries": {
+		"python": "variable_salaries.get",
+		"php": "variableSalaries->get",
+		"dotnet": "VariableSalaries.GetAsync",
+		"go": "VariableSalaries.Get",
+		"java": "variableSalaries.get"
+	},
+	"POST /v1/variable_salaries": {
+		"python": "variable_salaries.apply",
+		"php": "variableSalaries->apply",
+		"dotnet": "VariableSalaries.ApplyAsync",
+		"go": "VariableSalaries.Apply",
+		"java": "variableSalaries.apply"
+	},
 	"POST /v1/invoice_batches": {
 		"python": "invoice_batches.create",
 		"php": "invoiceBatches->create",

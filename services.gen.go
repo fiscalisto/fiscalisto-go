@@ -60,6 +60,10 @@ type services struct {
 	ImssMovements *ImssMovementsService
 	// Nómina.
 	ImssFiles *ImssFilesService
+	// Nómina.
+	EmployeeDeductions *EmployeeDeductionsService
+	// Nómina.
+	VariableSalaries *VariableSalariesService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -193,6 +197,8 @@ func (s *services) init(c *Client) {
 	s.PayrollBankFiles = &PayrollBankFilesService{c}
 	s.ImssMovements = &ImssMovementsService{c}
 	s.ImssFiles = &ImssFilesService{c}
+	s.EmployeeDeductions = &EmployeeDeductionsService{c}
+	s.VariableSalaries = &VariableSalariesService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -1930,6 +1936,117 @@ type ImssFilesService struct{ c *Client }
 func (s *ImssFilesService) Create(ctx context.Context, params *CreateImssFilesParams, opts ...RequestOption) (*ImssFiles, error) {
 	out := new(ImssFiles)
 	if err := s.c.do(ctx, "POST", "/v1/imss_files", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// EmployeeDeductionsService: Nómina (client.EmployeeDeductions).
+type EmployeeDeductionsService struct{ c *Client }
+
+// Create: Agregar un descuento a un empleado
+//
+// Infonavit, Fonacot, pensión alimenticia, préstamo o anticipo del patrón, caja de ahorro o cuota sindical. Cada recibo ordinario desde start_date lo toma solo (POST /v1/payroll_receipts), con los límites de la Ley Federal del Trabajo: Infonavit por cada día del periodo aunque haya faltas, más $15 de seguro de daños por bimestre; Fonacot hasta el 20% del sueldo; préstamos, anticipos y caja hasta el 30% de lo que el sueldo excede del salario mínimo; del salario mínimo solo la pensión, Infonavit (20%) y Fonacot (10%). La pensión va primero, y lo que no alcanza del neto no se descuenta.
+//
+// POST /v1/employee_deductions
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-employee-deduction
+func (s *EmployeeDeductionsService) Create(ctx context.Context, params *CreateEmployeeDeductionParams, opts ...RequestOption) (*EmployeeDeduction, error) {
+	out := new(EmployeeDeduction)
+	if err := s.c.do(ctx, "POST", "/v1/employee_deductions", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar descuentos
+//
+// Los descuentos vigentes del emisor, o de un empleado con employee.
+//
+// GET /v1/employee_deductions
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-employee-deductions
+func (s *EmployeeDeductionsService) List(ctx context.Context, params *ListEmployeeDeductionsParams, opts ...RequestOption) (*EmployeeDeductionList, error) {
+	out := new(EmployeeDeductionList)
+	if err := s.c.do(ctx, "GET", "/v1/employee_deductions", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un descuento
+//
+// El descuento con lo que ya tomaron los recibos (paid) y lo que falta de un préstamo (balance).
+//
+// GET /v1/employee_deductions/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-employee-deduction
+func (s *EmployeeDeductionsService) Get(ctx context.Context, id string, opts ...RequestOption) (*EmployeeDeduction, error) {
+	out := new(EmployeeDeduction)
+	if err := s.c.do(ctx, "GET", "/v1/employee_deductions/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un descuento
+//
+// Desde el siguiente recibo; los timbrados se quedan como están.
+//
+// POST /v1/employee_deductions/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-employee-deduction
+func (s *EmployeeDeductionsService) Update(ctx context.Context, id string, params *UpdateEmployeeDeductionParams, opts ...RequestOption) (*EmployeeDeduction, error) {
+	out := new(EmployeeDeduction)
+	if err := s.c.do(ctx, "POST", "/v1/employee_deductions/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar un descuento
+//
+// Los recibos siguientes ya no lo toman; los timbrados lo conservan.
+//
+// DELETE /v1/employee_deductions/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-employee-deduction
+func (s *EmployeeDeductionsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/employee_deductions/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VariableSalariesService: Nómina (client.VariableSalaries).
+type VariableSalariesService struct{ c *Client }
+
+// Get: Salario variable de un bimestre
+//
+// Lo que las horas extra triples, la prima dominical, otros ingresos y lo que los premios de puntualidad y asistencia pasan del 10% del SBC suman al SDI de cada empleado, de los recibos timbrados del bimestre, entre sus días trabajados (artículos 27 y 30 de la LSS). Las horas dobles no cuentan. No cambia nada: aplíquelo con POST /v1/variable_salaries.
+//
+// GET /v1/variable_salaries
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-variable-salary
+func (s *VariableSalariesService) Get(ctx context.Context, params *GetVariableSalaryParams, opts ...RequestOption) (*VariableSalary, error) {
+	out := new(VariableSalary)
+	if err := s.c.do(ctx, "GET", "/v1/variable_salaries", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Apply: Aplicar el salario variable de un bimestre
+//
+// A los empleados que diga: su parte variable del SDI desde el primer día del bimestre siguiente (los recibos de periodos anteriores siguen con la que tenían) y la modificación de salario pendiente de presentar en IDSE (GET /v1/imss_movements), a más tardar el quinto día hábil del mes (artículo 34 de la LSS). Repetirlo no hace nada.
+//
+// POST /v1/variable_salaries
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/apply-variable-salary
+func (s *VariableSalariesService) Apply(ctx context.Context, params *ApplyVariableSalaryParams, opts ...RequestOption) (*VariableSalary, error) {
+	out := new(VariableSalary)
+	if err := s.c.do(ctx, "POST", "/v1/variable_salaries", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
