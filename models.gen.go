@@ -2355,6 +2355,14 @@ type CreateEmployeeParams struct {
 	DailySalary float64 `json:"daily_salary"`
 	// Salario diario integrado (SalarioDiarioIntegrado): no menor al salario diario.
 	IntegratedDailySalary float64 `json:"integrated_daily_salary"`
+	// Días de aguinaldo al año: al menos 15 (LFT art. 87), que es el valor por omisión.
+	AguinaldoDays *float64 `json:"aguinaldo_days,omitempty"`
+	// Prima vacacional como fracción del salario de sus vacaciones: al menos 0.25 (LFT art. 80), el valor por omisión.
+	VacationPremium *float64 `json:"vacation_premium,omitempty"`
+	// Vales de despensa al mes (percepción 029), por los días pagados de cada recibo ordinario: exentos como previsión social con el límite del artículo 93 de la LISR. 0 por omisión.
+	PantryVouchers *float64 `json:"pantry_vouchers,omitempty"`
+	// Fondo de ahorro: fracción del sueldo de cada recibo que aporta la empresa y el trabajador por igual, hasta 0.13 (LISR art. 27 fr. XI). Va como percepción 005 y como deducciones 004 (claves FAT y FAE) de ambas aportaciones. 0 por omisión.
+	SavingsFundRate *float64 `json:"savings_fund_rate,omitempty"`
 	// Tipo de contrato (TipoContrato), c_TipoContrato. Por omisión 01, por tiempo indeterminado.
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
@@ -4199,7 +4207,7 @@ type CreateSatReviewParams struct {
 type CreateSatReviewParamsNotice struct {
 	// Qué oficio es, de los de su tipo (en desk_audit: solicitud, observaciones o resolucion); por omisión, el primero, el que abre la revisión. Otro contesta con los de su tipo.
 	Step *string `json:"step,omitempty"`
-	// El día en que se lo notificaron (en el Buzón, el día en que lo abrió o el quinto día hábil después del aviso, lo que pase primero). No puede ser futuro.
+	// El día en que se lo notificaron (en el Buzón, el día en que lo abrió o, si no lo abrió, el cuarto día hábil después del aviso). No puede ser futuro.
 	NotifiedOn string `json:"notified_on"`
 	// Los días hábiles que da el oficio, solo cuando no son los de la ley (una carta invitación con fecha, «otro» oficio).
 	BusinessDays *int64 `json:"business_days,omitempty"`
@@ -5109,6 +5117,14 @@ type Employee struct {
 	VariableIntegratedDailySalary float64 `json:"variable_integrated_daily_salary"`
 	// Desde cuándo aplica variable_integrated_daily_salary (AAAA-MM-DD).
 	VariableSalaryFrom *string `json:"variable_salary_from,omitempty"`
+	// Días de aguinaldo al año (al menos 15).
+	AguinaldoDays float64 `json:"aguinaldo_days"`
+	// Prima vacacional, fracción del salario de las vacaciones (al menos 0.25).
+	VacationPremium float64 `json:"vacation_premium"`
+	// Vales de despensa al mes que lleva cada recibo ordinario (percepción 029).
+	PantryVouchers float64 `json:"pantry_vouchers"`
+	// Fracción del sueldo que aportan al fondo de ahorro la empresa y el trabajador por igual (percepción 005).
+	SavingsFundRate float64 `json:"savings_fund_rate"`
 	// Tipo de contrato (TipoContrato), c_TipoContrato. Por omisión 01, por tiempo indeterminado.
 	ContractType string `json:"contract_type"`
 	// Tipo de jornada (TipoJornada), c_TipoJornada. Por omisión 01, diurna.
@@ -14715,6 +14731,14 @@ type UpdateEmployeeParams struct {
 	DailySalary *float64 `json:"daily_salary,omitempty"`
 	// Salario diario integrado (SalarioDiarioIntegrado): no menor al salario diario.
 	IntegratedDailySalary *float64 `json:"integrated_daily_salary,omitempty"`
+	// Días de aguinaldo al año: al menos 15 (LFT art. 87), que es el valor por omisión.
+	AguinaldoDays *float64 `json:"aguinaldo_days,omitempty"`
+	// Prima vacacional como fracción del salario de sus vacaciones: al menos 0.25 (LFT art. 80), el valor por omisión.
+	VacationPremium *float64 `json:"vacation_premium,omitempty"`
+	// Vales de despensa al mes (percepción 029), por los días pagados de cada recibo ordinario: exentos como previsión social con el límite del artículo 93 de la LISR. 0 por omisión.
+	PantryVouchers *float64 `json:"pantry_vouchers,omitempty"`
+	// Fondo de ahorro: fracción del sueldo de cada recibo que aporta la empresa y el trabajador por igual, hasta 0.13 (LISR art. 27 fr. XI). Va como percepción 005 y como deducciones 004 (claves FAT y FAE) de ambas aportaciones. 0 por omisión.
+	SavingsFundRate *float64 `json:"savings_fund_rate,omitempty"`
 	// Tipo de contrato (TipoContrato), c_TipoContrato. Por omisión 01, por tiempo indeterminado.
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
@@ -15681,7 +15705,7 @@ type UpdateSatReviewParams struct {
 type UpdateSatReviewParamsNotice struct {
 	// Qué oficio es, de los de su tipo (en desk_audit: solicitud, observaciones o resolucion); por omisión, el primero, el que abre la revisión. Otro contesta con los de su tipo.
 	Step *string `json:"step,omitempty"`
-	// El día en que se lo notificaron (en el Buzón, el día en que lo abrió o el quinto día hábil después del aviso, lo que pase primero). No puede ser futuro.
+	// El día en que se lo notificaron (en el Buzón, el día en que lo abrió o, si no lo abrió, el cuarto día hábil después del aviso). No puede ser futuro.
 	NotifiedOn string `json:"notified_on"`
 	// Los días hábiles que da el oficio, solo cuando no son los de la ley (una carta invitación con fecha, «otro» oficio).
 	BusinessDays *int64 `json:"business_days,omitempty"`
