@@ -7165,6 +7165,16 @@ type GetElectronicAccountingParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetEmployeeVacationCertificateParams: los campos de «Constancia de vacaciones».
+type GetEmployeeVacationCertificateParams struct {
+	// El día en que empezará a disfrutarlas (AAAA-MM-DD), con enjoy_to.
+	EnjoyFrom *string `json:"enjoy_from,omitempty"`
+	// El día en que terminan (AAAA-MM-DD), con enjoy_from.
+	EnjoyTo *string `json:"enjoy_to,omitempty"`
+	// El día de la constancia (AAAA-MM-DD); por omisión hoy.
+	AsOf *string `json:"as_of,omitempty"`
+}
+
 // GetEmployeeVacationsParams: los campos de «Vacaciones de un empleado».
 type GetEmployeeVacationsParams struct {
 	// El día del saldo (AAAA-MM-DD); por omisión hoy, o su último día si ya salió.
