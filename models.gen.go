@@ -917,6 +917,10 @@ type AttendanceReport struct {
 	//
 	// Valores: approval, all, none.
 	OvertimePolicy string `json:"overtime_policy"`
+	// La jornada ordinaria de la semana al último día del periodo: la de la ley (48 en 2026, 46 en 2027, 44 en 2028, 42 en 2029 y 40 desde 2030; LFT art. 59 y transitorio segundo del decreto DOF 01-05-2026) o la de la empresa si es menor. Lo trabajado de más en la semana son horas extra.
+	OrdinaryWeekHours int64 `json:"ordinary_week_hours"`
+	// La jornada semanal que fijó la empresa en Horario y reglas, o null si sigue la de la ley.
+	WeeklyHours *int64 `json:"weekly_hours,omitempty"`
 	// Cada empleado del emisor en el periodo.
 	Employees []AttendanceReportEmployee `json:"employees"`
 }
@@ -949,12 +953,14 @@ type AttendanceReportEmployee struct {
 	IncompleteDays int64 `json:"incomplete_days"`
 	// Marcas con una nota para revisar (flags).
 	FlaggedMarks int64 `json:"flagged_marks"`
-	// Horas extra que se pagan dobles (hasta 9 por semana en 2026, 12 desde 2027).
+	// Horas extra que se pagan dobles: hasta 9 por semana en 2026 y 2027, 10 en 2028, 11 en 2029 y 12 desde 2030 (LFT art. 66 y transitorio cuarto del decreto DOF 01-05-2026).
 	OvertimeDoubleMinutes int64 `json:"overtime_double_minutes"`
-	// Horas extra que se pagan triples (las que pasan del límite de la semana).
+	// Horas extra que se pagan triples: las que pasan de las dobles de la semana, hasta 4 por semana (LFT art. 68).
 	OvertimeTripleMinutes int64 `json:"overtime_triple_minutes"`
 	// Todos los minutos de más en el registro, autorizados o no.
 	OvertimeMinutes int64 `json:"overtime_minutes"`
+	// De las dobles y triples, los minutos de su horario que pasan de la jornada ordinaria de la semana (ordinary_week_hours, LFT art. 59): un horario de 48 horas en 2027 da 2 horas extra cada semana.
+	WeekExcessMinutes int64 `json:"week_excess_minutes"`
 	// Minutos de más que nadie autorizó: quedan en el registro y no cuentan para la nómina.
 	UnapprovedOvertimeMinutes int64 `json:"unapproved_overtime_minutes"`
 	// Minutos de más que la empresa rechazó: quedan en el registro, no cuentan para la nómina y ya no están por autorizar.
@@ -993,6 +999,8 @@ type AttendanceReportEmployeeDay struct {
 	ApprovedOvertimeMinutes int64 `json:"approved_overtime_minutes"`
 	// De esos, los que la empresa rechazó ese día: no cuentan para la nómina.
 	RejectedOvertimeMinutes int64 `json:"rejected_overtime_minutes"`
+	// Minutos de su horario de ese día que pasan de la jornada ordinaria de la semana (ordinary_week_hours, LFT art. 59): son horas extra por ley aunque estén en su horario, y cuentan para la nómina.
+	WeekExcessMinutes int64 `json:"week_excess_minutes"`
 	// La nota del día que puso la empresa, o null.
 	//
 	// Valores: vacaciones, incapacidad, permiso_con_goce, permiso_sin_goce, descanso, festivo, falta.
@@ -8343,6 +8351,12 @@ type GetElectronicAccountingParams struct {
 	ProcedureNumber *string `json:"procedure_number,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetEmployeePayStatementParams: los campos de «Constancia de sueldos».
+type GetEmployeePayStatementParams struct {
+	// El año (AAAA), desde 2014.
+	Year string `json:"year"`
 }
 
 // GetEmployeeVacationCertificateParams: los campos de «Constancia de vacaciones».
@@ -16067,7 +16081,7 @@ type SaveAnnualReturnParamsTaxAccountsMovement struct {
 	Type string `json:"type"`
 	// Importe.
 	Amount float64 `json:"amount"`
-	// Un dividendo o reembolso: de qué CUFIN sale primero (por omisión cufin, la de 2014 en adelante).
+	// Un dividendo o reembolso: de qué CUFIN sale primero (por omisión cufin, la de 2014 en adelante). Un dividend_received: a cuál se suma (cufin_2013 si viene de utilidades de quien paga generadas hasta 2013, regla 3.23.6 de la RMF).
 	//
 	// Valores: cufin, cufin_2013.
 	Account *string `json:"account,omitempty"`

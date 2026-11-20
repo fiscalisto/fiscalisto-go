@@ -573,6 +573,13 @@
 		"go": "Employees.VacationCertificate",
 		"java": "employees.vacationCertificate"
 	},
+	"GET /v1/employees/{id}/pay_statement": {
+		"python": "employees.pay_statement",
+		"php": "employees->payStatement",
+		"dotnet": "Employees.PayStatementAsync",
+		"go": "Employees.PayStatement",
+		"java": "employees.payStatement"
+	},
 	"GET /v1/employees/{id}/portal": {
 		"python": "employees.portal",
 		"php": "employees->portal",
