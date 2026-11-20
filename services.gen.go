@@ -74,6 +74,8 @@ type services struct {
 	PayrollTaxes *PayrollTaxesService
 	// Nómina.
 	PayrollReports *PayrollReportsService
+	// Nómina.
+	PayrollCalendar *PayrollCalendarService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -246,6 +248,7 @@ func (s *services) init(c *Client) {
 	s.AnnualAdjustments = &AnnualAdjustmentsService{c}
 	s.PayrollTaxes = &PayrollTaxesService{c}
 	s.PayrollReports = &PayrollReportsService{c}
+	s.PayrollCalendar = &PayrollCalendarService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -2437,6 +2440,39 @@ func (s *PayrollReportsService) Accumulated(ctx context.Context, params *GetPayr
 func (s *PayrollReportsService) Cost(ctx context.Context, params *GetPayrollCostParams, opts ...RequestOption) (*PayrollCost, error) {
 	out := new(PayrollCost)
 	if err := s.c.do(ctx, "GET", "/v1/payroll_reports/cost", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayrollCalendarService: Nómina (client.PayrollCalendar).
+type PayrollCalendarService struct{ c *Client }
+
+// Get: Calendario de nómina
+//
+// Como «Nómina › Calendario» de la app: cada nómina en su fecha de pago (con cuántos de sus recibos están timbrados y el último día para timbrarlos), y lo que se paga por ella, con el artículo de la ley de cada fecha: cuotas del IMSS (día 17 del mes siguiente, LSS art. 39), RCV e Infonavit (bimestrales, día 17), impuesto sobre nómina de cada estado donde trabajan sus empleados, aguinaldo (antes del 20 de diciembre), PTU, prima de riesgo de trabajo (febrero) y ajuste anual. Una fecha de pago al IMSS que cae en día inhábil o viernes pasa al siguiente día hábil (CFF art. 12, RACERF art. 3).
+//
+// GET /v1/payroll_calendar
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-payroll-calendar
+func (s *PayrollCalendarService) Get(ctx context.Context, params *GetPayrollCalendarParams, opts ...RequestOption) (*PayrollCalendar, error) {
+	out := new(PayrollCalendar)
+	if err := s.c.do(ctx, "GET", "/v1/payroll_calendar", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Mark: Marcar un pago de nómina como pagado
+//
+// Marca (paid true) o desmarca (false) un pago del calendario de nómina: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo o ajuste_anual, con su key como lo da GET /v1/payroll_calendar. Una nómina (pago) queda hecha al timbrar sus recibos.
+//
+// POST /v1/payroll_calendar/mark
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/mark-payroll-calendar-event
+func (s *PayrollCalendarService) Mark(ctx context.Context, params *MarkPayrollCalendarEventParams, opts ...RequestOption) (*PayrollCalendarEvent, error) {
+	out := new(PayrollCalendarEvent)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_calendar/mark", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

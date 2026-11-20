@@ -853,6 +853,20 @@
 		"go": "PayrollReports.Cost",
 		"java": "payrollReports.cost"
 	},
+	"GET /v1/payroll_calendar": {
+		"python": "payroll_calendar.get",
+		"php": "payrollCalendar->get",
+		"dotnet": "PayrollCalendar.GetAsync",
+		"go": "PayrollCalendar.Get",
+		"java": "payrollCalendar.get"
+	},
+	"POST /v1/payroll_calendar/mark": {
+		"python": "payroll_calendar.mark",
+		"php": "payrollCalendar->mark",
+		"dotnet": "PayrollCalendar.MarkAsync",
+		"go": "PayrollCalendar.Mark",
+		"java": "payrollCalendar.mark"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",

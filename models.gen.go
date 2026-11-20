@@ -7975,6 +7975,16 @@ type GetPayrollAccumulatedParams struct {
 	Employee *string `json:"employee,omitempty"`
 }
 
+// GetPayrollCalendarParams: los campos de «Calendario de nómina».
+type GetPayrollCalendarParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Hasta cuántos días adelante (por omisión 90, hasta 366).
+	DaysAhead *int64 `json:"days_ahead,omitempty"`
+	// Desde cuántos días atrás (por omisión 31, hasta 366).
+	DaysBack *int64 `json:"days_back,omitempty"`
+}
+
 // GetPayrollCostParams: los campos de «Costo de la nómina».
 type GetPayrollCostParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -11411,6 +11421,20 @@ type MarkInvoicePaidParams struct {
 	PaidOn *string `json:"paid_on,omitempty"`
 }
 
+// MarkPayrollCalendarEventParams: los campos de «Marcar un pago de nómina como pagado».
+type MarkPayrollCalendarEventParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo o ajuste_anual.
+	//
+	// Valores: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual.
+	Obligation string `json:"obligation"`
+	// Como lo da GET /v1/payroll_calendar: 2026-11, 2026-B6, 2026, 2026-11:CMX.
+	Key string `json:"key"`
+	// true lo marca pagado; false lo desmarca.
+	Paid bool `json:"paid"`
+}
+
 // MarkPurchaseReceiptInvoicedParams: los campos de «Ya llegó la factura».
 type MarkPurchaseReceiptInvoicedParams struct {
 	// La factura recibida que lo cubre: su id (sat_…) o su folio fiscal (UUID). Sin ella, solo se marca facturado.
@@ -12031,6 +12055,72 @@ type PayrollBatchReceiptError struct {
 	Message string `json:"message"`
 }
 
+// PayrollCalendar: El calendario de nómina del emisor, por fecha.
+type PayrollCalendar struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Hoy en la Ciudad de México (YYYY-MM-DD).
+	Today string `json:"today"`
+	// Eventos que quiere recibir, o ["*"] para todos (por omisión). La lista con cuándo llega cada uno: [Tipos de evento](https://fiscalisto.com/docs/api/webhooks#tipos-de-evento).
+	Events []PayrollCalendarEvent `json:"events"`
+}
+
+// PayrollCalendarEvent: Una fecha del calendario de nómina.
+type PayrollCalendarEvent struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// pago (una nómina, en su fecha de pago), imss (cuotas del mes, LSS art. 39), rcv_infonavit (bimestrales), isn (impuesto sobre nómina de un estado), aguinaldo (LFT art. 87), ptu (LFT art. 122), prima_riesgo (determinación anual, RACERF art. 32) o ajuste_anual (LISR art. 97).
+	//
+	// Valores: pago, imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual.
+	Obligation string `json:"obligation"`
+	// Lo identifica junto con obligation: 2026-11 (mes), 2026-B6 (bimestre), 2026 (año), 2026-11:CMX (ISN de un estado) o 2026-11-16/2026-11-30:04 (una nómina).
+	Key string `json:"key"`
+	// Qué es, como lo dice la app.
+	Title string `json:"title"`
+	// El último día para pagarlo (YYYY-MM-DD), ya movido al siguiente día hábil cuando la ley lo mueve.
+	DueDate string `json:"due_date"`
+	// El artículo de la ley que da la fecha.
+	Basis string `json:"basis"`
+	// Si se debe depende de algo que no sabemos (una PTU sin utilidad, una prima que no cambió) o falta el día de pago del ISN de un estado: qué confirmar. No se avisa.
+	ToConfirm *string `json:"to_confirm,omitempty"`
+	// Marcado como pagado; una nómina, cuando todos sus recibos están timbrados.
+	Paid bool `json:"paid"`
+	// Cuándo se marcó pagado (ISO 8601); una nómina timbrada, su fecha de pago.
+	PaidAt *string `json:"paid_at,omitempty"`
+	// El c_Estado de un isn.
+	State *string `json:"state,omitempty"`
+	// Una nómina (obligation pago): su periodo y cuántos recibos van.
+	Payroll *PayrollCalendarEventPayroll `json:"payroll,omitempty"`
+}
+
+// PayrollCalendarEventPayroll: PayrollCalendarEventPayroll.
+type PayrollCalendarEventPayroll struct {
+	// c_PeriodicidadPago.
+	Periodicity string `json:"periodicity"`
+	// El periodo de pago: FechaInicialPago, FechaFinalPago y FechaPago de sus recibos.
+	Period PayrollCalendarEventPayrollPeriod `json:"period"`
+	// El último día para timbrar sus recibos (RMF 2.7.5.1: 3 a 11 días hábiles después del pago, según cuántos trabajadores).
+	StampBy string `json:"stamp_by"`
+	// Los empleados que paga ese periodo.
+	Employees int64 `json:"employees"`
+	// Los que ya tienen su recibo timbrado.
+	Stamped int64 `json:"stamped"`
+}
+
+// PayrollCalendarEventPayrollPeriod: El periodo de pago: FechaInicialPago, FechaFinalPago y FechaPago de sus recibos.
+type PayrollCalendarEventPayrollPeriod struct {
+	// FechaInicialPago.
+	Start string `json:"start"`
+	// FechaFinalPago.
+	End string `json:"end"`
+	// FechaPago.
+	PaymentDate string `json:"payment_date"`
+}
+
 // PayrollCost: Lo que cuesta la nómina del año mes por mes: lo pagado más las cuotas del patrón y el impuesto sobre nómina.
 type PayrollCost struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -12409,6 +12499,8 @@ type PayrollTaxSettings struct {
 	ExcludedPerceptionTypes []string `json:"excluded_perception_types,omitempty"`
 	// La opción de tasa de cada estado, por su c_Estado.
 	StateOptions map[string]string `json:"state_options"`
+	// El día del mes siguiente en que se paga el impuesto de cada estado que lo indicó, por su c_Estado; los demás, el de su ley.
+	DueDays map[string]any `json:"due_days"`
 }
 
 // PayrollTaxState: PayrollTaxState.
@@ -16645,6 +16737,8 @@ type UpdatePayrollTaxSettingsParams struct {
 	ExcludedPerceptionTypes []string `json:"excluded_perception_types,omitempty"`
 	// La opción de tasa de cada estado que la tiene, por su c_Estado: {"BCN": "hasta50"}.
 	StateOptions map[string]string `json:"state_options,omitempty"`
+	// El día del mes siguiente en que se paga el impuesto de cada estado, por su c_Estado: {"NLE": 17}. null vuelve al día de su ley (Ciudad de México 17, Jalisco 12, Estado de México 10); los demás estados, sin día, salen por confirmar en GET /v1/payroll_calendar. Solo cambia los estados que mande.
+	DueDays map[string]any `json:"due_days,omitempty"`
 }
 
 // UpdatePriceListParams: los campos de «Actualizar una lista de precios».
