@@ -70,6 +70,8 @@ type services struct {
 	AnnualAdjustments *AnnualAdjustmentsService
 	// Nómina.
 	PayrollTaxes *PayrollTaxesService
+	// Nómina.
+	PayrollReports *PayrollReportsService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -240,6 +242,7 @@ func (s *services) init(c *Client) {
 	s.VariableSalaries = &VariableSalariesService{c}
 	s.AnnualAdjustments = &AnnualAdjustmentsService{c}
 	s.PayrollTaxes = &PayrollTaxesService{c}
+	s.PayrollReports = &PayrollReportsService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -2319,6 +2322,39 @@ func (s *PayrollTaxesService) Get(ctx context.Context, params *GetPayrollTaxPara
 func (s *PayrollTaxesService) UpdateSettings(ctx context.Context, params *UpdatePayrollTaxSettingsParams, opts ...RequestOption) (*PayrollTaxSettings, error) {
 	out := new(PayrollTaxSettings)
 	if err := s.c.do(ctx, "POST", "/v1/payroll_taxes/settings", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayrollReportsService: Nómina (client.PayrollReports).
+type PayrollReportsService struct{ c *Client }
+
+// Accumulated: Acumulados de nómina
+//
+// Los acumulados del año de los recibos de nómina timbrados vigentes (ordinarios y extraordinarios, por fecha de pago), como «Nómina › Reportes» de la app: cada percepción, deducción y otro pago por su clave del SAT y la del patrón, mes por mes, y los totales de cada empleado (percepciones gravadas y exentas, ISR e IMSS retenidos, subsidio para el empleo causado y neto). Con employee, solo los de ese empleado.
+//
+// GET /v1/payroll_reports/accumulated
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-payroll-accumulated
+func (s *PayrollReportsService) Accumulated(ctx context.Context, params *GetPayrollAccumulatedParams, opts ...RequestOption) (*PayrollAccumulated, error) {
+	out := new(PayrollAccumulated)
+	if err := s.c.do(ctx, "GET", "/v1/payroll_reports/accumulated", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Cost: Costo de la nómina
+//
+// Lo que cuesta la nómina del año mes por mes: lo pagado a los empleados (percepciones y otros pagos de los recibos timbrados, sin el subsidio para el empleo) más las cuotas del patrón al IMSS, SAR e Infonavit y el impuesto sobre nómina, calculados como GET /v1/accounting/payroll_provisions/{month}. En un año cuyas tasas aún no están cargadas (rates_loaded false), esas columnas y total vienen en null.
+//
+// GET /v1/payroll_reports/cost
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-payroll-cost
+func (s *PayrollReportsService) Cost(ctx context.Context, params *GetPayrollCostParams, opts ...RequestOption) (*PayrollCost, error) {
+	out := new(PayrollCost)
+	if err := s.c.do(ctx, "GET", "/v1/payroll_reports/cost", nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

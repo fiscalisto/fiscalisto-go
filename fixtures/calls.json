@@ -804,6 +804,20 @@
 		"go": "PayrollTaxes.Get",
 		"java": "payrollTaxes.get"
 	},
+	"GET /v1/payroll_reports/accumulated": {
+		"python": "payroll_reports.accumulated",
+		"php": "payrollReports->accumulated",
+		"dotnet": "PayrollReports.AccumulatedAsync",
+		"go": "PayrollReports.Accumulated",
+		"java": "payrollReports.accumulated"
+	},
+	"GET /v1/payroll_reports/cost": {
+		"python": "payroll_reports.cost",
+		"php": "payrollReports->cost",
+		"dotnet": "PayrollReports.CostAsync",
+		"go": "PayrollReports.Cost",
+		"java": "payrollReports.cost"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",

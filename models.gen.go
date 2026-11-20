@@ -7819,6 +7819,24 @@ type GetOpeningBalancesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetPayrollAccumulatedParams: los campos de «Acumulados de nómina».
+type GetPayrollAccumulatedParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El año: 2026 (por omisión, el actual).
+	Year *int64 `json:"year,omitempty"`
+	// Un empleado (emp_…): solo sus recibos.
+	Employee *string `json:"employee,omitempty"`
+}
+
+// GetPayrollCostParams: los campos de «Costo de la nómina».
+type GetPayrollCostParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El año: 2026 (por omisión, el actual).
+	Year *int64 `json:"year,omitempty"`
+}
+
 // GetPayrollProvisionParams: los campos de «Ver las cuotas patronales de un mes».
 type GetPayrollProvisionParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -11525,6 +11543,82 @@ type OpeningBalancesLine struct {
 	Credit float64 `json:"credit"`
 }
 
+// PayrollAccumulated: Los acumulados de nómina del año: por concepto, mes por mes, y por empleado.
+type PayrollAccumulated struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// iss_…
+	Issuer string `json:"issuer"`
+	// Año (Ejercicio).
+	Year float64 `json:"year"`
+	// El empleado que pidió (emp_…), o null.
+	Employee *string `json:"employee,omitempty"`
+	// Los recibos vigentes con fecha de pago en el año.
+	Receipts float64 `json:"receipts"`
+	// Percepciones, luego deducciones y otros pagos, por clave del SAT.
+	Concepts []PayrollAccumulatedConcept `json:"concepts"`
+	// Cada empleado, de más a menos percepciones.
+	Employees []PayrollAccumulatedEmployee `json:"employees"`
+}
+
+// PayrollAccumulatedConcept: PayrollAccumulatedConcept.
+type PayrollAccumulatedConcept struct {
+	// percepcion, deduccion u otro_pago.
+	//
+	// Valores: percepcion, deduccion, otro_pago.
+	Kind string `json:"kind"`
+	// c_TipoPercepcion, c_TipoDeduccion o c_TipoOtroPago.
+	Type string `json:"type"`
+	// La clave del patrón.
+	Key string `json:"key"`
+	// El concepto de la línea de captura (ISR, IVA…) como lo da el SAT.
+	Concept string `json:"concept"`
+	// El importe de cada mes, de enero (posición 0) a diciembre. Percepciones: gravado más exento.
+	Months []float64 `json:"months"`
+	// Total en la moneda del comprobante (Total).
+	Total float64 `json:"total"`
+	// Percepciones: lo gravado.
+	Taxed *float64 `json:"taxed,omitempty"`
+	// Percepciones: lo exento.
+	Exempt *float64 `json:"exempt,omitempty"`
+	// Cuántos recibos lo llevan.
+	Receipts float64 `json:"receipts"`
+}
+
+// PayrollAccumulatedEmployee: PayrollAccumulatedEmployee.
+type PayrollAccumulatedEmployee struct {
+	// emp_…, o null.
+	Employee *string `json:"employee,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
+	// El RFC del empleado.
+	RFC string `json:"rfc"`
+	// Número de empleado (NumEmpleado).
+	Number *string `json:"number,omitempty"`
+	// Sus recibos en el año.
+	Receipts float64 `json:"receipts"`
+	// El total de sus percepciones del año, gravado más exento.
+	Perceptions float64 `json:"perceptions"`
+	// Monto gravado (MontoTotGrav). Por omisión, operation menos exempt.
+	Taxed float64 `json:"taxed"`
+	// Monto exento (MontoTotExent). Por omisión 0.
+	Exempt float64 `json:"exempt"`
+	// ISR retenido (deducción 002).
+	ISRWithheld float64 `json:"isr_withheld"`
+	// IMSS retenido (deducción 001).
+	ImssWithheld float64 `json:"imss_withheld"`
+	// Las demás deducciones (Infonavit, préstamos, fondo de ahorro…).
+	OtherDeductions float64 `json:"other_deductions"`
+	// El total de sus otros pagos del año (el subsidio entregado entre ellos).
+	OtherPayments float64 `json:"other_payments"`
+	// Subsidio para el empleo causado (otro pago 002).
+	EmploymentSubsidy float64 `json:"employment_subsidy"`
+	// Su neto del año.
+	Net float64 `json:"net"`
+}
+
 // PayrollBankFile: El archivo para pagar la nómina desde el portal del banco (no cobra nada).
 type PayrollBankFile struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -11677,6 +11771,62 @@ type PayrollBatchReceiptError struct {
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
+}
+
+// PayrollCost: Lo que cuesta la nómina del año mes por mes: lo pagado más las cuotas del patrón y el impuesto sobre nómina.
+type PayrollCost struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// iss_…
+	Issuer string `json:"issuer"`
+	// Año (Ejercicio).
+	Year float64 `json:"year"`
+	// Si las cuotas del patrón y el ISN del año se pueden calcular.
+	RatesLoaded bool `json:"rates_loaded"`
+	// Cada mes con recibos, del más antiguo al más reciente.
+	Months []PayrollCostMonth `json:"months"`
+	// Totales (Totales).
+	Totals PayrollCostTotals `json:"totals"`
+}
+
+// PayrollCostMonth: PayrollCostMonth.
+type PayrollCostMonth struct {
+	// 2026-11
+	Month string `json:"month"`
+	// Los recibos con fecha de pago en el mes.
+	Receipts float64 `json:"receipts"`
+	// Los empleados con recibo en el mes.
+	Employees float64 `json:"employees"`
+	// Percepciones y otros pagos de los recibos, sin el subsidio para el empleo.
+	Paid float64 `json:"paid"`
+	// Cuotas del patrón al IMSS, o null si las tasas del año aún no están cargadas.
+	Imss *float64 `json:"imss,omitempty"`
+	// Retiro y cesantía y vejez del patrón, o null si las tasas del año aún no están cargadas.
+	Sar *float64 `json:"sar,omitempty"`
+	// Aportación al Infonavit, o null si las tasas del año aún no están cargadas.
+	Infonavit *float64 `json:"infonavit,omitempty"`
+	// Impuesto sobre nómina, o null si las tasas del año aún no están cargadas.
+	PayrollTax *float64 `json:"payroll_tax,omitempty"`
+	// Lo pagado más las cuotas y el ISN, o null si las tasas del año aún no están cargadas.
+	Total *float64 `json:"total,omitempty"`
+}
+
+// PayrollCostTotals: Totales (Totales).
+type PayrollCostTotals struct {
+	// Lo pagado a los empleados en el año.
+	Paid float64 `json:"paid"`
+	// Cuotas del patrón al IMSS, o null si las tasas del año aún no están cargadas.
+	Imss *float64 `json:"imss,omitempty"`
+	// Retiro y cesantía y vejez del patrón, o null si las tasas del año aún no están cargadas.
+	Sar *float64 `json:"sar,omitempty"`
+	// Aportación al Infonavit, o null si las tasas del año aún no están cargadas.
+	Infonavit *float64 `json:"infonavit,omitempty"`
+	// Impuesto sobre nómina, o null si las tasas del año aún no están cargadas.
+	PayrollTax *float64 `json:"payroll_tax,omitempty"`
+	// El costo total, o null si las tasas del año aún no están cargadas.
+	Total *float64 `json:"total,omitempty"`
 }
 
 // PayrollProvision: Las cuotas patronales de un mes en la contabilidad: lo que la empresa debe al IMSS, al SAR y al Infonavit por los días del mes según sus recibos de nómina timbrados, el impuesto sobre nómina del mes y la póliza de provisión que los registra, si ya se registró.
