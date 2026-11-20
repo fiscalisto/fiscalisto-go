@@ -181,6 +181,8 @@ type services struct {
 	// Contabilidad.
 	AccountRenumberings *AccountRenumberingsService
 	// Contabilidad.
+	BooksLog *BooksLogService
+	// Contabilidad.
 	ConsolidationEliminations *ConsolidationEliminationsService
 	// Contabilidad.
 	EntryTemplates *EntryTemplatesService
@@ -291,6 +293,7 @@ func (s *services) init(c *Client) {
 	s.BookDepreciationRates = &BookDepreciationRatesService{c}
 	s.ChartTemplates = &ChartTemplatesService{c}
 	s.AccountRenumberings = &AccountRenumberingsService{c}
+	s.BooksLog = &BooksLogService{c}
 	s.ConsolidationEliminations = &ConsolidationEliminationsService{c}
 	s.EntryTemplates = &EntryTemplatesService{c}
 	s.CostCenterResults = &CostCenterResultsService{c}
@@ -5301,6 +5304,25 @@ func (s *AccountRenumberingsService) Create(ctx context.Context, params *Renumbe
 		return nil, err
 	}
 	return out, nil
+}
+
+// BooksLogService: Contabilidad (client.BooksLog).
+type BooksLogService struct{ c *Client }
+
+// List: Listar la bitácora de la contabilidad
+//
+// Cada cambio a la contabilidad del RFC del emisor, del más reciente al más antiguo: pólizas a mano (también las que hacen el cierre del mes, la revaluación y los bancos), saldos iniciales, cuentas y el catálogo (que comparten los RFC del espacio), cierres y reaperturas de mes, eliminaciones de consolidación, pólizas modelo y bajas de activos. Cada uno dice quién lo hizo (un usuario, una llave de la API o un asistente) y cómo estaba antes y después. Guardar algo sin cambios no deja registro.
+//
+// GET /v1/accounting/books_log
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/list-books-log
+func (s *BooksLogService) List(ctx context.Context, params *ListBooksLogParams, opts ...RequestOption) (*Page[BooksLogEntry], error) {
+	return list[BooksLogEntry](ctx, s.c, "/v1/accounting/books_log", params, "", opts)
+}
+
+// ListAutoPaging: Listar la bitácora de la contabilidad, todos, página por página: for x, err := range …
+func (s *BooksLogService) ListAutoPaging(ctx context.Context, params *ListBooksLogParams, opts ...RequestOption) iter.Seq2[BooksLogEntry, error] {
+	return listAll[BooksLogEntry](ctx, s.c, "/v1/accounting/books_log", params, opts)
 }
 
 // ConsolidationEliminationsService: Contabilidad (client.ConsolidationEliminations).

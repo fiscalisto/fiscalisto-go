@@ -737,6 +737,62 @@ type BookDepreciationRate struct {
 	Removed bool `json:"removed"`
 }
 
+// BooksLogEntry: Un cambio en la contabilidad (bitácora): una póliza, los saldos iniciales, el catálogo, el cierre de un mes, una eliminación, una póliza modelo o la baja de un activo; quién lo hizo y cómo estaba antes y después. No se edita ni se borra.
+type BooksLogEntry struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Cuándo se hizo el cambio.
+	CreatedAt string `json:"created_at"`
+	// Qué cambió: una póliza a mano (manual_journal_entry), los saldos iniciales, una cuenta, el catálogo completo (una importación o una renumeración), el cierre del mes (period_close), una eliminación de consolidación, una póliza modelo o la baja de un activo fijo.
+	//
+	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset.
+	Subject string `json:"subject"`
+	// El id de lo que cambió cuando tiene uno en la API (mje_, cel_, mjt_); null en los demás.
+	SubjectID *string `json:"subject_id,omitempty"`
+	// created, updated, deleted, restored (deshecho), imported, closed (se cerró el mes) o reopened (se reabrió).
+	//
+	// Valores: created, updated, deleted, restored, imported, closed, reopened.
+	Action string `json:"action"`
+	// Lo que cambió, para leerlo: «Póliza de diario del 2026-03-15: Préstamo».
+	Description string `json:"description"`
+	// Quién: un usuario del panel (user, con su nombre), una llave de la API (api_key, con su nombre en label) o un asistente por MCP (assistant: su nombre en label y el del usuario en name).
+	Actor BooksLogEntryActor `json:"actor"`
+	// Cómo estaba (con los nombres de campo en español de la bitácora); null cuando no existía.
+	Before json.RawMessage `json:"before,omitempty"`
+	// Cómo quedó; null cuando se borró.
+	After json.RawMessage `json:"after,omitempty"`
+}
+
+// BooksLogEntryActor: Quién: un usuario del panel (user, con su nombre), una llave de la API (api_key, con su nombre en label) o un asistente por MCP (assistant: su nombre en label y el del usuario en name).
+type BooksLogEntryActor struct {
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: user, api_key, assistant.
+	Type string `json:"type"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// label.
+	Label *string `json:"label,omitempty"`
+}
+
+// BooksLogEntryList: Una página de la lista.
+type BooksLogEntryList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []BooksLogEntry `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // Branch: Una sucursal del emisor: otro lugar desde donde factura, con su código postal (LugarExpedicion), su dirección en el PDF, sus series y, si quiere, su propia marca (nombre comercial, logo, color y estilo del PDF).
 type Branch struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -10245,6 +10301,24 @@ type ListBankTransactionsParams struct {
 	//
 	// Valores: open, matched, classified.
 	Status *string `json:"status,omitempty"`
+}
+
+// ListBooksLogParams: los campos de «Listar la bitácora de la contabilidad».
+type ListBooksLogParams struct {
+	// Solo los cambios de una cosa: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template o fixed_asset.
+	//
+	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset.
+	Subject *string `json:"subject,omitempty"`
+	// Desde este día (AAAA-MM-DD, hora de la Ciudad de México).
+	From *string `json:"from,omitempty"`
+	// Hasta este día, incluido.
+	To *string `json:"to,omitempty"`
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // ListBranchesParams: los campos de «Listar sucursales».

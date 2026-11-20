@@ -2204,6 +2204,13 @@
 		"go": "AccountRenumberings.Create",
 		"java": "accountRenumberings.create"
 	},
+	"GET /v1/accounting/books_log": {
+		"python": "books_log.list",
+		"php": "booksLog->list",
+		"dotnet": "BooksLog.ListAsync",
+		"go": "BooksLog.List",
+		"java": "booksLog.list"
+	},
 	"GET /v1/accounting/consolidated_statements": {
 		"python": "accounting.consolidated_statements",
 		"php": "accounting->consolidatedStatements",
