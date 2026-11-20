@@ -525,11 +525,11 @@
 		"java": "employees.list"
 	},
 	"POST /v1/employee_raises": {
-		"python": "employees.raise",
-		"php": "employees->raise",
-		"dotnet": "Employees.RaiseAsync",
-		"go": "Employees.Raise",
-		"java": "employees.raise"
+		"python": "employees.give_raise",
+		"php": "employees->giveRaise",
+		"dotnet": "Employees.GiveRaiseAsync",
+		"go": "Employees.GiveRaise",
+		"java": "employees.giveRaise"
 	},
 	"GET /v1/employees/{id}": {
 		"python": "employees.get",
@@ -677,6 +677,34 @@
 		"dotnet": "PayrollBatches.ListAsync",
 		"go": "PayrollBatches.List",
 		"java": "payrollBatches.list"
+	},
+	"POST /v1/payroll_approvals": {
+		"python": "payroll_approvals.create",
+		"php": "payrollApprovals->create",
+		"dotnet": "PayrollApprovals.CreateAsync",
+		"go": "PayrollApprovals.Create",
+		"java": "payrollApprovals.create"
+	},
+	"GET /v1/payroll_approvals": {
+		"python": "payroll_approvals.list",
+		"php": "payrollApprovals->list",
+		"dotnet": "PayrollApprovals.ListAsync",
+		"go": "PayrollApprovals.List",
+		"java": "payrollApprovals.list"
+	},
+	"GET /v1/payroll_approvals/{id}": {
+		"python": "payroll_approvals.get",
+		"php": "payrollApprovals->get",
+		"dotnet": "PayrollApprovals.GetAsync",
+		"go": "PayrollApprovals.Get",
+		"java": "payrollApprovals.get"
+	},
+	"POST /v1/payroll_approvals/{id}/cancel": {
+		"python": "payroll_approvals.cancel",
+		"php": "payrollApprovals->cancel",
+		"dotnet": "PayrollApprovals.CancelAsync",
+		"go": "PayrollApprovals.Cancel",
+		"java": "payrollApprovals.cancel"
 	},
 	"GET /v1/payroll_batches/{id}": {
 		"python": "payroll_batches.get",

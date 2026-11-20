@@ -3475,6 +3475,96 @@ type CreatePaymentParamsDocument struct {
 	Received *float64 `json:"received,omitempty"`
 }
 
+// CreatePayrollApprovalParams: los campos de «Pedir aprobación de la prenómina».
+type CreatePayrollApprovalParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El periodo de pago de la nómina: FechaInicialPago, FechaFinalPago y FechaPago de sus recibos.
+	Period CreatePayrollApprovalParamsPeriod `json:"period"`
+	// El recibo de cada empleado de la nómina, como se timbraría con POST /v1/payroll_receipts. Todos de la misma periodicidad.
+	Receipts []CreatePayrollApprovalParamsReceipt `json:"receipts"`
+}
+
+// CreatePayrollApprovalParamsPeriod: El periodo de pago de la nómina: FechaInicialPago, FechaFinalPago y FechaPago de sus recibos.
+type CreatePayrollApprovalParamsPeriod struct {
+	// Primer día pagado (FechaInicialPago).
+	Start string `json:"start"`
+	// Último día pagado (FechaFinalPago).
+	End string `json:"end"`
+	// Día de pago (FechaPago); sin él, el último día del periodo.
+	PaymentDate *string `json:"payment_date,omitempty"`
+}
+
+// CreatePayrollApprovalParamsReceipt: CreatePayrollApprovalParamsReceipt.
+type CreatePayrollApprovalParamsReceipt struct {
+	// El empleado (emp_…) del emisor.
+	Employee string `json:"employee"`
+	// Días pagados; sin él, todos los días que le tocan del periodo menos absences y disability_days.
+	Days *float64 `json:"days,omitempty"`
+	// Faltas del periodo (días sin goce de sueldo), de 0 a 31.
+	Absences *int64 `json:"absences,omitempty"`
+	// Días de incapacidad que expidió el IMSS en el periodo, de 0 a 31.
+	DisabilityDays *int64 `json:"disability_days,omitempty"`
+	// Incidencias del periodo, como en Nómina › Emitir recibos: horas extra, domingos, descansos y festivos trabajados, vacaciones, premios y comisiones. Fiscalisto calcula sus importes, su parte exenta y el ISR con el sueldo.
+	Incidents *CreatePayrollApprovalParamsReceiptIncidents `json:"incidents,omitempty"`
+}
+
+// CreatePayrollApprovalParamsReceiptIncidents: Incidencias del periodo, como en Nómina › Emitir recibos: horas extra, domingos, descansos y festivos trabajados, vacaciones, premios y comisiones. Fiscalisto calcula sus importes, su parte exenta y el ISR con el sueldo.
+type CreatePayrollApprovalParamsReceiptIncidents struct {
+	// Horas extra dobles (pagadas al doble), horas completas: hasta 9 por semana en 2026 y 2027, 10 en 2028, 11 en 2029 y 12 desde 2030 (LFT arts. 66 y transitorio cuarto del decreto DOF 01-05-2026). Exentas la mitad, hasta 5 UMA por semana; todas si gana el salario mínimo (LISR art. 93 fr. I).
+	DoubleHours *int64 `json:"double_hours,omitempty"`
+	// Horas extra triples, las que pasan de las dobles de la semana (LFT art. 68). Gravadas.
+	TripleHours *int64 `json:"triple_hours,omitempty"`
+	// Días en que se trabajaron las horas extra (nodo HorasExtra); uno por cada 3 horas si no lo manda.
+	OvertimeDays *int64 `json:"overtime_days,omitempty"`
+	// Domingos trabajados: prima dominical del 25% del salario diario por cada uno (LFT art. 71), exenta hasta 1 UMA por domingo.
+	Sundays *int64 `json:"sundays,omitempty"`
+	// Días de descanso semanal que trabajó sin descansar otro en su lugar: salario doble por cada uno además del día (LFT art. 73). Exentos con las horas extra: la mitad, hasta 5 UMA por semana entre ambos; todo si gana el salario mínimo (LISR art. 93 fr. I).
+	RestDaysWorked *int64 `json:"rest_days_worked,omitempty"`
+	// Días de descanso obligatorio que trabajó (1 de enero, 1 de mayo, 16 de septiembre, 25 de diciembre, los lunes del art. 74 y la jornada electoral): salario doble por cada uno además del día (LFT art. 75), exento como rest_days_worked.
+	HolidaysWorked *int64 `json:"holidays_worked,omitempty"`
+	// Días de vacaciones que disfrutó en el periodo (se pagan como sueldo dentro de days): su prima vacacional con el porcentaje del empleado, exenta hasta 15 UMA en el año.
+	VacationDays *float64 `json:"vacation_days,omitempty"`
+	// Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
+	DisabilityPay *CreatePayrollApprovalParamsReceiptIncidentsDisabilityPay `json:"disability_pay,omitempty"`
+	// Retroactivo de un aumento: la diferencia de salario de los días ya pagados con el anterior, como percepción 001 (clave RET) gravada, que paga ISR con el sueldo del periodo (art. 96 de la LISR). Las cuotas IMSS de la diferencia las cubre la modificación de salario con su fecha en el SUA; el recibo no retiene la parte del trabajador (art. 38 de la LSS).
+	Retroactive *CreatePayrollApprovalParamsReceiptIncidentsRetroactive `json:"retroactive,omitempty"`
+	// Premios, comisiones y bonos del periodo, gravados.
+	Bonuses []CreatePayrollApprovalParamsReceiptIncidentsBonus `json:"bonuses,omitempty"`
+}
+
+// CreatePayrollApprovalParamsReceiptIncidentsBonus: CreatePayrollApprovalParamsReceiptIncidentsBonus.
+type CreatePayrollApprovalParamsReceiptIncidentsBonus struct {
+	// 010 premio de puntualidad, 049 premio de asistencia, 028 comisiones, 038 otro bono (c_TipoPercepcion).
+	//
+	// Valores: 010, 049, 028, 038.
+	Type string `json:"type"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept *string `json:"concept,omitempty"`
+}
+
+// CreatePayrollApprovalParamsReceiptIncidentsDisabilityPay: Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
+type CreatePayrollApprovalParamsReceiptIncidentsDisabilityPay struct {
+	// Tipo de incapacidad (c_TipoIncapacidad): 01 riesgo de trabajo, 02 enfermedad general, 03 maternidad, 04 licencia por cuidados médicos de hijos con cáncer.
+	//
+	// Valores: 01, 02, 03, 04.
+	Type string `json:"type"`
+	// Lo que paga la empresa de cada día de incapacidad, como fracción del salario diario: 1 todo; 0.4 lo que completa el 60% que paga el IMSS.
+	Rate float64 `json:"rate"`
+}
+
+// CreatePayrollApprovalParamsReceiptIncidentsRetroactive: Retroactivo de un aumento: la diferencia de salario de los días ya pagados con el anterior, como percepción 001 (clave RET) gravada, que paga ISR con el sueldo del periodo (art. 96 de la LISR). Las cuotas IMSS de la diferencia las cubre la modificación de salario con su fecha en el SUA; el recibo no retiene la parte del trabajador (art. 38 de la LSS).
+type CreatePayrollApprovalParamsReceiptIncidentsRetroactive struct {
+	// Día desde el que rige el aumento (YYYY-MM-DD), antes del periodo y hasta un año antes.
+	From string `json:"from"`
+	// Salario diario que tenía el empleado antes del aumento. El de ahora es el del empleado: cámbielo antes con PATCH /v1/employees/{id}.
+	PreviousSalary float64 `json:"previous_salary"`
+	// Días que se pagaron con el salario anterior desde from. Si no lo manda, los de los periodos ya pagados desde ese día.
+	Days *float64 `json:"days,omitempty"`
+}
+
 // CreatePayrollBankFileParams: los campos de «Archivo para pagar la nómina en el banco».
 type CreatePayrollBankFileParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -7571,7 +7661,7 @@ type GeneralLedgerAccountMovement struct {
 	JournalEntry string `json:"journal_entry"`
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification, foreign_supplier_operations.
 	Type string `json:"type"`
 	// Descripción.
 	Description string `json:"description"`
@@ -10275,7 +10365,7 @@ type JournalEntry struct {
 	Issuer string `json:"issuer"`
 	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina), employee_expenses (un anticipo, reembolso, devolución o comprobación de viáticos, contra 107.01 «Funcionarios y empleados»), depreciation (la depreciación del mes de los activos fijos), manual (una póliza capturada a mano, o la reversión de una provisión) o asset_disposal (la venta o baja de un activo fijo).
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification, foreign_supplier_operations.
 	Type string `json:"type"`
 	// Con type manual: la póliza capturada (mje_…), también en su reversión; null en las demás.
 	ManualEntry *string `json:"manual_entry,omitempty"`
@@ -10727,6 +10817,20 @@ type ListMaterialitySuppliersParams struct {
 
 // ListMembersParams: los campos de «Listar miembros».
 type ListMembersParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListPayrollApprovalsParams: los campos de «Listar prenóminas por aprobar».
+type ListPayrollApprovalsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// pending, approved, rejected, withdrawn o replaced.
+	//
+	// Valores: pending, approved, rejected, withdrawn, replaced.
+	Status *string `json:"status,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -11675,6 +11779,88 @@ type PayrollAccumulatedEmployee struct {
 	Net float64 `json:"net"`
 }
 
+// PayrollApproval: Una prenómina pedida para aprobación: con ella aprobada se timbran sus recibos, con esos importes.
+type PayrollApproval struct {
+	// pap_…
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// iss_…
+	Issuer string `json:"issuer"`
+	// Periodicidad de la nómina (c_PeriodicidadPago): 02, 03, 04 o 05.
+	Periodicity string `json:"periodicity"`
+	// El periodo de pago de la nómina: FechaInicialPago, FechaFinalPago y FechaPago de sus recibos.
+	Period PayrollApprovalPeriod `json:"period"`
+	// pending (por aprobar), approved, rejected (note dice por qué), withdrawn (retirada) o replaced (se pidió otra del mismo periodo).
+	//
+	// Valores: pending, approved, rejected, withdrawn, replaced.
+	Status string `json:"status"`
+	// El neto de todos sus recibos.
+	Net float64 `json:"net"`
+	// El recibo de cada empleado, como se calculó al pedirla.
+	Receipts []PayrollApprovalReceipt `json:"receipts"`
+	// Cuándo se pidió (ISO 8601).
+	RequestedAt string `json:"requested_at"`
+	// Cuándo se aprobó, rechazó o retiró, o null.
+	DecidedAt *string `json:"decided_at,omitempty"`
+	// Por qué se rechazó (o el comentario de quien la aprobó), o null.
+	Note *string `json:"note,omitempty"`
+}
+
+// PayrollApprovalList: Una página de la lista.
+type PayrollApprovalList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PayrollApproval `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PayrollApprovalPeriod: El periodo de pago de la nómina: FechaInicialPago, FechaFinalPago y FechaPago de sus recibos.
+type PayrollApprovalPeriod struct {
+	// Primer día pagado.
+	Start string `json:"start"`
+	// Último día pagado.
+	End string `json:"end"`
+	// Día de pago.
+	PaymentDate string `json:"payment_date"`
+}
+
+// PayrollApprovalReceipt: PayrollApprovalReceipt.
+type PayrollApprovalReceipt struct {
+	// emp_…
+	Employee string `json:"employee"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Días pagados.
+	Days float64 `json:"days"`
+	// Faltas.
+	Absences float64 `json:"absences"`
+	// Días de incapacidad.
+	DisabilityDays float64 `json:"disability_days"`
+	// Los importes aprobados: se timbra solo un recibo que los tenga.
+	Totals PayrollApprovalReceiptTotals `json:"totals"`
+}
+
+// PayrollApprovalReceiptTotals: Los importes aprobados: se timbra solo un recibo que los tenga.
+type PayrollApprovalReceiptTotals struct {
+	// Percepciones.
+	Perceptions float64 `json:"perceptions"`
+	// Deducciones.
+	Deductions float64 `json:"deductions"`
+	// Otros pagos.
+	OtherPayments float64 `json:"other_payments"`
+	// ISR retenido.
+	TaxesWithheld float64 `json:"taxes_withheld"`
+	// Neto a pagar.
+	Net float64 `json:"net"`
+}
+
 // PayrollBankFile: El archivo para pagar la nómina desde el portal del banco (no cobra nada).
 type PayrollBankFile struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -11823,7 +12009,7 @@ type PayrollBatchReceipt struct {
 
 // PayrollBatchReceiptError: PayrollBatchReceiptError.
 type PayrollBatchReceiptError struct {
-	// payroll_invalid, payroll_period_overlap, payroll_receipt_exists, invoice_rejected, invoice_invalid, insufficient_balance…
+	// payroll_invalid, payroll_approval_required, payroll_period_overlap, payroll_receipt_exists, invoice_rejected, invoice_invalid, insufficient_balance…
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`

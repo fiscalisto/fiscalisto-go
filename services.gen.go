@@ -57,6 +57,8 @@ type services struct {
 	// Nómina.
 	PayrollBatches *PayrollBatchesService
 	// Nómina.
+	PayrollApprovals *PayrollApprovalsService
+	// Nómina.
 	PayrollBankFiles *PayrollBankFilesService
 	// Nómina.
 	ImssMovements *ImssMovementsService
@@ -235,6 +237,7 @@ func (s *services) init(c *Client) {
 	s.VacationRequests = &VacationRequestsService{c}
 	s.PayrollReceipts = &PayrollReceiptsService{c}
 	s.PayrollBatches = &PayrollBatchesService{c}
+	s.PayrollApprovals = &PayrollApprovalsService{c}
 	s.PayrollBankFiles = &PayrollBankFilesService{c}
 	s.ImssMovements = &ImssMovementsService{c}
 	s.ImssFiles = &ImssFilesService{c}
@@ -1684,14 +1687,14 @@ func (s *EmployeesService) ListAutoPaging(ctx context.Context, params *ListEmplo
 	return listAll[Employee](ctx, s.c, "/v1/employees", params, opts)
 }
 
-// Raise: Aumento de sueldo
+// GiveRaise: Aumento de sueldo
 //
 // Un aumento para varios empleados a la vez, como «Aumento de sueldo» en Nómina › Empleados de la app: percent (porcentaje), amount (pesos más por día) o daily_salary (un salario nuevo). Cada empleado conserva su factor de integración (SDI ÷ salario), y el SDI nuevo queda como modificación de salario con fecha effective_date en Movimientos del IMSS, para presentarla a más tardar en imss_deadline (5 días hábiles, artículo 34 de la Ley del Seguro Social). Rige desde hoy o antes; los periodos ya timbrados desde entonces se pagan con el retroactivo de las incidencias. Si un empleado no puede recibirlo (no es un aumento, queda bajo el salario mínimo, no trabajaba ese día), contesta 400 y no cambia a nadie; dry_run true dice cómo quedaría cada uno, con su error, sin guardar.
 //
 // POST /v1/employee_raises
 //
 // https://fiscalisto.com/docs/api/referencia/nomina/create-employee-raise
-func (s *EmployeesService) Raise(ctx context.Context, params *CreateEmployeeRaiseParams, opts ...RequestOption) (*EmployeeRaise, error) {
+func (s *EmployeesService) GiveRaise(ctx context.Context, params *CreateEmployeeRaiseParams, opts ...RequestOption) (*EmployeeRaise, error) {
 	out := new(EmployeeRaise)
 	if err := s.c.do(ctx, "POST", "/v1/employee_raises", params, nil, true, out, opts); err != nil {
 		return nil, err
@@ -2030,6 +2033,70 @@ func (s *PayrollBatchesService) ListAutoPaging(ctx context.Context, params *List
 func (s *PayrollBatchesService) Get(ctx context.Context, id string, opts ...RequestOption) (*PayrollBatch, error) {
 	out := new(PayrollBatch)
 	if err := s.c.do(ctx, "GET", "/v1/payroll_batches/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayrollApprovalsService: Nómina (client.PayrollApprovals).
+type PayrollApprovalsService struct{ c *Client }
+
+// Create: Pedir aprobación de la prenómina
+//
+// Para un emisor que pide aprobar la prenómina antes de timbrar (Ajustes › Aprobaciones › Prenómina en la app): manda la nómina del periodo a aprobación. Calcula cada recibo como lo timbraría POST /v1/payroll_receipts y guarda sus importes; reemplaza la que se haya pedido antes para el mismo periodo, y avisa a quienes pueden aprobarla. La aprueba o rechaza una persona en Nómina › Emitir recibos (no una llave). Mientras no esté aprobada, POST /v1/payroll_receipts y POST /v1/payroll_batches de ese periodo contestan payroll_approval_required; aprobada, timbran solo los recibos de ella con los mismos importes y fecha de pago.
+//
+// POST /v1/payroll_approvals
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-payroll-approval
+func (s *PayrollApprovalsService) Create(ctx context.Context, params *CreatePayrollApprovalParams, opts ...RequestOption) (*PayrollApproval, error) {
+	out := new(PayrollApproval)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_approvals", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar prenóminas por aprobar
+//
+// Las prenóminas pedidas para aprobación, las más recientes primero.
+//
+// GET /v1/payroll_approvals
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-payroll-approvals
+func (s *PayrollApprovalsService) List(ctx context.Context, params *ListPayrollApprovalsParams, opts ...RequestOption) (*Page[PayrollApproval], error) {
+	return list[PayrollApproval](ctx, s.c, "/v1/payroll_approvals", params, "", opts)
+}
+
+// ListAutoPaging: Listar prenóminas por aprobar, todos, página por página: for x, err := range …
+func (s *PayrollApprovalsService) ListAutoPaging(ctx context.Context, params *ListPayrollApprovalsParams, opts ...RequestOption) iter.Seq2[PayrollApproval, error] {
+	return listAll[PayrollApproval](ctx, s.c, "/v1/payroll_approvals", params, opts)
+}
+
+// Get: Ver una prenómina por aprobar
+//
+// Con su estado y los importes de cada recibo.
+//
+// GET /v1/payroll_approvals/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-payroll-approval
+func (s *PayrollApprovalsService) Get(ctx context.Context, id string, opts ...RequestOption) (*PayrollApproval, error) {
+	out := new(PayrollApproval)
+	if err := s.c.do(ctx, "GET", "/v1/payroll_approvals/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Cancel: Retirar una prenómina por aprobar
+//
+// Retira una que espera aprobación (status withdrawn), para corregirla y pedirla de nuevo, o porque no se pagará.
+//
+// POST /v1/payroll_approvals/{id}/cancel
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/cancel-payroll-approval
+func (s *PayrollApprovalsService) Cancel(ctx context.Context, id string, opts ...RequestOption) (*PayrollApproval, error) {
+	out := new(PayrollApproval)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_approvals/"+url.PathEscape(id)+"/cancel", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
