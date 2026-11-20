@@ -2162,6 +2162,20 @@
 		"go": "InflationAccounts.Save",
 		"java": "inflationAccounts.save"
 	},
+	"GET /v1/accounting/depreciation_reconciliations/{year}": {
+		"python": "depreciation_reconciliations.get",
+		"php": "depreciationReconciliations->get",
+		"dotnet": "DepreciationReconciliations.GetAsync",
+		"go": "DepreciationReconciliations.Get",
+		"java": "depreciationReconciliations.get"
+	},
+	"POST /v1/accounting/book_depreciation_rates": {
+		"python": "book_depreciation_rates.save",
+		"php": "bookDepreciationRates->save",
+		"dotnet": "BookDepreciationRates.SaveAsync",
+		"go": "BookDepreciationRates.Save",
+		"java": "bookDepreciationRates.save"
+	},
 	"GET /v1/accounting/cost_center_results/{month}": {
 		"python": "cost_center_results.get",
 		"php": "costCenterResults->get",

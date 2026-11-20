@@ -673,6 +673,28 @@ type BankTransactionSuggestedMatch struct {
 	Reasons []string `json:"reasons"`
 }
 
+// BookDepreciationRate: La tasa anual y el valor residual con que los libros deprecian un activo o un tipo de activo desde un mes (NIF C-6), aparte de la deducción fiscal.
+type BookDepreciationRate struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El activo fijo que lleva la tasa, o null si es de un tipo.
+	FixedAsset *string `json:"fixed_asset,omitempty"`
+	// El tipo de activo (uso CFDI) que la lleva, o null si es de un activo.
+	CFDIUse *string `json:"cfdi_use,omitempty"`
+	// El mes (AAAA-MM) desde el que aplica.
+	FromMonth string `json:"from_month"`
+	// La tasa anual contable, o null si se quitó.
+	AnnualRate *float64 `json:"annual_rate,omitempty"`
+	// El valor residual como fracción del monto original, o null si se quitó.
+	ResidualRate *float64 `json:"residual_rate,omitempty"`
+	// true si quitó la tasa de ese mes.
+	Removed bool `json:"removed"`
+}
+
 // Branch: Una sucursal del emisor: otro lugar desde donde factura, con su código postal (LugarExpedicion), su dirección en el PDF, sus series y, si quiere, su propia marca (nombre comercial, logo, color y estilo del PDF).
 type Branch struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -3059,6 +3081,8 @@ type CreatePayrollReceiptParamsIncidents struct {
 	HolidaysWorked *int64 `json:"holidays_worked,omitempty"`
 	// Días de vacaciones que disfrutó en el periodo (se pagan como sueldo dentro de days): su prima vacacional con el porcentaje del empleado, exenta hasta 15 UMA en el año.
 	VacationDays *float64 `json:"vacation_days,omitempty"`
+	// Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
+	DisabilityPay *CreatePayrollReceiptParamsIncidentsDisabilityPay `json:"disability_pay,omitempty"`
 	// Premios, comisiones y bonos del periodo, gravados.
 	Bonuses []CreatePayrollReceiptParamsIncidentsBonus `json:"bonuses,omitempty"`
 }
@@ -3073,6 +3097,16 @@ type CreatePayrollReceiptParamsIncidentsBonus struct {
 	Amount float64 `json:"amount"`
 	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
 	Concept *string `json:"concept,omitempty"`
+}
+
+// CreatePayrollReceiptParamsIncidentsDisabilityPay: Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
+type CreatePayrollReceiptParamsIncidentsDisabilityPay struct {
+	// Tipo de incapacidad (c_TipoIncapacidad): 01 riesgo de trabajo, 02 enfermedad general, 03 maternidad, 04 licencia por cuidados médicos de hijos con cáncer.
+	//
+	// Valores: 01, 02, 03, 04.
+	Type string `json:"type"`
+	// Lo que paga la empresa de cada día de incapacidad, como fracción del salario diario: 1 todo; 0.4 lo que completa el 60% que paga el IMSS.
+	Rate float64 `json:"rate"`
 }
 
 // CreatePayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
@@ -4997,6 +5031,46 @@ type Deleted struct {
 	Deleted bool `json:"deleted"`
 }
 
+// DepreciationReconciliation: La depreciación contable del año contra la deducción de inversiones (artículos 31 y 34 de la Ley del ISR) de cada activo, para la conciliación contable-fiscal.
+type DepreciationReconciliation struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El año.
+	Year int64 `json:"year"`
+	// Cada activo con depreciación contable o deducción fiscal en el año.
+	Items []DepreciationReconciliationItem `json:"items"`
+	// La depreciación contable del año de todos los activos.
+	BookDepreciation float64 `json:"book_depreciation"`
+	// La deducción de inversiones del año, actualizada.
+	TaxDeduction float64 `json:"tax_deduction"`
+	// tax_deduction menos book_depreciation: la partida de la conciliación contable-fiscal.
+	Difference float64 `json:"difference"`
+	// Los meses cuyo INPC no se ha publicado, estimados con el último (AAAA-MM).
+	InpcEstimatedMonths []string `json:"inpc_estimated_months"`
+}
+
+// DepreciationReconciliationItem: DepreciationReconciliationItem.
+type DepreciationReconciliationItem struct {
+	// El activo fijo (fxa_… o fxc_…), o null si no tiene registro contable.
+	FixedAsset *string `json:"fixed_asset,omitempty"`
+	// Qué es.
+	Description string `json:"description"`
+	// Su tipo por uso CFDI (I01 a I08).
+	CFDIUse *string `json:"cfdi_use,omitempty"`
+	// Su depreciación contable del año.
+	BookDepreciation float64 `json:"book_depreciation"`
+	// Su deducción fiscal del año, actualizada con el INPC.
+	TaxDeduction float64 `json:"tax_deduction"`
+	// El factor de actualización de la deducción fiscal (1 sin actualizar).
+	InflationFactor float64 `json:"inflation_factor"`
+	// tax_deduction menos book_depreciation.
+	Difference float64 `json:"difference"`
+}
+
 // Diot: La DIOT de un mes: lo pagado a cada proveedor, por tipo de operación.
 type Diot struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -6589,8 +6663,12 @@ type FixedAsset struct {
 	InUseSince string `json:"in_use_since"`
 	// Su monto original sin IVA.
 	Cost float64 `json:"cost"`
-	// Su tasa anual de depreciación (0.3 es 30%).
+	// Su tasa anual de depreciación contable (0.3 es 30%): la del artículo 34 de la LISR o la que fijó con POST /v1/accounting/book_depreciation_rates.
 	AnnualRate float64 `json:"annual_rate"`
+	// Su valor residual como fracción del monto original; 0 por omisión.
+	ResidualRate float64 `json:"residual_rate"`
+	// La tasa del artículo 34 de la LISR, la de su deducción fiscal.
+	TaxAnnualRate float64 `json:"tax_annual_rate"`
 	// Lo que se deprecia cada mes mientras dura.
 	MonthlyDepreciation float64 `json:"monthly_depreciation"`
 	// El mes (AAAA-MM) a cuyo cierre van las cifras.
@@ -6887,6 +6965,12 @@ type GetCrossCheckCfdiParams struct {
 type GetCrossChecksParams struct {
 	// El ejercicio. Por omisión, el actual.
 	Year *int64 `json:"year,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetDepreciationReconciliationParams: los campos de «Comparar la depreciación contable con la fiscal».
+type GetDepreciationReconciliationParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -11439,6 +11523,8 @@ type PreviewPayrollReceiptParamsIncidents struct {
 	HolidaysWorked *int64 `json:"holidays_worked,omitempty"`
 	// Días de vacaciones que disfrutó en el periodo (se pagan como sueldo dentro de days): su prima vacacional con el porcentaje del empleado, exenta hasta 15 UMA en el año.
 	VacationDays *float64 `json:"vacation_days,omitempty"`
+	// Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
+	DisabilityPay *PreviewPayrollReceiptParamsIncidentsDisabilityPay `json:"disability_pay,omitempty"`
 	// Premios, comisiones y bonos del periodo, gravados.
 	Bonuses []PreviewPayrollReceiptParamsIncidentsBonus `json:"bonuses,omitempty"`
 }
@@ -11453,6 +11539,16 @@ type PreviewPayrollReceiptParamsIncidentsBonus struct {
 	Amount float64 `json:"amount"`
 	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
 	Concept *string `json:"concept,omitempty"`
+}
+
+// PreviewPayrollReceiptParamsIncidentsDisabilityPay: Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
+type PreviewPayrollReceiptParamsIncidentsDisabilityPay struct {
+	// Tipo de incapacidad (c_TipoIncapacidad): 01 riesgo de trabajo, 02 enfermedad general, 03 maternidad, 04 licencia por cuidados médicos de hijos con cáncer.
+	//
+	// Valores: 01, 02, 03, 04.
+	Type string `json:"type"`
+	// Lo que paga la empresa de cada día de incapacidad, como fracción del salario diario: 1 todo; 0.4 lo que completa el 60% que paga el IMSS.
+	Rate float64 `json:"rate"`
 }
 
 // PreviewPayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
@@ -13679,6 +13775,24 @@ type SandboxList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// SaveBookDepreciationRateParams: los campos de «Fijar la tasa de depreciación contable».
+type SaveBookDepreciationRateParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El activo fijo (fxa_… o fxc_…) que lleva su propia tasa. Mande este o cfdi_use.
+	FixedAsset *string `json:"fixed_asset,omitempty"`
+	// El tipo de activo (uso CFDI I01–I08) cuyos activos toman la tasa. Mande este o fixed_asset.
+	//
+	// Valores: I01, I02, I03, I04, I05, I06, I07, I08.
+	CFDIUse *string `json:"cfdi_use,omitempty"`
+	// El mes, AAAA-MM y abierto, desde el que aplica.
+	FromMonth string `json:"from_month"`
+	// La tasa anual de los libros (0.2 son 5 años de vida útil). null quita la de ese mes y regresa a la anterior.
+	AnnualRate *float64 `json:"annual_rate,omitempty"`
+	// El valor residual como fracción del monto original (NIF C-6); 0 si no se manda.
+	ResidualRate *float64 `json:"residual_rate,omitempty"`
 }
 
 // SaveBudgetParams: los campos de «Guardar el presupuesto de un año».

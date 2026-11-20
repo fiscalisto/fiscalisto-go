@@ -173,6 +173,10 @@ type services struct {
 	// Contabilidad.
 	InflationAccounts *InflationAccountsService
 	// Contabilidad.
+	DepreciationReconciliations *DepreciationReconciliationsService
+	// Contabilidad.
+	BookDepreciationRates *BookDepreciationRatesService
+	// Contabilidad.
 	CostCenterResults *CostCenterResultsService
 	// Contabilidad.
 	PayrollProvisions *PayrollProvisionsService
@@ -275,6 +279,8 @@ func (s *services) init(c *Client) {
 	s.Budgets = &BudgetsService{c}
 	s.InflationAdjustments = &InflationAdjustmentsService{c}
 	s.InflationAccounts = &InflationAccountsService{c}
+	s.DepreciationReconciliations = &DepreciationReconciliationsService{c}
+	s.BookDepreciationRates = &BookDepreciationRatesService{c}
 	s.CostCenterResults = &CostCenterResultsService{c}
 	s.PayrollProvisions = &PayrollProvisionsService{c}
 	s.TaxDeterminations = &TaxDeterminationsService{c}
@@ -5167,6 +5173,42 @@ type InflationAccountsService struct{ c *Client }
 func (s *InflationAccountsService) Save(ctx context.Context, params *SaveInflationAccountsParams, opts ...RequestOption) (*InflationAccounts, error) {
 	out := new(InflationAccounts)
 	if err := s.c.do(ctx, "POST", "/v1/accounting/inflation_accounts", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DepreciationReconciliationsService: Contabilidad (client.DepreciationReconciliations).
+type DepreciationReconciliationsService struct{ c *Client }
+
+// Get: Comparar la depreciación contable con la fiscal
+//
+// La depreciación contable del año de cada activo fijo contra su deducción fiscal (artículo 34 de la Ley del ISR, actualizada con el INPC del artículo 31) y la diferencia, que es partida de la conciliación contable-fiscal de la declaración anual. Las notas de crédito sobre un activo van en su propio renglón. Como Activos fijos › Contable contra fiscal en la app.
+//
+// GET /v1/accounting/depreciation_reconciliations/{year}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-depreciation-reconciliation
+func (s *DepreciationReconciliationsService) Get(ctx context.Context, year string, params *GetDepreciationReconciliationParams, opts ...RequestOption) (*DepreciationReconciliation, error) {
+	out := new(DepreciationReconciliation)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/depreciation_reconciliations/"+url.PathEscape(year), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// BookDepreciationRatesService: Contabilidad (client.BookDepreciationRates).
+type BookDepreciationRatesService struct{ c *Client }
+
+// Save: Fijar la tasa de depreciación contable
+//
+// Fija la tasa anual y el valor residual con que los libros deprecian un activo (fixed_asset) o todos los de un tipo (cfdi_use) desde from_month en adelante (NIF C-6); la del activo gana sobre la de su tipo. Los meses anteriores no cambian, y la deducción fiscal sigue con la tasa del artículo 34. annual_rate null quita la de ese mes. Un mes cerrado contesta parameter_invalid en from_month.
+//
+// POST /v1/accounting/book_depreciation_rates
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/save-book-depreciation-rate
+func (s *BookDepreciationRatesService) Save(ctx context.Context, params *SaveBookDepreciationRateParams, opts ...RequestOption) (*BookDepreciationRate, error) {
+	out := new(BookDepreciationRate)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/book_depreciation_rates", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
