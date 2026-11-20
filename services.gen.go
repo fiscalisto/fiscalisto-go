@@ -154,6 +154,14 @@ type services struct {
 	PortalSuppliers *PortalSuppliersService
 	// Portal de proveedores.
 	SupplierInvoices *SupplierInvoicesService
+	// Pagos a proveedores.
+	PayableInvoices *PayableInvoicesService
+	// Pagos a proveedores.
+	Payouts *PayoutsService
+	// Pagos a proveedores.
+	PayeeAccounts *PayeeAccountsService
+	// Pagos a proveedores.
+	PayoutMandates *PayoutMandatesService
 	// Declaraciones del SAT.
 	SatDeclarations *SatDeclarationsService
 	// Declaraciones del SAT.
@@ -290,6 +298,10 @@ func (s *services) init(c *Client) {
 	s.SatRetentions = &SatRetentionsService{c}
 	s.PortalSuppliers = &PortalSuppliersService{c}
 	s.SupplierInvoices = &SupplierInvoicesService{c}
+	s.PayableInvoices = &PayableInvoicesService{c}
+	s.Payouts = &PayoutsService{c}
+	s.PayeeAccounts = &PayeeAccountsService{c}
+	s.PayoutMandates = &PayoutMandatesService{c}
 	s.SatDeclarations = &SatDeclarationsService{c}
 	s.SatRefreshes = &SatRefreshesService{c}
 	s.Tickets = &TicketsService{c}
@@ -4604,6 +4616,124 @@ func (s *SupplierInvoicesService) Schedule(ctx context.Context, id string, param
 func (s *SupplierInvoicesService) MarkPaid(ctx context.Context, id string, params *MarkSupplierInvoicePaidParams, opts ...RequestOption) (*SupplierInvoice, error) {
 	out := new(SupplierInvoice)
 	if err := s.c.do(ctx, "POST", "/v1/supplier_invoices/"+url.PathEscape(id)+"/mark_paid", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayableInvoicesService: Pagos a proveedores (client.PayableInvoices).
+type PayableInvoicesService struct{ c *Client }
+
+// List: Listar lo que falta por pagar
+//
+// Las facturas recibidas con algo por pagar, como Pagos › Por pagar, las más recientes primero; con uuid, esas facturas (pagadas o no). Lo pagado cuenta complementos, notas de crédito, pagos de Fiscalisto y pagos registrados a mano. Si el emisor no paga con Fintoc, 400 payouts_not_enabled.
+//
+// GET /v1/payable_invoices
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/list-payable-invoices
+func (s *PayableInvoicesService) List(ctx context.Context, params *ListPayableInvoicesParams, opts ...RequestOption) (*PayableInvoiceList, error) {
+	out := new(PayableInvoiceList)
+	if err := s.c.do(ctx, "GET", "/v1/payable_invoices", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayoutsService: Pagos a proveedores (client.Payouts).
+type PayoutsService struct{ c *Client }
+
+// Create: Preparar un pago a proveedores
+//
+// Un pago en borrador con estas facturas, revisado como en la app: las reglas antes de pagar, los límites y las cuentas aprobadas de cada proveedor. Las de un proveedor van en una transferencia. Nunca sale solo: alguien del equipo lo abre en app_url y lo firma con su llave de acceso. Solo si la empresa lo permite en Pagos › Configurar pagos (si no, 403 payouts_api_disabled); lo que no se puede pagar contesta 400 payout_invalid con el motivo. Pide Idempotency-Key: si la respuesta se pierde, repítala con el mismo valor y contesta el mismo pago, nunca uno nuevo.
+//
+// POST /v1/payouts
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/create-payout
+func (s *PayoutsService) Create(ctx context.Context, params *CreatePayoutParams, opts ...RequestOption) (*Payout, error) {
+	out := new(Payout)
+	if err := s.c.do(ctx, "POST", "/v1/payouts", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar pagos a proveedores
+//
+// Los pagos del emisor, hechos en la app o por la API, los más recientes primero, con sus transferencias.
+//
+// GET /v1/payouts
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/list-payouts
+func (s *PayoutsService) List(ctx context.Context, params *ListPayoutsParams, opts ...RequestOption) (*Page[Payout], error) {
+	return list[Payout](ctx, s.c, "/v1/payouts", params, "", opts)
+}
+
+// ListAutoPaging: Listar pagos a proveedores, todos, página por página: for x, err := range …
+func (s *PayoutsService) ListAutoPaging(ctx context.Context, params *ListPayoutsParams, opts ...RequestOption) iter.Seq2[Payout, error] {
+	return listAll[Payout](ctx, s.c, "/v1/payouts", params, opts)
+}
+
+// Get: Ver un pago a proveedores
+//
+// Con sus firmas, cada transferencia, su clave de rastreo y su CEP cuando llega.
+//
+// GET /v1/payouts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/get-payout
+func (s *PayoutsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Payout, error) {
+	out := new(Payout)
+	if err := s.c.do(ctx, "GET", "/v1/payouts/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Cancel: Cancelar un pago a proveedores
+//
+// Uno que preparó la API, mientras no ha salido nada (draft, pending_approval o approved): sus facturas vuelven a Por pagar y llega payout.canceled. Uno preparado en la app se cancela en la app (400 payout_not_from_api).
+//
+// POST /v1/payouts/{id}/cancel
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/cancel-payout
+func (s *PayoutsService) Cancel(ctx context.Context, id string, params *CancelPayoutParams, opts ...RequestOption) (*Payout, error) {
+	out := new(Payout)
+	if err := s.c.do(ctx, "POST", "/v1/payouts/"+url.PathEscape(id)+"/cancel", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayeeAccountsService: Pagos a proveedores (client.PayeeAccounts).
+type PayeeAccountsService struct{ c *Client }
+
+// List: Listar cuentas de proveedores
+//
+// Las cuentas a las que se les paga a sus proveedores, verificadas con el banco, y si ya se les puede pagar. Solo lectura: agregar o cambiar una CLABE se hace en la app, con su espera y su aprobación.
+//
+// GET /v1/payee_accounts
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/list-payee-accounts
+func (s *PayeeAccountsService) List(ctx context.Context, params *ListPayeeAccountsParams, opts ...RequestOption) (*PayeeAccountList, error) {
+	out := new(PayeeAccountList)
+	if err := s.c.do(ctx, "GET", "/v1/payee_accounts", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayoutMandatesService: Pagos a proveedores (client.PayoutMandates).
+type PayoutMandatesService struct{ c *Client }
+
+// List: Listar pagos recurrentes
+//
+// Los pagos recurrentes firmados en la app (o por firmar): a qué cuenta, cuánto como máximo, qué día y qué meses, y los pagos que ya hicieron. Solo lectura.
+//
+// GET /v1/payout_mandates
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/list-payout-mandates
+func (s *PayoutMandatesService) List(ctx context.Context, params *ListPayoutMandatesParams, opts ...RequestOption) (*PayoutMandateList, error) {
+	out := new(PayoutMandateList)
+	if err := s.c.do(ctx, "GET", "/v1/payout_mandates", nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

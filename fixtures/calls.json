@@ -1896,6 +1896,55 @@
 		"go": "SupplierInvoices.MarkPaid",
 		"java": "supplierInvoices.markPaid"
 	},
+	"GET /v1/payable_invoices": {
+		"python": "payable_invoices.list",
+		"php": "payableInvoices->list",
+		"dotnet": "PayableInvoices.ListAsync",
+		"go": "PayableInvoices.List",
+		"java": "payableInvoices.list"
+	},
+	"POST /v1/payouts": {
+		"python": "payouts.create",
+		"php": "payouts->create",
+		"dotnet": "Payouts.CreateAsync",
+		"go": "Payouts.Create",
+		"java": "payouts.create"
+	},
+	"GET /v1/payouts": {
+		"python": "payouts.list",
+		"php": "payouts->list",
+		"dotnet": "Payouts.ListAsync",
+		"go": "Payouts.List",
+		"java": "payouts.list"
+	},
+	"GET /v1/payouts/{id}": {
+		"python": "payouts.get",
+		"php": "payouts->get",
+		"dotnet": "Payouts.GetAsync",
+		"go": "Payouts.Get",
+		"java": "payouts.get"
+	},
+	"POST /v1/payouts/{id}/cancel": {
+		"python": "payouts.cancel",
+		"php": "payouts->cancel",
+		"dotnet": "Payouts.CancelAsync",
+		"go": "Payouts.Cancel",
+		"java": "payouts.cancel"
+	},
+	"GET /v1/payee_accounts": {
+		"python": "payee_accounts.list",
+		"php": "payeeAccounts->list",
+		"dotnet": "PayeeAccounts.ListAsync",
+		"go": "PayeeAccounts.List",
+		"java": "payeeAccounts.list"
+	},
+	"GET /v1/payout_mandates": {
+		"python": "payout_mandates.list",
+		"php": "payoutMandates->list",
+		"dotnet": "PayoutMandates.ListAsync",
+		"go": "PayoutMandates.List",
+		"java": "payoutMandates.list"
+	},
 	"POST /v1/sat_declarations/refresh": {
 		"python": "sat_declarations.refresh",
 		"php": "satDeclarations->refresh",

@@ -172,6 +172,14 @@ const (
 	CodeParameterMissing = "parameter_missing"
 	// Mandó un campo o un parámetro de la URL que no existe (casi siempre un nombre mal escrito, como legalName en vez de legal_name, o ?statuss= en vez de ?status=). Nunca se ignora en silencio.
 	CodeParameterUnknown = "parameter_unknown"
+	// El pago no se puede preparar o cambiar así (una factura ya pagada o en otro pago, un proveedor sin cuenta aprobada, una regla que no deja pagar, un límite, o ya salió). El mensaje dice por qué, renglón por renglón.
+	CodePayoutInvalid = "payout_invalid"
+	// El pago se preparó en la app: se cancela ahí.
+	CodePayoutNotFromAPI = "payout_not_from_api"
+	// La empresa no deja que la API prepare pagos: se enciende en la app, en Pagos › Configurar pagos.
+	CodePayoutsAPIDisabled = "payouts_api_disabled"
+	// El RFC del emisor no paga a proveedores con Fiscalisto: se conecta Fintoc en la app, en Pagos.
+	CodePayoutsNotEnabled = "payouts_not_enabled"
 	// El emisor pide aprobar la prenómina antes de timbrar, y este recibo no está en la prenómina aprobada del periodo con estos importes y fecha de pago (no se ha pedido, espera aprobación, se rechazó o el recibo cambió). No se timbró: pídala con POST /v1/payroll_approvals y espere a que una persona la apruebe en la app.
 	CodePayrollApprovalRequired = "payroll_approval_required"
 	// Mandó el confirmation_token de una vista previa, pero el recibo que se calcularía ahora es otro (se timbró otro recibo del empleado ese mes, cambió su salario o se actualizaron las tablas). No se timbró: pida la vista previa otra vez y mande su token nuevo.

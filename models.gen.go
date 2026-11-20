@@ -1577,6 +1577,12 @@ type CancelInvoiceParams struct {
 	Substitution *string `json:"substitution,omitempty"`
 }
 
+// CancelPayoutParams: los campos de «Cancelar un pago a proveedores».
+type CancelPayoutParams struct {
+	// Por qué se cancela; lo ve el equipo en el pago.
+	Reason *string `json:"reason,omitempty"`
+}
+
 // CancelRetentionParams: los campos de «Cancelar una constancia».
 type CancelRetentionParams struct {
 	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
@@ -3923,6 +3929,28 @@ type CreatePaymentParamsDocument struct {
 	Amount float64 `json:"amount"`
 	// Solo si la factura es de otra moneda que el pago: lo que recibió por ella en la moneda del pago. Fiscalisto calcula la equivalencia (EquivalenciaDR).
 	Received *float64 `json:"received,omitempty"`
+}
+
+// CreatePayoutParams: los campos de «Preparar un pago a proveedores».
+type CreatePayoutParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El día en que sale (AAAA-MM-DD, hoy o después). Por omisión, hoy: sale en cuanto lo firmen.
+	PayOn *string `json:"pay_on,omitempty"`
+	// Una nota para quien lo revisa y lo firma.
+	Note *string `json:"note,omitempty"`
+	// Las facturas recibidas a pagar (de 1 a 500). Las de un mismo proveedor van en una sola transferencia a su cuenta aprobada.
+	Invoices []CreatePayoutParamsInvoice `json:"invoices"`
+}
+
+// CreatePayoutParamsInvoice: CreatePayoutParamsInvoice.
+type CreatePayoutParamsInvoice struct {
+	// El folio fiscal de la factura recibida.
+	UUID string `json:"uuid"`
+	// Cuánto pagar, en la moneda de la factura. Por omisión, todo lo que falta (amount_due).
+	Amount *float64 `json:"amount,omitempty"`
+	// Por qué paga menos de lo que falta («Parcial», «Anticipo»…).
+	Reason *string `json:"reason,omitempty"`
 }
 
 // CreatePayrollApprovalParams: los campos de «Pedir aprobación de la prenómina».
@@ -6735,7 +6763,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high o test_clock.ready.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high o test_clock.ready.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -11093,7 +11121,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, sat_refresh.*, issuer.*, balance.*, usage.*, test_clock.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, payout.*, payout_transfer.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, sat_refresh.*, issuer.*, balance.*, usage.*, test_clock.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -11287,6 +11315,50 @@ type ListMaterialitySuppliersParams struct {
 type ListMembersParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListPayableInvoicesParams: los campos de «Listar lo que falta por pagar».
+type ListPayableInvoicesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cuántas, de 1 a 500. Por omisión 100.
+	Limit *int64 `json:"limit,omitempty"`
+	// Solo las de este proveedor (su RFC).
+	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
+	// Solo estas: hasta 100 folios fiscales separados por comas.
+	UUID *string `json:"uuid,omitempty"`
+}
+
+// ListPayeeAccountsParams: los campos de «Listar cuentas de proveedores».
+type ListPayeeAccountsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de este proveedor (su RFC).
+	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
+}
+
+// ListPayoutMandatesParams: los campos de «Listar pagos recurrentes».
+type ListPayoutMandatesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListPayoutsParams: los campos de «Listar pagos a proveedores».
+type ListPayoutsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo los que estén en este estado.
+	//
+	// Valores: draft, pending_approval, approved, sending, paid, partially_paid, failed, canceled.
+	Status *string `json:"status,omitempty"`
+	// Solo los que salen desde este día (AAAA-MM-DD).
+	PayOnFrom *string `json:"pay_on_from,omitempty"`
+	// Solo los que salen hasta este día (AAAA-MM-DD).
+	PayOnTo *string `json:"pay_on_to,omitempty"`
 }
 
 // ListPayrollApprovalsParams: los campos de «Listar prenóminas por aprobar».
@@ -12199,6 +12271,296 @@ type OpeningBalancesLine struct {
 	Debit float64 `json:"debit"`
 	// El abono, en pesos.
 	Credit float64 `json:"credit"`
+}
+
+// PayableInvoice: Una factura recibida con lo que falta por pagar, como la muestra Pagos › Por pagar: lo pagado cuenta complementos, notas de crédito, pagos de Fiscalisto y pagos registrados a mano.
+type PayableInvoice struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El folio fiscal.
+	UUID string `json:"uuid"`
+	// La factura descargada del SAT (sat_…).
+	SATInvoice string `json:"sat_invoice"`
+	// El RFC del proveedor.
+	SupplierTaxID string `json:"supplier_tax_id"`
+	// El nombre del proveedor, o null.
+	SupplierName *string `json:"supplier_name,omitempty"`
+	// Su serie, o null.
+	Series *string `json:"series,omitempty"`
+	// Su folio, o null.
+	Folio *string `json:"folio,omitempty"`
+	// La fecha de la factura.
+	Date string `json:"date"`
+	// Su moneda.
+	Currency string `json:"currency"`
+	// Su total, en su moneda.
+	Total float64 `json:"total"`
+	// Lo pagado ya, en su moneda.
+	Paid float64 `json:"paid"`
+	// Lo que falta por pagar, en su moneda.
+	AmountDue float64 `json:"amount_due"`
+	// PUE o PPD, o null.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// El pago abierto (pyo_…) en el que ya está, o null.
+	InPayout *string `json:"in_payout,omitempty"`
+	// Lo que las Reglas antes de pagar encontraron (por ejemplo cancelada en el SAT, o proveedor en la lista 69-B).
+	Warnings []string `json:"warnings"`
+	// La factura en la app.
+	AppURL string `json:"app_url"`
+}
+
+// PayableInvoiceList: Una página de la lista.
+type PayableInvoiceList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PayableInvoice `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PayeeAccount: Una cuenta de un proveedor a la que se le paga (Pagos › Cuentas de proveedores), verificada con el banco. Solo lectura: una CLABE se agrega o se cambia en la app.
+type PayeeAccount struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…) que paga.
+	Issuer string `json:"issuer"`
+	// El RFC del proveedor.
+	SupplierTaxID string `json:"supplier_tax_id"`
+	// El nombre del proveedor, o null.
+	SupplierName *string `json:"supplier_name,omitempty"`
+	// La CLABE de 18 dígitos.
+	CLABE string `json:"clabe"`
+	// El banco, o null.
+	Bank *string `json:"bank,omitempty"`
+	// El RFC del titular que confirmó el banco, o null.
+	HolderTaxID *string `json:"holder_tax_id,omitempty"`
+	// El nombre del titular que confirmó el banco, o null.
+	HolderName *string `json:"holder_name,omitempty"`
+	// true si es de un tercero que la empresa autorizó.
+	ThirdParty bool `json:"third_party"`
+	// verifying (verificando con el banco), pending_approval (verificada, por aprobar), holder_mismatch (es de otra persona), failed (no existe o no recibe), approved, rejected o replaced (la sustituyó otra).
+	//
+	// Valores: verifying, pending_approval, holder_mismatch, failed, approved, rejected, replaced.
+	Status string `json:"status"`
+	// true si ya se le puede pagar (aprobada y pasó la espera de la empresa).
+	Usable bool `json:"usable"`
+	// Desde cuándo se le puede pagar, o null.
+	UsableFrom *string `json:"usable_from,omitempty"`
+	// Cuándo la confirmó el banco, o null.
+	VerifiedAt *string `json:"verified_at,omitempty"`
+	// Cuándo se agregó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// PayeeAccountList: Una página de la lista.
+type PayeeAccountList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PayeeAccount `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// Payout: Un pago a proveedores con Fintoc: una o varias transferencias SPEI que salen juntas en su día, después de las firmas que la empresa pide. La API lo prepara; solo se firma en la app.
+type Payout struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…) que paga.
+	Issuer string `json:"issuer"`
+	// Su número en la empresa (Pago 12), como en la app.
+	Number int64 `json:"number"`
+	// draft (borrador: falta que alguien lo firme en la app), pending_approval (faltan firmas), approved (firmado: sale en su día), sending, paid (llegaron todas), partially_paid (llegaron algunas), failed (no llegó ninguna) o canceled.
+	//
+	// Valores: draft, pending_approval, approved, sending, paid, partially_paid, failed, canceled.
+	Status string `json:"status"`
+	// El día en que sale (AAAA-MM-DD, hora de la Ciudad de México).
+	PayOn string `json:"pay_on"`
+	// La suma de sus transferencias, en pesos.
+	Total float64 `json:"total"`
+	// Siempre MXN: las transferencias SPEI son en pesos.
+	Currency string `json:"currency"`
+	// La nota para quien lo revisa, o null.
+	Note *string `json:"note,omitempty"`
+	// De dónde salió: app, api, assistant (un asistente como ChatGPT o Claude), rule (una regla que paga sola) o recurring (un pago recurrente).
+	//
+	// Valores: app, api, assistant, rule, recurring.
+	Source string `json:"source"`
+	// El pago recurrente (pym_…) que lo hizo, o null.
+	PayoutMandate *string `json:"payout_mandate,omitempty"`
+	// required: cuántas firmas pide (null mientras es borrador); given: cuántas personas ya firmaron. La API nunca firma.
+	Signatures PayoutSignatures `json:"signatures"`
+	// Dónde lo revisa y lo firma alguien del equipo, en la app.
+	AppURL string `json:"app_url"`
+	// Sus transferencias, una por proveedor y cuenta.
+	Transfers []PayoutTransfer `json:"transfers"`
+	// Por qué se canceló, o null.
+	CancelReason *string `json:"cancel_reason,omitempty"`
+	// true si lo preparó la API.
+	CreatedByAPI bool `json:"created_by_api"`
+	// Cuándo se preparó.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo tuvo todas sus firmas, o null.
+	ApprovedAt *string `json:"approved_at,omitempty"`
+	// Cuándo empezaron a salir sus transferencias, o null.
+	SentAt *string `json:"sent_at,omitempty"`
+	// Cuándo terminó (todas llegaron o se resolvieron), o null.
+	SettledAt *string `json:"settled_at,omitempty"`
+	// Cuándo se canceló, o null.
+	CanceledAt *string `json:"canceled_at,omitempty"`
+}
+
+// PayoutList: Una página de la lista.
+type PayoutList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Payout `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PayoutMandate: Un pago recurrente (Pagos › Recurrentes): firmado una vez, sale cada mes a la misma cuenta por hasta ese monto. Solo lectura.
+type PayoutMandate struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…) que paga.
+	Issuer string `json:"issuer"`
+	// El RFC del proveedor.
+	SupplierTaxID string `json:"supplier_tax_id"`
+	// El nombre del proveedor, o null.
+	SupplierName *string `json:"supplier_name,omitempty"`
+	// La cuenta (pya_…) a la que sale.
+	PayeeAccount string `json:"payee_account"`
+	// La CLABE a la que sale.
+	CLABE string `json:"clabe"`
+	// Lo más que sale cada mes, en pesos.
+	Amount float64 `json:"amount"`
+	// Siempre MXN.
+	Currency string `json:"currency"`
+	// El día del mes; si no es hábil, sale el día hábil anterior.
+	Day int64 `json:"day"`
+	// El primer mes (AAAA-MM).
+	FirstMonth string `json:"first_month"`
+	// El último mes (AAAA-MM).
+	LastMonth string `json:"last_month"`
+	// El concepto de cada transferencia.
+	Concept string `json:"concept"`
+	// pending_signatures (falta firmarlo en la app), active, canceled o ended (pasó su último mes).
+	//
+	// Valores: pending_signatures, active, canceled, ended.
+	Status string `json:"status"`
+	// El próximo día en que sale, o null.
+	NextPayOn *string `json:"next_pay_on,omitempty"`
+	// Los pagos (pyo_…) que ya hizo, uno por mes.
+	Payouts []string `json:"payouts"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo quedó firmado, o null.
+	ActivatedAt *string `json:"activated_at,omitempty"`
+	// Cuándo se canceló, o null.
+	CanceledAt *string `json:"canceled_at,omitempty"`
+}
+
+// PayoutMandateList: Una página de la lista.
+type PayoutMandateList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []PayoutMandate `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// PayoutSignatures: required: cuántas firmas pide (null mientras es borrador); given: cuántas personas ya firmaron. La API nunca firma.
+type PayoutSignatures struct {
+	// Cuántas firmas pide, o null mientras es borrador.
+	Required *int64 `json:"required,omitempty"`
+	// Cuántas personas ya lo firmaron en la app.
+	Given int64 `json:"given"`
+}
+
+// PayoutTransfer: Una transferencia SPEI de un pago a proveedores: a una cuenta de un proveedor, con las facturas que paga, su clave de rastreo y su CEP.
+type PayoutTransfer struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…) que paga.
+	Issuer string `json:"issuer"`
+	// El pago (pyo_…) al que pertenece.
+	Payout string `json:"payout"`
+	// El RFC del proveedor.
+	SupplierTaxID string `json:"supplier_tax_id"`
+	// El nombre del proveedor, o null.
+	SupplierName *string `json:"supplier_name,omitempty"`
+	// La cuenta del proveedor (pya_…) a la que va.
+	PayeeAccount string `json:"payee_account"`
+	// La CLABE de 18 dígitos a la que va.
+	CLABE string `json:"clabe"`
+	// El banco de la CLABE, o null.
+	Bank *string `json:"bank,omitempty"`
+	// Cuánto, en pesos.
+	Amount float64 `json:"amount"`
+	// Siempre MXN.
+	Currency string `json:"currency"`
+	// El concepto que ve el proveedor en su banco.
+	Concept string `json:"concept"`
+	// La referencia numérica SPEI, o null.
+	Reference *string `json:"reference,omitempty"`
+	// queued (por salir), sending, in_transit (en camino), unknown (por confirmar con el banco), succeeded (llegó), failed (no salió), returning (el banco la está devolviendo), returned (la devolvieron), not_sent o removed (se quitó del pago).
+	//
+	// Valores: queued, sending, in_transit, unknown, succeeded, failed, returning, returned, not_sent, removed.
+	Status string `json:"status"`
+	// La clave de rastreo SPEI, o null antes de salir.
+	TrackingKey *string `json:"tracking_key,omitempty"`
+	// La liga al CEP de Banxico, o null mientras no llega.
+	CepURL *string `json:"cep_url,omitempty"`
+	// Por qué no salió o por qué la devolvieron, o null.
+	FailureReason *string `json:"failure_reason,omitempty"`
+	// Lo que paga: cada factura (uuid) con su monto en su moneda, o un pago sin factura (without_invoice, con description).
+	Invoices []PayoutTransferInvoice `json:"invoices"`
+	// Cuándo salió, o null.
+	SentAt *string `json:"sent_at,omitempty"`
+	// Cuándo llegó o se resolvió, o null.
+	SettledAt *string `json:"settled_at,omitempty"`
+}
+
+// PayoutTransferInvoice: PayoutTransferInvoice.
+type PayoutTransferInvoice struct {
+	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
+	UUID *string `json:"uuid,omitempty"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency string `json:"currency"`
+	// true si es un pago sin factura (anticipo, depósito…).
+	WithoutInvoice bool `json:"without_invoice"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
 }
 
 // PayrollAccumulated: Los acumulados de nómina del año: por concepto, mes por mes, y por empleado.
@@ -16531,7 +16893,7 @@ type TestDataReset struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, issuer.ready, balance.low, usage.high, test_clock.ready.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready.
 	Type *string `json:"type,omitempty"`
 }
 
