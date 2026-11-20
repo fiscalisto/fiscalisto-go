@@ -3135,6 +3135,8 @@ type CreatePayrollReceiptParamsIncidents struct {
 	VacationDays *float64 `json:"vacation_days,omitempty"`
 	// Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
 	DisabilityPay *CreatePayrollReceiptParamsIncidentsDisabilityPay `json:"disability_pay,omitempty"`
+	// Retroactivo de un aumento: la diferencia de salario de los días ya pagados con el anterior, como percepción 001 (clave RET) gravada, que paga ISR con el sueldo del periodo (art. 96 de la LISR). Las cuotas IMSS de la diferencia las cubre la modificación de salario con su fecha en el SUA; el recibo no retiene la parte del trabajador (art. 38 de la LSS).
+	Retroactive *CreatePayrollReceiptParamsIncidentsRetroactive `json:"retroactive,omitempty"`
 	// Premios, comisiones y bonos del periodo, gravados.
 	Bonuses []CreatePayrollReceiptParamsIncidentsBonus `json:"bonuses,omitempty"`
 }
@@ -3159,6 +3161,16 @@ type CreatePayrollReceiptParamsIncidentsDisabilityPay struct {
 	Type string `json:"type"`
 	// Lo que paga la empresa de cada día de incapacidad, como fracción del salario diario: 1 todo; 0.4 lo que completa el 60% que paga el IMSS.
 	Rate float64 `json:"rate"`
+}
+
+// CreatePayrollReceiptParamsIncidentsRetroactive: Retroactivo de un aumento: la diferencia de salario de los días ya pagados con el anterior, como percepción 001 (clave RET) gravada, que paga ISR con el sueldo del periodo (art. 96 de la LISR). Las cuotas IMSS de la diferencia las cubre la modificación de salario con su fecha en el SUA; el recibo no retiene la parte del trabajador (art. 38 de la LSS).
+type CreatePayrollReceiptParamsIncidentsRetroactive struct {
+	// Día desde el que rige el aumento (YYYY-MM-DD), antes del periodo y hasta un año antes.
+	From string `json:"from"`
+	// Salario diario que tenía el empleado antes del aumento. El de ahora es el del empleado: cámbielo antes con PATCH /v1/employees/{id}.
+	PreviousSalary float64 `json:"previous_salary"`
+	// Días que se pagaron con el salario anterior desde from. Si no lo manda, los de los periodos ya pagados desde ese día.
+	Days *float64 `json:"days,omitempty"`
 }
 
 // CreatePayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
@@ -11707,6 +11719,8 @@ type PreviewPayrollReceiptParamsIncidents struct {
 	VacationDays *float64 `json:"vacation_days,omitempty"`
 	// Si la empresa paga los disability_days del recibo: percepción 014 con su nodo Incapacidad. Exenta como previsión social con el límite de 7 UMA al año (art. 93 de la LISR); la de un riesgo de trabajo, toda.
 	DisabilityPay *PreviewPayrollReceiptParamsIncidentsDisabilityPay `json:"disability_pay,omitempty"`
+	// Retroactivo de un aumento: la diferencia de salario de los días ya pagados con el anterior, como percepción 001 (clave RET) gravada, que paga ISR con el sueldo del periodo (art. 96 de la LISR). Las cuotas IMSS de la diferencia las cubre la modificación de salario con su fecha en el SUA; el recibo no retiene la parte del trabajador (art. 38 de la LSS).
+	Retroactive *PreviewPayrollReceiptParamsIncidentsRetroactive `json:"retroactive,omitempty"`
 	// Premios, comisiones y bonos del periodo, gravados.
 	Bonuses []PreviewPayrollReceiptParamsIncidentsBonus `json:"bonuses,omitempty"`
 }
@@ -11731,6 +11745,16 @@ type PreviewPayrollReceiptParamsIncidentsDisabilityPay struct {
 	Type string `json:"type"`
 	// Lo que paga la empresa de cada día de incapacidad, como fracción del salario diario: 1 todo; 0.4 lo que completa el 60% que paga el IMSS.
 	Rate float64 `json:"rate"`
+}
+
+// PreviewPayrollReceiptParamsIncidentsRetroactive: Retroactivo de un aumento: la diferencia de salario de los días ya pagados con el anterior, como percepción 001 (clave RET) gravada, que paga ISR con el sueldo del periodo (art. 96 de la LISR). Las cuotas IMSS de la diferencia las cubre la modificación de salario con su fecha en el SUA; el recibo no retiene la parte del trabajador (art. 38 de la LSS).
+type PreviewPayrollReceiptParamsIncidentsRetroactive struct {
+	// Día desde el que rige el aumento (YYYY-MM-DD), antes del periodo y hasta un año antes.
+	From string `json:"from"`
+	// Salario diario que tenía el empleado antes del aumento. El de ahora es el del empleado: cámbielo antes con PATCH /v1/employees/{id}.
+	PreviousSalary float64 `json:"previous_salary"`
+	// Días que se pagaron con el salario anterior desde from. Si no lo manda, los de los periodos ya pagados desde ese día.
+	Days *float64 `json:"days,omitempty"`
 }
 
 // PreviewPayrollReceiptParamsPeriod: El periodo de pago: primer y último día (FechaInicialPago, FechaFinalPago) y, si no es el último, el día de pago (FechaPago).
