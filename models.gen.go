@@ -2937,6 +2937,24 @@ type CreateEmployeeParams struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 }
 
+// CreateEmployeeRaiseParams: los campos de «Aumento de sueldo».
+type CreateEmployeeRaiseParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Los empleados (emp_…). Sin employees, todos los que trabajan en effective_date.
+	Employees []string `json:"employees,omitempty"`
+	// Aumento en porcentaje: 5 es 5%.
+	Percent *float64 `json:"percent,omitempty"`
+	// Aumento en pesos por día.
+	Amount *float64 `json:"amount,omitempty"`
+	// Un salario diario nuevo, igual para todos.
+	DailySalary *float64 `json:"daily_salary,omitempty"`
+	// Desde cuándo rige, hoy o antes (por omisión, hoy). Es la fecha de la modificación de salario.
+	EffectiveDate *string `json:"effective_date,omitempty"`
+	// true: dice cómo quedaría cada empleado, sin guardar nada.
+	DryRun *bool `json:"dry_run,omitempty"`
+}
+
 // CreateEntryTemplateParams: los campos de «Guardar una póliza modelo».
 type CreateEntryTemplateParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
@@ -5897,6 +5915,44 @@ type EmployeePortalSignedReceipt struct {
 	UUID string `json:"uuid"`
 	// Cuándo lo firmó de recibido.
 	SignedAt string `json:"signed_at"`
+}
+
+// EmployeeRaise: Un aumento de sueldo para varios empleados, con la modificación de salario de cada uno para el IMSS.
+type EmployeeRaise struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// iss_…
+	Issuer string `json:"issuer"`
+	// false con dry_run: no se guardó nada.
+	Applied bool `json:"applied"`
+	// Desde cuándo rige: la fecha de la modificación de salario.
+	EffectiveDate string `json:"effective_date"`
+	// El último día para presentar las modificaciones al IMSS (5 días hábiles).
+	ImssDeadline string `json:"imss_deadline"`
+	// Cada empleado del aumento.
+	Employees []EmployeeRaiseEmployee `json:"employees"`
+}
+
+// EmployeeRaiseEmployee: EmployeeRaiseEmployee.
+type EmployeeRaiseEmployee struct {
+	// emp_…
+	Employee string `json:"employee"`
+	// Su número de empleado.
+	Number string `json:"number"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su salario diario antes.
+	DailySalaryBefore float64 `json:"daily_salary_before"`
+	// Su salario diario nuevo.
+	DailySalary float64 `json:"daily_salary"`
+	// Su SDI antes (la parte fija).
+	IntegratedDailySalaryBefore float64 `json:"integrated_daily_salary_before"`
+	// Su SDI nuevo, con el mismo factor de integración.
+	IntegratedDailySalary float64 `json:"integrated_daily_salary"`
+	// Por qué no puede recibir el aumento, o null.
+	Error *string `json:"error,omitempty"`
 }
 
 // EmployeeVacations: Las vacaciones de un empleado por año de servicio (LFT 76, 81 y 516).

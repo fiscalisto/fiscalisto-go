@@ -524,6 +524,13 @@
 		"go": "Employees.List",
 		"java": "employees.list"
 	},
+	"POST /v1/employee_raises": {
+		"python": "employees.raise",
+		"php": "employees->raise",
+		"dotnet": "Employees.RaiseAsync",
+		"go": "Employees.Raise",
+		"java": "employees.raise"
+	},
 	"GET /v1/employees/{id}": {
 		"python": "employees.get",
 		"php": "employees->get",

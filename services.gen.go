@@ -1684,6 +1684,21 @@ func (s *EmployeesService) ListAutoPaging(ctx context.Context, params *ListEmplo
 	return listAll[Employee](ctx, s.c, "/v1/employees", params, opts)
 }
 
+// Raise: Aumento de sueldo
+//
+// Un aumento para varios empleados a la vez, como «Aumento de sueldo» en Nómina › Empleados de la app: percent (porcentaje), amount (pesos más por día) o daily_salary (un salario nuevo). Cada empleado conserva su factor de integración (SDI ÷ salario), y el SDI nuevo queda como modificación de salario con fecha effective_date en Movimientos del IMSS, para presentarla a más tardar en imss_deadline (5 días hábiles, artículo 34 de la Ley del Seguro Social). Rige desde hoy o antes; los periodos ya timbrados desde entonces se pagan con el retroactivo de las incidencias. Si un empleado no puede recibirlo (no es un aumento, queda bajo el salario mínimo, no trabajaba ese día), contesta 400 y no cambia a nadie; dry_run true dice cómo quedaría cada uno, con su error, sin guardar.
+//
+// POST /v1/employee_raises
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-employee-raise
+func (s *EmployeesService) Raise(ctx context.Context, params *CreateEmployeeRaiseParams, opts ...RequestOption) (*EmployeeRaise, error) {
+	out := new(EmployeeRaise)
+	if err := s.c.do(ctx, "POST", "/v1/employee_raises", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Get: Ver un empleado
 //
 // Un empleado con sus datos y lo que el SAT podría rechazar en warnings.
