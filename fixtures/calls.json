@@ -1049,6 +1049,41 @@
 		"go": "CostCenters.Delete",
 		"java": "costCenters.delete"
 	},
+	"POST /v1/tags": {
+		"python": "tags.create",
+		"php": "tags->create",
+		"dotnet": "Tags.CreateAsync",
+		"go": "Tags.Create",
+		"java": "tags.create"
+	},
+	"GET /v1/tags": {
+		"python": "tags.list",
+		"php": "tags->list",
+		"dotnet": "Tags.ListAsync",
+		"go": "Tags.List",
+		"java": "tags.list"
+	},
+	"GET /v1/tags/{id}": {
+		"python": "tags.get",
+		"php": "tags->get",
+		"dotnet": "Tags.GetAsync",
+		"go": "Tags.Get",
+		"java": "tags.get"
+	},
+	"POST /v1/tags/{id}": {
+		"python": "tags.update",
+		"php": "tags->update",
+		"dotnet": "Tags.UpdateAsync",
+		"go": "Tags.Update",
+		"java": "tags.update"
+	},
+	"DELETE /v1/tags/{id}": {
+		"python": "tags.delete",
+		"php": "tags->delete",
+		"dotnet": "Tags.DeleteAsync",
+		"go": "Tags.Delete",
+		"java": "tags.delete"
+	},
 	"POST /v1/price_lists": {
 		"python": "price_lists.create",
 		"php": "priceLists->create",

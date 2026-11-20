@@ -5609,6 +5609,18 @@ type CreateStoreConnectionParamsSettings struct {
 	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
 }
 
+// CreateTagParams: los campos de «Crear una etiqueta».
+type CreateTagParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cómo la llama su equipo, por ejemplo «Obra Norte». No se repite (sin importar mayúsculas ni acentos).
+	Name string `json:"name"`
+	// Su color: info (azul), positive (verde), warning (ámbar), critical (rojo) o muted (gris). Por omisión, el siguiente de la lista.
+	//
+	// Valores: info, positive, warning, critical, muted.
+	Color *string `json:"color,omitempty"`
+}
+
 // CreateTaxDeterminationParams: los campos de «Registrar la determinación de impuestos de un mes».
 type CreateTaxDeterminationParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
@@ -11771,6 +11783,8 @@ type ListSatInvoicesParams struct {
 	DateLte *string `json:"date_lte,omitempty"`
 	// Solo las de este centro de costo (ccn_…), o none para las que no tienen.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Solo las que llevan esta etiqueta (tag_…).
+	Tag *string `json:"tag,omitempty"`
 }
 
 // ListSatMailboxMessagesParams: los campos de «Listar avisos del buzón tributario».
@@ -11899,6 +11913,16 @@ type ListSupplierInvoicesParams struct {
 	Supplier *string `json:"supplier,omitempty"`
 	// Solo las que llegaron desde este día (AAAA-MM-DD).
 	ReceivedSince *string `json:"received_since,omitempty"`
+}
+
+// ListTagsParams: los campos de «Listar etiquetas».
+type ListTagsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // ListTicketsParams: los campos de «Listar tickets».
@@ -15621,6 +15645,8 @@ type SATInvoice struct {
 	PaidOtherwise *SATInvoicePaidOtherwise `json:"paid_otherwise,omitempty"`
 	// Su centro de costo (ccn_…), o null. Póngalo o cámbielo con POST /v1/sat_invoices/{id}.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Sus etiquetas, por nombre. automatic: true en las que puso una regla (la orden de compra a la que se vinculó o una regla de Ajustes › Reglas). Cámbielas con POST /v1/sat_invoices/{id}.
+	Tags []SATInvoiceTag `json:"tags"`
 	// La descarga (sdl_…) que la trajo, o null.
 	SATDownload *string `json:"sat_download,omitempty"`
 	// Cuándo llegó.
@@ -15669,6 +15695,18 @@ type SATInvoicePaidOtherwise struct {
 	MoneySource *string `json:"money_source,omitempty"`
 	// true cuando la marcó una regla de Ajustes › Pagos sin complemento.
 	ByRule bool `json:"by_rule"`
+}
+
+// SATInvoiceTag: SATInvoiceTag.
+type SATInvoiceTag struct {
+	// La etiqueta (tag_…).
+	ID string `json:"id"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su color.
+	Color string `json:"color"`
+	// true si la puso una regla (su orden de compra o Ajustes › Reglas), no una persona.
+	Automatic bool `json:"automatic"`
 }
 
 // SATInvoiceTaxes: Impuestos del comprobante: trasladados (iva, ieps), retenidos (iva_withheld, isr_withheld, ieps_withheld) y locales.
@@ -17001,6 +17039,42 @@ type SupplierInvoiceWarning struct {
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`
+}
+
+// Tag: Una etiqueta del emisor: una palabra suya para juntar facturas y órdenes de compra.
+type Tag struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor de la etiqueta.
+	Issuer string `json:"issuer"`
+	// Cómo la llama su equipo, por ejemplo «Obra Norte».
+	Name string `json:"name"`
+	// Su color: info, positive, warning, critical o muted.
+	//
+	// Valores: info, positive, warning, critical, muted.
+	Color string `json:"color"`
+	// Cuántas órdenes de compra la llevan.
+	PurchaseOrders int64 `json:"purchase_orders"`
+	// Cuántas facturas la llevan, emitidas y recibidas.
+	Invoices int64 `json:"invoices"`
+	// Cuándo se creó.
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// TagList: Una página de la lista.
+type TagList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Tag `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // TaxDetermination: La determinación de impuestos de un mes en la contabilidad: el IVA cobrado y pagado del mes (de sus pólizas) que pasa a IVA por pagar o a favor, el pago provisional de ISR sugerido y la póliza que los registra, si ya se registró.
@@ -18767,6 +18841,8 @@ type UpdateSalesOrderParamsItemUsedVehicleCustom struct {
 type UpdateSatInvoiceParams struct {
 	// Su centro de costo (ccn_…), o null para quitárselo. Los complementos de pago y los traslados no llevan.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Sus etiquetas, exactamente estas (hasta 10): ids (tag_…) o nombres; un nombre nuevo crea la etiqueta. [] se las quita. Una que puso una regla y no manda se queda quitada.
+	Tags []string `json:"tags,omitempty"`
 }
 
 // UpdateSatReviewParams: los campos de «Actualizar una revisión del SAT».
@@ -19191,6 +19267,16 @@ type UpdateStoreConnectionParamsSettings struct {
 	AutoInvoice *bool `json:"auto_invoice,omitempty"`
 	// WooCommerce, Tiendanube, Mercado Pago, Conekta y Openpay: mandar al comprador el enlace para facturar (WooCommerce, como nota al cliente del pedido; los demás, por correo, cuando la plataforma da su correo). Por omisión true.
 	NotifyBuyer *bool `json:"notify_buyer,omitempty"`
+}
+
+// UpdateTagParams: los campos de «Actualizar una etiqueta».
+type UpdateTagParams struct {
+	// Cómo la llama su equipo, por ejemplo «Obra Norte». No se repite (sin importar mayúsculas ni acentos).
+	Name *string `json:"name,omitempty"`
+	// Su color: info (azul), positive (verde), warning (ámbar), critical (rojo) o muted (gris). Por omisión, el siguiente de la lista.
+	//
+	// Valores: info, positive, warning, critical, muted.
+	Color *string `json:"color,omitempty"`
 }
 
 // UpdateWebhookEndpointParams: los campos de «Actualizar un webhook».

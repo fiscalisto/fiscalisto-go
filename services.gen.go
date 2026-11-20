@@ -86,6 +86,8 @@ type services struct {
 	Rules *RulesService
 	// Centros de costo.
 	CostCenters *CostCentersService
+	// Etiquetas.
+	Tags *TagsService
 	// Listas de precios.
 	PriceLists *PriceListsService
 	// Listas de precios.
@@ -266,6 +268,7 @@ func (s *services) init(c *Client) {
 	s.Branches = &BranchesService{c}
 	s.Rules = &RulesService{c}
 	s.CostCenters = &CostCentersService{c}
+	s.Tags = &TagsService{c}
 	s.PriceLists = &PriceListsService{c}
 	s.CustomerGroups = &CustomerGroupsService{c}
 	s.Prices = &PricesService{c}
@@ -2887,6 +2890,85 @@ func (s *CostCentersService) Delete(ctx context.Context, id string, params *Dele
 	return out, nil
 }
 
+// TagsService: Etiquetas (client.Tags).
+type TagsService struct{ c *Client }
+
+// Create: Crear una etiqueta
+//
+// Una palabra suya para juntar facturas y órdenes de compra: una obra, un evento, un cliente, «Urgente». Es la misma lista de Etiquetas en la app. Un nombre que ya existe (sin importar mayúsculas ni acentos) contesta tag_exists con su id. Hasta 200 por empresa.
+//
+// POST /v1/tags
+//
+// https://fiscalisto.com/docs/api/referencia/etiquetas/create-tag
+func (s *TagsService) Create(ctx context.Context, params *CreateTagParams, opts ...RequestOption) (*Tag, error) {
+	out := new(Tag)
+	if err := s.c.do(ctx, "POST", "/v1/tags", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar etiquetas
+//
+// Las etiquetas del emisor, las más recientes primero, con cuántas órdenes de compra y facturas lleva cada una.
+//
+// GET /v1/tags
+//
+// https://fiscalisto.com/docs/api/referencia/etiquetas/list-tags
+func (s *TagsService) List(ctx context.Context, params *ListTagsParams, opts ...RequestOption) (*Page[Tag], error) {
+	return list[Tag](ctx, s.c, "/v1/tags", params, "", opts)
+}
+
+// ListAutoPaging: Listar etiquetas, todos, página por página: for x, err := range …
+func (s *TagsService) ListAutoPaging(ctx context.Context, params *ListTagsParams, opts ...RequestOption) iter.Seq2[Tag, error] {
+	return listAll[Tag](ctx, s.c, "/v1/tags", params, opts)
+}
+
+// Get: Ver una etiqueta
+//
+// Una etiqueta del emisor.
+//
+// GET /v1/tags/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/etiquetas/get-tag
+func (s *TagsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Tag, error) {
+	out := new(Tag)
+	if err := s.c.do(ctx, "GET", "/v1/tags/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar una etiqueta
+//
+// Cambia su nombre o su color; se ve así en todas sus facturas y órdenes. Un nombre que ya tiene otra contesta tag_exists.
+//
+// POST /v1/tags/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/etiquetas/update-tag
+func (s *TagsService) Update(ctx context.Context, id string, params *UpdateTagParams, opts ...RequestOption) (*Tag, error) {
+	out := new(Tag)
+	if err := s.c.do(ctx, "POST", "/v1/tags/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una etiqueta
+//
+// Se quita de sus facturas y órdenes de compra, que no cambian en nada más, y se borran sus etiquetas automáticas. No se puede deshacer.
+//
+// DELETE /v1/tags/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/etiquetas/delete-tag
+func (s *TagsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/tags/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PriceListsService: Listas de precios (client.PriceLists).
 type PriceListsService struct{ c *Client }
 
@@ -4524,7 +4606,7 @@ func (s *SatInvoicesService) Get(ctx context.Context, id string, opts ...Request
 
 // Update: Actualizar una factura del SAT
 //
-// Lo que se puede cambiar de un CFDI del SAT sin tocarlo: su centro de costo (cost_center, o null para quitárselo), para ver sus gastos por obra, proyecto o área.
+// Lo que se puede cambiar de un CFDI del SAT sin tocarlo: su centro de costo (cost_center, o null para quitárselo), para ver sus gastos por obra, proyecto o área, y sus etiquetas (tags, exactamente las que manda: ids tag_… o nombres; un nombre nuevo crea la etiqueta).
 //
 // POST /v1/sat_invoices/{id}
 //
