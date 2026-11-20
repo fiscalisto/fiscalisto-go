@@ -231,9 +231,9 @@ type AnnualAdjustmentEmployee struct {
 	TaxWithheld float64 `json:"tax_withheld"`
 	// tax_due menos tax_withheld: positivo a cargo, negativo a favor.
 	Balance float64 `json:"balance"`
-	// Por qué no se le calcula (artículo 97): started, entró después del 1 de enero; left, salió antes del 1 de diciembre; income, ganó más de $400,000; files_own, presenta su declaración.
+	// Por qué no se le calcula (artículo 97): started, entró después del 1 de enero; left, salió antes del 1 de diciembre; income, ganó más de $400,000; files_own, presenta su declaración; minimum, gana el salario mínimo y su saldo a cargo no se le descuenta (Constitución art. 123-A-VIII, LFT 97).
 	//
-	// Valores: started, left, income, files_own.
+	// Valores: started, left, income, files_own, minimum.
 	Excluded *string `json:"excluded,omitempty"`
 	// Si avisó por escrito que presentará su declaración anual.
 	FilesOwnReturn bool `json:"files_own_return"`
@@ -5135,8 +5135,8 @@ type CreateRuleParamsAction struct {
 	//
 	// Valores: tag, cost_center, stage, close, notify.
 	Type string `json:"type"`
-	// tag: la etiqueta.
-	Tag *int64 `json:"tag,omitempty"`
+	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
+	Tag json.RawMessage `json:"tag,omitempty"`
 	// tag: quitarla si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
@@ -14883,8 +14883,8 @@ type RuleAction struct {
 	//
 	// Valores: tag, cost_center, stage, close, notify.
 	Type string `json:"type"`
-	// tag: la etiqueta.
-	Tag *int64 `json:"tag,omitempty"`
+	// tag: la etiqueta (tag_…, GET /v1/tags).
+	Tag *string `json:"tag,omitempty"`
 	// tag: se quita si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
@@ -18569,8 +18569,8 @@ type UpdateRuleParamsAction struct {
 	//
 	// Valores: tag, cost_center, stage, close, notify.
 	Type string `json:"type"`
-	// tag: la etiqueta.
-	Tag *int64 `json:"tag,omitempty"`
+	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
+	Tag json.RawMessage `json:"tag,omitempty"`
 	// tag: quitarla si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
