@@ -245,6 +245,450 @@ type AnnualAdjustmentEmployee struct {
 	Remaining *float64 `json:"remaining,omitempty"`
 }
 
+// AnnualReturn: La declaración anual de una persona moral del régimen general, desde su contabilidad: un papel de trabajo para su contador.
+type AnnualReturn struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El ejercicio.
+	Year int64 `json:"year"`
+	// El último mes calculado.
+	ThroughMonth int64 `json:"through_month"`
+	// true si es una estimación: el año sigue o through_month es menor que 12.
+	Estimated bool `json:"estimated"`
+	// La utilidad contable (negativa si es pérdida) antes de la conciliación.
+	BookProfit float64 `json:"book_profit"`
+	// Las partidas de la conciliación contable-fiscal.
+	Items []AnnualReturnItem `json:"items"`
+	// Los ingresos acumulables.
+	TaxableIncome float64 `json:"taxable_income"`
+	// Los ingresos nominales del artículo 14: los acumulables sin el ajuste anual por inflación acumulable.
+	NominalIncome float64 `json:"nominal_income"`
+	// Las deducciones autorizadas, después del límite del artículo 78-B.
+	Deductions float64 `json:"deductions"`
+	// true si le aplican los límites del Capítulo X (desde 2027: más de $50 millones de ingresos, con utilidad fiscal y sin excepción del artículo 78-E).
+	SubjectTo78a bool `json:"subject_to_78a"`
+	// El límite del artículo 78-B; null si no aplica.
+	Limit78b *AnnualReturnLimit78b `json:"limit_78b,omitempty"`
+	// La PTU pagada en el ejercicio (artículo 9).
+	PtuPaid float64 `json:"ptu_paid"`
+	// La utilidad fiscal (0 si hubo pérdida).
+	TaxProfit float64 `json:"tax_profit"`
+	// La pérdida fiscal (0 si hubo utilidad).
+	TaxLoss float64 `json:"tax_loss"`
+	// La pérdida de este año actualizada al último mes del ejercicio (artículo 57), lista para el siguiente.
+	NewLoss *AnnualReturnNewLoss `json:"new_loss,omitempty"`
+	// Las pérdidas de ejercicios anteriores, de la más vieja a la más nueva.
+	Losses AnnualReturnLosses `json:"losses"`
+	// El resultado fiscal.
+	TaxResult float64 `json:"tax_result"`
+	// El ISR del ejercicio: 30% del resultado fiscal.
+	IncomeTax float64 `json:"income_tax"`
+	// Los pagos provisionales del ejercicio.
+	ProvisionalPayments float64 `json:"provisional_payments"`
+	// Los meses sin pago provisional capturado ni leído del SAT.
+	MissingProvisionalMonths []int64 `json:"missing_provisional_months"`
+	// El ISR que le retuvieron.
+	WithheldTax float64 `json:"withheld_tax"`
+	// Positivo: ISR a cargo. Negativo: saldo a favor.
+	Balance float64 `json:"balance"`
+	// El coeficiente de utilidad para los pagos provisionales del año siguiente (artículo 14), al diezmilésimo. null sin utilidad fiscal: se usa el del último ejercicio que la tuvo, de hasta cinco años atrás.
+	ProfitRatio *float64 `json:"profit_ratio,omitempty"`
+	// La base de la PTU.
+	Ptu AnnualReturnPtu `json:"ptu"`
+	// El ISR del artículo 10 (dividendos que no salieron de la CUFIN, de este año y los dos anteriores) acreditado contra el ISR del ejercicio; ya restado en balance.
+	DividendTaxCredited float64 `json:"dividend_tax_credited"`
+	// La utilidad fiscal neta.
+	NetTaxProfit AnnualReturnNetTaxProfit `json:"net_tax_profit"`
+	// La CUFIN (artículo 77) y la CUCA (artículo 78) del año, con sus dividendos y movimientos de capital.
+	TaxAccounts AnnualReturnTaxAccounts `json:"tax_accounts"`
+	// Lo que pasa al año siguiente: las pérdidas que quedan (con la de este año) y desde 2027 las deducciones pendientes del artículo 78-B.
+	NextYear AnnualReturnNextYear `json:"next_year"`
+	// Lo capturado con POST /v1/accounting/annual_returns/{year}.
+	Captured AnnualReturnCaptured `json:"captured"`
+}
+
+// AnnualReturnCaptured: Lo capturado con POST /v1/accounting/annual_returns/{year}.
+type AnnualReturnCaptured struct {
+	// Las pérdidas capturadas.
+	Losses []AnnualReturnCapturedLoss `json:"losses"`
+	// Las deducciones pendientes capturadas.
+	PendingDeductions []AnnualReturnCapturedPendingDeduction `json:"pending_deductions"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []AnnualReturnCapturedItem `json:"items"`
+	// true si está en una excepción del artículo 78-E.
+	Exception78e bool `json:"exception_78e"`
+	// Mes inicial (MesIni), 1 a 12.
+	FromMonth int64 `json:"from_month"`
+}
+
+// AnnualReturnCapturedItem: AnnualReturnCapturedItem.
+type AnnualReturnCapturedItem struct {
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept string `json:"concept"`
+	// taxable_income (ingreso fiscal no contable, suma), non_deductible_expense (gasto contable no deducible, suma), tax_deduction (deducción fiscal no contable, resta) o non_taxable_income (ingreso contable no acumulable, resta).
+	//
+	// Valores: taxable_income, non_deductible_expense, tax_deduction, non_taxable_income.
+	Type string `json:"type"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// true si resta de la utilidad fiscal neta.
+	ReducesNetTaxProfit bool `json:"reduces_net_tax_profit"`
+}
+
+// AnnualReturnCapturedLoss: AnnualReturnCapturedLoss.
+type AnnualReturnCapturedLoss struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnCapturedPendingDeduction: AnnualReturnCapturedPendingDeduction.
+type AnnualReturnCapturedPendingDeduction struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnCarryForward: Lo que pasó al año siguiente de la declaración anual.
+type AnnualReturnCarryForward struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El ejercicio del que salen.
+	Year int64 `json:"year"`
+	// El ejercicio al que pasan.
+	ToYear int64 `json:"to_year"`
+	// Las pérdidas que pasaron.
+	Losses []AnnualReturnCarryForwardLoss `json:"losses"`
+	// Las deducciones pendientes del artículo 78-B que pasaron.
+	PendingDeductions []AnnualReturnCarryForwardPendingDeduction `json:"pending_deductions"`
+	// La suma de las pérdidas que pasaron.
+	TotalLosses float64 `json:"total_losses"`
+	// true si se pusieron en los pagos provisionales del año siguiente (no tenían pérdidas en Impuestos).
+	ProvisionalPaymentsUpdated bool `json:"provisional_payments_updated"`
+}
+
+// AnnualReturnCarryForwardLoss: AnnualReturnCarryForwardLoss.
+type AnnualReturnCarryForwardLoss struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnCarryForwardPendingDeduction: AnnualReturnCarryForwardPendingDeduction.
+type AnnualReturnCarryForwardPendingDeduction struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnItem: AnnualReturnItem.
+type AnnualReturnItem struct {
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept string `json:"concept"`
+	// taxable_income (ingreso fiscal no contable, suma), non_deductible_expense (gasto contable no deducible, suma), tax_deduction (deducción fiscal no contable, resta) o non_taxable_income (ingreso contable no acumulable, resta).
+	//
+	// Valores: taxable_income, non_deductible_expense, tax_deduction, non_taxable_income.
+	Type string `json:"type"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// El artículo de la ley.
+	LegalBasis string `json:"legal_basis"`
+	// De dónde sale: books (cuentas de los libros por su código agrupador), cfdi, payroll (nómina), calculation (ajuste por inflación, deducción de inversiones) o captured.
+	//
+	// Valores: books, cfdi, payroll, calculation, captured.
+	Source string `json:"source"`
+	// true si resta de la utilidad fiscal neta (artículo 77).
+	ReducesNetTaxProfit bool `json:"reduces_net_tax_profit"`
+}
+
+// AnnualReturnLimit78b: AnnualReturnLimit78b.
+type AnnualReturnLimit78b struct {
+	// Las deducciones del año más las pendientes de años anteriores.
+	Total float64 `json:"total"`
+	// El 96.67% de los ingresos acumulables.
+	Threshold float64 `json:"threshold"`
+	// I: total hasta threshold, se deduce el 99%. II: total mayor, se deduce threshold.
+	//
+	// Valores: I, II.
+	Fraction string `json:"fraction"`
+	// Lo que se deduce.
+	Limit float64 `json:"limit"`
+	// Las deducciones pendientes de años anteriores, aplicadas primero.
+	PendingDeductions []AnnualReturnLimit78bPendingDeduction `json:"pending_deductions"`
+	// Lo de este año que pasa a los 20 ejercicios siguientes.
+	NotDeducted float64 `json:"not_deducted"`
+}
+
+// AnnualReturnLimit78bPendingDeduction: AnnualReturnLimit78bPendingDeduction.
+type AnnualReturnLimit78bPendingDeduction struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que quedaba, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+	// El factor de actualización hasta junio del año (artículo 57, cuarto párrafo; CFF 17-A), al diezmilésimo y nunca menor que 1; 1 si el año no aplica nada.
+	Factor float64 `json:"factor"`
+	// amount por factor.
+	UpdatedAmount float64 `json:"updated_amount"`
+	// Lo aplicado este año.
+	Applied float64 `json:"applied"`
+	// Lo que queda para los años siguientes.
+	Remaining float64 `json:"remaining"`
+	// AAAA-MM hasta el que está remaining.
+	RemainingUpdatedTo string `json:"remaining_updated_to"`
+	// El último ejercicio en que se puede aplicar.
+	LastYear int64 `json:"last_year"`
+	// true si pasó su plazo: se perdió.
+	Expired bool `json:"expired"`
+	// true si algún INPC aún no se publica.
+	Estimated bool `json:"estimated"`
+}
+
+// AnnualReturnLosses: Las pérdidas de ejercicios anteriores, de la más vieja a la más nueva.
+type AnnualReturnLosses struct {
+	// Lo aplicado de pérdidas anteriores.
+	Applied float64 `json:"applied"`
+	// Lo más que se podía aplicar: la utilidad fiscal, o la mitad con el artículo 78-C.
+	Cap float64 `json:"cap"`
+	// El plazo para aplicarlas: 10 años, o 20 con el Capítulo X.
+	TermYears int64 `json:"term_years"`
+	// Cada pérdida, con lo que se aplicó.
+	Rows []AnnualReturnLossesRow `json:"rows"`
+}
+
+// AnnualReturnLossesRow: AnnualReturnLossesRow.
+type AnnualReturnLossesRow struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que quedaba, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+	// El factor de actualización hasta junio del año (artículo 57, cuarto párrafo; CFF 17-A), al diezmilésimo y nunca menor que 1; 1 si el año no aplica nada.
+	Factor float64 `json:"factor"`
+	// amount por factor.
+	UpdatedAmount float64 `json:"updated_amount"`
+	// Lo aplicado este año.
+	Applied float64 `json:"applied"`
+	// Lo que queda para los años siguientes.
+	Remaining float64 `json:"remaining"`
+	// AAAA-MM hasta el que está remaining.
+	RemainingUpdatedTo string `json:"remaining_updated_to"`
+	// El último ejercicio en que se puede aplicar.
+	LastYear int64 `json:"last_year"`
+	// true si pasó su plazo: se perdió.
+	Expired bool `json:"expired"`
+	// true si algún INPC aún no se publica.
+	Estimated bool `json:"estimated"`
+}
+
+// AnnualReturnNetTaxProfit: La utilidad fiscal neta.
+type AnnualReturnNetTaxProfit struct {
+	// Las partidas no deducibles que restan.
+	NonDeductibles float64 `json:"non_deductibles"`
+	// dividend_tax_credited entre 0.4286, que resta de la utilidad fiscal neta (artículo 10, fracción II).
+	DividendTaxReduction float64 `json:"dividend_tax_reduction"`
+	// La utilidad fiscal neta del ejercicio (artículo 77); negativa, disminuye la CUFIN.
+	Amount float64 `json:"amount"`
+}
+
+// AnnualReturnNewLoss: AnnualReturnNewLoss.
+type AnnualReturnNewLoss struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnNextYear: Lo que pasa al año siguiente: las pérdidas que quedan (con la de este año) y desde 2027 las deducciones pendientes del artículo 78-B.
+type AnnualReturnNextYear struct {
+	// Las pérdidas que quedan.
+	Losses []AnnualReturnNextYearLoss `json:"losses"`
+	// Las deducciones pendientes del artículo 78-B.
+	PendingDeductions []AnnualReturnNextYearPendingDeduction `json:"pending_deductions"`
+}
+
+// AnnualReturnNextYearLoss: AnnualReturnNextYearLoss.
+type AnnualReturnNextYearLoss struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnNextYearPendingDeduction: AnnualReturnNextYearPendingDeduction.
+type AnnualReturnNextYearPendingDeduction struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnPtu: La base de la PTU.
+type AnnualReturnPtu struct {
+	// La renta gravable (artículo 9, cuarto párrafo).
+	TaxableBase float64 `json:"taxable_base"`
+	// El 10% para los trabajadores.
+	Amount float64 `json:"amount"`
+}
+
+// AnnualReturnTaxAccounts: La CUFIN (artículo 77) y la CUCA (artículo 78) del año, con sus dividendos y movimientos de capital.
+type AnnualReturnTaxAccounts struct {
+	// true si no se han capturado los saldos al cierre del año anterior: se calcula desde cero.
+	OpeningMissing bool `json:"opening_missing"`
+	// Los saldos al inicio del año.
+	Opening AnnualReturnTaxAccountsOpening `json:"opening"`
+	// Cada movimiento del año, en orden de fecha.
+	Movements []AnnualReturnTaxAccountsMovement `json:"movements"`
+	// El ISR del artículo 10 de los movimientos del año.
+	DividendTax float64 `json:"dividend_tax"`
+	// Los saldos al 31 de diciembre, actualizados y con la utilidad fiscal neta del año.
+	YearEnd AnnualReturnTaxAccountsYearEnd `json:"year_end"`
+	// Lo que una utilidad fiscal neta negativa de años anteriores restó a la de este año.
+	NegativeNetTaxProfitApplied float64 `json:"negative_net_tax_profit_applied"`
+	// Lo que pasa al año siguiente además de los saldos.
+	NextYear AnnualReturnTaxAccountsNextYear `json:"next_year"`
+}
+
+// AnnualReturnTaxAccountsMovement: AnnualReturnTaxAccountsMovement.
+type AnnualReturnTaxAccountsMovement struct {
+	// El día del movimiento.
+	Date string `json:"date"`
+	// El tipo de movimiento.
+	//
+	// Valores: dividend_paid, dividend_received, capital_contribution, capital_reduction.
+	Type string `json:"type"`
+	// Lo pagado, recibido o aportado.
+	Amount float64 `json:"amount"`
+	// De qué CUFIN sale primero.
+	//
+	// Valores: cufin, cufin_2013.
+	Account string `json:"account"`
+	// true si es a una persona física o del extranjero.
+	Individual bool `json:"individual"`
+	// El factor con que se actualizó la cuenta al mes del movimiento (artículos 77 y 78).
+	Factor float64 `json:"factor"`
+	// true si algún INPC aún no se publica.
+	Estimated bool `json:"estimated"`
+	// La utilidad distribuida: el dividendo, o la del artículo 78 en un reembolso.
+	DistributedProfit float64 `json:"distributed_profit"`
+	// Lo que sale de la CUFIN de 2014 en adelante.
+	FromCufin float64 `json:"from_cufin"`
+	// Lo que sale de la CUFIN hasta 2013.
+	FromCufin2013 float64 `json:"from_cufin_2013"`
+	// Lo que no sale de la CUFIN: paga el ISR del artículo 10.
+	NotFromCufin float64 `json:"not_from_cufin"`
+	// El ISR del artículo 10: not_from_cufin × 1.4286 × 30%.
+	DividendTax float64 `json:"dividend_tax"`
+	// El día 17 del mes siguiente, cuando se entera (artículo 10).
+	DividendTaxDue *string `json:"dividend_tax_due,omitempty"`
+	// El 10% a retener a una persona física (artículo 140), sobre lo de 2014 en adelante.
+	Withholding float64 `json:"withholding"`
+	// capital_reduction: la CUCA por acción a esa fecha.
+	CucaPerShare *float64 `json:"cuca_per_share,omitempty"`
+	// capital_reduction: lo que sale de la CUCA.
+	FromCuca float64 `json:"from_cuca"`
+	// capital_reduction: la utilidad distribuida de la fracción I.
+	DistributedProfitFractionI float64 `json:"distributed_profit_fraction_i"`
+	// capital_reduction: la de la fracción II, que después cuenta como aportación.
+	DistributedProfitFractionIi float64 `json:"distributed_profit_fraction_ii"`
+	// Los saldos después del movimiento.
+	Balances AnnualReturnTaxAccountsMovementBalances `json:"balances"`
+}
+
+// AnnualReturnTaxAccountsMovementBalances: Los saldos después del movimiento.
+type AnnualReturnTaxAccountsMovementBalances struct {
+	// La CUFIN de 2014 en adelante.
+	Cufin float64 `json:"cufin"`
+	// La CUFIN hasta 2013.
+	Cufin2013 float64 `json:"cufin_2013"`
+	// La cuenta de capital de aportación.
+	Cuca float64 `json:"cuca"`
+	// AAAA-MM de la última actualización de la CUFIN.
+	CufinUpdatedTo string `json:"cufin_updated_to"`
+	// AAAA-MM de la última actualización de la CUCA.
+	CucaUpdatedTo string `json:"cuca_updated_to"`
+}
+
+// AnnualReturnTaxAccountsNextYear: Lo que pasa al año siguiente además de los saldos.
+type AnnualReturnTaxAccountsNextYear struct {
+	// El ISR del artículo 10 que se acredita en los años siguientes (fracción I).
+	PendingDividendTax []AnnualReturnTaxAccountsNextYearPendingDividendTaxItem `json:"pending_dividend_tax"`
+	// Una utilidad fiscal neta negativa que la CUFIN no alcanzó (artículo 77, quinto párrafo).
+	NegativeNetTaxProfit *AnnualReturnTaxAccountsNextYearNegativeNetTaxProfit `json:"negative_net_tax_profit,omitempty"`
+}
+
+// AnnualReturnTaxAccountsNextYearNegativeNetTaxProfit: AnnualReturnTaxAccountsNextYearNegativeNetTaxProfit.
+type AnnualReturnTaxAccountsNextYearNegativeNetTaxProfit struct {
+	// Lo que falta disminuir.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// AnnualReturnTaxAccountsNextYearPendingDividendTaxItem: AnnualReturnTaxAccountsNextYearPendingDividendTaxItem.
+type AnnualReturnTaxAccountsNextYearPendingDividendTaxItem struct {
+	// El año en que se pagó.
+	Year int64 `json:"year"`
+	// Lo que falta acreditar.
+	Amount float64 `json:"amount"`
+}
+
+// AnnualReturnTaxAccountsOpening: Los saldos al inicio del año.
+type AnnualReturnTaxAccountsOpening struct {
+	// La CUFIN de 2014 en adelante.
+	Cufin float64 `json:"cufin"`
+	// La CUFIN hasta 2013.
+	Cufin2013 float64 `json:"cufin_2013"`
+	// La cuenta de capital de aportación.
+	Cuca float64 `json:"cuca"`
+	// AAAA-MM de la última actualización de la CUFIN.
+	CufinUpdatedTo string `json:"cufin_updated_to"`
+	// AAAA-MM de la última actualización de la CUCA.
+	CucaUpdatedTo string `json:"cuca_updated_to"`
+}
+
+// AnnualReturnTaxAccountsYearEnd: Los saldos al 31 de diciembre, actualizados y con la utilidad fiscal neta del año.
+type AnnualReturnTaxAccountsYearEnd struct {
+	// La CUFIN de 2014 en adelante.
+	Cufin float64 `json:"cufin"`
+	// La CUFIN hasta 2013.
+	Cufin2013 float64 `json:"cufin_2013"`
+	// La cuenta de capital de aportación.
+	Cuca float64 `json:"cuca"`
+	// AAAA-MM de la última actualización de la CUFIN.
+	CufinUpdatedTo string `json:"cufin_updated_to"`
+	// AAAA-MM de la última actualización de la CUCA.
+	CucaUpdatedTo string `json:"cuca_updated_to"`
+}
+
 // ApplyAdvanceParams: El cuerpo de POST /v1/invoices (la factura de lo vendido) con method y remainder.
 type ApplyAdvanceParams struct {
 	// egreso (la factura completa y después una nota de crédito por el anticipo, opción A) o remanente (la factura solo por lo que falta, opción B).
@@ -1163,6 +1607,12 @@ type CancelSatRetentionParams struct {
 	Motive *string `json:"motive,omitempty"`
 	// El comprobante que sustituye a este (su id o su UUID), con el motivo 01.
 	Substitution *string `json:"substitution,omitempty"`
+}
+
+// CarryForwardAnnualReturnParams: los campos de «Llevar las pérdidas que quedan al año siguiente».
+type CarryForwardAnnualReturnParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // CashFlow: El estado de flujos de efectivo (NIF B-2, método indirecto) del mes o de enero al mes, leído de la balanza: cada cuenta va a operación, inversión o financiamiento por su código agrupador.
@@ -7683,6 +8133,14 @@ type GetAnnualAdjustmentParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El ejercicio: 2026.
 	Year int64 `json:"year"`
+}
+
+// GetAnnualReturnParams: los campos de «Calcular la declaración anual de una persona moral».
+type GetAnnualReturnParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El último mes, de 1 a 12, para estimar el año en curso. Por omisión 12 en un año pasado y el mes actual en el año en curso.
+	ThroughMonth *int64 `json:"through_month,omitempty"`
 }
 
 // GetAttendanceParams: los campos de «Ver la asistencia de un periodo».
@@ -15173,6 +15631,114 @@ type SandboxList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// SaveAnnualReturnParams: los campos de «Capturar lo que los libros no dicen de la declaración anual».
+type SaveAnnualReturnParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Las pérdidas fiscales de ejercicios anteriores pendientes de aplicar (artículo 57), una por ejercicio. Reemplaza las capturadas.
+	Losses []SaveAnnualReturnParamsLoss `json:"losses"`
+	// Desde 2027: las deducciones que el límite del artículo 78-B dejó para los 20 ejercicios siguientes.
+	PendingDeductions []SaveAnnualReturnParamsPendingDeduction `json:"pending_deductions,omitempty"`
+	// Las partidas de la conciliación que los libros, los CFDI y la nómina no dicen.
+	Items []SaveAnnualReturnParamsItem `json:"items,omitempty"`
+	// true si está en una de las excepciones del artículo 78-E: no le aplican los límites de los artículos 78-A a 78-D.
+	Exception78e *bool `json:"exception_78e,omitempty"`
+	// El primer mes del ejercicio: 1, o el mes en que empezó si fue en el año.
+	FromMonth *int64 `json:"from_month,omitempty"`
+	// La CUFIN y la CUCA (artículos 77 y 78): saldos iniciales y movimientos del año. Sin este campo se quedan los guardados.
+	TaxAccounts *SaveAnnualReturnParamsTaxAccounts `json:"tax_accounts,omitempty"`
+}
+
+// SaveAnnualReturnParamsItem: SaveAnnualReturnParamsItem.
+type SaveAnnualReturnParamsItem struct {
+	// Concepto del pago (ConceptoPago), c_TipoContribuyenteSujetoRetencion.
+	Concept string `json:"concept"`
+	// taxable_income (ingreso fiscal no contable), non_deductible_expense (gasto contable no deducible), tax_deduction (deducción fiscal no contable) o non_taxable_income (ingreso contable no acumulable, como dividendos de personas morales mexicanas).
+	//
+	// Valores: taxable_income, non_deductible_expense, tax_deduction, non_taxable_income.
+	Type string `json:"type"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// true en un gasto no deducible que resta de la utilidad fiscal neta (artículo 77).
+	ReducesNetTaxProfit *bool `json:"reduces_net_tax_profit,omitempty"`
+}
+
+// SaveAnnualReturnParamsLoss: SaveAnnualReturnParamsLoss.
+type SaveAnnualReturnParamsLoss struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización: diciembre de su ejercicio si aún no se aplica nada.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// SaveAnnualReturnParamsPendingDeduction: SaveAnnualReturnParamsPendingDeduction.
+type SaveAnnualReturnParamsPendingDeduction struct {
+	// El ejercicio en que nació.
+	Year int64 `json:"year"`
+	// Lo que queda por aplicar, actualizado hasta updated_to.
+	Amount float64 `json:"amount"`
+	// AAAA-MM de su última actualización: diciembre de su ejercicio si aún no se aplica nada.
+	UpdatedTo string `json:"updated_to"`
+}
+
+// SaveAnnualReturnParamsTaxAccounts: La CUFIN y la CUCA (artículos 77 y 78): saldos iniciales y movimientos del año. Sin este campo se quedan los guardados.
+type SaveAnnualReturnParamsTaxAccounts struct {
+	// Los saldos al cierre del año anterior; null si no se conocen. carry_forward los pone en el año siguiente.
+	Opening *SaveAnnualReturnParamsTaxAccountsOpening `json:"opening,omitempty"`
+	// Los dividendos, aportaciones y reembolsos del año.
+	Movements []SaveAnnualReturnParamsTaxAccountsMovement `json:"movements,omitempty"`
+	// El ISR del artículo 10 pagado en los dos años anteriores que falta acreditar.
+	PendingDividendTax []SaveAnnualReturnParamsTaxAccountsPendingDividendTaxItem `json:"pending_dividend_tax,omitempty"`
+}
+
+// SaveAnnualReturnParamsTaxAccountsMovement: SaveAnnualReturnParamsTaxAccountsMovement.
+type SaveAnnualReturnParamsTaxAccountsMovement struct {
+	// El día en que se pagó o se recibió, en este año.
+	Date string `json:"date"`
+	// dividend_paid (dividendo pagado), dividend_received (de otra persona moral mexicana, suma a la CUFIN), capital_contribution (aportación, suma a la CUCA) o capital_reduction (reembolso o reducción de capital, artículo 78).
+	//
+	// Valores: dividend_paid, dividend_received, capital_contribution, capital_reduction.
+	Type string `json:"type"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// Un dividendo o reembolso: de qué CUFIN sale primero (por omisión cufin, la de 2014 en adelante).
+	//
+	// Valores: cufin, cufin_2013.
+	Account *string `json:"account,omitempty"`
+	// true si se paga a una persona física o a un residente en el extranjero: se le retiene el 10% (artículo 140).
+	Individual *bool `json:"individual,omitempty"`
+	// capital_reduction: las acciones que se reembolsan.
+	Shares *float64 `json:"shares,omitempty"`
+	// capital_reduction: el total de acciones a esa fecha.
+	TotalShares *float64 `json:"total_shares,omitempty"`
+	// capital_reduction: el capital contable del estado de posición financiera aprobado, actualizado (artículo 78, fracción II).
+	Equity *float64 `json:"equity,omitempty"`
+}
+
+// SaveAnnualReturnParamsTaxAccountsOpening: SaveAnnualReturnParamsTaxAccountsOpening.
+type SaveAnnualReturnParamsTaxAccountsOpening struct {
+	// La CUFIN de utilidades de 2014 en adelante al cierre del año anterior.
+	Cufin float64 `json:"cufin"`
+	// La CUFIN de utilidades hasta 2013 (transitorio 2014, fr. XXX): sus dividendos no pagan el 10% de las personas físicas.
+	Cufin2013 *float64 `json:"cufin_2013,omitempty"`
+	// La cuenta de capital de aportación (artículo 78).
+	Cuca float64 `json:"cuca"`
+	// AAAA-MM de la última actualización de la CUFIN, antes de este año.
+	CufinUpdatedTo string `json:"cufin_updated_to"`
+	// AAAA-MM de la última actualización de la CUCA, antes de este año.
+	CucaUpdatedTo string `json:"cuca_updated_to"`
+}
+
+// SaveAnnualReturnParamsTaxAccountsPendingDividendTaxItem: SaveAnnualReturnParamsTaxAccountsPendingDividendTaxItem.
+type SaveAnnualReturnParamsTaxAccountsPendingDividendTaxItem struct {
+	// Año (Ejercicio).
+	Year int64 `json:"year"`
+	// Importe.
+	Amount float64 `json:"amount"`
 }
 
 // SaveBookDepreciationRateParams: los campos de «Fijar la tasa de depreciación contable».

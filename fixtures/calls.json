@@ -2295,6 +2295,27 @@
 		"go": "InflationAccounts.Save",
 		"java": "inflationAccounts.save"
 	},
+	"GET /v1/accounting/annual_returns/{year}": {
+		"python": "annual_returns.get",
+		"php": "annualReturns->get",
+		"dotnet": "AnnualReturns.GetAsync",
+		"go": "AnnualReturns.Get",
+		"java": "annualReturns.get"
+	},
+	"POST /v1/accounting/annual_returns/{year}": {
+		"python": "annual_returns.save",
+		"php": "annualReturns->save",
+		"dotnet": "AnnualReturns.SaveAsync",
+		"go": "AnnualReturns.Save",
+		"java": "annualReturns.save"
+	},
+	"POST /v1/accounting/annual_returns/{year}/carry_forward": {
+		"python": "annual_returns.carry_forward",
+		"php": "annualReturns->carryForward",
+		"dotnet": "AnnualReturns.CarryForwardAsync",
+		"go": "AnnualReturns.CarryForward",
+		"java": "annualReturns.carryForward"
+	},
 	"GET /v1/accounting/depreciation_reconciliations/{year}": {
 		"python": "depreciation_reconciliations.get",
 		"php": "depreciationReconciliations->get",
