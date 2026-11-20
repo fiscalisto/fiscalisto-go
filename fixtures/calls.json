@@ -545,6 +545,20 @@
 		"go": "Employees.Delete",
 		"java": "employees.delete"
 	},
+	"GET /v1/employees/{id}/vacations": {
+		"python": "employees.vacations",
+		"php": "employees->vacations",
+		"dotnet": "Employees.VacationsAsync",
+		"go": "Employees.Vacations",
+		"java": "employees.vacations"
+	},
+	"POST /v1/employees/{id}/vacations": {
+		"python": "employees.update_vacations",
+		"php": "employees->updateVacations",
+		"dotnet": "Employees.UpdateVacationsAsync",
+		"go": "Employees.UpdateVacations",
+		"java": "employees.updateVacations"
+	},
 	"POST /v1/payroll_receipts": {
 		"python": "payroll_receipts.create",
 		"php": "payrollReceipts->create",

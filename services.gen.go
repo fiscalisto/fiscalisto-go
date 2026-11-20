@@ -1681,6 +1681,36 @@ func (s *EmployeesService) Delete(ctx context.Context, id string, opts ...Reques
 	return out, nil
 }
 
+// Vacations: Vacaciones de un empleado
+//
+// Los días de vacaciones de cada año de servicio (artículo 76 de la LFT: 12 el primero, dos más cada año hasta 20 y luego dos más cada cinco), los que tomó (los días de vacaciones de sus recibos timbrados, restados del año más antiguo que le quede), hasta cuándo dárselos (seis meses después del aniversario, artículo 81) y cuándo prescriben (un año después, artículo 516). pending_days son los de años cumplidos que no han prescrito: los que paga el finiquito.
+//
+// GET /v1/employees/{id}/vacations
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-employee-vacations
+func (s *EmployeesService) Vacations(ctx context.Context, id string, params *GetEmployeeVacationsParams, opts ...RequestOption) (*EmployeeVacations, error) {
+	out := new(EmployeeVacations)
+	if err := s.c.do(ctx, "GET", "/v1/employees/"+url.PathEscape(id)+"/vacations", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateVacations: Saldo de vacaciones antes de Fiscalisto
+//
+// Guarda lo que el empleado tenía en un día según sus registros: los días que le quedaban de años cumplidos y los que ya había tomado del año en curso. Los recibos timbrados antes de ese día no se cuentan. opening_date null lo quita.
+//
+// POST /v1/employees/{id}/vacations
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-employee-vacations
+func (s *EmployeesService) UpdateVacations(ctx context.Context, id string, params *UpdateEmployeeVacationsParams, opts ...RequestOption) (*EmployeeVacations, error) {
+	out := new(EmployeeVacations)
+	if err := s.c.do(ctx, "POST", "/v1/employees/"+url.PathEscape(id)+"/vacations", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PayrollReceiptsService: Nómina (client.PayrollReceipts).
 type PayrollReceiptsService struct{ c *Client }
 

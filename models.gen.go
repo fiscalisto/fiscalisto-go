@@ -2099,8 +2099,10 @@ type CreateExtraordinaryPayrollReceiptParams struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 	// finiquito con dismissal: incluye 20 días por año de servicio (LFT art. 50), cuando el patrón no lo reinstala.
 	TwentyDaysPerYear *bool `json:"twenty_days_per_year,omitempty"`
-	// finiquito: los días de vacaciones del año de servicio en curso que ya tomó.
+	// finiquito: los días de vacaciones del año de servicio en curso que ya tomó. Por omisión, los de sus recibos timbrados (GET /v1/employees/{id}/vacations).
 	VacationDaysTaken *float64 `json:"vacation_days_taken,omitempty"`
+	// finiquito: los días de vacaciones de años de servicio cumplidos que no disfrutó ni han prescrito; se pagan con su prima vacacional. Por omisión, pending_days de sus vacaciones.
+	VacationDaysOwed *float64 `json:"vacation_days_owed,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
@@ -4691,6 +4693,82 @@ type EmployeeList struct {
 	URL string `json:"url"`
 }
 
+// EmployeeVacations: Las vacaciones de un empleado por año de servicio (LFT 76, 81 y 516).
+type EmployeeVacations struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// El día del saldo.
+	AsOf string `json:"as_of"`
+	// Los días de años de servicio cumplidos que le quedan y no han prescrito: los que paga el finiquito.
+	PendingDays float64 `json:"pending_days"`
+	// El año de servicio en curso.
+	CurrentYear EmployeeVacationsCurrentYear `json:"current_year"`
+	// Cada año de servicio cumplido, del más antiguo al más reciente.
+	Years []EmployeeVacationsYear `json:"years"`
+	// El saldo de antes de Fiscalisto, o null.
+	Opening *EmployeeVacationsOpening `json:"opening,omitempty"`
+	// Los días de vacaciones de sus recibos timbrados.
+	Taken []EmployeeVacationsTakenItem `json:"taken"`
+}
+
+// EmployeeVacationsCurrentYear: El año de servicio en curso.
+type EmployeeVacationsCurrentYear struct {
+	// Su número: 1 el primer año de servicio.
+	Year int64 `json:"year"`
+	// Su aniversario.
+	CompletesOn string `json:"completes_on"`
+	// Los días que le tocan al cumplirlo.
+	Days float64 `json:"days"`
+	// Los que ya tomó por adelantado.
+	TakenInAdvance float64 `json:"taken_in_advance"`
+	// Su parte proporcional al día del saldo, menos lo adelantado.
+	AccruedDays float64 `json:"accrued_days"`
+}
+
+// EmployeeVacationsOpening: EmployeeVacationsOpening.
+type EmployeeVacationsOpening struct {
+	// El día del saldo inicial.
+	Date string `json:"date"`
+	// Los de años cumplidos.
+	PendingDays float64 `json:"pending_days"`
+	// Los tomados del año en curso.
+	TakenDays float64 `json:"taken_days"`
+}
+
+// EmployeeVacationsTakenItem: EmployeeVacationsTakenItem.
+type EmployeeVacationsTakenItem struct {
+	// El fin del periodo del recibo.
+	Date string `json:"date"`
+	// Los días de vacaciones que pagó.
+	Days float64 `json:"days"`
+}
+
+// EmployeeVacationsYear: EmployeeVacationsYear.
+type EmployeeVacationsYear struct {
+	// El año de servicio; 0 es el saldo de antes de Fiscalisto.
+	Year int64 `json:"year"`
+	// El aniversario que lo cumple.
+	OwedFrom string `json:"owed_from"`
+	// Los días que le tocan (artículo 76).
+	Days float64 `json:"days"`
+	// Los que ya tomó.
+	TakenDays float64 `json:"taken_days"`
+	// Los que le quedan.
+	RemainingDays float64 `json:"remaining_days"`
+	// El último día para dárselos (artículo 81).
+	GrantBy string `json:"grant_by"`
+	// El día en que prescriben (artículo 516).
+	PrescribesOn string `json:"prescribes_on"`
+	// taken, disfrutadas; pending, por disfrutar; late, pasó el plazo para darlas y no han prescrito; prescribed, prescritas.
+	//
+	// Valores: taken, pending, late, prescribed.
+	Status string `json:"status"`
+}
+
 // ErrorBody: Todos los errores tienen esta forma.
 type ErrorBody struct {
 	// El error: type, code, message (en el idioma pedido), param (el campo a corregir), doc_url y request_id.
@@ -6179,6 +6257,12 @@ type GetElectronicAccountingParams struct {
 	ProcedureNumber *string `json:"procedure_number,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetEmployeeVacationsParams: los campos de «Vacaciones de un empleado».
+type GetEmployeeVacationsParams struct {
+	// El día del saldo (AAAA-MM-DD); por omisión hoy, o su último día si ya salió.
+	AsOf *string `json:"as_of,omitempty"`
 }
 
 // GetExpensePolicyParams: los campos de «Ver la política».
@@ -10479,8 +10563,10 @@ type PreviewExtraordinaryPayrollReceiptParams struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 	// finiquito con dismissal: incluye 20 días por año de servicio (LFT art. 50), cuando el patrón no lo reinstala.
 	TwentyDaysPerYear *bool `json:"twenty_days_per_year,omitempty"`
-	// finiquito: los días de vacaciones del año de servicio en curso que ya tomó.
+	// finiquito: los días de vacaciones del año de servicio en curso que ya tomó. Por omisión, los de sus recibos timbrados (GET /v1/employees/{id}/vacations).
 	VacationDaysTaken *float64 `json:"vacation_days_taken,omitempty"`
+	// finiquito: los días de vacaciones de años de servicio cumplidos que no disfrutó ni han prescrito; se pagan con su prima vacacional. Por omisión, pending_days de sus vacaciones.
+	VacationDaysOwed *float64 `json:"vacation_days_owed,omitempty"`
 	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
@@ -13717,6 +13803,16 @@ type UpdateEmployeeParams struct {
 	//
 	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
 	ExitReason *string `json:"exit_reason,omitempty"`
+}
+
+// UpdateEmployeeVacationsParams: los campos de «Saldo de vacaciones antes de Fiscalisto».
+type UpdateEmployeeVacationsParams struct {
+	// El día del saldo, según sus registros de antes de Fiscalisto; null lo quita. Los recibos timbrados antes de ese día no se cuentan.
+	OpeningDate *string `json:"opening_date,omitempty"`
+	// Los días que ese día le quedaban de años de servicio cumplidos.
+	OpeningPendingDays *float64 `json:"opening_pending_days,omitempty"`
+	// Los días del año de servicio en curso que ya había tomado ese día.
+	OpeningTakenDays *float64 `json:"opening_taken_days,omitempty"`
 }
 
 // UpdateExpenseItemParams: los campos de «Actualizar un gasto».
