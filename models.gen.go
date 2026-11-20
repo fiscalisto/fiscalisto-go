@@ -6989,6 +6989,16 @@ type GetGeneralLedgerParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetInflationAdjustmentParams: los campos de «Calcular el ajuste anual por inflación».
+type GetInflationAdjustmentParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El primer mes del ejercicio, de 1 a 12. Por omisión 1; otro si la empresa empezó en el año.
+	FromMonth *int64 `json:"from_month,omitempty"`
+	// El último mes, de 1 a 12. Por omisión 12 en un año pasado y el mes actual en el año en curso.
+	ThroughMonth *int64 `json:"through_month,omitempty"`
+}
+
 // GetInvoiceCancellationReceiptParams: los campos de «Descargar el acuse de cancelación».
 type GetInvoiceCancellationReceiptParams struct {
 	// Con un UUID en vez del id, el emisor (iss_…) si la cuenta tiene varios.
@@ -7267,6 +7277,102 @@ type ImssMovementList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// InflationAccounts: Cómo cuentan las cuentas en el ajuste anual por inflación, después del cambio.
+type InflationAccounts struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// Las cuentas que cambió, con cómo cuentan ahora.
+	Accounts []InflationAccountsAccount `json:"accounts"`
+}
+
+// InflationAccountsAccount: InflationAccountsAccount.
+type InflationAccountsAccount struct {
+	// El número de la cuenta.
+	Account string `json:"account"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su código agrupador.
+	GroupingCode string `json:"grouping_code"`
+	// credit (crédito, art. 45 de la LISR), debt (deuda, art. 46) o none.
+	//
+	// Valores: credit, debt, none.
+	Treatment string `json:"treatment"`
+	// true si difiere del de su código agrupador.
+	Changed bool `json:"changed"`
+}
+
+// InflationAdjustment: El ajuste anual por inflación de una persona moral (artículo 44 de la Ley del ISR), con el promedio de los saldos mensuales de sus créditos y sus deudas.
+type InflationAdjustment struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El ejercicio.
+	Year int64 `json:"year"`
+	// El primer mes del ejercicio (1, o el mes en que empezó si fue en el año).
+	FromMonth int64 `json:"from_month"`
+	// El último mes calculado: 12, o uno anterior para una estimación.
+	ThroughMonth int64 `json:"through_month"`
+	// Cuántos meses se promediaron.
+	Months int64 `json:"months"`
+	// Cada cuenta de balance con saldo en el ejercicio.
+	Accounts []InflationAdjustmentAccount `json:"accounts"`
+	// Los créditos al último día de cada mes.
+	CreditsByMonth []float64 `json:"credits_by_month"`
+	// Las deudas al último día de cada mes.
+	DebtsByMonth []float64 `json:"debts_by_month"`
+	// El saldo promedio anual de los créditos.
+	AverageCredits float64 `json:"average_credits"`
+	// El saldo promedio anual de las deudas.
+	AverageDebts float64 `json:"average_debts"`
+	// La diferencia entre los dos promedios, en positivo.
+	Difference float64 `json:"difference"`
+	// El factor de ajuste anual: INPC del último mes entre el del último mes del ejercicio anterior, menos 1, al diezmilésimo. null sin INPC publicado.
+	Factor *float64 `json:"factor,omitempty"`
+	// El INPC de la base.
+	InpcStart *float64 `json:"inpc_start,omitempty"`
+	// El INPC del último mes.
+	InpcEnd *float64 `json:"inpc_end,omitempty"`
+	// De qué mes es inpc_end (AAAA-MM): diciembre, o el último publicado en una estimación.
+	InpcEndMonth *string `json:"inpc_end_month,omitempty"`
+	// true mientras no hay saldos de diciembre o INPC de diciembre: una estimación.
+	Estimated bool `json:"estimated"`
+	// taxable (acumulable, art. 18 fr. X) cuando las deudas son mayores; deductible (art. 25 fr. VIII) cuando los créditos lo son.
+	//
+	// Valores: taxable, deductible.
+	Type *string `json:"type,omitempty"`
+	// El ajuste anual por inflación: difference × factor.
+	Amount *float64 `json:"amount,omitempty"`
+}
+
+// InflationAdjustmentAccount: InflationAdjustmentAccount.
+type InflationAdjustmentAccount struct {
+	// El número de la cuenta.
+	Account string `json:"account"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// credit (crédito, art. 45 de la LISR), debt (deuda, art. 46) o none.
+	//
+	// Valores: credit, debt, none.
+	Treatment string `json:"treatment"`
+	// true si se cambió del de su código agrupador (POST /v1/accounting/inflation_accounts).
+	Changed bool `json:"changed"`
+	// Por qué cuenta así, con el artículo de la ley.
+	Reason string `json:"reason"`
+	// El saldo al último día de cada mes, positivo como crédito o como deuda (en none, el saldo contable).
+	MonthEndBalances []float64 `json:"month_end_balances"`
+	// La suma de los saldos entre los meses (0 en none).
+	AverageBalance float64 `json:"average_balance"`
 }
 
 // Invitation: Una invitación a la empresa que aún no se acepta.
@@ -13591,6 +13697,24 @@ type SaveBudgetParamsLine struct {
 	Account string `json:"account"`
 	// Los 12 meses, de enero a diciembre, en pesos y en la naturaleza de la cuenta: un ingreso como ingreso, un gasto como gasto.
 	Months []float64 `json:"months"`
+}
+
+// SaveInflationAccountsParams: los campos de «Cambiar cómo cuenta una cuenta en el ajuste por inflación».
+type SaveInflationAccountsParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Las cuentas que cambia.
+	Accounts []SaveInflationAccountsParamsAccount `json:"accounts"`
+}
+
+// SaveInflationAccountsParamsAccount: SaveInflationAccountsParamsAccount.
+type SaveInflationAccountsParamsAccount struct {
+	// El número de la cuenta en el catálogo (GET /v1/accounting/accounts).
+	Account string `json:"account"`
+	// credit (crédito, art. 45), debt (deuda, art. 46) o none. null regresa al de su código agrupador.
+	//
+	// Valores: credit, debt, none.
+	Treatment *string `json:"treatment,omitempty"`
 }
 
 // ScheduleSupplierInvoiceParams: los campos de «Programar el pago de una factura de proveedor».

@@ -169,6 +169,10 @@ type services struct {
 	// Contabilidad.
 	Budgets *BudgetsService
 	// Contabilidad.
+	InflationAdjustments *InflationAdjustmentsService
+	// Contabilidad.
+	InflationAccounts *InflationAccountsService
+	// Contabilidad.
 	CostCenterResults *CostCenterResultsService
 	// Contabilidad.
 	PayrollProvisions *PayrollProvisionsService
@@ -269,6 +273,8 @@ func (s *services) init(c *Client) {
 	s.FxRevaluations = &FxRevaluationsService{c}
 	s.CostOfSales = &CostOfSalesService{c}
 	s.Budgets = &BudgetsService{c}
+	s.InflationAdjustments = &InflationAdjustmentsService{c}
+	s.InflationAccounts = &InflationAccountsService{c}
 	s.CostCenterResults = &CostCenterResultsService{c}
 	s.PayrollProvisions = &PayrollProvisionsService{c}
 	s.TaxDeterminations = &TaxDeterminationsService{c}
@@ -5125,6 +5131,42 @@ func (s *BudgetsService) Get(ctx context.Context, year string, params *GetBudget
 func (s *BudgetsService) Save(ctx context.Context, year string, params *SaveBudgetParams, opts ...RequestOption) (*Budget, error) {
 	out := new(Budget)
 	if err := s.c.do(ctx, "POST", "/v1/accounting/budgets/"+url.PathEscape(year), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// InflationAdjustmentsService: Contabilidad (client.InflationAdjustments).
+type InflationAdjustmentsService struct{ c *Client }
+
+// Get: Calcular el ajuste anual por inflación
+//
+// El ajuste anual por inflación de una persona moral (artículo 44 de la Ley del ISR): la suma de los saldos al último día de cada mes de sus créditos y de sus deudas entre los meses del ejercicio, y la diferencia por el factor de ajuste anual. Deudas mayores dan un ajuste acumulable (taxable); créditos mayores, uno deducible. Cada cuenta cuenta por su código agrupador (con la razón en reason) o como la marcó con POST /v1/accounting/inflation_accounts. En el año en curso es una estimación hasta el mes actual. Como Estados financieros › Ajuste por inflación en la app.
+//
+// GET /v1/accounting/inflation_adjustments/{year}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-inflation-adjustment
+func (s *InflationAdjustmentsService) Get(ctx context.Context, year string, params *GetInflationAdjustmentParams, opts ...RequestOption) (*InflationAdjustment, error) {
+	out := new(InflationAdjustment)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/inflation_adjustments/"+url.PathEscape(year), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// InflationAccountsService: Contabilidad (client.InflationAccounts).
+type InflationAccountsService struct{ c *Client }
+
+// Save: Cambiar cómo cuenta una cuenta en el ajuste por inflación
+//
+// Marca cuentas de balance como crédito (credit), deuda (debt) o ninguno (none) para el ajuste anual por inflación, por ejemplo un préstamo a un socio persona moral o una deuda de un gasto no deducible. treatment null regresa al de su código agrupador. Una cuenta de resultados contesta parameter_invalid.
+//
+// POST /v1/accounting/inflation_accounts
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/save-inflation-accounts
+func (s *InflationAccountsService) Save(ctx context.Context, params *SaveInflationAccountsParams, opts ...RequestOption) (*InflationAccounts, error) {
+	out := new(InflationAccounts)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/inflation_accounts", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

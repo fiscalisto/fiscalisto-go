@@ -2148,6 +2148,20 @@
 		"go": "Budgets.Save",
 		"java": "budgets.save"
 	},
+	"GET /v1/accounting/inflation_adjustments/{year}": {
+		"python": "inflation_adjustments.get",
+		"php": "inflationAdjustments->get",
+		"dotnet": "InflationAdjustments.GetAsync",
+		"go": "InflationAdjustments.Get",
+		"java": "inflationAdjustments.get"
+	},
+	"POST /v1/accounting/inflation_accounts": {
+		"python": "inflation_accounts.save",
+		"php": "inflationAccounts->save",
+		"dotnet": "InflationAccounts.SaveAsync",
+		"go": "InflationAccounts.Save",
+		"java": "inflationAccounts.save"
+	},
 	"GET /v1/accounting/cost_center_results/{month}": {
 		"python": "cost_center_results.get",
 		"php": "costCenterResults->get",
