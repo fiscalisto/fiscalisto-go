@@ -1322,6 +1322,69 @@
 		"go": "MaterialityInvoices.List",
 		"java": "materialityInvoices.list"
 	},
+	"POST /v1/sat_reviews": {
+		"python": "sat_reviews.create",
+		"php": "satReviews->create",
+		"dotnet": "SatReviews.CreateAsync",
+		"go": "SatReviews.Create",
+		"java": "satReviews.create"
+	},
+	"GET /v1/sat_reviews": {
+		"python": "sat_reviews.list",
+		"php": "satReviews->list",
+		"dotnet": "SatReviews.ListAsync",
+		"go": "SatReviews.List",
+		"java": "satReviews.list"
+	},
+	"GET /v1/sat_reviews/{id}": {
+		"python": "sat_reviews.get",
+		"php": "satReviews->get",
+		"dotnet": "SatReviews.GetAsync",
+		"go": "SatReviews.Get",
+		"java": "satReviews.get"
+	},
+	"POST /v1/sat_reviews/{id}": {
+		"python": "sat_reviews.update",
+		"php": "satReviews->update",
+		"dotnet": "SatReviews.UpdateAsync",
+		"go": "SatReviews.Update",
+		"java": "satReviews.update"
+	},
+	"DELETE /v1/sat_reviews/{id}": {
+		"python": "sat_reviews.delete",
+		"php": "satReviews->delete",
+		"dotnet": "SatReviews.DeleteAsync",
+		"go": "SatReviews.Delete",
+		"java": "satReviews.delete"
+	},
+	"POST /v1/sat_reviews/{id}/answer": {
+		"python": "sat_reviews.arm_answer",
+		"php": "satReviews->armAnswer",
+		"dotnet": "SatReviews.ArmAnswerAsync",
+		"go": "SatReviews.ArmAnswer",
+		"java": "satReviews.armAnswer"
+	},
+	"GET /v1/sat_reviews/{id}/answer": {
+		"python": "sat_reviews.download_answer",
+		"php": "satReviews->downloadAnswer",
+		"dotnet": "SatReviews.DownloadAnswerAsync",
+		"go": "SatReviews.DownloadAnswer",
+		"java": "satReviews.downloadAnswer"
+	},
+	"GET /v1/sat_risk_check": {
+		"python": "sat_risk_check.get",
+		"php": "satRiskCheck->get",
+		"dotnet": "SatRiskCheck.GetAsync",
+		"go": "SatRiskCheck.Get",
+		"java": "satRiskCheck.get"
+	},
+	"GET /v1/tax_discrepancy": {
+		"python": "tax_discrepancy.get",
+		"php": "taxDiscrepancy->get",
+		"dotnet": "TaxDiscrepancy.GetAsync",
+		"go": "TaxDiscrepancy.Get",
+		"java": "taxDiscrepancy.get"
+	},
 	"GET /v1/warehouses": {
 		"python": "warehouses.list",
 		"php": "warehouses->list",

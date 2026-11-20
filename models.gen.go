@@ -4163,6 +4163,66 @@ type CreateSatDownloadParams struct {
 	UUID *string `json:"uuid,omitempty"`
 }
 
+// CreateSatReviewParams: los campos de «Registrar una revisión del SAT».
+type CreateSatReviewParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Qué le llegó: invitation_letter, return_clarification, missing_returns, desk_audit (revisión de gabinete), field_audit (visita domiciliaria), electronic_audit, supplier_69b, presumption_69b, csd_restriction, tax_discrepancy, refund u other.
+	//
+	// Valores: invitation_letter, return_clarification, missing_returns, desk_audit, field_audit, electronic_audit, supplier_69b, presumption_69b, csd_restriction, tax_discrepancy, refund, other.
+	Type string `json:"type"`
+	// Sus oficios con su fecha de notificación: el que la abrió y los que siguieron (prórroga, segundo requerimiento, observaciones…).
+	Notices []CreateSatReviewParamsNotice `json:"notices"`
+	// Lo que el oficio pide entregar. Sin esto, lo que el SAT suele pedir en ese tipo.
+	Requests []CreateSatReviewParamsRequest `json:"requests,omitempty"`
+	// open (por atender, por omisión), answered, concluded (sin observaciones), assessed (con crédito fiscal), in_defense o closed. Mientras está open, answered, assessed o in_defense, Fiscalisto cuenta sus plazos y avisa.
+	//
+	// Valores: open, answered, concluded, assessed, in_defense, closed.
+	Status *string `json:"status,omitempty"`
+	// El número del oficio, como viene en él (por ejemplo 500-05-2026-1234).
+	Reference *string `json:"reference,omitempty"`
+	// El número de orden (ABC1234567/26) o de trámite (AB123456789012) si pide la contabilidad electrónica: va en sus pólizas.
+	OrderNumber *string `json:"order_number,omitempty"`
+	// La autoridad que lo firma (por ejemplo «ADAF de Occidente»).
+	Authority *string `json:"authority,omitempty"`
+	// Primer día del periodo que revisa. Con period_end, Fiscalisto arma lo suyo.
+	PeriodStart *string `json:"period_start,omitempty"`
+	// Último día del periodo que revisa (a lo más 7 ejercicios).
+	PeriodEnd *string `json:"period_end,omitempty"`
+	// El monto que señala el SAT, en pesos, si señala uno.
+	Amount *float64 `json:"amount,omitempty"`
+	// Sus notas.
+	Notes *string `json:"notes,omitempty"`
+}
+
+// CreateSatReviewParamsNotice: CreateSatReviewParamsNotice.
+type CreateSatReviewParamsNotice struct {
+	// Qué oficio es, de los de su tipo (en desk_audit: solicitud, observaciones o resolucion); por omisión, el primero, el que abre la revisión. Otro contesta con los de su tipo.
+	Step *string `json:"step,omitempty"`
+	// El día en que se lo notificaron (en el Buzón, el día en que lo abrió o el quinto día hábil después del aviso, lo que pase primero). No puede ser futuro.
+	NotifiedOn string `json:"notified_on"`
+	// Los días hábiles que da el oficio, solo cuando no son los de la ley (una carta invitación con fecha, «otro» oficio).
+	BusinessDays *int64 `json:"business_days,omitempty"`
+	// true si pidió la prórroga (o presentó el aviso) que la ley permite en ese oficio: suma sus días al plazo.
+	Extension *bool `json:"extension,omitempty"`
+	// El día en que lo respondió; null mientras no.
+	AnsweredOn *string `json:"answered_on,omitempty"`
+}
+
+// CreateSatReviewParamsRequest: CreateSatReviewParamsRequest.
+type CreateSatReviewParamsRequest struct {
+	// Qué pide (vea requests en la guía).
+	//
+	// Valores: working_paper, tax_discrepancy, issued_invoices, received_invoices, retentions, tax_returns, electronic_accounting, materiality, bank_statements, contracts, inventory, assets_and_staff, articles_and_power, written_answer, other.
+	Key string `json:"key"`
+	// Cómo lo dice el oficio, si quiere sus palabras; con other, obligatorio.
+	Name *string `json:"name,omitempty"`
+	// true cuando ya lo tiene listo.
+	Done *bool `json:"done,omitempty"`
+	// Una nota suya.
+	Note *string `json:"note,omitempty"`
+}
+
 // CreateStockAdjustmentParams: los campos de «Ajustar existencias».
 type CreateStockAdjustmentParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
@@ -7003,10 +7063,26 @@ type GetSatDeclarationCalendarParams struct {
 	Year *int64 `json:"year,omitempty"`
 }
 
+// GetSatRiskCheckParams: los campos de «Revisar como el SAT».
+type GetSatRiskCheckParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetTaxDeterminationParams: los campos de «Ver la determinación de impuestos de un mes».
 type GetTaxDeterminationParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetTaxDiscrepancyParams: los campos de «Calcular la discrepancia fiscal».
+type GetTaxDiscrepancyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El ejercicio (por omisión, el año pasado).
+	Year *int64 `json:"year,omitempty"`
+	// Los ingresos de su declaración anual, si tiene ingresos que Fiscalisto no ve (rentas, intereses, otro patrón): reemplazan los que calcula.
+	DeclaredIncome *float64 `json:"declared_income,omitempty"`
 }
 
 // GetTrialBalanceParams: los campos de «Ver la balanza de comprobación».
@@ -9937,6 +10013,16 @@ type ListSatRetentionsParams struct {
 	Year *int64 `json:"year,omitempty"`
 	// Solo las que cubren este mes (1 a 12): una anual de enero a diciembre cubre todos.
 	Month *int64 `json:"month,omitempty"`
+}
+
+// ListSatReviewsParams: los campos de «Listar revisiones del SAT».
+type ListSatReviewsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de este estado: open, answered, concluded, assessed, in_defense o closed.
+	//
+	// Valores: open, answered, concluded, assessed, in_defense, closed.
+	Status *string `json:"status,omitempty"`
 }
 
 // ListStockAdjustmentsParams: los campos de «Listar ajustes».
@@ -13073,6 +13159,178 @@ type SATRetentionWithheldTax struct {
 	PaymentType *string `json:"payment_type,omitempty"`
 }
 
+// SATReview: Una carta invitación, requerimiento u oficio del SAT al RFC del emisor: su plazo en días hábiles desde que surte efectos la notificación (sin los inhábiles del SAT), lo que pide, cuánto de eso tiene Fiscalisto y su última respuesta armada.
+type SATReview struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor cuyo RFC recibió el oficio.
+	Issuer string `json:"issuer"`
+	// Qué le llegó (invitation_letter, desk_audit, field_audit…).
+	//
+	// Valores: invitation_letter, return_clarification, missing_returns, desk_audit, field_audit, electronic_audit, supplier_69b, presumption_69b, csd_restriction, tax_discrepancy, refund, other.
+	Type string `json:"type"`
+	// Su nombre como lo muestra la app («Revisión de gabinete»).
+	TypeName string `json:"type_name"`
+	// open (por atender), answered, concluded (sin observaciones), assessed (con crédito fiscal), in_defense o closed.
+	//
+	// Valores: open, answered, concluded, assessed, in_defense, closed.
+	Status string `json:"status"`
+	// Su estado como lo muestra la app («Por atender»).
+	StatusName string `json:"status_name"`
+	// El número del oficio, o null.
+	Reference *string `json:"reference,omitempty"`
+	// El número de orden o de trámite que va en las pólizas de la contabilidad electrónica, o null.
+	OrderNumber *string `json:"order_number,omitempty"`
+	// La autoridad que lo firma, o null.
+	Authority *string `json:"authority,omitempty"`
+	// Primer día del periodo revisado, o null.
+	PeriodStart *string `json:"period_start,omitempty"`
+	// Último día del periodo revisado, o null.
+	PeriodEnd *string `json:"period_end,omitempty"`
+	// El monto que señala el SAT, en pesos, o null.
+	Amount *float64 `json:"amount,omitempty"`
+	// El último día para responder el oficio pendiente (el más reciente sin responder), o null si la ley no da plazo o ya respondió todos.
+	DueOn *string `json:"due_on,omitempty"`
+	// Días hábiles que le quedan: 0 es hoy, negativo ya pasó. null sin plazo.
+	BusinessDaysLeft *int64 `json:"business_days_left,omitempty"`
+	// El día en que el SAT debe terminar la revisión (12 meses en gabinete y visita, 6 en electrónica), o null.
+	SATMustConcludeBy *string `json:"sat_must_conclude_by,omitempty"`
+	// Sus oficios, del primero al último, cada uno con su plazo.
+	Notices []SATReviewNotice `json:"notices"`
+	// Lo que el oficio pide entregar y qué tan listo está.
+	Requests []SATReviewRequest `json:"requests"`
+	// Cuántas de requests están listas («Ya tiene N de M»).
+	Ready int64 `json:"ready"`
+	// Cuántas pide.
+	Total int64 `json:"total"`
+	// La última respuesta armada (POST /v1/sat_reviews/{id}/answer), o null. Se descarga con GET /v1/sat_reviews/{id}/answer.
+	Answer *SATReviewAnswer `json:"answer,omitempty"`
+	// Sus notas, o null.
+	Notes *string `json:"notes,omitempty"`
+	// Cuándo se registró.
+	CreatedAt string `json:"created_at"`
+	// Su último cambio.
+	UpdatedAt string `json:"updated_at"`
+}
+
+// SATReviewAnswer: SATReviewAnswer.
+type SATReviewAnswer struct {
+	// processing, completed (se descarga), failed o expired.
+	//
+	// Valores: processing, completed, failed, expired.
+	Status string `json:"status"`
+	// El tamaño del ZIP, ya completo.
+	SizeBytes *int64 `json:"size_bytes,omitempty"`
+	// Por qué falló, o null.
+	Error *string `json:"error,omitempty"`
+	// Cuándo se pidió.
+	CreatedAt string `json:"created_at"`
+	// Cuándo quedó lista, o null.
+	CompletedAt *string `json:"completed_at,omitempty"`
+	// Hasta cuándo se descarga, o null.
+	ExpiresAt *string `json:"expires_at,omitempty"`
+}
+
+// SATReviewList: Una página de la lista.
+type SATReviewList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SATReview `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// SATReviewNotice: SATReviewNotice.
+type SATReviewNotice struct {
+	// Qué oficio es, de los de su tipo.
+	Step string `json:"step"`
+	// Su nombre («Solicitud de información»).
+	Name string `json:"name"`
+	// El día en que se lo notificaron.
+	NotifiedOn string `json:"notified_on"`
+	// El día en que surte efectos (el hábil siguiente).
+	EffectiveOn string `json:"effective_on"`
+	// Los días hábiles que da, con la prórroga si la pidió; null si la ley no da plazo.
+	BusinessDays *int64 `json:"business_days,omitempty"`
+	// Si pidió la prórroga o presentó el aviso.
+	Extension bool `json:"extension"`
+	// Su último día para responder, o null.
+	DueOn *string `json:"due_on,omitempty"`
+	// Días hábiles que le quedan (0 es hoy, negativo ya pasó), o null.
+	BusinessDaysLeft *int64 `json:"business_days_left,omitempty"`
+	// El día en que lo respondió, o null.
+	AnsweredOn *string `json:"answered_on,omitempty"`
+	// El artículo que da el plazo («art. 53 inciso c) CFF»).
+	Law string `json:"law"`
+	// Hasta cuándo puede pedir un acuerdo conclusivo en Prodecon (art. 69-C CFF), cuando aplica.
+	ConclusiveAgreementUntil *string `json:"conclusive_agreement_until,omitempty"`
+}
+
+// SATReviewRequest: SATReviewRequest.
+type SATReviewRequest struct {
+	// Qué pide.
+	//
+	// Valores: working_paper, tax_discrepancy, issued_invoices, received_invoices, retentions, tax_returns, electronic_accounting, materiality, bank_statements, contracts, inventory, assets_and_staff, articles_and_power, written_answer, other.
+	Key string `json:"key"`
+	// Cómo se llama (o como lo dice el oficio).
+	Name string `json:"name"`
+	// fiscalisto: lo arma la respuesta con sus datos; you: se sube (contratos, escrito…).
+	//
+	// Valores: fiscalisto, you.
+	MadeBy string `json:"made_by"`
+	// Si lo marcó como listo.
+	Done bool `json:"done"`
+	// Su nota, o null.
+	Note *string `json:"note,omitempty"`
+	// Lo que Fiscalisto tiene para eso en el periodo («412 CFDI»), o null.
+	Have *string `json:"have,omitempty"`
+	// Cuántos documentos subió para eso en la app.
+	Documents int64 `json:"documents"`
+	// Listo: lo marcó, Fiscalisto lo arma con lo que tiene, o subió al menos un documento.
+	Ready bool `json:"ready"`
+}
+
+// SATRiskCheck: Revise como el SAT: lo que los sistemas del SAT cruzan para mandar cartas invitación y escoger a quién revisar, con lo que Fiscalisto ya leyó del emisor. No consulta al SAT.
+type SATRiskCheck struct {
+	// Siempre sat_risk_check.
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Su RFC.
+	TaxID string `json:"tax_id"`
+	// Cuántas revisiones salen para atender ya.
+	Critical int64 `json:"critical"`
+	// Cuántas salen para revisar.
+	Warning int64 `json:"warning"`
+	// Cada cruce, los que hay que atender primero.
+	Checks []SATRiskCheckCheck `json:"checks"`
+}
+
+// SATRiskCheckCheck: SATRiskCheckCheck.
+type SATRiskCheckCheck struct {
+	// Qué revisa: revisiones, buzon, cruces, omisiones, opinion, listas, efos, materialidad, depositos, discrepancia o efirma.
+	Key string `json:"key"`
+	// ok, warning (revisar), critical (atender ya) o unknown (Fiscalisto aún no lo lee).
+	//
+	// Valores: ok, warning, critical, unknown.
+	Result string `json:"result"`
+	// Lo que encontró, en una línea.
+	Title string `json:"title"`
+	// El detalle, con cifras.
+	Detail string `json:"detail"`
+	// Por qué le importa al SAT.
+	Why string `json:"why"`
+}
+
 // SalesOrder: Un pedido de venta: lo que su cliente pidió, cómo se entrega (remisiones) y cómo se factura y se cobra.
 type SalesOrder struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -13839,6 +14097,64 @@ type TaxDetermination struct {
 	SuggestedISR *float64 `json:"suggested_isr,omitempty"`
 	// La póliza de determinación (mje_…) si ya se registró, o null. Es una póliza a mano de tipo adjustment.
 	ManualEntry *string `json:"manual_entry,omitempty"`
+}
+
+// TaxDiscrepancy: La discrepancia fiscal de una persona física en un año (art. 91 LISR): lo que gastó y recibió en sus cuentas contra lo que declaró.
+type TaxDiscrepancy struct {
+	// Siempre tax_discrepancy.
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…), una persona física.
+	Issuer string `json:"issuer"`
+	// Su RFC (13 caracteres).
+	TaxID string `json:"tax_id"`
+	// El ejercicio.
+	Year int64 `json:"year"`
+	// Gastos con CFDI a su nombre (recibidos, sin cancelados, menos notas de crédito).
+	Spending float64 `json:"spending"`
+	// Depósitos en sus cuentas (de los estados de cuenta en Conciliación).
+	Deposits float64 `json:"deposits"`
+	// Traspasos entre sus cuentas, que la ley deja fuera (art. 91 LISR).
+	OwnTransfers float64 `json:"own_transfers"`
+	// Préstamos que clasificó.
+	Loans float64 `json:"loans"`
+	// Devoluciones que clasificó.
+	Refunds float64 `json:"refunds"`
+	// Erogaciones: gastos más depósitos, menos traspasos.
+	Outflows float64 `json:"outflows"`
+	// Los ingresos declarados que se restan.
+	DeclaredIncome float64 `json:"declared_income"`
+	// De dónde salen: tax_returns (sus declaraciones), payroll (sus recibos de nómina), declared_income (el que mandó) o none.
+	//
+	// Valores: tax_returns, payroll, declared_income, none.
+	DeclaredIncomeSource string `json:"declared_income_source"`
+	// Erogaciones menos préstamos, devoluciones e ingresos declarados, si es positivo: lo que el SAT presumiría ingreso.
+	Discrepancy float64 `json:"discrepancy"`
+	// Depósitos sin clasificar en Conciliación («Por aclarar»): cada uno que explique baja la discrepancia.
+	UnclassifiedDeposits float64 `json:"unclassified_deposits"`
+	// Si sus préstamos pasan de $600,000 en el año: solo cuentan si los informó en su declaración anual (art. 90 LISR).
+	LoansToReport bool `json:"loans_to_report"`
+	// Si hay estados de cuenta del año; sin ellos solo cuentan los gastos con CFDI.
+	BankStatements bool `json:"bank_statements"`
+	// El cálculo mes por mes.
+	Months []TaxDiscrepancyMonth `json:"months"`
+}
+
+// TaxDiscrepancyMonth: TaxDiscrepancyMonth.
+type TaxDiscrepancyMonth struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// Sus gastos con CFDI a su nombre.
+	Spending float64 `json:"spending"`
+	// Los depósitos en sus cuentas.
+	Deposits float64 `json:"deposits"`
+	// Los traspasos entre sus cuentas.
+	OwnTransfers float64 `json:"own_transfers"`
+	// Los préstamos que clasificó.
+	Loans float64 `json:"loans"`
+	// Los ingresos declarados del mes.
+	DeclaredIncome float64 `json:"declared_income"`
 }
 
 // TaxIDValidation: Si los datos fiscales de un cliente van a pasar el SAT.
@@ -15329,6 +15645,64 @@ type UpdateSalesOrderParamsItemUsedVehicleCustom struct {
 type UpdateSatInvoiceParams struct {
 	// Su centro de costo (ccn_…), o null para quitárselo. Los complementos de pago y los traslados no llevan.
 	CostCenter *string `json:"cost_center,omitempty"`
+}
+
+// UpdateSatReviewParams: los campos de «Actualizar una revisión del SAT».
+type UpdateSatReviewParams struct {
+	// Qué le llegó (vea type al crearla).
+	//
+	// Valores: invitation_letter, return_clarification, missing_returns, desk_audit, field_audit, electronic_audit, supplier_69b, presumption_69b, csd_restriction, tax_discrepancy, refund, other.
+	Type *string `json:"type,omitempty"`
+	// Todos sus oficios: reemplaza los que tenía.
+	Notices []UpdateSatReviewParamsNotice `json:"notices,omitempty"`
+	// Todo lo que pide, con done para marcar lo que ya tiene: reemplaza la lista.
+	Requests []UpdateSatReviewParamsRequest `json:"requests,omitempty"`
+	// open (por atender, por omisión), answered, concluded (sin observaciones), assessed (con crédito fiscal), in_defense o closed. Mientras está open, answered, assessed o in_defense, Fiscalisto cuenta sus plazos y avisa.
+	//
+	// Valores: open, answered, concluded, assessed, in_defense, closed.
+	Status *string `json:"status,omitempty"`
+	// El número del oficio, como viene en él (por ejemplo 500-05-2026-1234).
+	Reference *string `json:"reference,omitempty"`
+	// El número de orden (ABC1234567/26) o de trámite (AB123456789012) si pide la contabilidad electrónica: va en sus pólizas.
+	OrderNumber *string `json:"order_number,omitempty"`
+	// La autoridad que lo firma (por ejemplo «ADAF de Occidente»).
+	Authority *string `json:"authority,omitempty"`
+	// Primer día del periodo que revisa. Con period_end, Fiscalisto arma lo suyo.
+	PeriodStart *string `json:"period_start,omitempty"`
+	// Último día del periodo que revisa (a lo más 7 ejercicios).
+	PeriodEnd *string `json:"period_end,omitempty"`
+	// El monto que señala el SAT, en pesos, si señala uno.
+	Amount *float64 `json:"amount,omitempty"`
+	// Sus notas.
+	Notes *string `json:"notes,omitempty"`
+}
+
+// UpdateSatReviewParamsNotice: UpdateSatReviewParamsNotice.
+type UpdateSatReviewParamsNotice struct {
+	// Qué oficio es, de los de su tipo (en desk_audit: solicitud, observaciones o resolucion); por omisión, el primero, el que abre la revisión. Otro contesta con los de su tipo.
+	Step *string `json:"step,omitempty"`
+	// El día en que se lo notificaron (en el Buzón, el día en que lo abrió o el quinto día hábil después del aviso, lo que pase primero). No puede ser futuro.
+	NotifiedOn string `json:"notified_on"`
+	// Los días hábiles que da el oficio, solo cuando no son los de la ley (una carta invitación con fecha, «otro» oficio).
+	BusinessDays *int64 `json:"business_days,omitempty"`
+	// true si pidió la prórroga (o presentó el aviso) que la ley permite en ese oficio: suma sus días al plazo.
+	Extension *bool `json:"extension,omitempty"`
+	// El día en que lo respondió; null mientras no.
+	AnsweredOn *string `json:"answered_on,omitempty"`
+}
+
+// UpdateSatReviewParamsRequest: UpdateSatReviewParamsRequest.
+type UpdateSatReviewParamsRequest struct {
+	// Qué pide (vea requests en la guía).
+	//
+	// Valores: working_paper, tax_discrepancy, issued_invoices, received_invoices, retentions, tax_returns, electronic_accounting, materiality, bank_statements, contracts, inventory, assets_and_staff, articles_and_power, written_answer, other.
+	Key string `json:"key"`
+	// Cómo lo dice el oficio, si quiere sus palabras; con other, obligatorio.
+	Name *string `json:"name,omitempty"`
+	// true cuando ya lo tiene listo.
+	Done *bool `json:"done,omitempty"`
+	// Una nota suya.
+	Note *string `json:"note,omitempty"`
 }
 
 // UpdateSelfInvoicingParams: los campos de «Cambiar las reglas de autofactura».

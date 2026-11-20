@@ -14,6 +14,14 @@ const (
 	CodeAccountMissing = "account_missing"
 	// Suspendimos la API de la empresa (todas sus llaves, o solo las de producción) por un uso que rompe los términos del servicio. El mensaje dice por qué; escríbanos a soporte@fiscalisto.com para reactivarla.
 	CodeAccountSuspended = "account_suspended"
+	// La respuesta armada se guarda 30 días. Pídala otra vez con POST /v1/sat_reviews/{id}/answer.
+	CodeAnswerExpired = "answer_expired"
+	// Esta revisión del SAT aún no tiene respuesta armada. Pídala con POST /v1/sat_reviews/{id}/answer.
+	CodeAnswerMissing = "answer_missing"
+	// La respuesta aún se arma (answer.status processing) o falló (failed). Consulte GET /v1/sat_reviews/{id}; si falló, pídala otra vez con POST /v1/sat_reviews/{id}/answer.
+	CodeAnswerNotReady = "answer_not_ready"
+	// Ya se está armando la respuesta de esta revisión del SAT. Espere a que answer.status sea completed (GET /v1/sat_reviews/{id}).
+	CodeAnswerRunning = "answer_running"
 	// No existe esa versión de la API (en Fiscalisto-Version o api_version). El mensaje dice cuáles hay; vea Versiones.
 	CodeAPIVersionInvalid = "api_version_invalid"
 	// El activo fijo ya se vendió o se dio de baja: deshaga esa baja con DELETE /v1/accounting/fixed_assets/{id}/disposal si fue un error.

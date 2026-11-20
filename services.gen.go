@@ -106,6 +106,12 @@ type services struct {
 	MaterialitySuppliers *MaterialitySuppliersService
 	// Cumplimiento SAT.
 	MaterialityInvoices *MaterialityInvoicesService
+	// Cumplimiento SAT.
+	SatReviews *SatReviewsService
+	// Cumplimiento SAT.
+	SatRiskCheck *SatRiskCheckService
+	// Cumplimiento SAT.
+	TaxDiscrepancy *TaxDiscrepancyService
 	// Inventario.
 	Warehouses *WarehousesService
 	// Inventario.
@@ -232,6 +238,9 @@ func (s *services) init(c *Client) {
 	s.CompanyReport = &CompanyReportService{c}
 	s.MaterialitySuppliers = &MaterialitySuppliersService{c}
 	s.MaterialityInvoices = &MaterialityInvoicesService{c}
+	s.SatReviews = &SatReviewsService{c}
+	s.SatRiskCheck = &SatRiskCheckService{c}
+	s.TaxDiscrepancy = &TaxDiscrepancyService{c}
 	s.Warehouses = &WarehousesService{c}
 	s.StockMovements = &StockMovementsService{c}
 	s.StockAdjustments = &StockAdjustmentsService{c}
@@ -3279,6 +3288,147 @@ type MaterialityInvoicesService struct{ c *Client }
 func (s *MaterialityInvoicesService) List(ctx context.Context, params *ListMaterialityInvoicesParams, opts ...RequestOption) (*MaterialityInvoiceList, error) {
 	out := new(MaterialityInvoiceList)
 	if err := s.c.do(ctx, "GET", "/v1/materiality_invoices", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SatReviewsService: Cumplimiento SAT (client.SatReviews).
+type SatReviewsService struct{ c *Client }
+
+// Create: Registrar una revisión del SAT
+//
+// Como «Registrar oficio» en Revisiones del SAT: una carta invitación, requerimiento u oficio que el SAT mandó al RFC del emisor, con la fecha en que se lo notificaron. Fiscalisto calcula el plazo en días hábiles desde que surte efectos la notificación (sin sábados, domingos ni los inhábiles del SAT) y avisa por correo 5, 3 y 1 día hábil antes. Sin requests, lleva lo que el SAT suele pedir en ese tipo. No responde nada al SAT. No usa timbres.
+//
+// POST /v1/sat_reviews
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/create-sat-review
+func (s *SatReviewsService) Create(ctx context.Context, params *CreateSatReviewParams, opts ...RequestOption) (*SATReview, error) {
+	out := new(SATReview)
+	if err := s.c.do(ctx, "POST", "/v1/sat_reviews", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar revisiones del SAT
+//
+// Las revisiones del RFC del emisor, primero las que siguen abiertas, después las más recientes, cada una con su plazo y lo que pide. Una página, hasta 500.
+//
+// GET /v1/sat_reviews
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/list-sat-reviews
+func (s *SatReviewsService) List(ctx context.Context, params *ListSatReviewsParams, opts ...RequestOption) (*SATReviewList, error) {
+	out := new(SATReviewList)
+	if err := s.c.do(ctx, "GET", "/v1/sat_reviews", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver una revisión del SAT
+//
+// Una revisión con cada oficio y su plazo, lo que pide con cuánto de eso tiene Fiscalisto (ready de total) y su última respuesta armada.
+//
+// GET /v1/sat_reviews/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-sat-review
+func (s *SatReviewsService) Get(ctx context.Context, id string, opts ...RequestOption) (*SATReview, error) {
+	out := new(SATReview)
+	if err := s.c.do(ctx, "GET", "/v1/sat_reviews/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar una revisión del SAT
+//
+// Cambia solo lo que manda. notices y requests reemplazan la lista: mande todos sus oficios (con answered_on en el que ya respondió) y todo lo que pide (con done en lo que ya tiene).
+//
+// POST /v1/sat_reviews/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/update-sat-review
+func (s *SatReviewsService) Update(ctx context.Context, id string, params *UpdateSatReviewParams, opts ...RequestOption) (*SATReview, error) {
+	out := new(SATReview)
+	if err := s.c.do(ctx, "POST", "/v1/sat_reviews/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una revisión del SAT
+//
+// Borra de Fiscalisto el seguimiento, sus avisos y los enlaces de sus asesores; su trámite en el SAT sigue igual. No se puede deshacer.
+//
+// DELETE /v1/sat_reviews/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/delete-sat-review
+func (s *SatReviewsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/sat_reviews/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ArmAnswer: Armar la respuesta
+//
+// Como «Armar respuesta»: arma en segundo plano un ZIP con lo que la revisión pide: los XML y la relación de CFDI del periodo, el papel de trabajo, la contabilidad electrónica con el número de orden, las declaraciones, los documentos subidos en la app y un índice de qué archivo responde a cada cosa. Contesta la revisión con answer.status processing; consulte GET /v1/sat_reviews/{id} hasta que sea completed y descárguelo con GET /v1/sat_reviews/{id}/answer. Una a la vez (answer_running). No usa timbres.
+//
+// POST /v1/sat_reviews/{id}/answer
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/arm-sat-review-answer
+func (s *SatReviewsService) ArmAnswer(ctx context.Context, id string, opts ...RequestOption) (*SATReview, error) {
+	out := new(SATReview)
+	if err := s.c.do(ctx, "POST", "/v1/sat_reviews/"+url.PathEscape(id)+"/answer", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DownloadAnswer: Descargar la respuesta
+//
+// El ZIP de la última respuesta armada, cuando answer.status es completed (si no, answer_not_ready). Se guarda 30 días.
+//
+// GET /v1/sat_reviews/{id}/answer
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/download-sat-review-answer
+func (s *SatReviewsService) DownloadAnswer(ctx context.Context, id string, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/sat_reviews/"+url.PathEscape(id)+"/answer", nil, nil, false, opts)
+	return string(b), err
+}
+
+// SatRiskCheckService: Cumplimiento SAT (client.SatRiskCheck).
+type SatRiskCheckService struct{ c *Client }
+
+// Get: Revisar como el SAT
+//
+// Como «Revise como el SAT»: lo que los sistemas del SAT cruzan para mandar cartas invitación y escoger a quién revisar (plazos de revisiones abiertas, Buzón Tributario, CFDI contra declaraciones, declaraciones omitidas, opinión de cumplimiento, listas del SAT, proveedores en 69-B, materialidad, depósitos sin aclarar, discrepancia fiscal y vigencia de la e.firma), con lo que Fiscalisto ya leyó. No consulta al SAT y no usa timbres.
+//
+// GET /v1/sat_risk_check
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-sat-risk-check
+func (s *SatRiskCheckService) Get(ctx context.Context, params *GetSatRiskCheckParams, opts ...RequestOption) (*SATRiskCheck, error) {
+	out := new(SATRiskCheck)
+	if err := s.c.do(ctx, "GET", "/v1/sat_risk_check", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TaxDiscrepancyService: Cumplimiento SAT (client.TaxDiscrepancy).
+type TaxDiscrepancyService struct{ c *Client }
+
+// Get: Calcular la discrepancia fiscal
+//
+// Como «Discrepancia fiscal» (personas físicas, art. 91 LISR): gastos con CFDI a su nombre y depósitos en sus cuentas del año, menos traspasos entre sus cuentas, préstamos y devoluciones, contra los ingresos declarados; lo que queda es lo que el SAT presumiría ingreso. Un emisor persona moral contesta parameter_invalid. No usa timbres.
+//
+// GET /v1/tax_discrepancy
+//
+// https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/get-tax-discrepancy
+func (s *TaxDiscrepancyService) Get(ctx context.Context, params *GetTaxDiscrepancyParams, opts ...RequestOption) (*TaxDiscrepancy, error) {
+	out := new(TaxDiscrepancy)
+	if err := s.c.do(ctx, "GET", "/v1/tax_discrepancy", nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
