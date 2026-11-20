@@ -615,6 +615,13 @@
 		"go": "PayrollReceipts.Create",
 		"java": "payrollReceipts.create"
 	},
+	"POST /v1/payroll/net_to_gross": {
+		"python": "payroll_receipts.net_to_gross",
+		"php": "payrollReceipts->netToGross",
+		"dotnet": "PayrollReceipts.NetToGrossAsync",
+		"go": "PayrollReceipts.NetToGross",
+		"java": "payrollReceipts.netToGross"
+	},
 	"POST /v1/payroll_receipts/preview": {
 		"python": "payroll_receipts.preview",
 		"php": "payrollReceipts->preview",

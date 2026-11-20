@@ -11437,6 +11437,68 @@ type MemberList struct {
 	URL string `json:"url"`
 }
 
+// NetToGross: Neto a bruto: el salario diario cuyo recibo ordinario de un periodo completo paga un neto, sin faltas, incidencias ni descuentos como Infonavit o préstamos. No guarda nada.
+type NetToGross struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El empleado (emp_…) cuyas prestaciones usó, o null.
+	Employee *string `json:"employee,omitempty"`
+	// 02 semanal, 03 catorcenal, 04 quincenal o 05 mensual.
+	Periodicity string `json:"periodicity"`
+	// El neto que pidió.
+	NetRequested float64 `json:"net_requested"`
+	// El salario diario cuyo recibo paga al menos ese neto (redondeado al centavo hacia arriba).
+	DailySalary float64 `json:"daily_salary"`
+	// Su salario diario integrado (SDI) con el factor de sus prestaciones.
+	IntegratedDailySalary float64 `json:"integrated_daily_salary"`
+	// El periodo con que se calculó (el actual de la periodicidad).
+	Period NetToGrossPeriod `json:"period"`
+	// Los días pagados de un periodo completo.
+	Days float64 `json:"days"`
+	// Total de percepciones del recibo.
+	Perceptions float64 `json:"perceptions"`
+	// Total de deducciones (ISR, IMSS, fondo de ahorro).
+	Deductions float64 `json:"deductions"`
+	// ISR retenido.
+	TaxesWithheld float64 `json:"taxes_withheld"`
+	// Otros pagos.
+	OtherPayments float64 `json:"other_payments"`
+	// El neto del recibo con ese salario.
+	Net float64 `json:"net"`
+}
+
+// NetToGrossParams: los campos de «Neto a bruto».
+type NetToGrossParams struct {
+	// El neto que quiere pagar por un periodo completo, en pesos.
+	Net float64 `json:"net"`
+	// Un empleado (emp_…): toma su periodicidad, zona y prestaciones (aguinaldo, prima vacacional, antigüedad, vales y fondo de ahorro), y su factor SDI ÷ salario si los tiene.
+	Employee *string `json:"employee,omitempty"`
+	// 02 semanal, 03 catorcenal, 04 quincenal o 05 mensual. Sin employee, obligatoria.
+	//
+	// Valores: 02, 03, 04, 05.
+	Periodicity *string `json:"periodicity,omitempty"`
+	// En la zona libre de la frontera norte (su salario mínimo).
+	BorderZone *bool `json:"border_zone,omitempty"`
+	// Fecha de ingreso: los días de vacaciones de su antigüedad.
+	StartDate *string `json:"start_date,omitempty"`
+	// Días de aguinaldo al año (al menos 15).
+	AguinaldoDays *int64 `json:"aguinaldo_days,omitempty"`
+	// Prima vacacional como fracción (al menos 0.25).
+	VacationPremium *float64 `json:"vacation_premium,omitempty"`
+	// Vales de despensa al mes.
+	PantryVouchers *float64 `json:"pantry_vouchers,omitempty"`
+	// Fondo de ahorro como fracción del salario (hasta 0.13).
+	SavingsFundRate *float64 `json:"savings_fund_rate,omitempty"`
+}
+
+// NetToGrossPeriod: El periodo con que se calculó (el actual de la periodicidad).
+type NetToGrossPeriod struct {
+	// Primer día del periodo (FechaInicialPago), AAAA-MM-DD.
+	Start string `json:"start"`
+	// Último día del periodo (FechaFinalPago), AAAA-MM-DD.
+	End string `json:"end"`
+}
+
 // OpeningBalances: Los saldos iniciales del emisor: con qué saldo empieza cada cuenta el día en que empiezan sus libros.
 type OpeningBalances struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -11889,7 +11951,7 @@ type PayrollReceiptPreviewTotals struct {
 
 // PayrollReceiptPreviewWarning: PayrollReceiptPreviewWarning.
 type PayrollReceiptPreviewWarning struct {
-	// finiquito_not_included: el empleado se fue en el periodo y el recibo no trae su finiquito; absences_over_monthly_limit: con este recibo pasa de 7 faltas en el mes y las de más cotizan como días trabajados (para dejar de cotizar, presente su aviso de baja); payroll_rates_pending: aún no se cargan los valores (ISR, subsidio, salario mínimo, UMA) de una fecha próxima.
+	// finiquito_not_included: el empleado se fue en el periodo y el recibo no trae su finiquito; absences_over_monthly_limit: con este recibo pasa de 7 faltas en el mes y las de más cotizan como días trabajados (para dejar de cotizar, presente su aviso de baja); payroll_rates_pending: aún no se cargan los valores (ISR, subsidio, salario mínimo, UMA) de una fecha próxima; net_changed_vs_previous: el neto cambia 10% o más (y al menos $100) contra el recibo ordinario anterior del empleado; salary_changed_vs_previous: cambió su salario diario integrado desde ese recibo (presente la modificación al IMSS); low_net: las deducciones le dejan menos del 30% de sus percepciones.
 	Code string `json:"code"`
 	// Qué pasó y cómo corregirlo, para una persona.
 	Message string `json:"message"`

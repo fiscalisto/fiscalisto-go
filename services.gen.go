@@ -1878,6 +1878,21 @@ func (s *PayrollReceiptsService) Create(ctx context.Context, params *CreatePayro
 	return out, nil
 }
 
+// NetToGross: Neto a bruto
+//
+// El salario diario y el SDI cuyo recibo ordinario de un periodo completo paga el neto que pide, con el ISR y el IMSS de hoy, como «Calcular desde el neto» en cada empleado de la app. Con employee toma su periodicidad y prestaciones; sin él, las que mande o las de la ley. Sin faltas, incidencias ni descuentos como Infonavit o préstamos. No guarda nada: para usarlo, actualice al empleado.
+//
+// POST /v1/payroll/net_to_gross
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/net-to-gross
+func (s *PayrollReceiptsService) NetToGross(ctx context.Context, params *NetToGrossParams, opts ...RequestOption) (*NetToGross, error) {
+	out := new(NetToGross)
+	if err := s.c.do(ctx, "POST", "/v1/payroll/net_to_gross", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Preview: Calcular un recibo sin timbrar
 //
 // El recibo como se timbraría (percepciones con sus incidencias, ISR con el subsidio para el empleo, cuotas IMSS y el neto), sin timbrar ni usar timbres, con el confirmation_token que lo timbra tal cual y los avisos de lo que no incluye (un finiquito, valores del año que aún no se cargan).
