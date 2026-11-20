@@ -82,6 +82,8 @@ type services struct {
 	TaxIds *TaxIdsService
 	// Sucursales.
 	Branches *BranchesService
+	// Reglas.
+	Rules *RulesService
 	// Centros de costo.
 	CostCenters *CostCentersService
 	// Listas de precios.
@@ -262,6 +264,7 @@ func (s *services) init(c *Client) {
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
+	s.Rules = &RulesService{c}
 	s.CostCenters = &CostCentersService{c}
 	s.PriceLists = &PriceListsService{c}
 	s.CustomerGroups = &CustomerGroupsService{c}
@@ -2678,6 +2681,131 @@ func (s *BranchesService) DeleteLogo(ctx context.Context, id string, opts ...Req
 		return nil, err
 	}
 	return out, nil
+}
+
+// RulesService: Reglas (client.Rules).
+type RulesService struct{ c *Client }
+
+// Create: Crear una regla
+//
+// Cuando pasa trigger, si se cumplen conditions, hace actions. Corre desde ese momento con lo que llegue; no cambia lo que ya existe. Va al final del orden de su empresa. Lo que no se puede guardar contesta rule_invalid con el porqué (una acción que no va con su trigger, una etiqueta o centro de costo que no existe).
+//
+// POST /v1/rules
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/create-rule
+func (s *RulesService) Create(ctx context.Context, params *CreateRuleParams, opts ...RequestOption) (*Rule, error) {
+	out := new(Rule)
+	if err := s.c.do(ctx, "POST", "/v1/rules", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar reglas
+//
+// En el orden en que corren, también las que están en pausa (enabled: false).
+//
+// GET /v1/rules
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/list-rules
+func (s *RulesService) List(ctx context.Context, params *ListRulesParams, opts ...RequestOption) (*Page[Rule], error) {
+	return list[Rule](ctx, s.c, "/v1/rules", params, "", opts)
+}
+
+// ListAutoPaging: Listar reglas, todos, página por página: for x, err := range …
+func (s *RulesService) ListAutoPaging(ctx context.Context, params *ListRulesParams, opts ...RequestOption) iter.Seq2[Rule, error] {
+	return listAll[Rule](ctx, s.c, "/v1/rules", params, opts)
+}
+
+// Order: Ordenar las reglas
+//
+// rules de la primera a la última; las que no mande siguen después, en su orden. Importa cuando una tiene stop_after o dos ponen cosas distintas: corren de arriba abajo.
+//
+// POST /v1/rules/order
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/order-rules
+func (s *RulesService) Order(ctx context.Context, params *OrderRulesParams, opts ...RequestOption) (*RuleList, error) {
+	out := new(RuleList)
+	if err := s.c.do(ctx, "POST", "/v1/rules/order", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver una regla
+//
+// Una regla de la empresa del emisor.
+//
+// GET /v1/rules/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/get-rule
+func (s *RulesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Rule, error) {
+	out := new(Rule)
+	if err := s.c.do(ctx, "GET", "/v1/rules/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar una regla
+//
+// Solo lo que mande cambia; conditions y actions se reemplazan completos. enabled: false la pone en pausa. Lo que ya hizo se queda.
+//
+// POST /v1/rules/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/update-rule
+func (s *RulesService) Update(ctx context.Context, id string, params *UpdateRuleParams, opts ...RequestOption) (*Rule, error) {
+	out := new(Rule)
+	if err := s.c.do(ctx, "POST", "/v1/rules/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una regla
+//
+// Deja de correr. Lo que ya puso (centros de costo, etiquetas, etapas) se queda; para dejarla de usar un tiempo, mejor enabled: false.
+//
+// DELETE /v1/rules/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/delete-rule
+func (s *RulesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/rules/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Test: Probar una regla
+//
+// Lo que haría con una factura (uuid) o con las más recientes de su trigger, sin cambiar nada: cada condición con lo que tiene el registro y si se cumple.
+//
+// POST /v1/rules/{id}/test
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/test-rule
+func (s *RulesService) Test(ctx context.Context, id string, params *TestRuleParams, opts ...RequestOption) (*RuleTestList, error) {
+	out := new(RuleTestList)
+	if err := s.c.do(ctx, "POST", "/v1/rules/"+url.PathEscape(id)+"/test", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ListRuns: Historial de una regla
+//
+// Cada vez que corrió, la más reciente primero: sobre qué factura u orden, qué hizo (did) o por qué no pudo (error). Se guardan 180 días.
+//
+// GET /v1/rules/{id}/runs
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/list-rule-runs
+func (s *RulesService) ListRuns(ctx context.Context, id string, params *ListRuleRunsParams, opts ...RequestOption) (*Page[RuleRun], error) {
+	return list[RuleRun](ctx, s.c, "/v1/rules/"+url.PathEscape(id)+"/runs", params, "", opts)
+}
+
+// ListRunsAutoPaging: Historial de una regla, todos, página por página: for x, err := range …
+func (s *RulesService) ListRunsAutoPaging(ctx context.Context, id string, params *ListRuleRunsParams, opts ...RequestOption) iter.Seq2[RuleRun, error] {
+	return listAll[RuleRun](ctx, s.c, "/v1/rules/"+url.PathEscape(id)+"/runs", params, opts)
 }
 
 // CostCentersService: Centros de costo (client.CostCenters).

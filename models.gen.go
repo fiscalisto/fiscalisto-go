@@ -5107,6 +5107,106 @@ type CreateRoleParams struct {
 	Permissions []string `json:"permissions,omitempty"`
 }
 
+// CreateRuleParams: los campos de «Crear una regla».
+type CreateRuleParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
+	Name *string `json:"name,omitempty"`
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
+	//
+	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	Trigger string `json:"trigger"`
+	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
+	Conditions *CreateRuleParamsConditions `json:"conditions,omitempty"`
+	// Entonces: de 1 a 8, en este orden.
+	Actions []CreateRuleParamsAction `json:"actions"`
+	// true: corre una sola vez por factura u orden. Por omisión true, salvo purchase_order.saved.
+	OncePerRecord *bool `json:"once_per_record,omitempty"`
+	// true: si se cumple, las reglas que siguen no corren para ese registro.
+	StopAfter *bool `json:"stop_after,omitempty"`
+	// false la deja en pausa.
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// CreateRuleParamsAction: CreateRuleParamsAction.
+type CreateRuleParamsAction struct {
+	// tag (órdenes): poner la etiqueta `tag`; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
+	//
+	// Valores: tag, cost_center, stage, close, notify.
+	Type string `json:"type"`
+	// tag: la etiqueta.
+	Tag *int64 `json:"tag,omitempty"`
+	// tag: quitarla si la orden deja de cumplir.
+	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// stage: la etapa.
+	Stage *int64 `json:"stage,omitempty"`
+	// notify: a quién (mem_…, GET /v1/members).
+	Members []string `json:"members,omitempty"`
+	// notify: lo que dice el aviso.
+	Note *string `json:"note,omitempty"`
+}
+
+// CreateRuleParamsConditions: Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
+type CreateRuleParamsConditions struct {
+	// all: se cumplen todas (las condiciones y los grupos); any: basta con una.
+	//
+	// Valores: all, any.
+	Match *string `json:"match,omitempty"`
+	// Las condiciones sueltas.
+	Conditions []CreateRuleParamsConditionsCondition `json:"conditions,omitempty"`
+	// Condiciones que van juntas, con su propio all / any (un nivel).
+	Groups []CreateRuleParamsConditionsGroup `json:"groups,omitempty"`
+}
+
+// CreateRuleParamsConditionsCondition: CreateRuleParamsConditionsCondition.
+type CreateRuleParamsConditionsCondition struct {
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	Field string `json:"field"`
+	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
+	//
+	// Valores: is, not, gte, lte, between, contains, not_contains, starts, yes, no, set, unset.
+	Operator string `json:"operator"`
+	// Para is / not: RFC, claves del SAT, ccn_…, whs_… o mem_….
+	Values []string `json:"values,omitempty"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *float64 `json:"value,omitempty"`
+	// Para between: el monto hasta.
+	To *float64 `json:"to,omitempty"`
+	// Texto de la leyenda (textoLeyenda).
+	Text *string `json:"text,omitempty"`
+}
+
+// CreateRuleParamsConditionsGroup: CreateRuleParamsConditionsGroup.
+type CreateRuleParamsConditionsGroup struct {
+	// Cómo se juntan las del grupo.
+	//
+	// Valores: all, any.
+	Match string `json:"match"`
+	// Las condiciones del grupo.
+	Conditions []CreateRuleParamsConditionsGroupCondition `json:"conditions"`
+}
+
+// CreateRuleParamsConditionsGroupCondition: CreateRuleParamsConditionsGroupCondition.
+type CreateRuleParamsConditionsGroupCondition struct {
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	Field string `json:"field"`
+	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
+	//
+	// Valores: is, not, gte, lte, between, contains, not_contains, starts, yes, no, set, unset.
+	Operator string `json:"operator"`
+	// Para is / not: RFC, claves del SAT, ccn_…, whs_… o mem_….
+	Values []string `json:"values,omitempty"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *float64 `json:"value,omitempty"`
+	// Para between: el monto hasta.
+	To *float64 `json:"to,omitempty"`
+	// Texto de la leyenda (textoLeyenda).
+	Text *string `json:"text,omitempty"`
+}
+
 // CreateSalesOrderDeliveryParams: los campos de «Registrar una entrega».
 type CreateSalesOrderDeliveryParams struct {
 	// Cuánto sale de cada concepto. Por omisión, todo lo que falta por entregar.
@@ -11535,6 +11635,26 @@ type ListRolesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ListRuleRunsParams: los campos de «Historial de una regla».
+type ListRuleRunsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+}
+
+// ListRulesParams: los campos de «Listar reglas».
+type ListRulesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de este trigger, por ejemplo invoice.received.
+	Trigger *string `json:"trigger,omitempty"`
+}
+
 // ListSalesOrdersParams: los campos de «Listar pedidos».
 type ListSalesOrdersParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -12285,6 +12405,14 @@ type OpeningBalancesLine struct {
 	Debit float64 `json:"debit"`
 	// El abono, en pesos.
 	Credit float64 `json:"credit"`
+}
+
+// OrderRulesParams: los campos de «Ordenar las reglas».
+type OrderRulesParams struct {
+	// El emisor (iss_…).
+	Issuer *string `json:"issuer,omitempty"`
+	// Las reglas (rul_…), de la primera a la última.
+	Rules []string `json:"rules"`
 }
 
 // PayableInvoice: Una factura recibida con lo que falta por pagar, como la muestra Pagos › Por pagar: lo pagado cuenta complementos, notas de crédito, pagos de Fiscalisto y pagos registrados a mano.
@@ -14691,6 +14819,214 @@ type RollWebhookSecretParams struct {
 	PreviousSecretExpiresIn *int64 `json:"previous_secret_expires_in,omitempty"`
 }
 
+// Rule: Una regla de la empresa: cuando pasa algo (trigger), si se cumplen sus condiciones, hace sus acciones. Las mismas de Ajustes › Reglas en la app.
+type Rule struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Nombre.
+	Name string `json:"name"`
+	// Cuándo corre.
+	//
+	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	Trigger string `json:"trigger"`
+	// Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
+	Conditions RuleConditions `json:"conditions"`
+	// Entonces: lo que hace, en este orden.
+	Actions []RuleAction `json:"actions"`
+	// true: corre una sola vez por factura u orden.
+	OncePerRecord bool `json:"once_per_record"`
+	// true: si se cumple, las reglas que siguen no corren para ese registro.
+	StopAfter bool `json:"stop_after"`
+	// false: en pausa.
+	Enabled bool `json:"enabled"`
+	// Su lugar en el orden en que corren (1 primero).
+	Position int64 `json:"position"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Cuándo cambió por última vez, ISO 8601 (-06:00).
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// RuleAction: RuleAction.
+type RuleAction struct {
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: tag, cost_center, stage, close, notify.
+	Type string `json:"type"`
+	// tag: la etiqueta.
+	Tag *int64 `json:"tag,omitempty"`
+	// tag: se quita si la orden deja de cumplir.
+	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// stage: la etapa.
+	Stage *int64 `json:"stage,omitempty"`
+	// notify: a quién (mem_…).
+	Members []string `json:"members,omitempty"`
+	// notify: lo que dice el aviso.
+	Note *string `json:"note,omitempty"`
+}
+
+// RuleConditions: Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
+type RuleConditions struct {
+	// all: se cumplen todas; any: basta con una.
+	//
+	// Valores: all, any.
+	Match string `json:"match"`
+	// Las condiciones sueltas.
+	Conditions []RuleConditionsCondition `json:"conditions"`
+	// Condiciones que van juntas, con su propio match.
+	Groups []RuleConditionsGroup `json:"groups"`
+}
+
+// RuleConditionsCondition: RuleConditionsCondition.
+type RuleConditionsCondition struct {
+	// Qué se revisa (supplier, total, metodo, category…).
+	Field string `json:"field"`
+	// Cómo se compara.
+	//
+	// Valores: is, not, gte, lte, between, contains, not_contains, starts, yes, no, set, unset.
+	Operator string `json:"operator"`
+	// Para is / not: los valores (RFC, claves, ccn_…).
+	Values []string `json:"values,omitempty"`
+	// Para gte, lte y between: el monto en pesos.
+	Value *float64 `json:"value,omitempty"`
+	// Para between: el monto hasta.
+	To *float64 `json:"to,omitempty"`
+	// Para contains, not_contains y starts.
+	Text *string `json:"text,omitempty"`
+}
+
+// RuleConditionsGroup: RuleConditionsGroup.
+type RuleConditionsGroup struct {
+	// Cómo se juntan las del grupo.
+	//
+	// Valores: all, any.
+	Match string `json:"match"`
+	// Las condiciones del grupo.
+	Conditions []RuleConditionsGroupCondition `json:"conditions"`
+}
+
+// RuleConditionsGroupCondition: RuleConditionsGroupCondition.
+type RuleConditionsGroupCondition struct {
+	// Qué se revisa (supplier, total, metodo, category…).
+	Field string `json:"field"`
+	// Cómo se compara.
+	//
+	// Valores: is, not, gte, lte, between, contains, not_contains, starts, yes, no, set, unset.
+	Operator string `json:"operator"`
+	// Para is / not: los valores (RFC, claves, ccn_…).
+	Values []string `json:"values,omitempty"`
+	// Para gte, lte y between: el monto en pesos.
+	Value *float64 `json:"value,omitempty"`
+	// Para between: el monto hasta.
+	To *float64 `json:"to,omitempty"`
+	// Para contains, not_contains y starts.
+	Text *string `json:"text,omitempty"`
+}
+
+// RuleList: Una página de la lista.
+type RuleList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Rule `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// RuleRun: Una vez que la regla corrió sobre una factura u orden.
+type RuleRun struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// La regla (rul_…).
+	Rule string `json:"rule"`
+	// Cuándo corre.
+	//
+	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	Trigger string `json:"trigger"`
+	// La factura u orden, en palabras.
+	Record string `json:"record"`
+	// Qué es el registro.
+	//
+	// Valores: invoice, purchase_order.
+	RecordType string `json:"record_type"`
+	// done: hizo cambios; nothing: ya estaba así; failed: no pudo (ver error).
+	//
+	// Valores: done, nothing, failed.
+	Outcome string `json:"outcome"`
+	// Lo que hizo, en palabras.
+	Did []string `json:"did"`
+	// Por qué no pudo, o null.
+	Error *string `json:"error,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+}
+
+// RuleRunList: Una página de la lista.
+type RuleRunList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []RuleRun `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// RuleTest: Lo que la regla haría con una factura u orden (sin cambiar nada).
+type RuleTest struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// La factura u orden, en palabras.
+	Record string `json:"record"`
+	// El folio fiscal, para una factura.
+	InvoiceUUID *string `json:"invoice_uuid,omitempty"`
+	// La orden de compra.
+	PurchaseOrder *int64 `json:"purchase_order,omitempty"`
+	// Si se cumplen sus condiciones.
+	Matches bool `json:"matches"`
+	// Ya corrió sobre este registro y no lo hará de nuevo.
+	AlreadyRan bool `json:"already_ran"`
+	// Cada condición con lo que tiene el registro.
+	Conditions []RuleTestCondition `json:"conditions"`
+	// Lo que haría, en palabras (nada cambia).
+	WouldDo []string `json:"would_do"`
+}
+
+// RuleTestCondition: RuleTestCondition.
+type RuleTestCondition struct {
+	// La condición, en palabras.
+	Condition string `json:"condition"`
+	// Si se cumple.
+	Holds bool `json:"holds"`
+	// Lo que tiene el registro.
+	Actual string `json:"actual"`
+}
+
+// RuleTestList: Una página de la lista.
+type RuleTestList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []RuleTest `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // SATAnnualPreload: Lo que el SAT precargará en la declaración anual de una persona física: sus sueldos y retenciones, y sus deducciones personales.
 type SATAnnualPreload struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -16903,6 +17239,14 @@ type TestDataReset struct {
 	ProductsCreated int64 `json:"products_created"`
 }
 
+// TestRuleParams: los campos de «Probar una regla».
+type TestRuleParams struct {
+	// El folio fiscal (UUID) de una factura; sin él, las más recientes.
+	UUID *string `json:"uuid,omitempty"`
+	// Cuántas de las más recientes (10 por omisión).
+	Limit *int64 `json:"limit,omitempty"`
+}
+
 // TestWebhookEndpointParams: los campos de «Mandar un evento de prueba».
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
@@ -18123,6 +18467,104 @@ type UpdateRoleParams struct {
 	Permissions []string `json:"permissions,omitempty"`
 	// Como se ve en la app.
 	Name *string `json:"name,omitempty"`
+}
+
+// UpdateRuleParams: los campos de «Cambiar una regla».
+type UpdateRuleParams struct {
+	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
+	Name *string `json:"name,omitempty"`
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
+	//
+	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	Trigger *string `json:"trigger,omitempty"`
+	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
+	Conditions *UpdateRuleParamsConditions `json:"conditions,omitempty"`
+	// Entonces: de 1 a 8, en este orden.
+	Actions []UpdateRuleParamsAction `json:"actions,omitempty"`
+	// true: corre una sola vez por factura u orden. Por omisión true, salvo purchase_order.saved.
+	OncePerRecord *bool `json:"once_per_record,omitempty"`
+	// true: si se cumple, las reglas que siguen no corren para ese registro.
+	StopAfter *bool `json:"stop_after,omitempty"`
+	// false la deja en pausa.
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// UpdateRuleParamsAction: UpdateRuleParamsAction.
+type UpdateRuleParamsAction struct {
+	// tag (órdenes): poner la etiqueta `tag`; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
+	//
+	// Valores: tag, cost_center, stage, close, notify.
+	Type string `json:"type"`
+	// tag: la etiqueta.
+	Tag *int64 `json:"tag,omitempty"`
+	// tag: quitarla si la orden deja de cumplir.
+	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// stage: la etapa.
+	Stage *int64 `json:"stage,omitempty"`
+	// notify: a quién (mem_…, GET /v1/members).
+	Members []string `json:"members,omitempty"`
+	// notify: lo que dice el aviso.
+	Note *string `json:"note,omitempty"`
+}
+
+// UpdateRuleParamsConditions: Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
+type UpdateRuleParamsConditions struct {
+	// all: se cumplen todas (las condiciones y los grupos); any: basta con una.
+	//
+	// Valores: all, any.
+	Match *string `json:"match,omitempty"`
+	// Las condiciones sueltas.
+	Conditions []UpdateRuleParamsConditionsCondition `json:"conditions,omitempty"`
+	// Condiciones que van juntas, con su propio all / any (un nivel).
+	Groups []UpdateRuleParamsConditionsGroup `json:"groups,omitempty"`
+}
+
+// UpdateRuleParamsConditionsCondition: UpdateRuleParamsConditionsCondition.
+type UpdateRuleParamsConditionsCondition struct {
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	Field string `json:"field"`
+	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
+	//
+	// Valores: is, not, gte, lte, between, contains, not_contains, starts, yes, no, set, unset.
+	Operator string `json:"operator"`
+	// Para is / not: RFC, claves del SAT, ccn_…, whs_… o mem_….
+	Values []string `json:"values,omitempty"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *float64 `json:"value,omitempty"`
+	// Para between: el monto hasta.
+	To *float64 `json:"to,omitempty"`
+	// Texto de la leyenda (textoLeyenda).
+	Text *string `json:"text,omitempty"`
+}
+
+// UpdateRuleParamsConditionsGroup: UpdateRuleParamsConditionsGroup.
+type UpdateRuleParamsConditionsGroup struct {
+	// Cómo se juntan las del grupo.
+	//
+	// Valores: all, any.
+	Match string `json:"match"`
+	// Las condiciones del grupo.
+	Conditions []UpdateRuleParamsConditionsGroupCondition `json:"conditions"`
+}
+
+// UpdateRuleParamsConditionsGroupCondition: UpdateRuleParamsConditionsGroupCondition.
+type UpdateRuleParamsConditionsGroupCondition struct {
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	Field string `json:"field"`
+	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
+	//
+	// Valores: is, not, gte, lte, between, contains, not_contains, starts, yes, no, set, unset.
+	Operator string `json:"operator"`
+	// Para is / not: RFC, claves del SAT, ccn_…, whs_… o mem_….
+	Values []string `json:"values,omitempty"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *float64 `json:"value,omitempty"`
+	// Para between: el monto hasta.
+	To *float64 `json:"to,omitempty"`
+	// Texto de la leyenda (textoLeyenda).
+	Text *string `json:"text,omitempty"`
 }
 
 // UpdateSalesOrderParams: los campos de «Cambiar un pedido».

@@ -958,6 +958,62 @@
 		"go": "Branches.DeleteLogo",
 		"java": "branches.deleteLogo"
 	},
+	"POST /v1/rules": {
+		"python": "rules.create",
+		"php": "rules->create",
+		"dotnet": "Rules.CreateAsync",
+		"go": "Rules.Create",
+		"java": "rules.create"
+	},
+	"GET /v1/rules": {
+		"python": "rules.list",
+		"php": "rules->list",
+		"dotnet": "Rules.ListAsync",
+		"go": "Rules.List",
+		"java": "rules.list"
+	},
+	"POST /v1/rules/order": {
+		"python": "rules.order",
+		"php": "rules->order",
+		"dotnet": "Rules.OrderAsync",
+		"go": "Rules.Order",
+		"java": "rules.order"
+	},
+	"GET /v1/rules/{id}": {
+		"python": "rules.get",
+		"php": "rules->get",
+		"dotnet": "Rules.GetAsync",
+		"go": "Rules.Get",
+		"java": "rules.get"
+	},
+	"POST /v1/rules/{id}": {
+		"python": "rules.update",
+		"php": "rules->update",
+		"dotnet": "Rules.UpdateAsync",
+		"go": "Rules.Update",
+		"java": "rules.update"
+	},
+	"DELETE /v1/rules/{id}": {
+		"python": "rules.delete",
+		"php": "rules->delete",
+		"dotnet": "Rules.DeleteAsync",
+		"go": "Rules.Delete",
+		"java": "rules.delete"
+	},
+	"POST /v1/rules/{id}/test": {
+		"python": "rules.test",
+		"php": "rules->test",
+		"dotnet": "Rules.TestAsync",
+		"go": "Rules.Test",
+		"java": "rules.test"
+	},
+	"GET /v1/rules/{id}/runs": {
+		"python": "rules.list_runs",
+		"php": "rules->listRuns",
+		"dotnet": "Rules.ListRunsAsync",
+		"go": "Rules.ListRuns",
+		"java": "rules.listRuns"
+	},
 	"POST /v1/cost_centers": {
 		"python": "cost_centers.create",
 		"php": "costCenters->create",
