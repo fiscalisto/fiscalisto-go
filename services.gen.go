@@ -4347,6 +4347,36 @@ func (s *SatInvoicesService) Update(ctx context.Context, id string, params *Upda
 	return out, nil
 }
 
+// MarkPaid: Marcar como pagada una factura recibida
+//
+// Una factura PPD recibida que la empresa pagó (en efectivo, de caja chica, con un reembolso…) y cuyo proveedor no emitió el complemento de pago: sale de Por pagar como pagada sin complemento, con cuándo, cómo y de dónde se pagó. El SAT la sigue viendo sin pagar: el IVA no se acredita ni el gasto se deduce hasta que llegue el complemento. En una PUE recibida, que ya está pagada, solo anota de dónde salió el dinero (money_source). Lo marcado se ve en paid_otherwise.
+//
+// POST /v1/sat_invoices/{id}/mark_paid
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/mark-sat-invoice-paid
+func (s *SatInvoicesService) MarkPaid(ctx context.Context, id string, params *MarkSatInvoicePaidParams, opts ...RequestOption) (*SATInvoice, error) {
+	out := new(SATInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/sat_invoices/"+url.PathEscape(id)+"/mark_paid", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MarkUnpaid: Quitar la marca de pagada
+//
+// Deshace mark_paid (o lo que marcó una regla de Pagos sin complemento): una PPD vuelve a Por pagar y una PUE pierde su origen del dinero. Una regla ya no la vuelve a marcar.
+//
+// POST /v1/sat_invoices/{id}/mark_unpaid
+//
+// https://fiscalisto.com/docs/api/referencia/descargas-del-sat/mark-sat-invoice-unpaid
+func (s *SatInvoicesService) MarkUnpaid(ctx context.Context, id string, opts ...RequestOption) (*SATInvoice, error) {
+	out := new(SATInvoice)
+	if err := s.c.do(ctx, "POST", "/v1/sat_invoices/"+url.PathEscape(id)+"/mark_unpaid", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Xml: Descargar el XML de una factura del SAT
 //
 // El CFDI tal como lo entregó el SAT.

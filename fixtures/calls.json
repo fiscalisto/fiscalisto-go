@@ -1777,6 +1777,20 @@
 		"go": "SatInvoices.Update",
 		"java": "satInvoices.update"
 	},
+	"POST /v1/sat_invoices/{id}/mark_paid": {
+		"python": "sat_invoices.mark_paid",
+		"php": "satInvoices->markPaid",
+		"dotnet": "SatInvoices.MarkPaidAsync",
+		"go": "SatInvoices.MarkPaid",
+		"java": "satInvoices.markPaid"
+	},
+	"POST /v1/sat_invoices/{id}/mark_unpaid": {
+		"python": "sat_invoices.mark_unpaid",
+		"php": "satInvoices->markUnpaid",
+		"dotnet": "SatInvoices.MarkUnpaidAsync",
+		"go": "SatInvoices.MarkUnpaid",
+		"java": "satInvoices.markUnpaid"
+	},
 	"GET /v1/sat_invoices/{id}/xml": {
 		"python": "sat_invoices.xml",
 		"php": "satInvoices->xml",

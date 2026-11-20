@@ -11417,6 +11417,22 @@ type MarkPurchaseReceiptInvoicedParams struct {
 	Invoice *string `json:"invoice,omitempty"`
 }
 
+// MarkSatInvoicePaidParams: los campos de «Marcar como pagada una factura recibida».
+type MarkSatInvoicePaidParams struct {
+	// El día en que se pagó (AAAA-MM-DD, no después de hoy). En una PPD, si no se indica, queda sin fecha; en una PUE, la fecha de la factura.
+	PaidOn *string `json:"paid_on,omitempty"`
+	// Solo PPD: con qué se pagó, clave c_FormaPago (01 efectivo, 02 cheque nominativo, 03 transferencia…). Una PUE ya dice la suya.
+	//
+	// Valores: 12, 13, 14, 15, 17, 23, 24, 25, 26, 27, 28, 29, 30, 31, 01, 02, 03, 04, 05, 06, 08.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// De dónde salió el dinero: petty_cash (caja chica), reimbursement (lo pagó una persona y se le reembolsó), bank u other. Obligatorio en una PUE.
+	//
+	// Valores: petty_cash, reimbursement, bank, other.
+	MoneySource *string `json:"money_source,omitempty"`
+	// Una nota, hasta 500 caracteres.
+	Note *string `json:"note,omitempty"`
+}
+
 // MarkSupplierInvoicePaidParams: los campos de «Marcar pagada una factura de proveedor».
 type MarkSupplierInvoicePaidParams struct {
 	// El día en que la pagó (AAAA-MM-DD, hoy o antes).
@@ -14339,6 +14355,8 @@ type SATInvoice struct {
 	//
 	// Valores: active, canceled.
 	SATStatus *string `json:"sat_status,omitempty"`
+	// Solo recibidas, marcadas con mark_paid, en la app o por una regla: without_complement true en una PPD pagada sin complemento de pago (el SAT la sigue viendo sin pagar); false en una PUE, donde solo se anotó de dónde salió el dinero.
+	PaidOtherwise *SATInvoicePaidOtherwise `json:"paid_otherwise,omitempty"`
 	// Su centro de costo (ccn_…), o null. Póngalo o cámbielo con POST /v1/sat_invoices/{id}.
 	CostCenter *string `json:"cost_center,omitempty"`
 	// La descarga (sdl_…) que la trajo, o null.
@@ -14373,6 +14391,22 @@ type SATInvoiceList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// SATInvoicePaidOtherwise: SATInvoicePaidOtherwise.
+type SATInvoicePaidOtherwise struct {
+	// true: una PPD pagada sin complemento, fuera de Por pagar. false: una PUE, ya pagada, con su origen del dinero.
+	WithoutComplement bool `json:"without_complement"`
+	// El día en que se pagó (AAAA-MM-DD), si se dijo.
+	PaidOn *string `json:"paid_on,omitempty"`
+	// Con qué se pagó: clave c_FormaPago (01 efectivo, 03 transferencia…).
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// De dónde salió el dinero: petty_cash (caja chica), reimbursement (una persona, que después se le reembolsó), bank u other.
+	//
+	// Valores: petty_cash, reimbursement, bank, other.
+	MoneySource *string `json:"money_source,omitempty"`
+	// true cuando la marcó una regla de Ajustes › Pagos sin complemento.
+	ByRule bool `json:"by_rule"`
 }
 
 // SATInvoiceTaxes: Impuestos del comprobante: trasladados (iva, ieps), retenidos (iva_withheld, isr_withheld, ieps_withheld) y locales.

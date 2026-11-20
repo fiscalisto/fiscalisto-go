@@ -234,6 +234,8 @@ const (
 	CodeSalesOrderNotDeletable = "sales_order_not_deletable"
 	// No se pudo crear el entorno de prueba: falta su nombre o la cuenta ya tiene 25 (borre uno que ya no use).
 	CodeSandboxInvalid = "sandbox_invalid"
+	// Solo se marca como pagada una factura de ingreso recibida y vigente: una PPD que siga por pagar, o una PUE para anotar de dónde salió el dinero. El mensaje dice por qué esta no.
+	CodeSATInvoiceNotMarkable = "sat_invoice_not_markable"
 	// Las declaraciones de ese emisor se consultaron en el SAT hace menos de 10 minutos (cada consulta entra al SAT con su e.firma). Retry-After dice cuántos segundos faltan; lo que ya trajo está en GET /v1/sat_declarations.
 	CodeSATRefreshTooSoon = "sat_refresh_too_soon"
 	// El SAT rechazó la solicitud de descarga. El mensaje trae su motivo, por ejemplo que ya se pidió el mismo periodo con los mismos filtros demasiadas veces (el SAT pone un límite de por vida).
