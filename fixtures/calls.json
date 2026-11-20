@@ -1847,6 +1847,34 @@
 		"go": "Accounting.FinancialStatements",
 		"java": "accounting.financialStatements"
 	},
+	"GET /v1/accounting/cash_flow": {
+		"python": "accounting.cash_flow",
+		"php": "accounting->cashFlow",
+		"dotnet": "Accounting.CashFlowAsync",
+		"go": "Accounting.CashFlow",
+		"java": "accounting.cashFlow"
+	},
+	"GET /v1/accounting/equity_changes": {
+		"python": "accounting.equity_changes",
+		"php": "accounting->equityChanges",
+		"dotnet": "Accounting.EquityChangesAsync",
+		"go": "Accounting.EquityChanges",
+		"java": "accounting.equityChanges"
+	},
+	"GET /v1/accounting/comparative_statements": {
+		"python": "accounting.comparative_statements",
+		"php": "accounting->comparativeStatements",
+		"dotnet": "Accounting.ComparativeStatementsAsync",
+		"go": "Accounting.ComparativeStatements",
+		"java": "accounting.comparativeStatements"
+	},
+	"GET /v1/accounting/financial_ratios": {
+		"python": "accounting.financial_ratios",
+		"php": "accounting->financialRatios",
+		"dotnet": "Accounting.FinancialRatiosAsync",
+		"go": "Accounting.FinancialRatios",
+		"java": "accounting.financialRatios"
+	},
 	"GET /v1/accounting/cross_checks": {
 		"python": "accounting.cross_checks",
 		"php": "accounting->crossChecks",

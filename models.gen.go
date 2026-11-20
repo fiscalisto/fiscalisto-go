@@ -1037,6 +1037,104 @@ type CancelSatRetentionParams struct {
 	Substitution *string `json:"substitution,omitempty"`
 }
 
+// CashFlow: El estado de flujos de efectivo (NIF B-2, método indirecto) del mes o de enero al mes, leído de la balanza: cada cuenta va a operación, inversión o financiamiento por su código agrupador.
+type CashFlow struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El mes solo (month) o de enero al mes (year_to_date).
+	//
+	// Valores: month, year_to_date.
+	Period string `json:"period"`
+	// La utilidad (o pérdida) antes de impuestos del periodo.
+	NetIncome float64 `json:"net_income"`
+	// Actividades de operación.
+	Operating CashFlowOperating `json:"operating"`
+	// Actividades de inversión: activos fijos, terrenos, diferidos e inversiones permanentes.
+	Investing CashFlowInvesting `json:"investing"`
+	// Actividades de financiamiento: préstamos bancarios, dividendos, aportaciones y capital.
+	Financing CashFlowFinancing `json:"financing"`
+	// Aumento (o disminución) neto de efectivo.
+	NetChange float64 `json:"net_change"`
+	// Caja, bancos e inversiones (101 a 103) al inicio del periodo.
+	CashBeginning float64 `json:"cash_beginning"`
+	// Caja, bancos e inversiones al cierre del periodo.
+	CashEnd float64 `json:"cash_end"`
+	// cash_end − (cash_beginning + net_change): 0 cuando la balanza cuadra.
+	Difference float64 `json:"difference"`
+}
+
+// CashFlowFinancing: Actividades de financiamiento: préstamos bancarios, dividendos, aportaciones y capital.
+type CashFlowFinancing struct {
+	// Cada grupo de cuentas que cambió.
+	Lines []CashFlowFinancingLine `json:"lines"`
+	// El flujo neto de la actividad.
+	Total float64 `json:"total"`
+}
+
+// CashFlowFinancingLine: CashFlowFinancingLine.
+type CashFlowFinancingLine struct {
+	// El código agrupador del SAT (su primer nivel, o 202.01 a 202.12).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre en el código agrupador.
+	Name string `json:"name"`
+	// Lo que su cambio sumó al efectivo (positivo) o le quitó (negativo).
+	Amount float64 `json:"amount"`
+}
+
+// CashFlowInvesting: Actividades de inversión: activos fijos, terrenos, diferidos e inversiones permanentes.
+type CashFlowInvesting struct {
+	// Cada grupo de cuentas que cambió.
+	Lines []CashFlowInvestingLine `json:"lines"`
+	// El flujo neto de la actividad.
+	Total float64 `json:"total"`
+}
+
+// CashFlowInvestingLine: CashFlowInvestingLine.
+type CashFlowInvestingLine struct {
+	// El código agrupador del SAT (su primer nivel, o 202.01 a 202.12).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre en el código agrupador.
+	Name string `json:"name"`
+	// Lo que su cambio sumó al efectivo (positivo) o le quitó (negativo).
+	Amount float64 `json:"amount"`
+}
+
+// CashFlowOperating: Actividades de operación.
+type CashFlowOperating struct {
+	// Lo que se suma porque no salió efectivo: depreciación (171), deterioro (172) y amortización (183).
+	NonCash []CashFlowOperatingNonCashItem `json:"non_cash"`
+	// El cambio en clientes, inventarios, proveedores, impuestos y demás cuentas de operación.
+	WorkingCapital []CashFlowOperatingWorkingCapitalItem `json:"working_capital"`
+	// El flujo neto de actividades de operación.
+	Total float64 `json:"total"`
+}
+
+// CashFlowOperatingNonCashItem: CashFlowOperatingNonCashItem.
+type CashFlowOperatingNonCashItem struct {
+	// El código agrupador del SAT (su primer nivel, o 202.01 a 202.12).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre en el código agrupador.
+	Name string `json:"name"`
+	// Lo que su cambio sumó al efectivo (positivo) o le quitó (negativo).
+	Amount float64 `json:"amount"`
+}
+
+// CashFlowOperatingWorkingCapitalItem: CashFlowOperatingWorkingCapitalItem.
+type CashFlowOperatingWorkingCapitalItem struct {
+	// El código agrupador del SAT (su primer nivel, o 202.01 a 202.12).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre en el código agrupador.
+	Name string `json:"name"`
+	// Lo que su cambio sumó al efectivo (positivo) o le quitó (negativo).
+	Amount float64 `json:"amount"`
+}
+
 // CashForecast: El flujo de efectivo de las próximas 13 semanas: lo que le deben (con lo que cada cliente suele tardar), lo que debe a proveedores, la nómina, las declaraciones, las facturas recurrentes y sus movimientos previstos, desde el saldo que usted dio. Una estimación: no cambia nada.
 type CashForecast struct {
 	// Siempre cash_forecast.
@@ -1527,6 +1625,198 @@ type CompanyReportYear struct {
 	Margin *float64 `json:"margin,omitempty"`
 }
 
+// ComparativeStatements: El estado de resultados y el balance general de un mes junto a los del mes anterior o del mismo mes del año anterior, con la variación y su porcentaje.
+type ComparativeStatements struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El mes con que se compara (AAAA-MM).
+	ComparedTo string `json:"compared_to"`
+	// El estado de resultados comparativo.
+	IncomeStatement ComparativeStatementsIncomeStatement `json:"income_statement"`
+	// El balance general al cierre de cada mes.
+	BalanceSheet []ComparativeStatementsBalanceSheetItem `json:"balance_sheet"`
+}
+
+// ComparativeStatementsBalanceSheetItem: ComparativeStatementsBalanceSheetItem.
+type ComparativeStatementsBalanceSheetItem struct {
+	// La sección.
+	//
+	// Valores: assets, liabilities, equity.
+	Key string `json:"key"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Cada grupo de cuentas.
+	Lines []ComparativeStatementsBalanceSheetItemLine `json:"lines"`
+	// El total de la sección.
+	Total ComparativeStatementsBalanceSheetItemTotal `json:"total"`
+}
+
+// ComparativeStatementsBalanceSheetItemLine: ComparativeStatementsBalanceSheetItemLine.
+type ComparativeStatementsBalanceSheetItemLine struct {
+	// El código agrupador (primer nivel).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre.
+	Name string `json:"name"`
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
+// ComparativeStatementsBalanceSheetItemTotal: El total de la sección.
+type ComparativeStatementsBalanceSheetItemTotal struct {
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
+// ComparativeStatementsIncomeStatement: El estado de resultados comparativo.
+type ComparativeStatementsIncomeStatement struct {
+	// Del mes contra el mes comparado.
+	Month ComparativeStatementsIncomeStatementMonth `json:"month"`
+	// De enero al mes contra enero al mes comparado.
+	YearToDate ComparativeStatementsIncomeStatementYearToDate `json:"year_to_date"`
+}
+
+// ComparativeStatementsIncomeStatementMonth: Del mes contra el mes comparado.
+type ComparativeStatementsIncomeStatementMonth struct {
+	// Cada sección del estado de resultados. Costos y gastos en positivo: un aumento es más gasto.
+	Sections []ComparativeStatementsIncomeStatementMonthSection `json:"sections"`
+	// La utilidad antes de impuestos.
+	IncomeBeforeTaxes ComparativeStatementsIncomeStatementMonthIncomeBeforeTaxes `json:"income_before_taxes"`
+}
+
+// ComparativeStatementsIncomeStatementMonthIncomeBeforeTaxes: La utilidad antes de impuestos.
+type ComparativeStatementsIncomeStatementMonthIncomeBeforeTaxes struct {
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
+// ComparativeStatementsIncomeStatementMonthSection: ComparativeStatementsIncomeStatementMonthSection.
+type ComparativeStatementsIncomeStatementMonthSection struct {
+	// La sección.
+	//
+	// Valores: ingresos, costos, gastos, financiamiento, otros.
+	Key string `json:"key"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Cada grupo de cuentas.
+	Lines []ComparativeStatementsIncomeStatementMonthSectionLine `json:"lines"`
+	// El total de la sección.
+	Total ComparativeStatementsIncomeStatementMonthSectionTotal `json:"total"`
+}
+
+// ComparativeStatementsIncomeStatementMonthSectionLine: ComparativeStatementsIncomeStatementMonthSectionLine.
+type ComparativeStatementsIncomeStatementMonthSectionLine struct {
+	// El código agrupador (primer nivel).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre.
+	Name string `json:"name"`
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
+// ComparativeStatementsIncomeStatementMonthSectionTotal: El total de la sección.
+type ComparativeStatementsIncomeStatementMonthSectionTotal struct {
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
+// ComparativeStatementsIncomeStatementYearToDate: De enero al mes contra enero al mes comparado.
+type ComparativeStatementsIncomeStatementYearToDate struct {
+	// Cada sección del estado de resultados. Costos y gastos en positivo: un aumento es más gasto.
+	Sections []ComparativeStatementsIncomeStatementYearToDateSection `json:"sections"`
+	// La utilidad antes de impuestos.
+	IncomeBeforeTaxes ComparativeStatementsIncomeStatementYearToDateIncomeBeforeTaxes `json:"income_before_taxes"`
+}
+
+// ComparativeStatementsIncomeStatementYearToDateIncomeBeforeTaxes: La utilidad antes de impuestos.
+type ComparativeStatementsIncomeStatementYearToDateIncomeBeforeTaxes struct {
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
+// ComparativeStatementsIncomeStatementYearToDateSection: ComparativeStatementsIncomeStatementYearToDateSection.
+type ComparativeStatementsIncomeStatementYearToDateSection struct {
+	// La sección.
+	//
+	// Valores: ingresos, costos, gastos, financiamiento, otros.
+	Key string `json:"key"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Cada grupo de cuentas.
+	Lines []ComparativeStatementsIncomeStatementYearToDateSectionLine `json:"lines"`
+	// El total de la sección.
+	Total ComparativeStatementsIncomeStatementYearToDateSectionTotal `json:"total"`
+}
+
+// ComparativeStatementsIncomeStatementYearToDateSectionLine: ComparativeStatementsIncomeStatementYearToDateSectionLine.
+type ComparativeStatementsIncomeStatementYearToDateSectionLine struct {
+	// El código agrupador (primer nivel).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre.
+	Name string `json:"name"`
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
+// ComparativeStatementsIncomeStatementYearToDateSectionTotal: El total de la sección.
+type ComparativeStatementsIncomeStatementYearToDateSectionTotal struct {
+	// El importe del periodo.
+	Current float64 `json:"current"`
+	// El del periodo con que se compara.
+	Previous float64 `json:"previous"`
+	// current − previous.
+	Change float64 `json:"change"`
+	// change entre previous, en porcentaje (null cuando previous es 0).
+	ChangePercent *float64 `json:"change_percent,omitempty"`
+}
+
 // CompleteProductionOrderParams: los campos de «Terminar una orden de producción».
 type CompleteProductionOrderParams struct {
 	// Cuántas unidades salieron. Por omisión, quantity.
@@ -1615,13 +1905,13 @@ type CostCenterResults struct {
 	Object string `json:"object"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
-	// El emisor (iss_…).
+	// El emisor.
 	Issuer string `json:"issuer"`
-	// Un solo mes, del 1 al 12 (MesIni y MesFin iguales).
+	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El mes.
+	// Cada centro de costo en el mes.
 	MonthResults []CostCenterResultsMonthResult `json:"month_results"`
-	// De enero al mes.
+	// Cada centro de costo de enero al mes.
 	YearToDate []CostCenterResultsYearToDateItem `json:"year_to_date"`
 }
 
@@ -4945,6 +5235,42 @@ type EmployeeVacationsYear struct {
 	Status string `json:"status"`
 }
 
+// EquityChanges: El estado de cambios en el capital contable (NIF B-4) de enero al mes.
+type EquityChanges struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// Cada cuenta de capital con saldo o movimiento.
+	Accounts []EquityChangesAccount `json:"accounts"`
+	// El resultado del ejercicio, de enero al mes.
+	NetIncome float64 `json:"net_income"`
+	// El capital contable al 1 de enero.
+	Beginning float64 `json:"beginning"`
+	// Los movimientos de capital de enero al mes.
+	Movements float64 `json:"movements"`
+	// El capital contable al cierre: beginning + movements + net_income, igual al del balance general más el resultado del ejercicio.
+	Ending float64 `json:"ending"`
+}
+
+// EquityChangesAccount: EquityChangesAccount.
+type EquityChangesAccount struct {
+	// El código agrupador (301 capital social, 304 resultados de ejercicios anteriores…).
+	GroupingCode string `json:"grouping_code"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Al 1 de enero.
+	Beginning float64 `json:"beginning"`
+	// Aportaciones, retiros, dividendos y traspasos de enero al mes.
+	Movements float64 `json:"movements"`
+	// Al cierre del mes.
+	Ending float64 `json:"ending"`
+}
+
 // ErrorBody: Todos los errores tienen esta forma.
 type ErrorBody struct {
 	// El error: type, code, message (en el idioma pedido), param (el campo a corregir), doc_url y request_id.
@@ -5879,6 +6205,64 @@ type ExtraordinaryPayrollReceiptPreviewTotals struct {
 	Net float64 `json:"net"`
 }
 
+// FinancialRatios: Razones financieras al cierre de un mes: de su balance general y de sus resultados de enero al mes.
+type FinancialRatios struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// Liquidez, endeudamiento, rentabilidad y rotación.
+	Ratios []FinancialRatiosRatio `json:"ratios"`
+	// Las cifras de que salen.
+	Inputs FinancialRatiosInputs `json:"inputs"`
+}
+
+// FinancialRatiosInputs: Las cifras de que salen.
+type FinancialRatiosInputs struct {
+	// Activo circulante (101 a 121).
+	CurrentAssets float64 `json:"current_assets"`
+	// Pasivo a corto plazo (201 a 218).
+	CurrentLiabilities float64 `json:"current_liabilities"`
+	// Inventario (115, menos su estimación 116).
+	Inventory float64 `json:"inventory"`
+	// Clientes (105, menos incobrables 108).
+	Receivables float64 `json:"receivables"`
+	// Proveedores (201).
+	Payables float64 `json:"payables"`
+	// Activo total.
+	TotalAssets float64 `json:"total_assets"`
+	// Pasivo total.
+	TotalLiabilities float64 `json:"total_liabilities"`
+	// Capital contable con el resultado del ejercicio.
+	Equity float64 `json:"equity"`
+	// Ingresos de enero al mes.
+	RevenueYearToDate float64 `json:"revenue_year_to_date"`
+	// Utilidad antes de impuestos de enero al mes.
+	IncomeBeforeTaxesYearToDate float64 `json:"income_before_taxes_year_to_date"`
+}
+
+// FinancialRatiosRatio: FinancialRatiosRatio.
+type FinancialRatiosRatio struct {
+	// La razón.
+	//
+	// Valores: liquidez, prueba_acida, endeudamiento, apalancamiento, margen_bruto, margen_operacion, margen_neto, rendimiento_capital, rendimiento_activo, dias_cobro, dias_pago, dias_inventario.
+	Key string `json:"key"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su valor (null cuando no hay con qué dividir).
+	Value *float64 `json:"value,omitempty"`
+	// Veces, porcentaje o días.
+	//
+	// Valores: times, percent, days.
+	Unit string `json:"unit"`
+	// Cómo se calcula.
+	Description string `json:"description"`
+}
+
 // FinancialStatements: El estado de resultados y el balance general de un mes, leídos de su balanza.
 type FinancialStatements struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -6339,6 +6723,18 @@ type GetBudgetParams struct {
 	Month *int64 `json:"month,omitempty"`
 }
 
+// GetCashFlowParams: los campos de «Ver el estado de flujos de efectivo».
+type GetCashFlowParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// month (solo el mes) o year_to_date (de enero al mes, por omisión).
+	//
+	// Valores: month, year_to_date.
+	Period *string `json:"period,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetCashForecastParams: los campos de «Ver el flujo de efectivo».
 type GetCashForecastParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -6373,6 +6769,18 @@ type GetCompanyReportParams struct {
 	//
 	// Valores: full, executive.
 	Version *string `json:"version,omitempty"`
+}
+
+// GetComparativeStatementsParams: los campos de «Comparar los estados financieros con otro mes».
+type GetComparativeStatementsParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// previous_year (el mismo mes del año anterior, por omisión) o previous_month.
+	//
+	// Valores: previous_year, previous_month.
+	CompareTo *string `json:"compare_to,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCostCenterResultsParams: los campos de «Ver el estado de resultados por centro de costo».
@@ -6457,8 +6865,24 @@ type GetEmployeeVacationsParams struct {
 	AsOf *string `json:"as_of,omitempty"`
 }
 
+// GetEquityChangesParams: los campos de «Ver el estado de cambios en el capital contable».
+type GetEquityChangesParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetExpensePolicyParams: los campos de «Ver la política».
 type GetExpensePolicyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetFinancialRatiosParams: los campos de «Ver las razones financieras».
+type GetFinancialRatiosParams struct {
+	// El mes (AAAA-MM).
+	Month string `json:"month"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
