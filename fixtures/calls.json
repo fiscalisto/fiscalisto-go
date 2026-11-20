@@ -2043,6 +2043,27 @@
 		"go": "CostOfSales.Delete",
 		"java": "costOfSales.delete"
 	},
+	"GET /v1/accounting/budgets/{year}": {
+		"python": "budgets.get",
+		"php": "budgets->get",
+		"dotnet": "Budgets.GetAsync",
+		"go": "Budgets.Get",
+		"java": "budgets.get"
+	},
+	"POST /v1/accounting/budgets/{year}": {
+		"python": "budgets.save",
+		"php": "budgets->save",
+		"dotnet": "Budgets.SaveAsync",
+		"go": "Budgets.Save",
+		"java": "budgets.save"
+	},
+	"GET /v1/accounting/cost_center_results/{month}": {
+		"python": "cost_center_results.get",
+		"php": "costCenterResults->get",
+		"dotnet": "CostCenterResults.GetAsync",
+		"go": "CostCenterResults.Get",
+		"java": "costCenterResults.get"
+	},
 	"GET /v1/accounting/payroll_provisions/{month}": {
 		"python": "payroll_provisions.get",
 		"php": "payrollProvisions->get",

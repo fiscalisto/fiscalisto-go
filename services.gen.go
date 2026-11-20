@@ -161,6 +161,10 @@ type services struct {
 	// Contabilidad.
 	CostOfSales *CostOfSalesService
 	// Contabilidad.
+	Budgets *BudgetsService
+	// Contabilidad.
+	CostCenterResults *CostCenterResultsService
+	// Contabilidad.
 	PayrollProvisions *PayrollProvisionsService
 	// Contabilidad.
 	TaxDeterminations *TaxDeterminationsService
@@ -255,6 +259,8 @@ func (s *services) init(c *Client) {
 	s.ClosedPeriod = &ClosedPeriodService{c}
 	s.FxRevaluations = &FxRevaluationsService{c}
 	s.CostOfSales = &CostOfSalesService{c}
+	s.Budgets = &BudgetsService{c}
+	s.CostCenterResults = &CostCenterResultsService{c}
 	s.PayrollProvisions = &PayrollProvisionsService{c}
 	s.TaxDeterminations = &TaxDeterminationsService{c}
 	s.LedgerBankAccounts = &LedgerBankAccountsService{c}
@@ -4876,6 +4882,57 @@ func (s *CostOfSalesService) Create(ctx context.Context, month string, params *C
 func (s *CostOfSalesService) Delete(ctx context.Context, month string, params *DeleteCostOfSalesParams, opts ...RequestOption) (*CostOfSales, error) {
 	out := new(CostOfSales)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/cost_of_sales/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// BudgetsService: Contabilidad (client.Budgets).
+type BudgetsService struct{ c *Client }
+
+// Get: Ver el presupuesto de un año contra lo real
+//
+// El presupuesto del año por cuenta de resultados y mes, y la comparación con lo real de sus pólizas: el mes y de enero a ese mes, con la variación, su porcentaje y si es favorable (deja más utilidad que lo planeado). Con cost_center, el presupuesto y lo real de ese centro de costo; sin él, de toda la empresa. Como Estados financieros › Presupuesto en la app.
+//
+// GET /v1/accounting/budgets/{year}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-budget
+func (s *BudgetsService) Get(ctx context.Context, year string, params *GetBudgetParams, opts ...RequestOption) (*Budget, error) {
+	out := new(Budget)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/budgets/"+url.PathEscape(year), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Save: Guardar el presupuesto de un año
+//
+// Reemplaza el presupuesto del año (de toda la empresa, o del centro de costo de cost_center) con las cuentas que mande: cada una con sus 12 meses en la naturaleza de la cuenta. Solo cuentas de resultados (códigos agrupadores 4 a 7); una cuenta dos veces contesta parameter_invalid en lines. Una lista vacía borra el presupuesto.
+//
+// POST /v1/accounting/budgets/{year}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/save-budget
+func (s *BudgetsService) Save(ctx context.Context, year string, params *SaveBudgetParams, opts ...RequestOption) (*Budget, error) {
+	out := new(Budget)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/budgets/"+url.PathEscape(year), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CostCenterResultsService: Contabilidad (client.CostCenterResults).
+type CostCenterResultsService struct{ c *Client }
+
+// Get: Ver el estado de resultados por centro de costo
+//
+// Lo que cada centro de costo dejó de utilidad en el mes y de enero a ese mes: sus ingresos, costo de ventas, gastos y otros, de las facturas que se le pusieron (POST /v1/cost_centers/{id}/invoices) y de los renglones de póliza a mano que lo llevan (lines[].cost_center). Lo que no tiene centro va con cost_center null; todos suman el estado de resultados de la empresa.
+//
+// GET /v1/accounting/cost_center_results/{month}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-cost-center-results
+func (s *CostCenterResultsService) Get(ctx context.Context, month string, params *GetCostCenterResultsParams, opts ...RequestOption) (*CostCenterResults, error) {
+	out := new(CostCenterResults)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/cost_center_results/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

@@ -753,6 +753,116 @@ type BranchSeries struct {
 	Transfer *string `json:"transfer,omitempty"`
 }
 
+// Budget: El presupuesto de un año (de toda la empresa o de un centro de costo) por cuenta de resultados y mes, y cómo va lo real contra él: el mes y de enero a ese mes.
+type Budget struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Año (Ejercicio).
+	Year int64 `json:"year"`
+	// El mes de la comparación: el que pidió, el actual en el año en curso, 12 en uno pasado (0 en uno futuro).
+	Month int64 `json:"month"`
+	// El centro de costo (ccn_…) del presupuesto, o null: toda la empresa.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// Lo presupuestado por cuenta, como se guardó.
+	Lines []BudgetLine `json:"lines"`
+	// Cada cuenta con presupuesto o con movimiento: lo presupuestado contra lo real.
+	Comparison []BudgetComparisonItem `json:"comparison"`
+	// La utilidad antes de impuestos.
+	IncomeBeforeTaxes BudgetIncomeBeforeTaxes `json:"income_before_taxes"`
+}
+
+// BudgetComparisonItem: BudgetComparisonItem.
+type BudgetComparisonItem struct {
+	// El número de la cuenta en su catálogo.
+	Account string `json:"account"`
+	// Su nombre.
+	AccountName string `json:"account_name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// Su parte del estado de resultados.
+	//
+	// Valores: revenue, cost_of_sales, operating_expenses, financing, other.
+	Section string `json:"section"`
+	// El mes.
+	Month BudgetComparisonItemMonth `json:"month"`
+	// De enero al mes.
+	YearToDate BudgetComparisonItemYearToDate `json:"year_to_date"`
+	// Lo presupuestado en todo el año.
+	AnnualBudget float64 `json:"annual_budget"`
+}
+
+// BudgetComparisonItemMonth: El mes.
+type BudgetComparisonItemMonth struct {
+	// El mes: lo presupuestado.
+	Budget float64 `json:"budget"`
+	// El mes: lo real, de sus pólizas.
+	Actual float64 `json:"actual"`
+	// Real menos presupuesto.
+	Variance float64 `json:"variance"`
+	// La variación como porcentaje del presupuesto (null sin presupuesto).
+	VariancePercent *float64 `json:"variance_percent,omitempty"`
+	// true si lo real deja al menos la utilidad presupuestada: más ingresos o menos gastos.
+	Favorable bool `json:"favorable"`
+}
+
+// BudgetComparisonItemYearToDate: De enero al mes.
+type BudgetComparisonItemYearToDate struct {
+	// De enero al mes: lo presupuestado.
+	Budget float64 `json:"budget"`
+	// De enero al mes: lo real, de sus pólizas.
+	Actual float64 `json:"actual"`
+	// Real menos presupuesto.
+	Variance float64 `json:"variance"`
+	// La variación como porcentaje del presupuesto (null sin presupuesto).
+	VariancePercent *float64 `json:"variance_percent,omitempty"`
+	// true si lo real deja al menos la utilidad presupuestada: más ingresos o menos gastos.
+	Favorable bool `json:"favorable"`
+}
+
+// BudgetIncomeBeforeTaxes: La utilidad antes de impuestos.
+type BudgetIncomeBeforeTaxes struct {
+	// El mes.
+	Month BudgetIncomeBeforeTaxesMonth `json:"month"`
+	// De enero al mes.
+	YearToDate BudgetIncomeBeforeTaxesYearToDate `json:"year_to_date"`
+	// Presupuestada en todo el año.
+	AnnualBudget float64 `json:"annual_budget"`
+}
+
+// BudgetIncomeBeforeTaxesMonth: El mes.
+type BudgetIncomeBeforeTaxesMonth struct {
+	// Presupuestada.
+	Budget float64 `json:"budget"`
+	// Real.
+	Actual float64 `json:"actual"`
+}
+
+// BudgetIncomeBeforeTaxesYearToDate: De enero al mes.
+type BudgetIncomeBeforeTaxesYearToDate struct {
+	// Presupuestada.
+	Budget float64 `json:"budget"`
+	// Real.
+	Actual float64 `json:"actual"`
+}
+
+// BudgetLine: BudgetLine.
+type BudgetLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// Enero a diciembre.
+	Months []float64 `json:"months"`
+	// La suma de los 12 meses.
+	Annual float64 `json:"annual"`
+}
+
 // CFDISeals: Si los sellos del XML son auténticos, como los revisa el SAT: el Sello del emisor contra la cadena original y su certificado, y el SelloSAT del timbre contra el certificado del SAT.
 type CFDISeals struct {
 	// true si no hay ningún problema: el Sello corresponde a los datos y al certificado del emisor (un CSD de su RFC, vigente en la fecha de emisión) y el timbre es de este comprobante y del SAT.
@@ -1497,6 +1607,66 @@ type CostCenterList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// CostCenterResults: El estado de resultados por centro de costo: lo que cada uno dejó de utilidad, de las facturas que se le pusieron y de los renglones de póliza que lo llevan. Juntos suman el estado de resultados de la empresa.
+type CostCenterResults struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Un solo mes, del 1 al 12 (MesIni y MesFin iguales).
+	Month string `json:"month"`
+	// El mes.
+	MonthResults []CostCenterResultsMonthResult `json:"month_results"`
+	// De enero al mes.
+	YearToDate []CostCenterResultsYearToDateItem `json:"year_to_date"`
+}
+
+// CostCenterResultsMonthResult: CostCenterResultsMonthResult.
+type CostCenterResultsMonthResult struct {
+	// El centro de costo (ccn_…), o null: lo que no tiene centro.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// Su nombre.
+	CostCenterName *string `json:"cost_center_name,omitempty"`
+	// Ingresos.
+	Revenue float64 `json:"revenue"`
+	// Costo de ventas, en negativo.
+	CostOfSales float64 `json:"cost_of_sales"`
+	// Gastos de operación, en negativo.
+	OperatingExpenses float64 `json:"operating_expenses"`
+	// Resultado integral de financiamiento.
+	Financing float64 `json:"financing"`
+	// Otros ingresos y gastos.
+	Other float64 `json:"other"`
+	// Utilidad (o pérdida) antes de impuestos.
+	IncomeBeforeTaxes float64 `json:"income_before_taxes"`
+	// Utilidad entre ingresos, en porcentaje (null sin ingresos).
+	MarginPercent *float64 `json:"margin_percent,omitempty"`
+}
+
+// CostCenterResultsYearToDateItem: CostCenterResultsYearToDateItem.
+type CostCenterResultsYearToDateItem struct {
+	// El centro de costo (ccn_…), o null: lo que no tiene centro.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// Su nombre.
+	CostCenterName *string `json:"cost_center_name,omitempty"`
+	// Ingresos.
+	Revenue float64 `json:"revenue"`
+	// Costo de ventas, en negativo.
+	CostOfSales float64 `json:"cost_of_sales"`
+	// Gastos de operación, en negativo.
+	OperatingExpenses float64 `json:"operating_expenses"`
+	// Resultado integral de financiamiento.
+	Financing float64 `json:"financing"`
+	// Otros ingresos y gastos.
+	Other float64 `json:"other"`
+	// Utilidad (o pérdida) antes de impuestos.
+	IncomeBeforeTaxes float64 `json:"income_before_taxes"`
+	// Utilidad entre ingresos, en porcentaje (null sin ingresos).
+	MarginPercent *float64 `json:"margin_percent,omitempty"`
 }
 
 // CostOfSales: El costo de ventas de un mes en la contabilidad (sistema de inventarios periódico): las compras del mes, el inventario en libros y al cierre, y la póliza que lleva la diferencia a Costo de ventas, si ya se registró.
@@ -2373,6 +2543,8 @@ type CreateManualEntryParamsLine struct {
 	Debit *float64 `json:"debit,omitempty"`
 	// El abono.
 	Credit *float64 `json:"credit,omitempty"`
+	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional: los resultados por centro de costo y los presupuestos lo leen.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // CreatePaymentParams: los campos de «Timbrar un complemento de pago».
@@ -6153,6 +6325,16 @@ type GetAttendanceParams struct {
 	Employee *string `json:"employee,omitempty"`
 }
 
+// GetBudgetParams: los campos de «Ver el presupuesto de un año contra lo real».
+type GetBudgetParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El centro de costo (ccn_…). Sin él, toda la empresa.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// El mes de la comparación, de 1 a 12. Por omisión el actual en el año en curso, 12 en uno pasado.
+	Month *int64 `json:"month,omitempty"`
+}
+
 // GetCashForecastParams: los campos de «Ver el flujo de efectivo».
 type GetCashForecastParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -6187,6 +6369,12 @@ type GetCompanyReportParams struct {
 	//
 	// Valores: full, executive.
 	Version *string `json:"version,omitempty"`
+}
+
+// GetCostCenterResultsParams: los campos de «Ver el estado de resultados por centro de costo».
+type GetCostCenterResultsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCostOfSalesParams: los campos de «Ver el costo de ventas de un mes».
@@ -6449,6 +6637,8 @@ type ImportManualEntriesParamsEntryLine struct {
 	Debit *float64 `json:"debit,omitempty"`
 	// El abono.
 	Credit *float64 `json:"credit,omitempty"`
+	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional: los resultados por centro de costo y los presupuestos lo leen.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // ImportStoreOrdersParams: los campos de «Traer pedidos pagados».
@@ -9517,6 +9707,8 @@ type ManualJournalEntryLine struct {
 	Debit float64 `json:"debit"`
 	// El abono, en pesos.
 	Credit float64 `json:"credit"`
+	// Su centro de costo (ccn_…), o null.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // ManualJournalEntryList: Una página de la lista.
@@ -12677,6 +12869,24 @@ type SandboxList struct {
 	URL string `json:"url"`
 }
 
+// SaveBudgetParams: los campos de «Guardar el presupuesto de un año».
+type SaveBudgetParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// El centro de costo (ccn_…) del presupuesto. Sin él, el de toda la empresa. Cada centro tiene el suyo.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// Las cuentas del presupuesto. Reemplaza todo el presupuesto de ese año (y centro): una cuenta que no mande sale; una lista vacía lo borra.
+	Lines []SaveBudgetParamsLine `json:"lines"`
+}
+
+// SaveBudgetParamsLine: SaveBudgetParamsLine.
+type SaveBudgetParamsLine struct {
+	// El número de una cuenta de resultados (código agrupador 4 a 7) de su catálogo, por ejemplo 601-84.
+	Account string `json:"account"`
+	// Los 12 meses, de enero a diciembre, en pesos y en la naturaleza de la cuenta: un ingreso como ingreso, un gasto como gasto.
+	Months []float64 `json:"months"`
+}
+
 // ScheduleSupplierInvoiceParams: los campos de «Programar el pago de una factura de proveedor».
 type ScheduleSupplierInvoiceParams struct {
 	// El día en que la pagará (AAAA-MM-DD, hoy o después). El proveedor lo ve.
@@ -14015,6 +14225,8 @@ type UpdateManualEntryParamsLine struct {
 	Debit *float64 `json:"debit,omitempty"`
 	// El abono.
 	Credit *float64 `json:"credit,omitempty"`
+	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional: los resultados por centro de costo y los presupuestos lo leen.
+	CostCenter *string `json:"cost_center,omitempty"`
 }
 
 // UpdateMemberParams: los campos de «Cambiar el acceso de un miembro».
