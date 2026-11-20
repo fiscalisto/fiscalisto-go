@@ -713,6 +713,34 @@
 		"go": "VariableSalaries.Apply",
 		"java": "variableSalaries.apply"
 	},
+	"GET /v1/annual_adjustments": {
+		"python": "annual_adjustments.get",
+		"php": "annualAdjustments->get",
+		"dotnet": "AnnualAdjustments.GetAsync",
+		"go": "AnnualAdjustments.Get",
+		"java": "annualAdjustments.get"
+	},
+	"POST /v1/annual_adjustments": {
+		"python": "annual_adjustments.update",
+		"php": "annualAdjustments->update",
+		"dotnet": "AnnualAdjustments.UpdateAsync",
+		"go": "AnnualAdjustments.Update",
+		"java": "annualAdjustments.update"
+	},
+	"GET /v1/payroll_taxes": {
+		"python": "payroll_taxes.get",
+		"php": "payrollTaxes->get",
+		"dotnet": "PayrollTaxes.GetAsync",
+		"go": "PayrollTaxes.Get",
+		"java": "payrollTaxes.get"
+	},
+	"POST /v1/payroll_taxes/settings": {
+		"python": "payroll_taxes.update_settings",
+		"php": "payrollTaxes->updateSettings",
+		"dotnet": "PayrollTaxes.UpdateSettingsAsync",
+		"go": "PayrollTaxes.UpdateSettings",
+		"java": "payrollTaxes.updateSettings"
+	},
 	"POST /v1/invoice_batches": {
 		"python": "invoice_batches.create",
 		"php": "invoiceBatches->create",

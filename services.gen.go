@@ -64,6 +64,10 @@ type services struct {
 	EmployeeDeductions *EmployeeDeductionsService
 	// Nómina.
 	VariableSalaries *VariableSalariesService
+	// Nómina.
+	AnnualAdjustments *AnnualAdjustmentsService
+	// Nómina.
+	PayrollTaxes *PayrollTaxesService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -199,6 +203,8 @@ func (s *services) init(c *Client) {
 	s.ImssFiles = &ImssFilesService{c}
 	s.EmployeeDeductions = &EmployeeDeductionsService{c}
 	s.VariableSalaries = &VariableSalariesService{c}
+	s.AnnualAdjustments = &AnnualAdjustmentsService{c}
+	s.PayrollTaxes = &PayrollTaxesService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -2047,6 +2053,72 @@ func (s *VariableSalariesService) Get(ctx context.Context, params *GetVariableSa
 func (s *VariableSalariesService) Apply(ctx context.Context, params *ApplyVariableSalaryParams, opts ...RequestOption) (*VariableSalary, error) {
 	out := new(VariableSalary)
 	if err := s.c.do(ctx, "POST", "/v1/variable_salaries", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AnnualAdjustmentsService: Nómina (client.AnnualAdjustments).
+type AnnualAdjustmentsService struct{ c *Client }
+
+// Get: Ajuste anual del ISR
+//
+// El ISR del ejercicio de cada empleado (tarifa del artículo 152 sobre lo gravado de sus recibos timbrados del año, menos el subsidio para el empleo del año) contra lo que le retuvieron (artículo 97 de la Ley del ISR). balance positivo es a cargo del empleado; negativo, a su favor. excluded dice por qué no se le calcula. No cambia nada: aplíquelo con POST /v1/annual_adjustments.
+//
+// GET /v1/annual_adjustments
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-annual-adjustment
+func (s *AnnualAdjustmentsService) Get(ctx context.Context, params *GetAnnualAdjustmentParams, opts ...RequestOption) (*AnnualAdjustment, error) {
+	out := new(AnnualAdjustment)
+	if err := s.c.do(ctx, "GET", "/v1/annual_adjustments", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Aplicar el ajuste anual
+//
+// action apply: la diferencia de cada empleado va en sus siguientes recibos ordinarios pagados desde el 1 de enero del año siguiente: a cargo como Deducción 101 (hasta su neto; el resto, en el siguiente), a favor como OtroPago 004 con CompensacionSaldosAFavor. Repetirlo no hace nada. undo la quita mientras ningún recibo timbrado la lleve. files_own_return y no_own_return marcan si el empleado presentará su propia declaración anual.
+//
+// POST /v1/annual_adjustments
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-annual-adjustment
+func (s *AnnualAdjustmentsService) Update(ctx context.Context, params *UpdateAnnualAdjustmentParams, opts ...RequestOption) (*AnnualAdjustment, error) {
+	out := new(AnnualAdjustment)
+	if err := s.c.do(ctx, "POST", "/v1/annual_adjustments", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayrollTaxesService: Nómina (client.PayrollTaxes).
+type PayrollTaxesService struct{ c *Client }
+
+// Get: Impuesto sobre nómina del mes
+//
+// El impuesto sobre nómina de cada estado: la suma de los recibos timbrados con fecha de pago en el mes, por el estado donde trabaja cada empleado (ClaveEntFed), menos las percepciones de excluded_perception_types, por la tasa del estado y sus sobretasas. Se declara y paga en el portal de finanzas de cada estado.
+//
+// GET /v1/payroll_taxes
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-payroll-tax
+func (s *PayrollTaxesService) Get(ctx context.Context, params *GetPayrollTaxParams, opts ...RequestOption) (*PayrollTax, error) {
+	out := new(PayrollTax)
+	if err := s.c.do(ctx, "GET", "/v1/payroll_taxes", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateSettings: Qué no grava el impuesto sobre nómina
+//
+// Las percepciones que no suman a la base (por omisión, las que casi todos los estados dejan fuera: PTU, reembolsos, indemnizaciones, primas de antigüedad, jubilaciones, cuotas de seguridad social pagadas por el patrón y viáticos) y la opción de tasa de cada estado que la tiene, guardadas para el emisor. Lo que no mande se queda como estaba.
+//
+// POST /v1/payroll_taxes/settings
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-payroll-tax-settings
+func (s *PayrollTaxesService) UpdateSettings(ctx context.Context, params *UpdatePayrollTaxSettingsParams, opts ...RequestOption) (*PayrollTaxSettings, error) {
+	out := new(PayrollTaxSettings)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_taxes/settings", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

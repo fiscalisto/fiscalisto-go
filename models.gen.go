@@ -161,6 +161,60 @@ type AdvanceTestClockParams struct {
 	FrozenTime string `json:"frozen_time"`
 }
 
+// AnnualAdjustment: El ajuste anual del ISR de un ejercicio (artículo 97 de la Ley del ISR): el ISR del año de cada empleado contra lo retenido.
+type AnnualAdjustment struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El ejercicio.
+	Year int64 `json:"year"`
+	// Desde cuándo lo llevan los recibos: el 1 de enero del año siguiente.
+	AppliesFrom string `json:"applies_from"`
+	// La fecha de pago del último recibo timbrado del año.
+	LastPaymentDate *string `json:"last_payment_date,omitempty"`
+	// Cada empleado que trabajó en el año.
+	Employees []AnnualAdjustmentEmployee `json:"employees"`
+}
+
+// AnnualAdjustmentEmployee: AnnualAdjustmentEmployee.
+type AnnualAdjustmentEmployee struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su número de empleado.
+	EmployeeNumber string `json:"employee_number"`
+	// Su nombre.
+	EmployeeName string `json:"employee_name"`
+	// Todo lo que le pagaron sus recibos del año, gravado y exento: si pasa de $400,000 presenta su propia declaración.
+	Income float64 `json:"income"`
+	// Lo gravado del año.
+	TaxableIncome float64 `json:"taxable_income"`
+	// El ISR del ejercicio: la tarifa del artículo 152 sobre taxable_income.
+	AnnualTax float64 `json:"annual_tax"`
+	// El subsidio para el empleo que le correspondió en el año.
+	EmploymentSubsidy float64 `json:"employment_subsidy"`
+	// annual_tax menos employment_subsidy, nunca negativo.
+	TaxDue float64 `json:"tax_due"`
+	// El ISR que le retuvieron sus recibos del año.
+	TaxWithheld float64 `json:"tax_withheld"`
+	// tax_due menos tax_withheld: positivo a cargo, negativo a favor.
+	Balance float64 `json:"balance"`
+	// Por qué no se le calcula (artículo 97): started, entró después del 1 de enero; left, salió antes del 1 de diciembre; income, ganó más de $400,000; files_own, presenta su declaración.
+	//
+	// Valores: started, left, income, files_own.
+	Excluded *string `json:"excluded,omitempty"`
+	// Si avisó por escrito que presentará su declaración anual.
+	FilesOwnReturn bool `json:"files_own_return"`
+	// Los meses sin recibo timbrado: falta alguno de otro sistema.
+	MissingMonths []int64 `json:"missing_months"`
+	// La diferencia aplicada (positiva a cargo, negativa a favor), o null.
+	AppliedAmount *float64 `json:"applied_amount,omitempty"`
+	// Lo que de applied_amount aún no lleva ningún recibo timbrado.
+	Remaining *float64 `json:"remaining,omitempty"`
+}
+
 // ApplyAdvanceParams: El cuerpo de POST /v1/invoices (la factura de lo vendido) con method y remainder.
 type ApplyAdvanceParams struct {
 	// egreso (la factura completa y después una nota de crédito por el anticipo, opción A) o remanente (la factura solo por lo que falta, opción B).
@@ -261,7 +315,7 @@ type ApplyAdvanceParamsRemainder struct {
 
 // ApplyVariableSalaryParams: los campos de «Aplicar el salario variable de un bimestre».
 type ApplyVariableSalaryParams struct {
-	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	// El emisor (iss_…); por omisión, el único de la cuenta.
 	Issuer *string `json:"issuer,omitempty"`
 	// El bimestre: AAAA-B, de 1 (enero–febrero) a 6 (noviembre–diciembre).
 	Bimester string `json:"bimester"`
@@ -5961,6 +6015,14 @@ type GeneralLedgerAccountMovement struct {
 	Balance float64 `json:"balance"`
 }
 
+// GetAnnualAdjustmentParams: los campos de «Ajuste anual del ISR».
+type GetAnnualAdjustmentParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El ejercicio: 2026.
+	Year int64 `json:"year"`
+}
+
 // GetAttendanceParams: los campos de «Ver la asistencia de un periodo».
 type GetAttendanceParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -6141,6 +6203,14 @@ type GetInvoiceXmlParams struct {
 type GetOpeningBalancesParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetPayrollTaxParams: los campos de «Impuesto sobre nómina del mes».
+type GetPayrollTaxParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El mes: 2026-11.
+	Month string `json:"month"`
 }
 
 // GetRetentionParams: los campos de «Ver una constancia».
@@ -9885,6 +9955,100 @@ type PayrollReceiptPreviewWarning struct {
 	Message string `json:"message"`
 }
 
+// PayrollTax: El impuesto sobre nómina de un mes, por estado.
+type PayrollTax struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El mes: 2026-11.
+	Month string `json:"month"`
+	// Lo que paga en todos los estados.
+	Total float64 `json:"total"`
+	// Cada estado con recibos del mes, de mayor a menor base.
+	States []PayrollTaxState `json:"states"`
+	// Las percepciones del mes.
+	Perceptions []PayrollTaxPerception `json:"perceptions"`
+	// Las percepciones que no suman a la base.
+	ExcludedPerceptionTypes []string `json:"excluded_perception_types"`
+}
+
+// PayrollTaxPerception: PayrollTaxPerception.
+type PayrollTaxPerception struct {
+	// c_TipoPercepcion.
+	Type string `json:"type"`
+	// Su nombre en el catálogo del SAT.
+	Label string `json:"label"`
+	// Lo que pagó en el mes.
+	Amount float64 `json:"amount"`
+	// Si no suma a la base.
+	Excluded bool `json:"excluded"`
+}
+
+// PayrollTaxSettings: Qué no grava el impuesto sobre nómina del emisor y sus opciones de tasa.
+type PayrollTaxSettings struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Las percepciones que no suman a la base; null, las comunes.
+	ExcludedPerceptionTypes []string `json:"excluded_perception_types,omitempty"`
+	// La opción de tasa de cada estado, por su c_Estado.
+	StateOptions map[string]string `json:"state_options"`
+}
+
+// PayrollTaxState: PayrollTaxState.
+type PayrollTaxState struct {
+	// El estado donde trabajan (c_Estado de ClaveEntFed): CMX.
+	State string `json:"state"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Los empleados con recibo.
+	Employees int64 `json:"employees"`
+	// Los recibos timbrados.
+	Receipts int64 `json:"receipts"`
+	// Lo que pagaron sus percepciones, gravado y exento.
+	Paid float64 `json:"paid"`
+	// Lo de excluded_perception_types: no suma a la base.
+	Excluded float64 `json:"excluded"`
+	// paid menos excluded.
+	Base float64 `json:"base"`
+	// La tasa (0.03 es 3%); en Sinaloa, la efectiva de su tabla.
+	Rate float64 `json:"rate"`
+	// El impuesto sobre nómina: base por rate.
+	Tax float64 `json:"tax"`
+	// Las sobretasas del estado sobre el impuesto o la base.
+	Surcharges []PayrollTaxStateSurcharge `json:"surcharges"`
+	// tax más surcharges.
+	Total float64 `json:"total"`
+	// La opción de tasa elegida, en los estados que la tienen.
+	Option *string `json:"option,omitempty"`
+	// Las opciones de tasa del estado (tamaño de la empresa), o null.
+	Options []PayrollTaxStateOption `json:"options,omitempty"`
+	// El artículo que lo cobra.
+	Law *string `json:"law,omitempty"`
+}
+
+// PayrollTaxStateOption: PayrollTaxStateOption.
+type PayrollTaxStateOption struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// La opción, como la muestra la app.
+	Label string `json:"label"`
+}
+
+// PayrollTaxStateSurcharge: PayrollTaxStateSurcharge.
+type PayrollTaxStateSurcharge struct {
+	// La sobretasa.
+	Label string `json:"label"`
+	// Importe.
+	Amount float64 `json:"amount"`
+}
+
 // Permission: Algo que una persona puede hacer en la empresa.
 type Permission struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -13103,6 +13267,20 @@ type UpdateAccountParams struct {
 	APIVersion string `json:"api_version"`
 }
 
+// UpdateAnnualAdjustmentParams: los campos de «Aplicar el ajuste anual».
+type UpdateAnnualAdjustmentParams struct {
+	// El emisor (iss_…); por omisión, el único de la cuenta.
+	Issuer *string `json:"issuer,omitempty"`
+	// El ejercicio: 2026.
+	Year int64 `json:"year"`
+	// apply: aplica la diferencia en sus siguientes recibos (desde enero del año siguiente). undo: la quita si ningún recibo timbrado la lleva. files_own_return: avisó por escrito que presentará su declaración anual (artículo 97, c): no se le calcula. no_own_return: lo deshace.
+	//
+	// Valores: apply, undo, files_own_return, no_own_return.
+	Action string `json:"action"`
+	// Los empleados (emp_…).
+	Employees []string `json:"employees"`
+}
+
 // UpdateBranchParams: los campos de «Actualizar una sucursal».
 type UpdateBranchParams struct {
 	// Cómo la llama su equipo, por ejemplo «Sucursal Monterrey». Va en el PDF.
@@ -13577,6 +13755,16 @@ type UpdateMemberParams struct {
 	TaxIDs []string `json:"tax_ids,omitempty"`
 	// Solo emite desde estas sucursales (brn_…, o "matriz" para el domicilio fiscal). null: desde todas.
 	Branches []string `json:"branches,omitempty"`
+}
+
+// UpdatePayrollTaxSettingsParams: los campos de «Qué no grava el impuesto sobre nómina».
+type UpdatePayrollTaxSettingsParams struct {
+	// El emisor (iss_…); por omisión, el único de la cuenta.
+	Issuer *string `json:"issuer,omitempty"`
+	// Las percepciones (c_TipoPercepcion) que no suman a la base, como las deja fuera la ley de su estado. Reemplaza la lista entera.
+	ExcludedPerceptionTypes []string `json:"excluded_perception_types,omitempty"`
+	// La opción de tasa de cada estado que la tiene, por su c_Estado: {"BCN": "hasta50"}.
+	StateOptions map[string]string `json:"state_options,omitempty"`
 }
 
 // UpdatePriceListParams: los campos de «Actualizar una lista de precios».
