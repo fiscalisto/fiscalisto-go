@@ -8303,6 +8303,16 @@ type GetAttendanceParams struct {
 	Employee *string `json:"employee,omitempty"`
 }
 
+// GetBooksExportParams: los campos de «Descargar toda la contabilidad de un periodo».
+type GetBooksExportParams struct {
+	// El primer mes (AAAA-MM), de 2015-01 al mes actual.
+	FromMonth string `json:"from_month"`
+	// El último mes (AAAA-MM), hasta 24 meses después y no después del mes actual; por omisión, from_month.
+	ToMonth *string `json:"to_month,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetBudgetParams: los campos de «Ver el presupuesto de un año contra lo real».
 type GetBudgetParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -9021,7 +9031,7 @@ type Invoice struct {
 	//
 	// Valores: I, E, P, T, N.
 	Type string `json:"type"`
-	// processing: el PAC no ha contestado (se resuelve sola; escuche invoice.stamped). valid: timbrada. pending: timbrada con una cancelación en espera del cliente. rejected: el SAT o el PAC no la aceptaron (ver error). canceled: cancelada.
+	// processing: el PAC no ha contestado (se resuelve sola; escuche invoice.stamped). valid: timbrada. pending: timbrada, sin el UUID aún (se resuelve sola, como processing). Una cancelación en espera del cliente no cambia status: sigue valid, con cancellation.status pending. rejected: el SAT o el PAC no la aceptaron (ver error). canceled: cancelada.
 	//
 	// Valores: processing, pending, valid, rejected, canceled.
 	Status string `json:"status"`

@@ -2673,6 +2673,13 @@
 		"go": "Accounting.ElectronicAccounting",
 		"java": "accounting.electronicAccounting"
 	},
+	"GET /v1/accounting/books_export": {
+		"python": "accounting.books_export",
+		"php": "accounting->booksExport",
+		"dotnet": "Accounting.BooksExportAsync",
+		"go": "Accounting.BooksExport",
+		"java": "accounting.booksExport"
+	},
 	"GET /v1/accounting/diot": {
 		"python": "accounting.diot",
 		"php": "accounting->diot",

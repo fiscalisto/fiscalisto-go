@@ -3932,9 +3932,8 @@ func (s *SatReviewsService) ArmAnswer(ctx context.Context, id string, opts ...Re
 // GET /v1/sat_reviews/{id}/answer
 //
 // https://fiscalisto.com/docs/api/referencia/cumplimiento-sat/download-sat-review-answer
-func (s *SatReviewsService) DownloadAnswer(ctx context.Context, id string, opts ...RequestOption) (string, error) {
-	b, err := s.c.raw(ctx, "GET", "/v1/sat_reviews/"+url.PathEscape(id)+"/answer", nil, nil, false, opts)
-	return string(b), err
+func (s *SatReviewsService) DownloadAnswer(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/sat_reviews/"+url.PathEscape(id)+"/answer", nil, nil, false, opts)
 }
 
 // SatRiskCheckService: Cumplimiento SAT (client.SatRiskCheck).
@@ -4516,9 +4515,8 @@ func (s *ExportsService) Get(ctx context.Context, id string, opts ...RequestOpti
 // GET /v1/exports/{id}/download
 //
 // https://fiscalisto.com/docs/api/referencia/exportaciones/download-export
-func (s *ExportsService) Download(ctx context.Context, id string, opts ...RequestOption) (string, error) {
-	b, err := s.c.raw(ctx, "GET", "/v1/exports/"+url.PathEscape(id)+"/download", nil, nil, false, opts)
-	return string(b), err
+func (s *ExportsService) Download(ctx context.Context, id string, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/exports/"+url.PathEscape(id)+"/download", nil, nil, false, opts)
 }
 
 // SatDownloadsService: Descargas del SAT (client.SatDownloads).
@@ -5403,9 +5401,19 @@ func (s *AccountingService) ConsolidatedStatements(ctx context.Context, params *
 // GET /v1/accounting/electronic_accounting
 //
 // https://fiscalisto.com/docs/api/referencia/contabilidad/get-electronic-accounting
-func (s *AccountingService) ElectronicAccounting(ctx context.Context, params *GetElectronicAccountingParams, opts ...RequestOption) (string, error) {
-	b, err := s.c.raw(ctx, "GET", "/v1/accounting/electronic_accounting", nil, params, false, opts)
-	return string(b), err
+func (s *AccountingService) ElectronicAccounting(ctx context.Context, params *GetElectronicAccountingParams, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/accounting/electronic_accounting", nil, params, false, opts)
+}
+
+// BooksExport: Descargar toda la contabilidad de un periodo
+//
+// Un ZIP para llevar los libros a otro sistema, de from_month a to_month (hasta 24 meses): el catálogo (1-catalogo, Excel con número, nombre, nivel, código agrupador y naturaleza), los saldos iniciales al primer día de from_month en deudor y acreedor (2-saldos-iniciales), las pólizas de todo el periodo para CONTPAQi Contabilidad (un TXT) y para Aspel COI (un Excel por mes), la balanza de comprobación de cada mes (una hoja por mes) y, en contabilidad-electronica, el catálogo (CT) y la balanza de cada mes (BN) en XML 1.3 del Anexo 24. LEEME.txt dice el orden en que se importa. Son los mismos libros de financial_statements y electronic_accounting.
+//
+// GET /v1/accounting/books_export
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-books-export
+func (s *AccountingService) BooksExport(ctx context.Context, params *GetBooksExportParams, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/accounting/books_export", nil, params, false, opts)
 }
 
 // Diot: Ver la DIOT de un mes
