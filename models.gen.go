@@ -1637,6 +1637,78 @@ type CancelSatRetentionParams struct {
 	Substitution *string `json:"substitution,omitempty"`
 }
 
+// Candidate: Una solicitud que llegó por la página de empleos.
+type Candidate struct {
+	// La solicitud (cnd_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// La vacante a la que se postuló (vac_…).
+	Vacancy string `json:"vacancy"`
+	// Nombre.
+	Name string `json:"name"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email string `json:"email"`
+	// Su teléfono, si lo dio.
+	Phone *string `json:"phone,omitempty"`
+	// Su etapa, una de stages de hiring.
+	Stage string `json:"stage"`
+	// De 1 a 5.
+	Rating *int64 `json:"rating,omitempty"`
+	// La nota de su equipo.
+	Note *string `json:"note,omitempty"`
+	// Si cumple todas las preguntas que son requisito.
+	MeetsRequirements bool `json:"meets_requirements"`
+	// Las preguntas requisito que no cumple.
+	UnmetRequirements []string `json:"unmet_requirements"`
+	// Sus respuestas, en el orden de las preguntas que contestó.
+	Answers []CandidateAnswer `json:"answers"`
+	// El empleado (emp_…) si se le contrató.
+	Employee *string `json:"employee,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+}
+
+// CandidateAnswer: CandidateAnswer.
+type CandidateAnswer struct {
+	// La clave de la pregunta.
+	Question string `json:"question"`
+	// La pregunta, como la leyó.
+	Label string `json:"label"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	Type string `json:"type"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value json.RawMessage `json:"value,omitempty"`
+	// El archivo que subió, en una pregunta de tipo file.
+	File *CandidateAnswerFile `json:"file,omitempty"`
+}
+
+// CandidateAnswerFile: CandidateAnswerFile.
+type CandidateAnswerFile struct {
+	// Nombre.
+	Name string `json:"name"`
+	// Su tamaño en bytes.
+	Size int64 `json:"size"`
+	// Dónde descargarlo en la API.
+	URL string `json:"url"`
+}
+
+// CandidateList: Una página de la lista.
+type CandidateList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Candidate `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // CarryForwardAnnualReturnParams: los campos de «Llevar las pérdidas que quedan al año siguiente».
 type CarryForwardAnnualReturnParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
@@ -3849,6 +3921,78 @@ type CreateIssuerParamsDonationAuthorization struct {
 	Number string `json:"number"`
 	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
 	Date string `json:"date"`
+}
+
+// CreateJobFormParams: los campos de «Crear un formulario de solicitud».
+type CreateJobFormParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cómo lo llama su equipo.
+	Name string `json:"name"`
+	// Sus preguntas, en orden. nombre y correo van siempre (si no las manda, se agregan al principio).
+	Questions []CreateJobFormParamsQuestion `json:"questions"`
+}
+
+// CreateJobFormParamsQuestion: CreateJobFormParamsQuestion.
+type CreateJobFormParamsQuestion struct {
+	// Su clave en el formulario y en las respuestas; por omisión sale de label. Las de siempre: nombre, correo, telefono y cv.
+	ID *string `json:"id,omitempty"`
+	// La pregunta, como la lee quien se postula.
+	Label string `json:"label"`
+	// Una ayuda bajo la caja.
+	Help *string `json:"help,omitempty"`
+	// text, longtext (párrafo), number, date, select (una de la lista), multiselect (varias), yesno, email, phone, url o file (un archivo).
+	//
+	// Valores: text, longtext, number, date, select, multiselect, yesno, email, phone, url, file.
+	Type string `json:"type"`
+	// Si no se puede dejar en blanco.
+	Required bool `json:"required"`
+	// Las opciones de select y multiselect.
+	Options []string `json:"options,omitempty"`
+	// Qué archivos toma una de tipo file: pdf, image (JPG, PNG), doc (.docx). Hasta 10 MB.
+	Files []string `json:"files,omitempty"`
+	// Lo que se revisa de la respuesta (largo, formato, mínimo, máximo, fechas, ejemplo).
+	Rules *CreateJobFormParamsQuestionRules `json:"rules,omitempty"`
+	// Si es un requisito: quien no lo cumple queda marcado o se le avisa antes de enviar, como diga unmet_requirements.
+	Requirement *CreateJobFormParamsQuestionRequirement `json:"requirement,omitempty"`
+}
+
+// CreateJobFormParamsQuestionRequirement: CreateJobFormParamsQuestionRequirement.
+type CreateJobFormParamsQuestionRequirement struct {
+	// Las respuestas que cumplen: ["si"] o ["no"] en una yesno, opciones en select y multiselect.
+	Answers []string `json:"answers,omitempty"`
+	// En una number, el mínimo que cumple (años de experiencia…).
+	Min *float64 `json:"min,omitempty"`
+}
+
+// CreateJobFormParamsQuestionRules: Lo que se revisa de la respuesta: largo y formato (any, digits, alnum) de un texto, mínimo, máximo y enteros de un número, qué fechas, y el ejemplo dentro de la caja vacía.
+type CreateJobFormParamsQuestionRules struct {
+	// Texto: cuántos caracteres como mínimo.
+	MinLength *int64 `json:"min_length,omitempty"`
+	// Texto: cuántos caracteres como máximo.
+	MaxLength *int64 `json:"max_length,omitempty"`
+	// Texto: any (cualquiera), digits (solo números) o alnum (letras y números).
+	//
+	// Valores: any, digits, alnum.
+	Format *string `json:"format,omitempty"`
+	// Número: el más chico.
+	Min *float64 `json:"min,omitempty"`
+	// Número: el más grande.
+	Max *float64 `json:"max,omitempty"`
+	// Número: sin decimales.
+	Integer *bool `json:"integer,omitempty"`
+	// Fecha: any, past (pasada; con days, no más vieja que esos días), future (futura; con days, al menos a esos días) o between (entre from y to).
+	//
+	// Valores: any, past, future, between.
+	Dates *string `json:"dates,omitempty"`
+	// Fecha: los días de past o future.
+	Days *int64 `json:"days,omitempty"`
+	// Fecha: desde (YYYY-MM-DD), con between.
+	From *string `json:"from,omitempty"`
+	// Fecha: hasta (YYYY-MM-DD), con between.
+	To *string `json:"to,omitempty"`
+	// El ejemplo que se ve dentro de la caja vacía.
+	Example *string `json:"example,omitempty"`
 }
 
 // CreateLedgerAccountParams: los campos de «Agregar una cuenta al catálogo».
@@ -8591,6 +8735,12 @@ type GetGeneralLedgerParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetHiringParams: los campos de «Página de empleos».
+type GetHiringParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetInflationAdjustmentParams: los campos de «Calcular el ajuste anual por inflación».
 type GetInflationAdjustmentParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -8771,6 +8921,88 @@ type GetVatRefundParams struct {
 	Month *string `json:"month,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// HireCandidateParams: los campos de «Contratar a un candidato».
+type HireCandidateParams struct {
+	// El empleado (emp_…) que ya dio de alta con POST /v1/employees: cubre la vacante con él.
+	Employee string `json:"employee"`
+}
+
+// Hiring: La página de empleos de un emisor: su configuración, sus formularios y sus vacantes.
+type Hiring struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// La página de empleos del emisor.
+	CareersURL string `json:"careers_url"`
+	// Si la página se ve.
+	Enabled bool `json:"enabled"`
+	// El texto de arriba de la página.
+	Intro *string `json:"intro,omitempty"`
+	// El correo para dudas y derechos ARCO de los candidatos; null usa el de Datos fiscales.
+	ContactEmail *string `json:"contact_email,omitempty"`
+	// Las etapas de sus candidatos, en orden.
+	Stages []string `json:"stages"`
+	// Quien no cumple un requisito: flag, su solicitud llega marcada; warn, además se le dice antes de enviar.
+	//
+	// Valores: flag, warn.
+	UnmetRequirements string `json:"unmet_requirements"`
+	// El formulario (jbf_…) de las vacantes que no eligen uno; null el básico.
+	DefaultForm *string `json:"default_form,omitempty"`
+	// Sus formularios de solicitud.
+	Forms []JobForm `json:"forms"`
+	// Las vacantes abiertas, y las cubiertas que aún tienen candidatos.
+	Vacancies []HiringVacancy `json:"vacancies"`
+}
+
+// HiringVacancy: HiringVacancy.
+type HiringVacancy struct {
+	// La vacante (vac_…).
+	ID string `json:"id"`
+	// El puesto.
+	Title string `json:"title"`
+	// Departamento (Departamento).
+	Department *string `json:"department,omitempty"`
+	// Estado del objeto.
+	//
+	// Valores: pending_approval, approved, rejected, filled.
+	Status string `json:"status"`
+	// Si está en la página de empleos.
+	Published bool `json:"published"`
+	// Su página, si está publicada.
+	URL *string `json:"url,omitempty"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+	// Lo que pide.
+	Requirements []string `json:"requirements"`
+	// El tipo de contrato.
+	//
+	// Valores: full_time, part_time, fixed_term, project, internship.
+	EmploymentType *string `json:"employment_type,omitempty"`
+	// Dónde se trabaja.
+	//
+	// Valores: on_site, hybrid, remote.
+	Workplace *string `json:"workplace,omitempty"`
+	// Si la página muestra el sueldo.
+	ShowSalary bool `json:"show_salary"`
+	// Hasta cuándo recibe solicitudes (YYYY-MM-DD).
+	ClosesOn *string `json:"closes_on,omitempty"`
+	// Forma farmacéutica (FormaFarmaceutica), c_FormaFarmaceutica.
+	Form *string `json:"form,omitempty"`
+	// Cuántos candidatos hay en cada etapa.
+	Candidates []HiringVacancyCandidate `json:"candidates"`
+}
+
+// HiringVacancyCandidate: HiringVacancyCandidate.
+type HiringVacancyCandidate struct {
+	// La etapa.
+	Stage string `json:"stage"`
+	// Cuántos hay en ella.
+	Count int64 `json:"count"`
 }
 
 // ImportManualEntriesParams: los campos de «Importar pólizas de otro sistema».
@@ -11039,6 +11271,50 @@ type IssuerTestClock struct {
 	FrozenTime string `json:"frozen_time"`
 }
 
+// JobForm: Un formulario de solicitud: las preguntas que llena quien se postula.
+type JobForm struct {
+	// El formulario (jbf_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Nombre.
+	Name string `json:"name"`
+	// Sus preguntas, en orden.
+	Questions []JobFormQuestion `json:"questions"`
+}
+
+// JobFormQuestion: JobFormQuestion.
+type JobFormQuestion struct {
+	// Su clave: las respuestas van por ella.
+	ID string `json:"id"`
+	// La pregunta, como la lee quien se postula.
+	Label string `json:"label"`
+	// La ayuda bajo la caja.
+	Help *string `json:"help,omitempty"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: text, longtext, number, date, select, multiselect, yesno, email, phone, url, file.
+	Type string `json:"type"`
+	// Si no se puede dejar en blanco.
+	Required bool `json:"required"`
+	// Las de select y multiselect.
+	Options []string `json:"options"`
+	// Los archivos que toma una de tipo file.
+	Files []string `json:"files"`
+	// Lo que se revisa de la respuesta (min_length, max, dates…).
+	Rules map[string]any `json:"rules,omitempty"`
+	// Si es un requisito, las respuestas o el mínimo que lo cumplen.
+	Requirement *JobFormQuestionRequirement `json:"requirement,omitempty"`
+}
+
+// JobFormQuestionRequirement: JobFormQuestionRequirement.
+type JobFormQuestionRequirement struct {
+	// Las respuestas que lo cumplen.
+	Answers []string `json:"answers"`
+	// En una number, el mínimo que lo cumple.
+	Min *float64 `json:"min,omitempty"`
+}
+
 // JournalEntry: Una póliza de diario (de un CFDI, un pago, un recibo de nómina o la depreciación del mes): sus cargos y abonos, que siempre cuadran.
 type JournalEntry struct {
 	// El número de la póliza: D-AAAAMM-NNNNN, en orden de fecha dentro del mes.
@@ -11219,6 +11495,20 @@ type ListBranchesParams struct {
 	IncludeArchived *bool `json:"include_archived,omitempty"`
 	// Solo la de este código postal.
 	Zip *string `json:"zip,omitempty"`
+}
+
+// ListCandidatesParams: los campos de «Listar candidatos».
+type ListCandidatesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de una vacante (vac_…).
+	Vacancy *string `json:"vacancy,omitempty"`
+	// Solo las de una etapa, como en stages de hiring.
+	Stage *string `json:"stage,omitempty"`
 }
 
 // ListChartTemplatesParams: los campos de «Listar los catálogos por giro».
@@ -14391,6 +14681,30 @@ type ProductionOrderOtherCost struct {
 	Description string `json:"description"`
 	// Importe.
 	Amount float64 `json:"amount"`
+}
+
+// PublishPayrollVacancyParams: los campos de «Publicar una vacante».
+type PublishPayrollVacancyParams struct {
+	// true la pone en la página; false la quita.
+	Published bool `json:"published"`
+	// Qué hará la persona; los párrafos van separados por una línea en blanco.
+	Description *string `json:"description,omitempty"`
+	// Lo que pide, uno por renglón (escolaridad, experiencia…).
+	Requirements []string `json:"requirements,omitempty"`
+	// full_time, part_time, fixed_term (por tiempo determinado), project (por obra determinada) o internship (prácticas).
+	//
+	// Valores: full_time, part_time, fixed_term, project, internship.
+	EmploymentType *string `json:"employment_type,omitempty"`
+	// Dónde se trabaja: on_site (presencial), hybrid (híbrido) o remote.
+	//
+	// Valores: on_site, hybrid, remote.
+	Workplace *string `json:"workplace,omitempty"`
+	// Si la página muestra el sueldo de la vacante (salary_min y salary_max).
+	ShowSalary *bool `json:"show_salary,omitempty"`
+	// Hasta cuándo recibe solicitudes (YYYY-MM-DD).
+	ClosesOn *string `json:"closes_on,omitempty"`
+	// El formulario que llenan (jbf_…); null el predeterminado.
+	Form *string `json:"form,omitempty"`
 }
 
 // PurchaseReceipt: Un ticket de compra del emisor sin factura: lo que se leyó de su foto y si ya se pidió, llegó o no es deducible.
@@ -17799,6 +18113,16 @@ type UpdateBranchParamsSeries struct {
 	Transfer *string `json:"transfer,omitempty"`
 }
 
+// UpdateCandidateParams: los campos de «Cambiar un candidato».
+type UpdateCandidateParams struct {
+	// Una de las etapas (stages).
+	Stage *string `json:"stage,omitempty"`
+	// Su calificación, de 1 a 5; null se la quita.
+	Rating *int64 `json:"rating,omitempty"`
+	// La nota de su equipo; no la ve el candidato.
+	Note *string `json:"note,omitempty"`
+}
+
 // UpdateCashForecastItemParams: los campos de «Cambiar un movimiento previsto».
 type UpdateCashForecastItemParams struct {
 	// Qué es: «Renta», «Crédito del banco».
@@ -18191,6 +18515,26 @@ type UpdateExpenseReportParams struct {
 	EndDate *string `json:"end_date,omitempty"`
 }
 
+// UpdateHiringSettingsParams: los campos de «Configurar la página de empleos».
+type UpdateHiringSettingsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Si la página de empleos se ve.
+	Enabled *bool `json:"enabled,omitempty"`
+	// El texto de arriba de la página: quiénes son y por qué trabajar ahí.
+	Intro *string `json:"intro,omitempty"`
+	// El correo para dudas de quien se postula y para sus derechos ARCO (aviso de privacidad). Sin él se usa el de Datos fiscales; sin ninguno, las vacantes no reciben solicitudes.
+	ContactEmail *string `json:"contact_email,omitempty"`
+	// Las etapas de sus candidatos, en orden. La primera es donde llegan.
+	Stages []string `json:"stages,omitempty"`
+	// Qué hacer con quien no cumple un requisito: flag la recibe marcada; warn le dice qué no cumple antes de enviar (puede enviarla igual) y también la marca.
+	//
+	// Valores: flag, warn.
+	UnmetRequirements *string `json:"unmet_requirements,omitempty"`
+	// El formulario (jbf_…) de las vacantes que no eligen uno; null el básico.
+	DefaultForm *string `json:"default_form,omitempty"`
+}
+
 // UpdateImssMovementParams: los campos de «Cambiar un movimiento del IMSS».
 type UpdateImssMovementParams struct {
 	// alta (o reingreso): tipo 08; modificacion: cambio de salario, tipo 07; baja: tipo 02.
@@ -18251,6 +18595,78 @@ type UpdateIssuerParamsDonationAuthorization struct {
 	Number string `json:"number"`
 	// Fecha del oficio, AAAA-MM-DD; no puede ser futura.
 	Date string `json:"date"`
+}
+
+// UpdateJobFormParams: los campos de «Cambiar un formulario de solicitud».
+type UpdateJobFormParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cómo lo llama su equipo.
+	Name string `json:"name"`
+	// Sus preguntas, en orden. nombre y correo van siempre (si no las manda, se agregan al principio).
+	Questions []UpdateJobFormParamsQuestion `json:"questions"`
+}
+
+// UpdateJobFormParamsQuestion: UpdateJobFormParamsQuestion.
+type UpdateJobFormParamsQuestion struct {
+	// Su clave en el formulario y en las respuestas; por omisión sale de label. Las de siempre: nombre, correo, telefono y cv.
+	ID *string `json:"id,omitempty"`
+	// La pregunta, como la lee quien se postula.
+	Label string `json:"label"`
+	// Una ayuda bajo la caja.
+	Help *string `json:"help,omitempty"`
+	// text, longtext (párrafo), number, date, select (una de la lista), multiselect (varias), yesno, email, phone, url o file (un archivo).
+	//
+	// Valores: text, longtext, number, date, select, multiselect, yesno, email, phone, url, file.
+	Type string `json:"type"`
+	// Si no se puede dejar en blanco.
+	Required bool `json:"required"`
+	// Las opciones de select y multiselect.
+	Options []string `json:"options,omitempty"`
+	// Qué archivos toma una de tipo file: pdf, image (JPG, PNG), doc (.docx). Hasta 10 MB.
+	Files []string `json:"files,omitempty"`
+	// Lo que se revisa de la respuesta (largo, formato, mínimo, máximo, fechas, ejemplo).
+	Rules *UpdateJobFormParamsQuestionRules `json:"rules,omitempty"`
+	// Si es un requisito: quien no lo cumple queda marcado o se le avisa antes de enviar, como diga unmet_requirements.
+	Requirement *UpdateJobFormParamsQuestionRequirement `json:"requirement,omitempty"`
+}
+
+// UpdateJobFormParamsQuestionRequirement: UpdateJobFormParamsQuestionRequirement.
+type UpdateJobFormParamsQuestionRequirement struct {
+	// Las respuestas que cumplen: ["si"] o ["no"] en una yesno, opciones en select y multiselect.
+	Answers []string `json:"answers,omitempty"`
+	// En una number, el mínimo que cumple (años de experiencia…).
+	Min *float64 `json:"min,omitempty"`
+}
+
+// UpdateJobFormParamsQuestionRules: Lo que se revisa de la respuesta: largo y formato (any, digits, alnum) de un texto, mínimo, máximo y enteros de un número, qué fechas, y el ejemplo dentro de la caja vacía.
+type UpdateJobFormParamsQuestionRules struct {
+	// Texto: cuántos caracteres como mínimo.
+	MinLength *int64 `json:"min_length,omitempty"`
+	// Texto: cuántos caracteres como máximo.
+	MaxLength *int64 `json:"max_length,omitempty"`
+	// Texto: any (cualquiera), digits (solo números) o alnum (letras y números).
+	//
+	// Valores: any, digits, alnum.
+	Format *string `json:"format,omitempty"`
+	// Número: el más chico.
+	Min *float64 `json:"min,omitempty"`
+	// Número: el más grande.
+	Max *float64 `json:"max,omitempty"`
+	// Número: sin decimales.
+	Integer *bool `json:"integer,omitempty"`
+	// Fecha: any, past (pasada; con days, no más vieja que esos días), future (futura; con days, al menos a esos días) o between (entre from y to).
+	//
+	// Valores: any, past, future, between.
+	Dates *string `json:"dates,omitempty"`
+	// Fecha: los días de past o future.
+	Days *int64 `json:"days,omitempty"`
+	// Fecha: desde (YYYY-MM-DD), con between.
+	From *string `json:"from,omitempty"`
+	// Fecha: hasta (YYYY-MM-DD), con between.
+	To *string `json:"to,omitempty"`
+	// El ejemplo que se ve dentro de la caja vacía.
+	Example *string `json:"example,omitempty"`
 }
 
 // UpdateLedgerBankAccountParams: los campos de «Cambiar la moneda de una cuenta de banco».

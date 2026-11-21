@@ -78,6 +78,10 @@ type services struct {
 	PayrollCalendar *PayrollCalendarService
 	// Nómina.
 	PayrollOrgChart *PayrollOrgChartService
+	// Nómina.
+	Hiring *HiringService
+	// Nómina.
+	Candidates *CandidatesService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -266,6 +270,8 @@ func (s *services) init(c *Client) {
 	s.PayrollReports = &PayrollReportsService{c}
 	s.PayrollCalendar = &PayrollCalendarService{c}
 	s.PayrollOrgChart = &PayrollOrgChartService{c}
+	s.Hiring = &HiringService{c}
+	s.Candidates = &CandidatesService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -2634,6 +2640,190 @@ func (s *PayrollOrgChartService) FillVacancy(ctx context.Context, id string, par
 		return nil, err
 	}
 	return out, nil
+}
+
+// PublishVacancy: Publicar una vacante
+//
+// La pone en la página de empleos del emisor (published true) o la quita (false), con su descripción, requisitos, tipo de contrato, lugar, sueldo visible, fecha de cierre y el formulario (jbf_…) que llenan quienes se postulan. Solo una approved se publica; publicarla enciende la página si estaba apagada. Google la puede mostrar en sus resultados de empleos (JobPosting). Contesta hiring.
+//
+// POST /v1/payroll_org_chart/vacancies/{id}/publish
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/publish-payroll-vacancy
+func (s *PayrollOrgChartService) PublishVacancy(ctx context.Context, id string, params *PublishPayrollVacancyParams, opts ...RequestOption) (*Hiring, error) {
+	out := new(Hiring)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_org_chart/vacancies/"+url.PathEscape(id)+"/publish", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// HiringService: Nómina (client.Hiring).
+type HiringService struct{ c *Client }
+
+// Get: Página de empleos
+//
+// Como «Nómina › Empleos» de la app: la página de empleos del emisor (careers_url, si se ve, su texto, el correo de contacto), las etapas de sus candidatos, qué hacer con quien no cumple un requisito, sus formularios (jbf_…) y sus vacantes con lo que publican y cuántos candidatos hay en cada etapa.
+//
+// GET /v1/hiring
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-hiring
+func (s *HiringService) Get(ctx context.Context, params *GetHiringParams, opts ...RequestOption) (*Hiring, error) {
+	out := new(Hiring)
+	if err := s.c.do(ctx, "GET", "/v1/hiring", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateSettings: Configurar la página de empleos
+//
+// Enciende o apaga la página, cambia su texto y correo de contacto, las etapas de los candidatos (al menos dos; la primera es donde llegan), unmet_requirements y el formulario predeterminado. Lo que no manda no cambia. Contesta hiring.
+//
+// POST /v1/hiring/settings
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-hiring-settings
+func (s *HiringService) UpdateSettings(ctx context.Context, params *UpdateHiringSettingsParams, opts ...RequestOption) (*Hiring, error) {
+	out := new(Hiring)
+	if err := s.c.do(ctx, "POST", "/v1/hiring/settings", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CreateForm: Crear un formulario de solicitud
+//
+// Las preguntas que llena quien se postula, del tipo que sea (texto, párrafo, número, fecha, lista, varias opciones, sí o no, correo, teléfono, enlace o archivo), obligatorias u opcionales, con sus reglas y las que son requisito. nombre y correo van siempre. Una pregunta que la Ley Federal del Trabajo no deja pedir (art. 133: edad, género, estado civil, embarazo…) se guarda, pero la app la señala.
+//
+// POST /v1/hiring/forms
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-job-form
+func (s *HiringService) CreateForm(ctx context.Context, params *CreateJobFormParams, opts ...RequestOption) (*JobForm, error) {
+	out := new(JobForm)
+	if err := s.c.do(ctx, "POST", "/v1/hiring/forms", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateForm: Cambiar un formulario de solicitud
+//
+// Cambia su nombre y sus preguntas. Las solicitudes que ya llegaron conservan las preguntas que contestaron.
+//
+// POST /v1/hiring/forms/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-job-form
+func (s *HiringService) UpdateForm(ctx context.Context, id string, params *UpdateJobFormParams, opts ...RequestOption) (*JobForm, error) {
+	out := new(JobForm)
+	if err := s.c.do(ctx, "POST", "/v1/hiring/forms/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteForm: Archivar un formulario de solicitud
+//
+// Deja de usarse: sus vacantes piden el predeterminado desde ahora. Las solicitudes que ya llegaron no cambian.
+//
+// DELETE /v1/hiring/forms/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-job-form
+func (s *HiringService) DeleteForm(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/hiring/forms/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CandidatesService: Nómina (client.Candidates).
+type CandidatesService struct{ c *Client }
+
+// List: Listar candidatos
+//
+// Las solicitudes que llegaron por la página de empleos, las más recientes primero, con sus respuestas, su etapa y los requisitos que no cumple.
+//
+// GET /v1/candidates
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-candidates
+func (s *CandidatesService) List(ctx context.Context, params *ListCandidatesParams, opts ...RequestOption) (*Page[Candidate], error) {
+	return list[Candidate](ctx, s.c, "/v1/candidates", params, "", opts)
+}
+
+// ListAutoPaging: Listar candidatos, todos, página por página: for x, err := range …
+func (s *CandidatesService) ListAutoPaging(ctx context.Context, params *ListCandidatesParams, opts ...RequestOption) iter.Seq2[Candidate, error] {
+	return listAll[Candidate](ctx, s.c, "/v1/candidates", params, opts)
+}
+
+// Get: Ver un candidato
+//
+// Una solicitud (cnd_…), con las preguntas que contestó y sus archivos.
+//
+// GET /v1/candidates/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-candidate
+func (s *CandidatesService) Get(ctx context.Context, id string, opts ...RequestOption) (*Candidate, error) {
+	out := new(Candidate)
+	if err := s.c.do(ctx, "GET", "/v1/candidates/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un candidato
+//
+// Lo pasa a otra etapa, lo califica (1 a 5) o le pone una nota de su equipo. Lo que no manda no cambia.
+//
+// POST /v1/candidates/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-candidate
+func (s *CandidatesService) Update(ctx context.Context, id string, params *UpdateCandidateParams, opts ...RequestOption) (*Candidate, error) {
+	out := new(Candidate)
+	if err := s.c.do(ctx, "POST", "/v1/candidates/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un candidato
+//
+// Borra la solicitud y sus archivos, por ejemplo cuando el candidato lo pide (derechos ARCO). No se puede deshacer.
+//
+// DELETE /v1/candidates/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-candidate
+func (s *CandidatesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/candidates/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Hire: Contratar a un candidato
+//
+// Con el empleado ya dado de alta (POST /v1/employees), cubre la vacante de la solicitud (como POST /v1/payroll_org_chart/vacancies/{id}/fill), pasa al candidato a la etapa de contratados y quita la vacante de la página. Falta su alta en el IMSS.
+//
+// POST /v1/candidates/{id}/hire
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/hire-candidate
+func (s *CandidatesService) Hire(ctx context.Context, id string, params *HireCandidateParams, opts ...RequestOption) (*Candidate, error) {
+	out := new(Candidate)
+	if err := s.c.do(ctx, "POST", "/v1/candidates/"+url.PathEscape(id)+"/hire", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// File: Descargar un archivo de un candidato
+//
+// El archivo que subió a una pregunta de tipo file (su CV, por ejemplo), tal como lo subió: PDF, JPG, PNG o Word. answers[].file.url de candidate lleva esta ruta.
+//
+// GET /v1/candidates/{id}/files/{question}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-candidate-file
+func (s *CandidatesService) File(ctx context.Context, id string, question string, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/candidates/"+url.PathEscape(id)+"/files/"+url.PathEscape(question), nil, nil, false, opts)
+	return string(b), err
 }
 
 // InvoiceBatchesService: Lotes (client.InvoiceBatches).

@@ -930,6 +930,90 @@
 		"go": "PayrollOrgChart.FillVacancy",
 		"java": "payrollOrgChart.fillVacancy"
 	},
+	"POST /v1/payroll_org_chart/vacancies/{id}/publish": {
+		"python": "payroll_org_chart.publish_vacancy",
+		"php": "payrollOrgChart->publishVacancy",
+		"dotnet": "PayrollOrgChart.PublishVacancyAsync",
+		"go": "PayrollOrgChart.PublishVacancy",
+		"java": "payrollOrgChart.publishVacancy"
+	},
+	"GET /v1/hiring": {
+		"python": "hiring.get",
+		"php": "hiring->get",
+		"dotnet": "Hiring.GetAsync",
+		"go": "Hiring.Get",
+		"java": "hiring.get"
+	},
+	"POST /v1/hiring/settings": {
+		"python": "hiring.update_settings",
+		"php": "hiring->updateSettings",
+		"dotnet": "Hiring.UpdateSettingsAsync",
+		"go": "Hiring.UpdateSettings",
+		"java": "hiring.updateSettings"
+	},
+	"POST /v1/hiring/forms": {
+		"python": "hiring.create_form",
+		"php": "hiring->createForm",
+		"dotnet": "Hiring.CreateFormAsync",
+		"go": "Hiring.CreateForm",
+		"java": "hiring.createForm"
+	},
+	"POST /v1/hiring/forms/{id}": {
+		"python": "hiring.update_form",
+		"php": "hiring->updateForm",
+		"dotnet": "Hiring.UpdateFormAsync",
+		"go": "Hiring.UpdateForm",
+		"java": "hiring.updateForm"
+	},
+	"DELETE /v1/hiring/forms/{id}": {
+		"python": "hiring.delete_form",
+		"php": "hiring->deleteForm",
+		"dotnet": "Hiring.DeleteFormAsync",
+		"go": "Hiring.DeleteForm",
+		"java": "hiring.deleteForm"
+	},
+	"GET /v1/candidates": {
+		"python": "candidates.list",
+		"php": "candidates->list",
+		"dotnet": "Candidates.ListAsync",
+		"go": "Candidates.List",
+		"java": "candidates.list"
+	},
+	"GET /v1/candidates/{id}": {
+		"python": "candidates.get",
+		"php": "candidates->get",
+		"dotnet": "Candidates.GetAsync",
+		"go": "Candidates.Get",
+		"java": "candidates.get"
+	},
+	"POST /v1/candidates/{id}": {
+		"python": "candidates.update",
+		"php": "candidates->update",
+		"dotnet": "Candidates.UpdateAsync",
+		"go": "Candidates.Update",
+		"java": "candidates.update"
+	},
+	"DELETE /v1/candidates/{id}": {
+		"python": "candidates.delete",
+		"php": "candidates->delete",
+		"dotnet": "Candidates.DeleteAsync",
+		"go": "Candidates.Delete",
+		"java": "candidates.delete"
+	},
+	"POST /v1/candidates/{id}/hire": {
+		"python": "candidates.hire",
+		"php": "candidates->hire",
+		"dotnet": "Candidates.HireAsync",
+		"go": "Candidates.Hire",
+		"java": "candidates.hire"
+	},
+	"GET /v1/candidates/{id}/files/{question}": {
+		"python": "candidates.file",
+		"php": "candidates->file",
+		"dotnet": "Candidates.FileAsync",
+		"go": "Candidates.File",
+		"java": "candidates.file"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",
