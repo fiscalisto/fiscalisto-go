@@ -4111,8 +4111,10 @@ type CreatePayoutParams struct {
 	//
 	// Valores: official, fixed.
 	ExchangeRate *string `json:"exchange_rate,omitempty"`
-	// Las facturas recibidas a pagar (de 1 a 500). Las de un mismo proveedor van en una sola transferencia a su cuenta aprobada.
-	Invoices []CreatePayoutParamsInvoice `json:"invoices"`
+	// Las facturas recibidas a pagar (hasta 500). Las de un mismo proveedor van en una sola transferencia a su cuenta aprobada. Mande invoices, payments o las dos.
+	Invoices []CreatePayoutParamsInvoice `json:"invoices,omitempty"`
+	// Pagos sin factura (hasta 500 entre los dos arreglos): una nómina, un anticipo, un reembolso. Los de un mismo RFC van en una sola transferencia.
+	Payments []CreatePayoutParamsPayment `json:"payments,omitempty"`
 }
 
 // CreatePayoutParamsInvoice: CreatePayoutParamsInvoice.
@@ -4123,6 +4125,20 @@ type CreatePayoutParamsInvoice struct {
 	Amount *float64 `json:"amount,omitempty"`
 	// Por qué paga menos de lo que falta («Parcial», «Anticipo»…).
 	Reason *string `json:"reason,omitempty"`
+}
+
+// CreatePayoutParamsPayment: CreatePayoutParamsPayment.
+type CreatePayoutParamsPayment struct {
+	// El RFC de quien recibe (un proveedor o una persona), con una cuenta aprobada en Cuentas de proveedores.
+	TaxID string `json:"tax_id"`
+	// Su nombre, como se ve en el pago.
+	Name *string `json:"name,omitempty"`
+	// Cuánto mandarle, en pesos.
+	Amount float64 `json:"amount"`
+	// Qué se paga («Nómina 1.ª quincena de noviembre», «Anticipo»). Si Configurar pagos lo pide, es obligatorio.
+	Description *string `json:"description,omitempty"`
+	// Si nunca llevará factura (una nómina, cuyo CFDI es el recibo; un reembolso), por qué: no se le pide factura ni aparece en Pagos sin factura. Sin él, se le pide como a cualquier pago sin factura.
+	NoInvoiceReason *string `json:"no_invoice_reason,omitempty"`
 }
 
 // CreatePayrollApprovalParams: los campos de «Pedir aprobación de la prenómina».
@@ -5907,6 +5923,8 @@ type CreateTicketParamsLine struct {
 	IVA *string `json:"iva,omitempty"`
 	// Impuestos locales incluidos en su total, como el ISH 3.5% de hospedaje, con `product_key` (un producto lleva los suyos). Cada uno se calcula sobre la base de este concepto y la factura los suma por nombre y tasa en el complemento de impuestos locales.
 	LocalTaxes []CreateTicketParamsLineLocalTax `json:"local_taxes,omitempty"`
+	// Lo que solo dice esta venta, como las noches, fechas y número de reservación de una estancia. Con él, la factura dice «Hospedaje · 6 noches, del 14 al 20 de noviembre»; cuándo va lo decide `invoice_concepts.line_detail` de la autofactura (por omisión, el cliente lo elige en el portal).
+	Detail *string `json:"detail,omitempty"`
 	// Unidades (noches, piezas). Por omisión 1.
 	Quantity *float64 `json:"quantity,omitempty"`
 	// Lo que se cobró por este concepto, impuestos incluidos.
@@ -9557,6 +9575,10 @@ type InvoiceConcepts struct {
 	Ungrouped string `json:"ungrouped"`
 	// El nombre del concepto para lo que ningún grupo toma.
 	UngroupedName string `json:"ungrouped_name"`
+	// Qué pasa con el detail de cada línea del ticket: customer, el comprador ve la casilla sin marcar y la marca si lo quiere; always, va siempre después de la descripción; never, no va nunca.
+	//
+	// Valores: customer, always, never.
+	LineDetail string `json:"line_detail"`
 }
 
 // InvoiceConceptsGroup: InvoiceConceptsGroup.
@@ -12867,6 +12889,10 @@ type PayableInvoice struct {
 	AmountDue float64 `json:"amount_due"`
 	// PUE o PPD, o null.
 	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Las retenciones de la factura. total y amount_due ya vienen sin ellas: el pago manda el neto y la empresa las entera al SAT a más tardar el 17 del mes siguiente. null: no retiene.
+	Withheld *PayableInvoiceWithheld `json:"withheld,omitempty"`
+	// Pronto pago del portal de proveedores. Aceptado, amount_due ya es el total menos el descuento hasta que llega la nota de crédito del proveedor. null: no tiene.
+	EarlyPayment *PayableInvoiceEarlyPayment `json:"early_payment,omitempty"`
 	// El pago abierto (pyo_…) en el que ya está, o null.
 	InPayout *string `json:"in_payout,omitempty"`
 	// Si una regla de Ajustes › Reglas retuvo su pago: no se paga hasta que alguien con permiso lo suelte en la app («Soltar el pago»). null: no está retenido.
@@ -12875,6 +12901,20 @@ type PayableInvoice struct {
 	Warnings []string `json:"warnings"`
 	// La factura en la app.
 	AppURL string `json:"app_url"`
+}
+
+// PayableInvoiceEarlyPayment: PayableInvoiceEarlyPayment.
+type PayableInvoiceEarlyPayment struct {
+	// requested: el proveedor lo pidió en el portal y nadie lo ha decidido; accepted: se aceptó.
+	//
+	// Valores: requested, accepted.
+	Status string `json:"status"`
+	// El día en que se paga (AAAA-MM-DD).
+	PayOn string `json:"pay_on"`
+	// El descuento por pagar antes.
+	Discount float64 `json:"discount"`
+	// Lo del descuento que su nota de crédito aún no cubre. Ya está fuera de amount_due.
+	DiscountPending float64 `json:"discount_pending"`
 }
 
 // PayableInvoiceList: Una página de la lista.
@@ -12897,6 +12937,14 @@ type PayableInvoicePaymentHold struct {
 	Note *string `json:"note,omitempty"`
 	// Cuándo lo retuvo (UTC).
 	HeldAt string `json:"held_at"`
+}
+
+// PayableInvoiceWithheld: PayableInvoiceWithheld.
+type PayableInvoiceWithheld struct {
+	// ISR retenido en toda la factura.
+	ISR float64 `json:"isr"`
+	// IVA retenido en toda la factura.
+	Vat float64 `json:"vat"`
 }
 
 // PayeeAccount: Una cuenta de un proveedor a la que se le paga (Pagos › Cuentas de proveedores), verificada con el banco. Solo lectura: una CLABE se agrega o se cambia en la app.
@@ -16287,7 +16335,7 @@ type SATInvoice struct {
 	SATStatus *string `json:"sat_status,omitempty"`
 	// Solo recibidas, marcadas con mark_paid, en la app o por una regla: without_complement true en una PPD pagada sin complemento de pago (el SAT la sigue viendo sin pagar); false en una PUE, donde solo se anotó de dónde salió el dinero.
 	PaidOtherwise *SATInvoicePaidOtherwise `json:"paid_otherwise,omitempty"`
-	// Solo en una PUE recibida pagada en efectivo cuando la empresa pide confirmar estos pagos (Ajustes › Pagos sin complemento): pending hasta que alguien anote de dónde salió el dinero (mark_paid con money_source), confirmed después. Null en las demás. Sus impuestos no cambian.
+	// Solo en una PUE recibida pagada en efectivo cuando la empresa pide confirmar estos pagos (Ajustes › Pagos en efectivo): pending hasta que alguien anote de dónde salió el dinero (mark_paid con money_source), confirmed después. Null en las demás. Sus impuestos no cambian.
 	//
 	// Valores: pending, confirmed.
 	CashConfirmation *string `json:"cash_confirmation,omitempty"`
@@ -18071,6 +18119,8 @@ type TicketLine struct {
 	IVA *string `json:"iva,omitempty"`
 	// Sus impuestos locales (los de su producto o los que mandó), incluidos en su total.
 	LocalTaxes []TicketLineLocalTax `json:"local_taxes"`
+	// El detalle que mandó (noches, fechas, reservación): va después de la descripción en la factura según `invoice_concepts.line_detail` de la autofactura.
+	Detail *string `json:"detail,omitempty"`
 	// Cantidad (Cantidad). Por omisión 1.
 	Quantity float64 `json:"quantity"`
 	// Total en la moneda del comprobante (Total).
@@ -19789,6 +19839,10 @@ type UpdateSelfInvoicingParamsInvoiceConcepts struct {
 	Ungrouped *string `json:"ungrouped,omitempty"`
 	// El nombre de ese concepto, por omisión «Otros».
 	UngroupedName *string `json:"ungrouped_name,omitempty"`
+	// Qué pasa con el `detail` de cada línea del ticket (las noches, fechas y reservación de una estancia): `customer` (por omisión), el comprador ve la casilla «Incluir el detalle en la descripción» sin marcar y la marca si lo quiere; `always`, va siempre después de la descripción, sin casilla; `never`, no va nunca, sin casilla.
+	//
+	// Valores: customer, always, never.
+	LineDetail *string `json:"line_detail,omitempty"`
 }
 
 // UpdateSelfInvoicingParamsInvoiceConceptsGroup: UpdateSelfInvoicingParamsInvoiceConceptsGroup.
@@ -19919,6 +19973,8 @@ type UpdateSelfInvoicingParamsPortalStyleTexts struct {
 	ConceptsSingle *UpdateSelfInvoicingParamsPortalStyleTextsConceptsSingle `json:"concepts_single,omitempty"`
 	// La opción de conceptos por categoría («Por categoría»); `null` vuelve al de Fiscalisto.
 	ConceptsGrouped *UpdateSelfInvoicingParamsPortalStyleTextsConceptsGrouped `json:"concepts_grouped,omitempty"`
+	// La casilla del detalle de los conceptos («Incluir el detalle en la descripción…»; ver `invoice_concepts.line_detail`); `null` vuelve al de Fiscalisto.
+	DetailLabel *UpdateSelfInvoicingParamsPortalStyleTextsDetailLabel `json:"detail_label,omitempty"`
 }
 
 // UpdateSelfInvoicingParamsPortalStyleTextsCodeHint: UpdateSelfInvoicingParamsPortalStyleTextsCodeHint.
@@ -19956,6 +20012,14 @@ type UpdateSelfInvoicingParamsPortalStyleTextsConceptsTitle struct {
 	// El título de la elección de conceptos («Conceptos en su factura»; ver `invoice_concepts`) en español.
 	Es *string `json:"es,omitempty"`
 	// El título de la elección de conceptos («Conceptos en su factura»; ver `invoice_concepts`) en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsDetailLabel: UpdateSelfInvoicingParamsPortalStyleTextsDetailLabel.
+type UpdateSelfInvoicingParamsPortalStyleTextsDetailLabel struct {
+	// La casilla del detalle de los conceptos («Incluir el detalle en la descripción…»; ver `invoice_concepts.line_detail`) en español.
+	Es *string `json:"es,omitempty"`
+	// La casilla del detalle de los conceptos («Incluir el detalle en la descripción…»; ver `invoice_concepts.line_detail`) en inglés.
 	En *string `json:"en,omitempty"`
 }
 
