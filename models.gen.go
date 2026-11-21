@@ -11845,6 +11845,10 @@ type ListSatInvoicesParams struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Solo las que llevan esta etiqueta (tag_…).
 	Tag *string `json:"tag,omitempty"`
+	// Solo las PUE recibidas en efectivo que la empresa pide confirmar: pending (nadie ha anotado de dónde salió el dinero) o confirmed.
+	//
+	// Valores: pending, confirmed.
+	CashConfirmation *string `json:"cash_confirmation,omitempty"`
 }
 
 // ListSatMailboxMessagesParams: los campos de «Listar avisos del buzón tributario».
@@ -15853,6 +15857,10 @@ type SATInvoice struct {
 	SATStatus *string `json:"sat_status,omitempty"`
 	// Solo recibidas, marcadas con mark_paid, en la app o por una regla: without_complement true en una PPD pagada sin complemento de pago (el SAT la sigue viendo sin pagar); false en una PUE, donde solo se anotó de dónde salió el dinero.
 	PaidOtherwise *SATInvoicePaidOtherwise `json:"paid_otherwise,omitempty"`
+	// Solo en una PUE recibida pagada en efectivo cuando la empresa pide confirmar estos pagos (Ajustes › Pagos sin complemento): pending hasta que alguien anote de dónde salió el dinero (mark_paid con money_source), confirmed después. Null en las demás. Sus impuestos no cambian.
+	//
+	// Valores: pending, confirmed.
+	CashConfirmation *string `json:"cash_confirmation,omitempty"`
 	// Su centro de costo (ccn_…), o null. Póngalo o cámbielo con POST /v1/sat_invoices/{id}.
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Sus etiquetas, por nombre. automatic: true en las que puso una regla (la orden de compra a la que se vinculó o una regla de Ajustes › Reglas). Cámbielas con POST /v1/sat_invoices/{id}.
