@@ -5149,9 +5149,9 @@ type CreateRuleParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
 	Name *string `json:"name,omitempty"`
-	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
 	//
-	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger string `json:"trigger"`
 	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
 	Conditions *CreateRuleParamsConditions `json:"conditions,omitempty"`
@@ -5167,12 +5167,16 @@ type CreateRuleParams struct {
 
 // CreateRuleParamsAction: CreateRuleParamsAction.
 type CreateRuleParamsAction struct {
-	// tag (órdenes): poner la etiqueta `tag`; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
 	//
-	// Valores: tag, cost_center, stage, close, notify.
+	// Valores: tag, cost_center, stage, close, notify, category.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
+	// category: la categoría de gasto, como la app la nombra («Combustible»).
+	//
+	// Valores: Renta y arrendamiento, Servicios profesionales, Nómina y personal, Transporte y fletes, Combustible, Viáticos y viajes, Alimentos y representación, Telecomunicaciones e internet, Energía y agua, Software y suscripciones, Equipo de cómputo, Papelería y oficina, Mantenimiento y reparaciones, Publicidad y marketing, Seguros y fianzas, Comisiones bancarias y financieras, Impuestos y derechos, Compras de mercancía e inventario, Materias primas y producción, Activo fijo y mobiliario, Vehículos, Capacitación, Donativos, Otros gastos.
+	Category *string `json:"category,omitempty"`
 	// tag: quitarla si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
@@ -5199,7 +5203,7 @@ type CreateRuleParamsConditions struct {
 
 // CreateRuleParamsConditionsCondition: CreateRuleParamsConditionsCondition.
 type CreateRuleParamsConditionsCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
@@ -5227,7 +5231,7 @@ type CreateRuleParamsConditionsGroup struct {
 
 // CreateRuleParamsConditionsGroupCondition: CreateRuleParamsConditionsGroupCondition.
 type CreateRuleParamsConditionsGroupCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
@@ -15071,7 +15075,7 @@ type Rule struct {
 	Name string `json:"name"`
 	// Cuándo corre.
 	//
-	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger string `json:"trigger"`
 	// Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
 	Conditions RuleConditions `json:"conditions"`
@@ -15095,10 +15099,12 @@ type Rule struct {
 type RuleAction struct {
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
-	// Valores: tag, cost_center, stage, close, notify.
+	// Valores: tag, cost_center, category, stage, close, notify.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags).
 	Tag *string `json:"tag,omitempty"`
+	// category: la categoría de gasto (facturas recibidas).
+	Category *string `json:"category,omitempty"`
 	// tag: se quita si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
@@ -15191,7 +15197,7 @@ type RuleRun struct {
 	Rule string `json:"rule"`
 	// Cuándo corre.
 	//
-	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger string `json:"trigger"`
 	// La factura u orden, en palabras.
 	Record string `json:"record"`
@@ -18801,9 +18807,9 @@ type UpdateRoleParams struct {
 type UpdateRuleParams struct {
 	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
 	Name *string `json:"name,omitempty"`
-	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
 	//
-	// Valores: invoice.received, invoice.issued, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger *string `json:"trigger,omitempty"`
 	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
 	Conditions *UpdateRuleParamsConditions `json:"conditions,omitempty"`
@@ -18819,12 +18825,16 @@ type UpdateRuleParams struct {
 
 // UpdateRuleParamsAction: UpdateRuleParamsAction.
 type UpdateRuleParamsAction struct {
-	// tag (órdenes): poner la etiqueta `tag`; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
 	//
-	// Valores: tag, cost_center, stage, close, notify.
+	// Valores: tag, cost_center, stage, close, notify, category.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
+	// category: la categoría de gasto, como la app la nombra («Combustible»).
+	//
+	// Valores: Renta y arrendamiento, Servicios profesionales, Nómina y personal, Transporte y fletes, Combustible, Viáticos y viajes, Alimentos y representación, Telecomunicaciones e internet, Energía y agua, Software y suscripciones, Equipo de cómputo, Papelería y oficina, Mantenimiento y reparaciones, Publicidad y marketing, Seguros y fianzas, Comisiones bancarias y financieras, Impuestos y derechos, Compras de mercancía e inventario, Materias primas y producción, Activo fijo y mobiliario, Vehículos, Capacitación, Donativos, Otros gastos.
+	Category *string `json:"category,omitempty"`
 	// tag: quitarla si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
@@ -18851,7 +18861,7 @@ type UpdateRuleParamsConditions struct {
 
 // UpdateRuleParamsConditionsCondition: UpdateRuleParamsConditionsCondition.
 type UpdateRuleParamsConditionsCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
@@ -18879,7 +18889,7 @@ type UpdateRuleParamsConditionsGroup struct {
 
 // UpdateRuleParamsConditionsGroupCondition: UpdateRuleParamsConditionsGroupCondition.
 type UpdateRuleParamsConditionsGroupCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
+	// Qué se revisa. Facturas: supplier, customer, partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, ownRfc, total, category, warehouse, stage, createdBy, moneda, note.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
