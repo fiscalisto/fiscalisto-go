@@ -191,6 +191,8 @@ type services struct {
 	// Contabilidad.
 	FixedAssets *FixedAssetsService
 	// Contabilidad.
+	AccountingSettings *AccountingSettingsService
+	// Contabilidad.
 	ClosedPeriod *ClosedPeriodService
 	// Contabilidad.
 	FxRevaluations *FxRevaluationsService
@@ -330,6 +332,7 @@ func (s *services) init(c *Client) {
 	s.AutomaticEntries = &AutomaticEntriesService{c}
 	s.OpeningBalances = &OpeningBalancesService{c}
 	s.FixedAssets = &FixedAssetsService{c}
+	s.AccountingSettings = &AccountingSettingsService{c}
 	s.ClosedPeriod = &ClosedPeriodService{c}
 	s.FxRevaluations = &FxRevaluationsService{c}
 	s.CostOfSales = &CostOfSalesService{c}
@@ -6091,6 +6094,39 @@ func (s *FixedAssetsService) Dispose(ctx context.Context, id string, params *Dis
 func (s *FixedAssetsService) Undispose(ctx context.Context, id string, opts ...RequestOption) (*FixedAsset, error) {
 	out := new(FixedAsset)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/fixed_assets/"+url.PathEscape(id)+"/disposal", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AccountingSettingsService: Contabilidad (client.AccountingSettings).
+type AccountingSettingsService struct{ c *Client }
+
+// Get: Ver cómo se lleva la contabilidad
+//
+// Si cada cliente y cada proveedor tiene su propia subcuenta (party_subaccounts), como Catálogo de cuentas › Subcuentas por cliente y proveedor en la app.
+//
+// GET /v1/accounting/settings
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-accounting-settings
+func (s *AccountingSettingsService) Get(ctx context.Context, params *GetAccountingSettingsParams, opts ...RequestOption) (*AccountingSettings, error) {
+	out := new(AccountingSettings)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/settings", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar cómo se lleva la contabilidad
+//
+// Con party_subaccounts en true, lo que debe cada cliente va a su subcuenta de Clientes (105-01-0001, 105-01-0002…) y lo que se le debe a cada proveedor a la suya de Proveedores (201-01-0001…), numeradas una vez en el orden en que aparecen sus CFDI y con su nombre; la balanza, los auxiliares, las pólizas y la contabilidad electrónica las usan. En false, sus saldos vuelven a Clientes y Proveedores; los números se conservan si se vuelve a activar. Aplica a toda la empresa del emisor y va a la bitácora.
+//
+// POST /v1/accounting/settings
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/update-accounting-settings
+func (s *AccountingSettingsService) Update(ctx context.Context, params *UpdateAccountingSettingsParams, opts ...RequestOption) (*AccountingSettings, error) {
+	out := new(AccountingSettings)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/settings", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

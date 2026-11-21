@@ -2540,6 +2540,20 @@
 		"go": "FixedAssets.Undispose",
 		"java": "fixedAssets.undispose"
 	},
+	"GET /v1/accounting/settings": {
+		"python": "accounting_settings.get",
+		"php": "accountingSettings->get",
+		"dotnet": "AccountingSettings.GetAsync",
+		"go": "AccountingSettings.Get",
+		"java": "accountingSettings.get"
+	},
+	"POST /v1/accounting/settings": {
+		"python": "accounting_settings.update",
+		"php": "accountingSettings->update",
+		"dotnet": "AccountingSettings.UpdateAsync",
+		"go": "AccountingSettings.Update",
+		"java": "accountingSettings.update"
+	},
 	"GET /v1/accounting/closed_period": {
 		"python": "closed_period.get",
 		"php": "closedPeriod->get",

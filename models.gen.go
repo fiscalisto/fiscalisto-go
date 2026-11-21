@@ -123,6 +123,18 @@ type AccountingBankMovementList struct {
 	URL string `json:"url"`
 }
 
+// AccountingSettings: Cómo se lleva la contabilidad de la empresa del emisor: si cada cliente y cada proveedor tiene su propia subcuenta de Clientes o Proveedores.
+type AccountingSettings struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// true si cada cliente y cada proveedor tiene su subcuenta (105-01-0001…, 201-01-0001…); false si todos van a Clientes y Proveedores.
+	PartySubaccounts bool `json:"party_subaccounts"`
+}
+
 // AdjustCashForecastParams: los campos de «Cambiar un renglón del flujo».
 type AdjustCashForecastParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -8603,6 +8615,12 @@ type GeneralLedgerAccountMovement struct {
 	Credit float64 `json:"credit"`
 	// El saldo de la cuenta después de este movimiento, en su naturaleza.
 	Balance float64 `json:"balance"`
+}
+
+// GetAccountingSettingsParams: los campos de «Ver cómo se lleva la contabilidad».
+type GetAccountingSettingsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetAnnualAdjustmentParams: los campos de «Ajuste anual del ISR».
@@ -18389,6 +18407,14 @@ type TrialBalanceTotals struct {
 type UpdateAccountParams struct {
 	// La versión de la API de la cuenta: la que reciben sus solicitudes sin Fiscalisto-Version y sus webhooks sin api_version propio. Pruebe antes la nueva con el encabezado.
 	APIVersion string `json:"api_version"`
+}
+
+// UpdateAccountingSettingsParams: los campos de «Cambiar cómo se lleva la contabilidad».
+type UpdateAccountingSettingsParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// true: cada cliente con su subcuenta de Clientes (105-01-0001…) y cada proveedor con la suya de Proveedores (201-01-0001…); false: todos en Clientes y Proveedores.
+	PartySubaccounts bool `json:"party_subaccounts"`
 }
 
 // UpdateAnnualAdjustmentParams: los campos de «Aplicar el ajuste anual».
