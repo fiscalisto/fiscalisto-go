@@ -2578,7 +2578,7 @@ func (s *PayrollOrgChartService) RemoveDepartment(ctx context.Context, params *R
 
 // CreateVacancy: Abrir una vacante
 //
-// Un puesto sin persona todavía, bajo un jefe, en un departamento y una sucursal: sale en el organigrama, pero no cuenta como empleado. Contesta el organigrama.
+// Un puesto sin persona todavía, bajo un jefe, en un departamento y una sucursal, con el sueldo mensual que ofrece: sale en el organigrama, pero no cuenta como empleado. Queda en pending_approval hasta que alguien con el permiso «Aprobar la prenómina» la aprueba en la app (le llega un aviso); entonces se cubre con POST /v1/payroll_org_chart/vacancies/{id}/fill. Contesta el organigrama, con lo que costaría al mes (monthly_cost).
 //
 // POST /v1/payroll_org_chart/vacancies
 //
@@ -2593,7 +2593,7 @@ func (s *PayrollOrgChartService) CreateVacancy(ctx context.Context, params *Crea
 
 // UpdateVacancy: Cambiar una vacante
 //
-// Cambia el puesto, departamento, jefe o sucursal de una vacante (vac_…).
+// Cambia el puesto, departamento, jefe, sucursal o sueldo de una vacante (vac_…); lo que no manda queda vacío. Cambiada, vuelve a pending_approval. Una ya cubierta contesta parameter_invalid.
 //
 // POST /v1/payroll_org_chart/vacancies/{id}
 //
@@ -2616,6 +2616,21 @@ func (s *PayrollOrgChartService) UpdateVacancy(ctx context.Context, id string, p
 func (s *PayrollOrgChartService) DeleteVacancy(ctx context.Context, id string, opts ...RequestOption) (*PayrollOrgChart, error) {
 	out := new(PayrollOrgChart)
 	if err := s.c.do(ctx, "DELETE", "/v1/payroll_org_chart/vacancies/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FillVacancy: Cubrir una vacante
+//
+// La cubre con un empleado ya dado de alta (POST /v1/employees): queda con el jefe, el departamento y la sucursal de la vacante, y la vacante sale del organigrama (status filled). Una que espera aprobación o se rechazó contesta parameter_invalid. Falta su alta en el IMSS (GET /v1/imss_movements la propone).
+//
+// POST /v1/payroll_org_chart/vacancies/{id}/fill
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/fill-payroll-vacancy
+func (s *PayrollOrgChartService) FillVacancy(ctx context.Context, id string, params *FillPayrollVacancyParams, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_org_chart/vacancies/"+url.PathEscape(id)+"/fill", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

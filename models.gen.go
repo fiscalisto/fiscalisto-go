@@ -4303,6 +4303,12 @@ type CreatePayrollVacancyParams struct {
 	Branch *string `json:"branch,omitempty"`
 	// Desde cuándo está abierta (YYYY-MM-DD); por omisión hoy.
 	OpenedOn *string `json:"opened_on,omitempty"`
+	// Sueldo mensual bruto que ofrece, desde (pesos); null si no lo dice.
+	SalaryMin *float64 `json:"salary_min,omitempty"`
+	// Sueldo mensual bruto que ofrece, hasta (pesos); null si no lo dice.
+	SalaryMax *float64 `json:"salary_max,omitempty"`
+	// Estado donde trabajará, como c_Estado (NLE, CMX…), para su impuesto sobre nómina; null para el de su jefe o el de la mayoría.
+	State *string `json:"state,omitempty"`
 }
 
 // CreatePriceListParams: los campos de «Crear una lista de precios».
@@ -7813,6 +7819,12 @@ type ExtraordinaryPayrollReceiptPreviewTotals struct {
 	Net float64 `json:"net"`
 }
 
+// FillPayrollVacancyParams: los campos de «Cubrir una vacante».
+type FillPayrollVacancyParams struct {
+	// Quien la ocupa (emp_…), ya dado de alta con POST /v1/employees: queda con el jefe, el departamento y la sucursal de la vacante.
+	Employee string `json:"employee"`
+}
+
 // FinancialRatios: Razones financieras al cierre de un mes: de su balance general y de sus resultados de enero al mes.
 type FinancialRatios struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -8649,6 +8661,8 @@ type GetPayrollCostParams struct {
 type GetPayrollOrgChartParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Un día pasado (YYYY-MM-DD): el organigrama como estaba al cierre de ese día, con los jefes, departamentos y sucursales que tenían (se guardan desde el 21 de noviembre de 2026).
+	AsOf *string `json:"as_of,omitempty"`
 }
 
 // GetPayrollProvisionParams: los campos de «Ver las cuotas patronales de un mes».
@@ -13305,6 +13319,50 @@ type PayrollOrgChartVacancy struct {
 	Branch *string `json:"branch,omitempty"`
 	// Desde cuándo está abierta (YYYY-MM-DD).
 	OpenedOn string `json:"opened_on"`
+	// pending_approval espera el visto bueno de alguien con el permiso «Aprobar la prenómina» (las que abre una llave de API, y las que abre o cambia quien no lo tiene); approved ya se puede cubrir. En el organigrama salen solo estas dos.
+	//
+	// Valores: pending_approval, approved, rejected, filled.
+	Status string `json:"status"`
+	// Sueldo mensual bruto que ofrece, desde.
+	SalaryMin *float64 `json:"salary_min,omitempty"`
+	// Sueldo mensual bruto que ofrece, hasta.
+	SalaryMax *float64 `json:"salary_max,omitempty"`
+	// Estado donde trabajará (c_Estado), si se dijo.
+	State *string `json:"state,omitempty"`
+	// Lo que costaría a la empresa al mes: el sueldo, las cuotas patronales (primer año, prestaciones de ley, la prima de riesgo del emisor) y el impuesto sobre nómina de su estado. null sin sueldo.
+	MonthlyCost PayrollOrgChartVacancyMonthlyCost `json:"monthly_cost"`
+}
+
+// PayrollOrgChartVacancyMonthlyCost: Lo que costaría a la empresa al mes: el sueldo, las cuotas patronales (primer año, prestaciones de ley, la prima de riesgo del emisor) y el impuesto sobre nómina de su estado. null sin sueldo.
+type PayrollOrgChartVacancyMonthlyCost struct {
+	// Con salary_min.
+	Min *PayrollOrgChartVacancyMonthlyCostMin `json:"min,omitempty"`
+	// Con salary_max.
+	Max *PayrollOrgChartVacancyMonthlyCostMax `json:"max,omitempty"`
+}
+
+// PayrollOrgChartVacancyMonthlyCostMax: PayrollOrgChartVacancyMonthlyCostMax.
+type PayrollOrgChartVacancyMonthlyCostMax struct {
+	// El sueldo del mes.
+	Salary float64 `json:"salary"`
+	// Lo que paga el patrón al IMSS, SAR e Infonavit al mes (cuotas obrero-patronales).
+	EmployerContributions float64 `json:"employer_contributions"`
+	// El impuesto sobre nómina del estado al mes.
+	PayrollTax float64 `json:"payroll_tax"`
+	// Lo que cuesta a la empresa al mes.
+	Total float64 `json:"total"`
+}
+
+// PayrollOrgChartVacancyMonthlyCostMin: PayrollOrgChartVacancyMonthlyCostMin.
+type PayrollOrgChartVacancyMonthlyCostMin struct {
+	// El sueldo del mes.
+	Salary float64 `json:"salary"`
+	// Lo que paga el patrón al IMSS, SAR e Infonavit al mes (cuotas obrero-patronales).
+	EmployerContributions float64 `json:"employer_contributions"`
+	// El impuesto sobre nómina del estado al mes.
+	PayrollTax float64 `json:"payroll_tax"`
+	// Lo que cuesta a la empresa al mes.
+	Total float64 `json:"total"`
 }
 
 // PayrollProvision: Las cuotas patronales de un mes en la contabilidad: lo que la empresa debe al IMSS, al SAR y al Infonavit por los días del mes según sus recibos de nómina timbrados, el impuesto sobre nómina del mes y la póliza de provisión que los registra, si ya se registró.
@@ -18281,6 +18339,12 @@ type UpdatePayrollVacancyParams struct {
 	Branch *string `json:"branch,omitempty"`
 	// Desde cuándo está abierta (YYYY-MM-DD); por omisión hoy.
 	OpenedOn *string `json:"opened_on,omitempty"`
+	// Sueldo mensual bruto que ofrece, desde (pesos); null si no lo dice.
+	SalaryMin *float64 `json:"salary_min,omitempty"`
+	// Sueldo mensual bruto que ofrece, hasta (pesos); null si no lo dice.
+	SalaryMax *float64 `json:"salary_max,omitempty"`
+	// Estado donde trabajará, como c_Estado (NLE, CMX…), para su impuesto sobre nómina; null para el de su jefe o el de la mayoría.
+	State *string `json:"state,omitempty"`
 }
 
 // UpdatePriceListParams: los campos de «Actualizar una lista de precios».

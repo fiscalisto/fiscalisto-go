@@ -923,6 +923,13 @@
 		"go": "PayrollOrgChart.DeleteVacancy",
 		"java": "payrollOrgChart.deleteVacancy"
 	},
+	"POST /v1/payroll_org_chart/vacancies/{id}/fill": {
+		"python": "payroll_org_chart.fill_vacancy",
+		"php": "payrollOrgChart->fillVacancy",
+		"dotnet": "PayrollOrgChart.FillVacancyAsync",
+		"go": "PayrollOrgChart.FillVacancy",
+		"java": "payrollOrgChart.fillVacancy"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",
