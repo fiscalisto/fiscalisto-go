@@ -2155,6 +2155,20 @@
 		"go": "Payouts.List",
 		"java": "payouts.list"
 	},
+	"GET /v1/payouts/pause": {
+		"python": "payouts.get_pause",
+		"php": "payouts->getPause",
+		"dotnet": "Payouts.GetPauseAsync",
+		"go": "Payouts.GetPause",
+		"java": "payouts.getPause"
+	},
+	"POST /v1/payouts/pause": {
+		"python": "payouts.pause",
+		"php": "payouts->pause",
+		"dotnet": "Payouts.PauseAsync",
+		"go": "Payouts.Pause",
+		"java": "payouts.pause"
+	},
 	"GET /v1/payouts/{id}": {
 		"python": "payouts.get",
 		"php": "payouts->get",

@@ -8797,6 +8797,12 @@ type GetOpeningBalancesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetPayoutsPauseParams: los campos de «Ver si los pagos están en pausa».
+type GetPayoutsPauseParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetPayrollAccumulatedParams: los campos de «Acumulados de nómina».
 type GetPayrollAccumulatedParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -12811,6 +12817,14 @@ type OrderRulesParams struct {
 	Rules []string `json:"rules"`
 }
 
+// PausePayoutsParams: los campos de «Pausar todos los pagos».
+type PausePayoutsParams struct {
+	// La empresa (iss_…); sin él, la de la llave.
+	Issuer *string `json:"issuer,omitempty"`
+	// Por qué se pausan los pagos; lo ve el equipo y llega en el aviso.
+	Reason string `json:"reason"`
+}
+
 // PayableInvoice: Una factura recibida con lo que falta por pagar, como la muestra Pagos › Por pagar: lo pagado cuenta complementos, notas de crédito, pagos de Fiscalisto y pagos registrados a mano.
 type PayableInvoice struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -13115,6 +13129,24 @@ type PayoutTransferInvoice struct {
 	WithoutInvoice bool `json:"without_invoice"`
 	// Descripción.
 	Description *string `json:"description,omitempty"`
+}
+
+// PayoutsPause: «Pausar todos los pagos» de la empresa: mientras está en pausa no sale ninguna transferencia (ni firmadas, ni reintentos, ni recurrentes). Se reanuda solo en la app, con las firmas de Quién firma.
+type PayoutsPause struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// true mientras los pagos están en pausa.
+	Paused bool `json:"paused"`
+	// Desde cuándo están en pausa, o null.
+	PausedAt *string `json:"paused_at,omitempty"`
+	// Por qué se pausaron, o null.
+	Reason *string `json:"reason,omitempty"`
+	// true si los pausó una llave de la API (no una persona en la app).
+	PausedByAPI bool `json:"paused_by_api"`
 }
 
 // PayrollAccumulated: Los acumulados de nómina del año: por concepto, mes por mes, y por empleado.

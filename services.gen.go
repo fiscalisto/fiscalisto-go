@@ -5179,7 +5179,7 @@ type PayoutsService struct{ c *Client }
 
 // Create: Preparar un pago a proveedores
 //
-// Un pago en borrador con estas facturas, revisado como en la app: las reglas antes de pagar, los límites y las cuentas aprobadas de cada proveedor. Las de un proveedor van en una transferencia. Nunca sale solo: alguien del equipo lo abre en app_url y lo firma con su llave de acceso. Solo si la empresa lo permite en Pagos › Configurar pagos (si no, 403 payouts_api_disabled); lo que no se puede pagar contesta 400 payout_invalid con el motivo. Pide Idempotency-Key: si la respuesta se pierde, repítala con el mismo valor y contesta el mismo pago, nunca uno nuevo.
+// Un pago en borrador con estas facturas, revisado como en la app: las reglas antes de pagar, los límites y las cuentas aprobadas de cada proveedor. Las de un proveedor van en una transferencia. Nunca sale solo: alguien del equipo lo abre en app_url y lo firma con su llave de acceso. Solo si la empresa lo permite en Pagos › Configurar pagos (si no, 403 payouts_api_disabled); lo que no se puede pagar contesta 400 payout_invalid con el motivo. Pide Idempotency-Key: si la respuesta se pierde, repítala con el mismo valor y contesta el mismo pago, nunca uno nuevo. La misma llave con otra solicitud (otras facturas, montos o día) contesta 409 idempotency_key_reused, aunque hayan pasado más de 24 horas.
 //
 // POST /v1/payouts
 //
@@ -5206,6 +5206,36 @@ func (s *PayoutsService) List(ctx context.Context, params *ListPayoutsParams, op
 // ListAutoPaging: Listar pagos a proveedores, todos, página por página: for x, err := range …
 func (s *PayoutsService) ListAutoPaging(ctx context.Context, params *ListPayoutsParams, opts ...RequestOption) iter.Seq2[Payout, error] {
 	return listAll[Payout](ctx, s.c, "/v1/payouts", params, opts)
+}
+
+// GetPause: Ver si los pagos están en pausa
+//
+// Si la empresa pausó todos sus pagos («Pausar todos los pagos»), desde cuándo y por qué.
+//
+// GET /v1/payouts/pause
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/get-payouts-pause
+func (s *PayoutsService) GetPause(ctx context.Context, params *GetPayoutsPauseParams, opts ...RequestOption) (*PayoutsPause, error) {
+	out := new(PayoutsPause)
+	if err := s.c.do(ctx, "GET", "/v1/payouts/pause", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Pause: Pausar todos los pagos
+//
+// El freno de emergencia de la empresa, para una herramienta de seguridad o el botón de su ERP: al instante no sale ninguna transferencia (pagos firmados, reintentos ni recurrentes) y les llega el aviso a los administradores con el motivo. La API nunca reanuda: lo firman en la app las personas de Quién firma, cada una con su llave de acceso. Solo si la empresa deja que la API trabaje con sus pagos en Pagos › Configurar pagos (si no, 403 payouts_api_disabled). Pausar lo que ya está en pausa no cambia nada.
+//
+// POST /v1/payouts/pause
+//
+// https://fiscalisto.com/docs/api/referencia/pagos-a-proveedores/pause-payouts
+func (s *PayoutsService) Pause(ctx context.Context, params *PausePayoutsParams, opts ...RequestOption) (*PayoutsPause, error) {
+	out := new(PayoutsPause)
+	if err := s.c.do(ctx, "POST", "/v1/payouts/pause", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // Get: Ver un pago a proveedores
