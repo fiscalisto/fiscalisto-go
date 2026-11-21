@@ -2449,6 +2449,27 @@
 		"go": "ManualEntries.Delete",
 		"java": "manualEntries.delete"
 	},
+	"GET /v1/accounting/automatic_entries/{uuid}": {
+		"python": "automatic_entries.get",
+		"php": "automaticEntries->get",
+		"dotnet": "AutomaticEntries.GetAsync",
+		"go": "AutomaticEntries.Get",
+		"java": "automaticEntries.get"
+	},
+	"POST /v1/accounting/automatic_entries/{uuid}": {
+		"python": "automatic_entries.update",
+		"php": "automaticEntries->update",
+		"dotnet": "AutomaticEntries.UpdateAsync",
+		"go": "AutomaticEntries.Update",
+		"java": "automaticEntries.update"
+	},
+	"DELETE /v1/accounting/automatic_entries/{uuid}": {
+		"python": "automatic_entries.revert",
+		"php": "automaticEntries->revert",
+		"dotnet": "AutomaticEntries.RevertAsync",
+		"go": "AutomaticEntries.Revert",
+		"java": "automaticEntries.revert"
+	},
 	"POST /v1/accounting/manual_entry_imports": {
 		"python": "manual_entries.import_entries",
 		"php": "manualEntries->importEntries",

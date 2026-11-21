@@ -1041,6 +1041,68 @@ type AttendanceReportEmployeeWeeksDisputedItem struct {
 	Text string `json:"text"`
 }
 
+// AutomaticJournalEntry: La póliza que Fiscalisto arma para un CFDI (factura, nota de crédito o recibo de nómina), con la edición a mano si la tiene: se queda aunque el CFDI se vuelva a descargar, hasta volver a la original.
+type AutomaticJournalEntry struct {
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor.
+	Issuer string `json:"issuer"`
+	// El UUID del CFDI de la póliza.
+	UUID string `json:"uuid"`
+	// invoice: una factura o nota de crédito; payroll: un recibo de nómina.
+	//
+	// Valores: invoice, payroll.
+	Type string `json:"type"`
+	// La fecha de la póliza: la del CFDI, o la del pago de la nómina.
+	Date string `json:"date"`
+	// Su concepto.
+	Description string `json:"description"`
+	// Los renglones que usan los libros.
+	Lines []AutomaticJournalEntryLine `json:"lines"`
+	// true si se editó a mano.
+	Edited bool `json:"edited"`
+	// Cuándo se editó por última vez, o null.
+	EditedAt *string `json:"edited_at,omitempty"`
+	// Editada: los renglones que arma Fiscalisto hoy para su CFDI.
+	OriginalLines []AutomaticJournalEntryOriginalLine `json:"original_lines,omitempty"`
+	// Editada: true si la póliza que arma su CFDI cambió desde que se editó (su cuenta o su categoría), para revisar que la edición siga bien.
+	OriginalChanged *bool `json:"original_changed,omitempty"`
+}
+
+// AutomaticJournalEntryLine: AutomaticJournalEntryLine.
+type AutomaticJournalEntryLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// El cargo, en pesos.
+	Debit float64 `json:"debit"`
+	// El abono, en pesos.
+	Credit float64 `json:"credit"`
+	// Su centro de costo (ccn_…), o null.
+	CostCenter *string `json:"cost_center,omitempty"`
+}
+
+// AutomaticJournalEntryOriginalLine: AutomaticJournalEntryOriginalLine.
+type AutomaticJournalEntryOriginalLine struct {
+	// El número de cuenta.
+	Account string `json:"account"`
+	// El nombre de la cuenta.
+	AccountName string `json:"account_name"`
+	// Su código agrupador del SAT.
+	GroupingCode string `json:"grouping_code"`
+	// El cargo, en pesos.
+	Debit float64 `json:"debit"`
+	// El abono, en pesos.
+	Credit float64 `json:"credit"`
+	// Su centro de costo (ccn_…), o null.
+	CostCenter *string `json:"cost_center,omitempty"`
+}
+
 // Balance: Timbres de producción de la cuenta, por paquete, el que vence antes primero.
 type Balance struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -1225,7 +1287,7 @@ type BooksLogEntry struct {
 	CreatedAt string `json:"created_at"`
 	// Qué cambió: una póliza a mano (manual_journal_entry), los saldos iniciales, una cuenta, el catálogo completo (una importación o una renumeración), el cierre del mes (period_close), una eliminación de consolidación, una póliza modelo o la baja de un activo fijo.
 	//
-	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account.
+	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account, automatic_journal_entry.
 	Subject string `json:"subject"`
 	// El id de lo que cambió cuando tiene uno en la API (mje_, cel_, mjt_); null en los demás.
 	SubjectID *string `json:"subject_id,omitempty"`
@@ -8571,6 +8633,12 @@ type GetAttendanceParams struct {
 	Employee *string `json:"employee,omitempty"`
 }
 
+// GetAutomaticEntryParams: los campos de «Ver la póliza de un CFDI».
+type GetAutomaticEntryParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetBooksExportParams: los campos de «Descargar toda la contabilidad de un periodo».
 type GetBooksExportParams struct {
 	// El primer mes (AAAA-MM), de 2015-01 al mes actual.
@@ -11449,6 +11517,8 @@ type JournalEntry struct {
 	Currency string `json:"currency"`
 	// El tipo de cambio, si no es en pesos; null si es en pesos.
 	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Sus renglones se editaron a mano (POST /v1/accounting/automatic_entries/{uuid}).
+	Edited bool `json:"edited"`
 	// Los movimientos, en pesos: el cargo (debit) o abono (credit) a cada cuenta.
 	Lines []JournalEntryLine `json:"lines"`
 }
@@ -11569,9 +11639,9 @@ type ListBankTransactionsParams struct {
 
 // ListBooksLogParams: los campos de «Listar la bitácora de la contabilidad».
 type ListBooksLogParams struct {
-	// Solo los cambios de una cosa: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset o invoice_account (la cuenta de una factura).
+	// Solo los cambios de una cosa: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account (la cuenta de una factura) o automatic_journal_entry (una póliza automática editada).
 	//
-	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account.
+	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account, automatic_journal_entry.
 	Subject *string `json:"subject,omitempty"`
 	// Desde este día (AAAA-MM-DD, hora de la Ciudad de México).
 	From *string `json:"from,omitempty"`
@@ -15551,6 +15621,12 @@ type ReturnExpenseReportParams struct {
 	Note string `json:"note"`
 }
 
+// RevertAutomaticEntryParams: los campos de «Volver a la póliza original de un CFDI».
+type RevertAutomaticEntryParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // Role: Un rol de la empresa: un nombre y sus permisos.
 type Role struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -18327,6 +18403,38 @@ type UpdateAnnualAdjustmentParams struct {
 	Action string `json:"action"`
 	// Los empleados (emp_…).
 	Employees []string `json:"employees"`
+}
+
+// UpdateAutomaticEntryParams: los campos de «Editar la póliza de un CFDI».
+type UpdateAutomaticEntryParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Su concepto. Sin él, queda el que tiene.
+	Description *string `json:"description,omitempty"`
+	// Sus cargos y abonos en lugar de los que arma Fiscalisto: cada renglón uno u otro; los cargos suman lo mismo que los abonos.
+	Lines []UpdateAutomaticEntryParamsLine `json:"lines"`
+}
+
+// UpdateAutomaticEntryParamsLine: UpdateAutomaticEntryParamsLine.
+type UpdateAutomaticEntryParamsLine struct {
+	// El número de la cuenta en su catálogo (GET /v1/accounting/accounts), por ejemplo 205-06.
+	Account string `json:"account"`
+	// El cargo.
+	Debit *float64 `json:"debit,omitempty"`
+	// El abono.
+	Credit *float64 `json:"credit,omitempty"`
+	// Su centro de costo (ccn_…, GET /v1/cost_centers), opcional: los resultados por centro de costo y los presupuestos lo leen.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// Un renglón en otra moneda: su clave ISO 4217 (USD, EUR…). Con ella van foreign_amount y exchange_rate, y debit o credit es su producto en pesos.
+	Currency *string `json:"currency,omitempty"`
+	// El importe del renglón en su moneda.
+	ForeignAmount *float64 `json:"foreign_amount,omitempty"`
+	// El tipo de cambio del renglón: pesos por una unidad de su moneda.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// El CFDI que documenta este renglón, aparte del de la póliza: así una póliza lleva varios.
+	CFDIUUID *string `json:"cfdi_uuid,omitempty"`
+	// El RFC de quien emitió o recibió el CFDI del renglón.
+	CFDITaxID *string `json:"cfdi_tax_id,omitempty"`
 }
 
 // UpdateBranchParams: los campos de «Actualizar una sucursal».

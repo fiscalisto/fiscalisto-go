@@ -185,6 +185,8 @@ type services struct {
 	// Contabilidad.
 	ManualEntries *ManualEntriesService
 	// Contabilidad.
+	AutomaticEntries *AutomaticEntriesService
+	// Contabilidad.
 	OpeningBalances *OpeningBalancesService
 	// Contabilidad.
 	FixedAssets *FixedAssetsService
@@ -325,6 +327,7 @@ func (s *services) init(c *Client) {
 	s.Tickets = &TicketsService{c}
 	s.Accounting = &AccountingService{c}
 	s.ManualEntries = &ManualEntriesService{c}
+	s.AutomaticEntries = &AutomaticEntriesService{c}
 	s.OpeningBalances = &OpeningBalancesService{c}
 	s.FixedAssets = &FixedAssetsService{c}
 	s.ClosedPeriod = &ClosedPeriodService{c}
@@ -5914,6 +5917,54 @@ func (s *ManualEntriesService) ImportEntries(ctx context.Context, params *Import
 func (s *ManualEntriesService) UndoImport(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
 	out := new(Deleted)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/manual_entry_imports/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AutomaticEntriesService: Contabilidad (client.AutomaticEntries).
+type AutomaticEntriesService struct{ c *Client }
+
+// Get: Ver la póliza de un CFDI
+//
+// La póliza que arma Fiscalisto para una factura, nota de crédito o recibo de nómina del emisor (por el UUID del CFDI), con su edición a mano si la tiene. Un pago no tiene una propia que se edite: se corrige con una póliza capturada.
+//
+// GET /v1/accounting/automatic_entries/{uuid}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-automatic-entry
+func (s *AutomaticEntriesService) Get(ctx context.Context, uuid string, params *GetAutomaticEntryParams, opts ...RequestOption) (*AutomaticJournalEntry, error) {
+	out := new(AutomaticJournalEntry)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/automatic_entries/"+url.PathEscape(uuid), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Editar la póliza de un CFDI
+//
+// Sus renglones (y su concepto) en lugar de los que arma Fiscalisto, con las reglas de una póliza capturada: cuentas del catálogo y cargos que suman lo mismo que los abonos (entry_unbalanced). Se queda aunque el CFDI se vuelva a descargar, en su mes y en los saldos de los siguientes, y va a la bitácora. Un mes cerrado contesta period_closed. Los mismos renglones que la original quitan la edición.
+//
+// POST /v1/accounting/automatic_entries/{uuid}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/update-automatic-entry
+func (s *AutomaticEntriesService) Update(ctx context.Context, uuid string, params *UpdateAutomaticEntryParams, opts ...RequestOption) (*AutomaticJournalEntry, error) {
+	out := new(AutomaticJournalEntry)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/automatic_entries/"+url.PathEscape(uuid), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Revert: Volver a la póliza original de un CFDI
+//
+// Quita la edición a mano: los libros vuelven a usar los renglones que arma Fiscalisto. Un mes cerrado contesta period_closed.
+//
+// DELETE /v1/accounting/automatic_entries/{uuid}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/revert-automatic-entry
+func (s *AutomaticEntriesService) Revert(ctx context.Context, uuid string, params *RevertAutomaticEntryParams, opts ...RequestOption) (*AutomaticJournalEntry, error) {
+	out := new(AutomaticJournalEntry)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/automatic_entries/"+url.PathEscape(uuid), nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
