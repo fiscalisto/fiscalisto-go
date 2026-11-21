@@ -5369,6 +5369,10 @@ type CreateRuleParamsAction struct {
 	Subject *string `json:"subject,omitempty"`
 	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}.
 	Message *string `json:"message,omitempty"`
+	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
+	//
+	// Valores: payout, invoice.
+	Per *string `json:"per,omitempty"`
 	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
 	Signatures *int64 `json:"signatures,omitempty"`
 	// extra_signature: por qué, para quien firma («Proveedor nuevo»).
@@ -7105,6 +7109,8 @@ type ErrorBodyError struct {
 	DocURL string `json:"doc_url"`
 	// El id de la solicitud (req_…). Inclúyalo si nos escribe.
 	RequestID string `json:"request_id"`
+	// La solicitud en Desarrolladores › Solicitudes: lo que mandó, lo que contestamos y cómo repetirla. Viene en todos los errores salvo los 429.
+	RequestLogURL *string `json:"request_log_url,omitempty"`
 }
 
 // Event: Algo que pasó en su cuenta: el objeto completo como quedó. Se manda a sus webhooks firmado (Standard Webhooks).
@@ -15099,6 +15105,12 @@ type ReceivableList struct {
 	URL string `json:"url"`
 }
 
+// RecoverWebhookEndpointParams: los campos de «Recuperar eventos fallidos».
+type RecoverWebhookEndpointParams struct {
+	// Desde cuándo (ISO 8601, de los últimos 30 días): por ejemplo, cuando empezó a fallar su servidor (failing_since del webhook).
+	Since string `json:"since"`
+}
+
 // RecurringInvoice: Una factura que el emisor timbra solo, cada mes, semana o día.
 type RecurringInvoice struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -15573,6 +15585,10 @@ type RuleAction struct {
 	Subject *string `json:"subject,omitempty"`
 	// email_supplier: el mensaje.
 	Message *string `json:"message,omitempty"`
+	// email_supplier en los disparadores de pagos: payout, un correo por pago y proveedor; invoice, uno por factura.
+	//
+	// Valores: payout, invoice.
+	Per *string `json:"per,omitempty"`
 	// review_findings: los hallazgos que da por revisados (sus códigos).
 	Findings []string `json:"findings,omitempty"`
 	// extra_signature: cuántas firmas más pide (1 a 3).
@@ -19437,6 +19453,10 @@ type UpdateRuleParamsAction struct {
 	Subject *string `json:"subject,omitempty"`
 	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}.
 	Message *string `json:"message,omitempty"`
+	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
+	//
+	// Valores: payout, invoice.
+	Per *string `json:"per,omitempty"`
 	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
 	Signatures *int64 `json:"signatures,omitempty"`
 	// extra_signature: por qué, para quien firma («Proveedor nuevo»).
@@ -20595,6 +20615,20 @@ type WebhookEndpointList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// WebhookRecovery: Los eventos que un webhook no recibió, mandados otra vez: desde cuándo se buscaron, cuántos salieron y, si quedaron más de 1,000, desde dónde seguir.
+type WebhookRecovery struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El webhook (whe_…) al que se mandaron.
+	Endpoint string `json:"endpoint"`
+	// Desde cuándo se buscaron: el since que mandó, o la creación del webhook si es posterior.
+	Since string `json:"since"`
+	// Cuántos eventos salieron otra vez. 0: no le faltaba ninguno.
+	Events int64 `json:"events"`
+	// Si quedaron más de 1,000: llame otra vez con este since. null: ya salieron todos.
+	NextSince *string `json:"next_since,omitempty"`
 }
 
 // WebhookTest: Un evento de prueba que se mandó a su webhook, y lo que respondió su servidor.

@@ -7445,6 +7445,21 @@ func (s *WebhookEndpointsService) ListDeliveriesAutoPaging(ctx context.Context, 
 	return listAll[WebhookDelivery](ctx, s.c, "/v1/webhook_endpoints/"+url.PathEscape(id)+"/deliveries", params, opts)
 }
 
+// Recover: Recuperar eventos fallidos
+//
+// Después de que su servidor estuvo caído: le manda otra vez, ahora, todos los eventos desde since que este webhook escucha y no recibió (los que fallaron todos sus intentos y los que pasaron mientras estuvo apagado), del más antiguo al más reciente. Hasta 1,000 por llamada; si quedan más, next_since dice desde dónde volver a llamar. Cada uno es un intento aparte, firmado con su webhook-id de siempre, para que su servidor descarte los que ya tenía. El webhook tiene que estar encendido.
+//
+// POST /v1/webhook_endpoints/{id}/recover
+//
+// https://fiscalisto.com/docs/api/referencia/webhooks/recover-webhook-endpoint
+func (s *WebhookEndpointsService) Recover(ctx context.Context, id string, params *RecoverWebhookEndpointParams, opts ...RequestOption) (*WebhookRecovery, error) {
+	out := new(WebhookRecovery)
+	if err := s.c.do(ctx, "POST", "/v1/webhook_endpoints/"+url.PathEscape(id)+"/recover", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EventsService: Eventos (client.Events).
 type EventsService struct{ c *Client }
 

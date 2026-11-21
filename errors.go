@@ -30,6 +30,8 @@ type Error struct {
 	DocURL  string `json:"doc_url,omitempty"`
 	// Búsquelo en Desarrolladores › Solicitudes o mándelo a soporte.
 	RequestID string `json:"request_id,omitempty"`
+	// La solicitud en Desarrolladores › Solicitudes, para abrirla en el navegador.
+	RequestLogURL string `json:"request_log_url,omitempty"`
 	// El código HTTP (0: la solicitud no llegó).
 	StatusCode int `json:"-"`
 	// La Idempotency-Key que se mandó: repita con ella para saber si se timbró.

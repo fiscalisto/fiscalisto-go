@@ -3177,6 +3177,13 @@
 		"go": "WebhookEndpoints.ListDeliveries",
 		"java": "webhookEndpoints.listDeliveries"
 	},
+	"POST /v1/webhook_endpoints/{id}/recover": {
+		"python": "webhook_endpoints.recover",
+		"php": "webhookEndpoints->recover",
+		"dotnet": "WebhookEndpoints.RecoverAsync",
+		"go": "WebhookEndpoints.Recover",
+		"java": "webhookEndpoints.recover"
+	},
 	"GET /v1/events": {
 		"python": "events.list",
 		"php": "events->list",
