@@ -5375,9 +5375,9 @@ type CreateRuleParamsAction struct {
 	//
 	// Valores: ordenes, pagos, facturas, complementos, documentos, precios.
 	Topic *string `json:"topic,omitempty"`
-	// email_supplier: el asunto. Puede llevar {folio}, {total}, {fecha} y {empresa}.
+	// email_supplier: el asunto. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
 	Subject *string `json:"subject,omitempty"`
-	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}.
+	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
 	Message *string `json:"message,omitempty"`
 	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
 	//
@@ -9451,6 +9451,10 @@ type Invoice struct {
 	Error *InvoiceError `json:"error,omitempty"`
 	// La factura recurrente (rin_…) que la timbró sola, o null si se timbró con una llamada.
 	RecurringInvoice *string `json:"recurring_invoice,omitempty"`
+	// Los tickets (`tkt_…`) que factura: el que su cliente facturó en la autofactura, el que su equipo facturó desde la página del ticket o los que asoció a ella. Vacío en las demás; los de una factura global están en GET /v1/tickets con `status=global`.
+	Tickets []string `json:"tickets"`
+	// Qué timbró la factura; `null` si se timbró fuera de Fiscalisto.
+	Origin *InvoiceOrigin `json:"origin,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
@@ -10731,6 +10735,16 @@ type InvoiceList struct {
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.
 	URL string `json:"url"`
+}
+
+// InvoiceOrigin: InvoiceOrigin.
+type InvoiceOrigin struct {
+	// Qué la timbró: `app` (una persona en Fiscalisto), `api`, `assistant` (un asistente de IA por MCP), `point_of_sale` (una llave de punto de venta), `autofactura` (su cliente con un ticket, o los datos del comprador de Stripe o Mercado Libre), `invoice_link` (su cliente al llenar el enlace de factura), `quote` (su cliente al aceptar la cotización), `recurring_invoice` (una factura recurrente sola) o `global_invoice` (la factura global automática de los tickets).
+	//
+	// Valores: app, api, assistant, point_of_sale, autofactura, invoice_link, quote, recurring_invoice, global_invoice.
+	Type string `json:"type"`
+	// El nombre de la llave de la API o del punto de venta, el asistente («ChatGPT») o de dónde vinieron los datos del comprador en una autofactura («Stripe»).
+	Name *string `json:"name,omitempty"`
 }
 
 // InvoicePayment: InvoicePayment.
@@ -19493,9 +19507,9 @@ type UpdateRuleParamsAction struct {
 	//
 	// Valores: ordenes, pagos, facturas, complementos, documentos, precios.
 	Topic *string `json:"topic,omitempty"`
-	// email_supplier: el asunto. Puede llevar {folio}, {total}, {fecha} y {empresa}.
+	// email_supplier: el asunto. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
 	Subject *string `json:"subject,omitempty"`
-	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}.
+	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
 	Message *string `json:"message,omitempty"`
 	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
 	//
