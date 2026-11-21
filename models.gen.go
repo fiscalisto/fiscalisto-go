@@ -5299,9 +5299,9 @@ type CreateRuleParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
 	Name *string `json:"name,omitempty"`
-	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), invoice.approved (se aprueba en el Portal de proveedores), invoice.rejected (se rechaza en el portal), purchase_order.saved, .approved, .rejected, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger string `json:"trigger"`
 	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
 	Conditions *CreateRuleParamsConditions `json:"conditions,omitempty"`
@@ -5317,9 +5317,9 @@ type CreateRuleParams struct {
 
 // CreateRuleParamsAction: CreateRuleParamsAction.
 type CreateRuleParamsAction struct {
-	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…).
 	//
-	// Valores: tag, cost_center, stage, close, notify, category.
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
@@ -15407,7 +15407,7 @@ type Rule struct {
 	Name string `json:"name"`
 	// Cuándo corre.
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger string `json:"trigger"`
 	// Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
 	Conditions RuleConditions `json:"conditions"`
@@ -15431,7 +15431,7 @@ type Rule struct {
 type RuleAction struct {
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
-	// Valores: tag, cost_center, category, stage, close, notify.
+	// Valores: tag, cost_center, category, stage, close, ask_approval, notify.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags).
 	Tag *string `json:"tag,omitempty"`
@@ -15529,7 +15529,7 @@ type RuleRun struct {
 	Rule string `json:"rule"`
 	// Cuándo corre.
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger string `json:"trigger"`
 	// La factura u orden, en palabras.
 	Record string `json:"record"`
@@ -19241,9 +19241,9 @@ type UpdateRoleParams struct {
 type UpdateRuleParams struct {
 	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
 	Name *string `json:"name,omitempty"`
-	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), purchase_order.saved, .approved, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), invoice.approved (se aprueba en el Portal de proveedores), invoice.rejected (se rechaza en el portal), purchase_order.saved, .approved, .rejected, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered.
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, purchase_order.saved, purchase_order.approved, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered.
 	Trigger *string `json:"trigger,omitempty"`
 	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
 	Conditions *UpdateRuleParamsConditions `json:"conditions,omitempty"`
@@ -19259,9 +19259,9 @@ type UpdateRuleParams struct {
 
 // UpdateRuleParamsAction: UpdateRuleParamsAction.
 type UpdateRuleParamsAction struct {
-	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; notify: avisar a `members` (mem_…).
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…).
 	//
-	// Valores: tag, cost_center, stage, close, notify, category.
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
