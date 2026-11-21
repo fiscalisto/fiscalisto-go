@@ -5369,26 +5369,40 @@ type CreateRuleParamsAction struct {
 	Stage *int64 `json:"stage,omitempty"`
 	// notify: a quién (mem_…, GET /v1/members).
 	Members []string `json:"members,omitempty"`
-	// notify: lo que dice el aviso. hold_payment: por qué se retiene (hasta 200).
+	// notify: lo que dice el aviso. hold_payment: por qué se retiene (hasta 200). Puede llevar las variables de `message`, menos las tablas.
 	Note *string `json:"note,omitempty"`
 	// email_supplier: el tema de los correos del proveedor a los que va (ordenes, pagos, facturas, complementos, documentos, precios; Ajustes › Correos a proveedores). Sin correos de ese tema, va a sus correos generales. Por omisión, facturas.
 	//
 	// Valores: ordenes, pagos, facturas, complementos, documentos, precios.
 	Topic *string `json:"topic,omitempty"`
-	// email_supplier: el asunto. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
+	// email_supplier: el asunto. Lleva las variables de `message`, menos las tablas.
 	Subject *string `json:"subject,omitempty"`
-	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
+	// email_supplier: el mensaje. Variables: {folio}, {total}, {fecha}, {empresa}, {rfc_empresa}, {proveedor}, {rfc_proveedor}, {subtotal}, {iva}, {retenciones} y {moneda}; de una factura también {uuid}, {metodo_pago}, {forma_pago}, {uso_cfdi}, {conceptos}, {categoria}, {saldo}, {orden}, {contrarecibo}, {fecha_promesa}, {hallazgos} y la tabla {tabla_conceptos}; de una orden {entrega}, {almacen}, {credito}, {comprador}, {nota}, {enlace} y la tabla {tabla_productos}; en invoice.rejected y purchase_order.rejected, {motivo_rechazo}; en los momentos de pagos {facturas}, la tabla {tabla_facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}, en payout.paid {rastreo} y {cep}, en payout.failed {motivo}. Un correo por pago (per payout) no lleva las de una sola factura. Cada {tabla_…} se dibuja como tabla, con las columnas de `columns`; un dato que el registro no tiene queda en blanco.
 	Message *string `json:"message,omitempty"`
 	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
 	//
 	// Valores: payout, invoice.
 	Per *string `json:"per,omitempty"`
+	// email_supplier: las columnas de cada tabla del mensaje, en su orden. tabla_facturas: folio, uuid, fecha, total, retenido, pagado; tabla_conceptos: clave, descripcion, cantidad, unidad, precio, importe; tabla_productos: producto, codigo, cantidad, recibido, pendiente, precio, importe. Sin columnas, las de siempre.
+	Columns *CreateRuleParamsActionColumns `json:"columns,omitempty"`
+	// email_supplier: personas del equipo que reciben copia (mem_…, GET /v1/members).
+	Cc []string `json:"cc,omitempty"`
 	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
 	Signatures *int64 `json:"signatures,omitempty"`
-	// extra_signature: por qué, para quien firma («Proveedor nuevo»).
+	// extra_signature: por qué, para quien firma («Proveedor nuevo»). Puede llevar las variables de `message`, menos las tablas.
 	Reason *string `json:"reason,omitempty"`
 	// review_findings: los hallazgos que da por revisados (sus códigos, `code` en GET /v1/sat_findings). No los que cambian impuestos o la lista negra: cancelado, efos_definitivo, efos_presunto, lista_69b_bis, lista_69.
 	Findings []string `json:"findings,omitempty"`
+}
+
+// CreateRuleParamsActionColumns: CreateRuleParamsActionColumns.
+type CreateRuleParamsActionColumns struct {
+	// Columnas de {tabla_facturas}, en su orden.
+	TablaFacturas []string `json:"tabla_facturas,omitempty"`
+	// Columnas de {tabla_conceptos}, en su orden.
+	TablaConceptos []string `json:"tabla_conceptos,omitempty"`
+	// Columnas de {tabla_productos}, en su orden.
+	TablaProductos []string `json:"tabla_productos,omitempty"`
 }
 
 // CreateRuleParamsConditions: Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
@@ -15647,6 +15661,10 @@ type RuleAction struct {
 	//
 	// Valores: payout, invoice.
 	Per *string `json:"per,omitempty"`
+	// email_supplier: las columnas de cada tabla del mensaje; null: las de siempre.
+	Columns *RuleActionColumns `json:"columns,omitempty"`
+	// email_supplier: personas del equipo con copia (mem_…).
+	Cc []string `json:"cc,omitempty"`
 	// review_findings: los hallazgos que da por revisados (sus códigos).
 	Findings []string `json:"findings,omitempty"`
 	// extra_signature: cuántas firmas más pide (1 a 3).
@@ -15661,6 +15679,16 @@ type RuleAction struct {
 	PayOn *string `json:"pay_on,omitempty"`
 	// lote con pay_on in_days: cuántos días.
 	Days *int64 `json:"days,omitempty"`
+}
+
+// RuleActionColumns: RuleActionColumns.
+type RuleActionColumns struct {
+	// Columnas de {tabla_facturas}, en su orden.
+	TablaFacturas []string `json:"tabla_facturas,omitempty"`
+	// Columnas de {tabla_conceptos}, en su orden.
+	TablaConceptos []string `json:"tabla_conceptos,omitempty"`
+	// Columnas de {tabla_productos}, en su orden.
+	TablaProductos []string `json:"tabla_productos,omitempty"`
 }
 
 // RuleConditions: Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
@@ -17387,6 +17415,8 @@ type SelfInvoicing struct {
 	InvoiceSeries *string `json:"invoice_series,omitempty"`
 	// true: el portal le pide al comprador una nota para el PDF de su factura (hasta 500 caracteres). Solo sale en el PDF, nunca en el XML.
 	CustomerNotes bool `json:"customer_notes"`
+	// true: cuando un comprador no puede facturar por algo del emisor, se avisa por correo; false: solo queda en Alertas.
+	FailureEmail bool `json:"failure_email"`
 	// ticket: la factura global lleva un concepto «Venta» por ticket, con su folio. summary: solo el monto total del periodo, uno por combinación de impuestos (NoIdentificacion «Resumen»), para una persona física en RESICO (regla 2.7.1.21 de la RMF 2026).
 	//
 	// Valores: ticket, summary.
@@ -19501,26 +19531,40 @@ type UpdateRuleParamsAction struct {
 	Stage *int64 `json:"stage,omitempty"`
 	// notify: a quién (mem_…, GET /v1/members).
 	Members []string `json:"members,omitempty"`
-	// notify: lo que dice el aviso. hold_payment: por qué se retiene (hasta 200).
+	// notify: lo que dice el aviso. hold_payment: por qué se retiene (hasta 200). Puede llevar las variables de `message`, menos las tablas.
 	Note *string `json:"note,omitempty"`
 	// email_supplier: el tema de los correos del proveedor a los que va (ordenes, pagos, facturas, complementos, documentos, precios; Ajustes › Correos a proveedores). Sin correos de ese tema, va a sus correos generales. Por omisión, facturas.
 	//
 	// Valores: ordenes, pagos, facturas, complementos, documentos, precios.
 	Topic *string `json:"topic,omitempty"`
-	// email_supplier: el asunto. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
+	// email_supplier: el asunto. Lleva las variables de `message`, menos las tablas.
 	Subject *string `json:"subject,omitempty"`
-	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}. En los momentos de pagos también {facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}; en payout.paid, {rastreo} y {cep}; en payout.failed, {motivo}.
+	// email_supplier: el mensaje. Variables: {folio}, {total}, {fecha}, {empresa}, {rfc_empresa}, {proveedor}, {rfc_proveedor}, {subtotal}, {iva}, {retenciones} y {moneda}; de una factura también {uuid}, {metodo_pago}, {forma_pago}, {uso_cfdi}, {conceptos}, {categoria}, {saldo}, {orden}, {contrarecibo}, {fecha_promesa}, {hallazgos} y la tabla {tabla_conceptos}; de una orden {entrega}, {almacen}, {credito}, {comprador}, {nota}, {enlace} y la tabla {tabla_productos}; en invoice.rejected y purchase_order.rejected, {motivo_rechazo}; en los momentos de pagos {facturas}, la tabla {tabla_facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}, en payout.paid {rastreo} y {cep}, en payout.failed {motivo}. Un correo por pago (per payout) no lleva las de una sola factura. Cada {tabla_…} se dibuja como tabla, con las columnas de `columns`; un dato que el registro no tiene queda en blanco.
 	Message *string `json:"message,omitempty"`
 	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
 	//
 	// Valores: payout, invoice.
 	Per *string `json:"per,omitempty"`
+	// email_supplier: las columnas de cada tabla del mensaje, en su orden. tabla_facturas: folio, uuid, fecha, total, retenido, pagado; tabla_conceptos: clave, descripcion, cantidad, unidad, precio, importe; tabla_productos: producto, codigo, cantidad, recibido, pendiente, precio, importe. Sin columnas, las de siempre.
+	Columns *UpdateRuleParamsActionColumns `json:"columns,omitempty"`
+	// email_supplier: personas del equipo que reciben copia (mem_…, GET /v1/members).
+	Cc []string `json:"cc,omitempty"`
 	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
 	Signatures *int64 `json:"signatures,omitempty"`
-	// extra_signature: por qué, para quien firma («Proveedor nuevo»).
+	// extra_signature: por qué, para quien firma («Proveedor nuevo»). Puede llevar las variables de `message`, menos las tablas.
 	Reason *string `json:"reason,omitempty"`
 	// review_findings: los hallazgos que da por revisados (sus códigos, `code` en GET /v1/sat_findings). No los que cambian impuestos o la lista negra: cancelado, efos_definitivo, efos_presunto, lista_69b_bis, lista_69.
 	Findings []string `json:"findings,omitempty"`
+}
+
+// UpdateRuleParamsActionColumns: UpdateRuleParamsActionColumns.
+type UpdateRuleParamsActionColumns struct {
+	// Columnas de {tabla_facturas}, en su orden.
+	TablaFacturas []string `json:"tabla_facturas,omitempty"`
+	// Columnas de {tabla_conceptos}, en su orden.
+	TablaConceptos []string `json:"tabla_conceptos,omitempty"`
+	// Columnas de {tabla_productos}, en su orden.
+	TablaProductos []string `json:"tabla_productos,omitempty"`
 }
 
 // UpdateRuleParamsConditions: Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
@@ -19885,6 +19929,8 @@ type UpdateSelfInvoicingParams struct {
 	InvoiceSeries *string `json:"invoice_series,omitempty"`
 	// `true`: el portal le pide al comprador una nota para el PDF de su factura (hasta 500 caracteres; Autofactura › Nota del cliente). Solo sale en el PDF, nunca en el XML. Por omisión `false`.
 	CustomerNotes *bool `json:"customer_notes,omitempty"`
+	// `true` (por omisión): cuando un comprador no puede facturar por algo del emisor (su CSD, sus datos, el PAC), se avisa por correo a los dueños y administradores. `false`: solo queda en Alertas, sin correo. Un error en los datos del comprador nunca avisa: el portal le dice cómo corregirlo.
+	FailureEmail *bool `json:"failure_email,omitempty"`
 	// Los conceptos de la factura que se hace el comprador (Autofactura › Conceptos de la factura): desglosados o en uno solo, y si el comprador puede elegir. Mande solo lo que cambia; `null` regresa a desglosados sin elección.
 	InvoiceConcepts *UpdateSelfInvoicingParamsInvoiceConcepts `json:"invoice_concepts,omitempty"`
 	// Los conceptos de la factura global: `ticket` (por omisión), uno «Venta» por ticket con su folio como `NoIdentificacion`; `summary`, solo el monto total del periodo, uno por combinación de impuestos con `NoIdentificacion` «Resumen» (regla 2.7.1.21 de la RMF 2026). `summary` es solo para un emisor persona física en RESICO (626); otro contesta `invalid_request`.
@@ -20043,6 +20089,8 @@ type UpdateSelfInvoicingParamsPortalStyleTexts struct {
 	SuccessTitle *UpdateSelfInvoicingParamsPortalStyleTextsSuccessTitle `json:"success_title,omitempty"`
 	// El mensaje al terminar; `null` vuelve al de Fiscalisto.
 	SuccessMessage *UpdateSelfInvoicingParamsPortalStyleTextsSuccessMessage `json:"success_message,omitempty"`
+	// Lo que dice el portal antes de su correo y teléfono cuando no se pudo facturar («¿Sigue con problemas?»); `null` vuelve al de Fiscalisto.
+	ErrorHelp *UpdateSelfInvoicingParamsPortalStyleTextsErrorHelp `json:"error_help,omitempty"`
 	// El título de la elección de conceptos («Conceptos en su factura»; ver `invoice_concepts`); `null` vuelve al de Fiscalisto.
 	ConceptsTitle *UpdateSelfInvoicingParamsPortalStyleTextsConceptsTitle `json:"concepts_title,omitempty"`
 	// La opción de conceptos desglosados («Desglosados»); `null` vuelve al de Fiscalisto.
@@ -20098,6 +20146,14 @@ type UpdateSelfInvoicingParamsPortalStyleTextsDetailLabel struct {
 	// La casilla del detalle de los conceptos («Incluir el detalle en la descripción…»; ver `invoice_concepts.line_detail`) en español.
 	Es *string `json:"es,omitempty"`
 	// La casilla del detalle de los conceptos («Incluir el detalle en la descripción…»; ver `invoice_concepts.line_detail`) en inglés.
+	En *string `json:"en,omitempty"`
+}
+
+// UpdateSelfInvoicingParamsPortalStyleTextsErrorHelp: UpdateSelfInvoicingParamsPortalStyleTextsErrorHelp.
+type UpdateSelfInvoicingParamsPortalStyleTextsErrorHelp struct {
+	// Lo que dice el portal antes de su correo y teléfono cuando no se pudo facturar («¿Sigue con problemas?») en español.
+	Es *string `json:"es,omitempty"`
+	// Lo que dice el portal antes de su correo y teléfono cuando no se pudo facturar («¿Sigue con problemas?») en inglés.
 	En *string `json:"en,omitempty"`
 }
 
