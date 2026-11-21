@@ -4103,6 +4103,8 @@ type CreatePayoutParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El día en que sale (AAAA-MM-DD, hoy o después). Por omisión, hoy: sale en cuanto lo firmen.
 	PayOn *string `json:"pay_on,omitempty"`
+	// El nombre del lote («Fletes»), para encontrarlo en la app entre los lotes abiertos. Sin nombre, la app lo llama por su día («Lote del jueves 27 nov»).
+	Name *string `json:"name,omitempty"`
 	// Una nota para quien lo revisa y lo firma.
 	Note *string `json:"note,omitempty"`
 	// En un pago programado con facturas en otra moneda: official (el tipo de cambio oficial; si al salir se movió más de la tolerancia de Configurar pagos, se detiene hasta firmarlo de nuevo) o fixed (sale al tipo de cambio de hoy, se mueva o no). Por omisión, lo que diga Configurar pagos.
@@ -12921,6 +12923,8 @@ type Payout struct {
 	//
 	// Valores: draft, pending_approval, approved, sending, paid, partially_paid, failed, canceled.
 	Status string `json:"status"`
+	// El nombre del lote («Fletes»), o null: la app lo llama por su día.
+	Name *string `json:"name,omitempty"`
 	// El día en que sale (AAAA-MM-DD, hora de la Ciudad de México).
 	PayOn string `json:"pay_on"`
 	// En un pago programado con facturas en otra moneda, cómo toma el tipo de cambio: official (el oficial; si al salir se movió más de la tolerancia de Configurar pagos, se detiene hasta firmarlo de nuevo) o fixed (sale al tipo de cambio con que se firmó). null en pesos o si sale hoy.
