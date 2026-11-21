@@ -727,6 +727,13 @@
 		"go": "PayrollBankFiles.Create",
 		"java": "payrollBankFiles.create"
 	},
+	"POST /v1/payroll_payouts": {
+		"python": "payroll_payouts.create",
+		"php": "payrollPayouts->create",
+		"dotnet": "PayrollPayouts.CreateAsync",
+		"go": "PayrollPayouts.Create",
+		"java": "payrollPayouts.create"
+	},
 	"POST /v1/imss_movements": {
 		"python": "imss_movements.create",
 		"php": "imssMovements->create",

@@ -4349,6 +4349,16 @@ type CreatePayrollBatchParamsReceiptPeriod struct {
 	PaymentDate *string `json:"payment_date,omitempty"`
 }
 
+// CreatePayrollPayoutParams: los campos de «Pagar la nómina por transferencia».
+type CreatePayrollPayoutParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// La fecha de pago (FechaPago) de los recibos de nómina timbrados que paga (AAAA-MM-DD).
+	PaymentDate string `json:"payment_date"`
+	// El día en que sale (AAAA-MM-DD, hoy o después). Por omisión, hoy: sale en cuanto lo firmen.
+	PayOn *string `json:"pay_on,omitempty"`
+}
+
 // CreatePayrollProvisionParams: los campos de «Registrar las cuotas patronales de un mes».
 type CreatePayrollProvisionParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
@@ -13803,6 +13813,40 @@ type PayrollOrgChartVacancyMonthlyCostMin struct {
 	PayrollTax float64 `json:"payroll_tax"`
 	// Lo que cuesta a la empresa al mes.
 	Total float64 `json:"total"`
+}
+
+// PayrollPayout: El pago de una nómina en Pagos: el neto de cada empleado a su CLABE aprobada, en un pago en borrador que alguien del equipo firma en la app.
+type PayrollPayout struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…) que paga.
+	Issuer string `json:"issuer"`
+	// La fecha de pago de los recibos que paga.
+	PaymentDate string `json:"payment_date"`
+	// El pago en borrador (pyo_…), con una línea por empleado: se firma en la app, en su app_url.
+	Payout Payout `json:"payout"`
+	// Quién no va en este pago y por qué: su CLABE no está registrada o aún no se puede pagar, no tiene CLABE, su neto es cero o ya va en otro pago de esta nómina.
+	Excluded []PayrollPayoutExcludedItem `json:"excluded"`
+}
+
+// PayrollPayoutExcludedItem: PayrollPayoutExcludedItem.
+type PayrollPayoutExcludedItem struct {
+	// El empleado (emp_…); null si el recibo lo timbró otro sistema y no hay empleado con ese RFC.
+	Employee *string `json:"employee,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Su neto: la suma de sus recibos con esa fecha de pago, menos vales.
+	Amount float64 `json:"amount"`
+	// add: su CLABE aún no está registrada en Pagos (se registra en la app); waiting: su cuenta está en verificación o en su espera; blocked: su cuenta tiene un problema; no_clabe: no tiene CLABE en su ficha; zero: su neto es cero; in_payout: ya va en otro pago de esta nómina; ready: no cupo (un pago lleva hasta 500).
+	//
+	// Valores: ready, add, waiting, blocked, no_clabe, zero, in_payout.
+	Status string `json:"status"`
+	// Por qué no va en este pago.
+	Reason string `json:"reason"`
 }
 
 // PayrollProvision: Las cuotas patronales de un mes en la contabilidad: lo que la empresa debe al IMSS, al SAR y al Infonavit por los días del mes según sus recibos de nómina timbrados, el impuesto sobre nómina del mes y la póliza de provisión que los registra, si ya se registró.
