@@ -837,6 +837,20 @@ type ApproveVacationRequestParams struct {
 	Note *string `json:"note,omitempty"`
 }
 
+// AssignPayrollOrgChartParams: los campos de «Cambiar jefe, departamento o sucursal».
+type AssignPayrollOrgChartParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// A quiénes (emp_…).
+	Employees []string `json:"employees"`
+	// Su jefe directo (emp_…), o null para ponerlos arriba. Se omite si no cambia.
+	Manager *string `json:"manager,omitempty"`
+	// Su departamento, como lo llevan sus recibos (Departamento), o null para ninguno. Se omite si no cambia.
+	Department *string `json:"department,omitempty"`
+	// Una sucursal del emisor (brn_…), o null para la matriz.
+	Branch *string `json:"branch,omitempty"`
+}
+
 // AttendanceMark: Una marca de entrada o salida de Asistencia (registro electrónico de jornada, LFT art. 132).
 type AttendanceMark struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -4273,6 +4287,22 @@ type CreatePayrollReceiptParamsPeriod struct {
 	End string `json:"end"`
 	// Fecha de pago (FechaPago), AAAA-MM-DD. Por omisión el último día del periodo.
 	PaymentDate *string `json:"payment_date,omitempty"`
+}
+
+// CreatePayrollVacancyParams: los campos de «Abrir una vacante».
+type CreatePayrollVacancyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El puesto que falta cubrir.
+	Title string `json:"title"`
+	// Departamento (Departamento).
+	Department *string `json:"department,omitempty"`
+	// Bajo qué jefe (emp_…).
+	Manager *string `json:"manager,omitempty"`
+	// Una sucursal del emisor (brn_…), o null para la matriz.
+	Branch *string `json:"branch,omitempty"`
+	// Desde cuándo está abierta (YYYY-MM-DD); por omisión hoy.
+	OpenedOn *string `json:"opened_on,omitempty"`
 }
 
 // CreatePriceListParams: los campos de «Crear una lista de precios».
@@ -8613,6 +8643,12 @@ type GetPayrollCostParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El año: 2026 (por omisión, el actual).
 	Year *int64 `json:"year,omitempty"`
+}
+
+// GetPayrollOrgChartParams: los campos de «Organigrama».
+type GetPayrollOrgChartParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetPayrollProvisionParams: los campos de «Ver las cuotas patronales de un mes».
@@ -13173,6 +13209,104 @@ type PayrollCostTotals struct {
 	Total *float64 `json:"total,omitempty"`
 }
 
+// PayrollOrgChart: El organigrama de los empleados del emisor: jefes, departamentos, sucursales y vacantes.
+type PayrollOrgChart struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El día del organigrama (YYYY-MM-DD): salen quienes trabajan ese día.
+	AsOf string `json:"as_of"`
+	// Las cuentas del organigrama y lo que conviene revisar.
+	Summary PayrollOrgChartSummary `json:"summary"`
+	// Los empleados arriba de todo (sin jefe), el del equipo más grande primero.
+	Top []string `json:"top"`
+	// Los empleados de hoy, cada uno con su jefe y su equipo.
+	Employees []PayrollOrgChartEmployee `json:"employees"`
+	// Los departamentos, cada uno después del de arriba.
+	Departments []PayrollOrgChartDepartment `json:"departments"`
+	// Los puestos sin persona todavía.
+	Vacancies []PayrollOrgChartVacancy `json:"vacancies"`
+}
+
+// PayrollOrgChartDepartment: PayrollOrgChartDepartment.
+type PayrollOrgChartDepartment struct {
+	// Nombre.
+	Name string `json:"name"`
+	// El departamento dentro del que está.
+	Parent *string `json:"parent,omitempty"`
+	// Su responsable (emp_…).
+	Lead *string `json:"lead,omitempty"`
+	// Personas en él.
+	Employees int64 `json:"employees"`
+	// Personas en él y en sus subdepartamentos.
+	TotalEmployees int64 `json:"total_employees"`
+	// 0 arriba, 1 dentro de uno, y así.
+	Depth int64 `json:"depth"`
+}
+
+// PayrollOrgChartEmployee: PayrollOrgChartEmployee.
+type PayrollOrgChartEmployee struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su número de empleado.
+	Number string `json:"number"`
+	// Nombre.
+	Name string `json:"name"`
+	// Su puesto.
+	Position *string `json:"position,omitempty"`
+	// Departamento (Departamento).
+	Department *string `json:"department,omitempty"`
+	// Su sucursal (brn_…); null es la matriz.
+	Branch *string `json:"branch,omitempty"`
+	// Su jefe directo (emp_…); null si está arriba.
+	Manager *string `json:"manager,omitempty"`
+	// Personas directamente a su cargo.
+	DirectReports int64 `json:"direct_reports"`
+	// Todas las personas que dependen de él, en toda su cadena.
+	TotalReports int64 `json:"total_reports"`
+}
+
+// PayrollOrgChartSummary: Las cuentas del organigrama y lo que conviene revisar.
+type PayrollOrgChartSummary struct {
+	// Empleados de hoy.
+	Employees int64 `json:"employees"`
+	// Cuántos tienen al menos una persona directamente a su cargo.
+	Managers int64 `json:"managers"`
+	// Personas directas por jefe, en promedio (un decimal).
+	AverageSpan float64 `json:"average_span"`
+	// Departamentos, con los que solo llevan los recibos.
+	Departments int64 `json:"departments"`
+	// En cuántas sucursales (con la matriz) hay personas.
+	Branches int64 `json:"branches"`
+	// Puestos sin persona.
+	Vacancies int64 `json:"vacancies"`
+	// Quienes quedan arriba sin ser la cabeza (todos los de arriba menos el del equipo más grande).
+	WithoutManager []string `json:"without_manager"`
+	// Jefes con más de 10 personas directas.
+	WideSpan []string `json:"wide_span"`
+	// Sin departamento: sus recibos no llevan uno.
+	WithoutDepartment []string `json:"without_department"`
+}
+
+// PayrollOrgChartVacancy: PayrollOrgChartVacancy.
+type PayrollOrgChartVacancy struct {
+	// La vacante (vac_…).
+	ID string `json:"id"`
+	// El puesto.
+	Title string `json:"title"`
+	// Departamento (Departamento).
+	Department *string `json:"department,omitempty"`
+	// Bajo qué jefe (emp_…).
+	Manager *string `json:"manager,omitempty"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Desde cuándo está abierta (YYYY-MM-DD).
+	OpenedOn string `json:"opened_on"`
+}
+
 // PayrollProvision: Las cuotas patronales de un mes en la contabilidad: lo que la empresa debe al IMSS, al SAR y al Infonavit por los días del mes según sus recibos de nómina timbrados, el impuesto sobre nómina del mes y la póliza de provisión que los registra, si ya se registró.
 type PayrollProvision struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -14565,6 +14699,14 @@ type RejectQuoteParams struct {
 type RejectVacationRequestParams struct {
 	// Por qué no se aprueba: el empleado lo ve en su enlace.
 	Note string `json:"note"`
+}
+
+// RemovePayrollDepartmentParams: los campos de «Quitar un departamento».
+type RemovePayrollDepartmentParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
 }
 
 // RenumberAccountsParams: los campos de «Renumerar el catálogo».
@@ -16555,6 +16697,20 @@ type SaveInflationAccountsParamsAccount struct {
 	Treatment *string `json:"treatment,omitempty"`
 }
 
+// SavePayrollDepartmentParams: los campos de «Crear o cambiar un departamento».
+type SavePayrollDepartmentParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El departamento. Si no existe, se crea; si existe, se cambia.
+	Name string `json:"name"`
+	// Su nuevo nombre: se cambia también en sus empleados y vacantes.
+	NewName *string `json:"new_name,omitempty"`
+	// El departamento dentro del que está, o null para ponerlo arriba.
+	Parent *string `json:"parent,omitempty"`
+	// Su responsable (emp_…).
+	Lead *string `json:"lead,omitempty"`
+}
+
 // ScheduleSupplierInvoiceParams: los campos de «Programar el pago de una factura de proveedor».
 type ScheduleSupplierInvoiceParams struct {
 	// El día en que la pagará (AAAA-MM-DD, hoy o después). El proveedor lo ve.
@@ -18109,6 +18265,22 @@ type UpdatePayrollTaxSettingsParams struct {
 	StateOptions map[string]string `json:"state_options,omitempty"`
 	// El día del mes siguiente en que se paga el impuesto de cada estado, por su c_Estado: {"NLE": 17}. null vuelve al día de su ley (Ciudad de México 17, Jalisco 12, Estado de México 10); los demás estados, sin día, salen por confirmar en GET /v1/payroll_calendar. Solo cambia los estados que mande.
 	DueDays map[string]any `json:"due_days,omitempty"`
+}
+
+// UpdatePayrollVacancyParams: los campos de «Cambiar una vacante».
+type UpdatePayrollVacancyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El puesto que falta cubrir.
+	Title string `json:"title"`
+	// Departamento (Departamento).
+	Department *string `json:"department,omitempty"`
+	// Bajo qué jefe (emp_…).
+	Manager *string `json:"manager,omitempty"`
+	// Una sucursal del emisor (brn_…), o null para la matriz.
+	Branch *string `json:"branch,omitempty"`
+	// Desde cuándo está abierta (YYYY-MM-DD); por omisión hoy.
+	OpenedOn *string `json:"opened_on,omitempty"`
 }
 
 // UpdatePriceListParams: los campos de «Actualizar una lista de precios».

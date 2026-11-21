@@ -76,6 +76,8 @@ type services struct {
 	PayrollReports *PayrollReportsService
 	// Nómina.
 	PayrollCalendar *PayrollCalendarService
+	// Nómina.
+	PayrollOrgChart *PayrollOrgChartService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -263,6 +265,7 @@ func (s *services) init(c *Client) {
 	s.PayrollTaxes = &PayrollTaxesService{c}
 	s.PayrollReports = &PayrollReportsService{c}
 	s.PayrollCalendar = &PayrollCalendarService{c}
+	s.PayrollOrgChart = &PayrollOrgChartService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -2505,6 +2508,114 @@ func (s *PayrollCalendarService) Get(ctx context.Context, params *GetPayrollCale
 func (s *PayrollCalendarService) Mark(ctx context.Context, params *MarkPayrollCalendarEventParams, opts ...RequestOption) (*PayrollCalendarEvent, error) {
 	out := new(PayrollCalendarEvent)
 	if err := s.c.do(ctx, "POST", "/v1/payroll_calendar/mark", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PayrollOrgChartService: Nómina (client.PayrollOrgChart).
+type PayrollOrgChartService struct{ c *Client }
+
+// Get: Organigrama
+//
+// Como «Nómina › Organigrama» de la app: los empleados de hoy del emisor con su jefe directo, departamento y sucursal, cuántas personas dependen de cada uno (directas y en toda su cadena), los departamentos con sus subdepartamentos, las vacantes y un resumen (jefes, tramo promedio, quién queda sin jefe o sin departamento). Quien no tiene jefe, o cuyo jefe ya se fue, queda arriba; un círculo que dejó una importación se rompe en el de número más bajo.
+//
+// GET /v1/payroll_org_chart
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-payroll-org-chart
+func (s *PayrollOrgChartService) Get(ctx context.Context, params *GetPayrollOrgChartParams, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "GET", "/v1/payroll_org_chart", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Assign: Cambiar jefe, departamento o sucursal
+//
+// Cambia el jefe directo, el departamento o la sucursal de uno o varios empleados (hasta 500); lo que no manda no cambia. Un jefe que, subiendo por su cadena, depende de alguno de ellos contesta parameter_invalid: quedarían en círculo. El departamento es el que llevan sus recibos (Departamento). Contesta el organigrama ya cambiado.
+//
+// POST /v1/payroll_org_chart/assign
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/assign-payroll-org-chart
+func (s *PayrollOrgChartService) Assign(ctx context.Context, params *AssignPayrollOrgChartParams, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_org_chart/assign", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SaveDepartment: Crear o cambiar un departamento
+//
+// Crea el departamento name o, si ya existe, lo cambia: new_name lo renombra (también en sus empleados y vacantes), parent lo pone dentro de otro y lead le pone responsable. Un parent que ya está dentro de él contesta parameter_invalid. Contesta el organigrama.
+//
+// POST /v1/payroll_org_chart/departments
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/save-payroll-department
+func (s *PayrollOrgChartService) SaveDepartment(ctx context.Context, params *SavePayrollDepartmentParams, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_org_chart/departments", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RemoveDepartment: Quitar un departamento
+//
+// Quita un departamento sin personas; los que estaban dentro de él suben un nivel. Con personas contesta parameter_invalid: cámbielas antes con POST /v1/payroll_org_chart/assign. Contesta el organigrama.
+//
+// POST /v1/payroll_org_chart/departments/remove
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/remove-payroll-department
+func (s *PayrollOrgChartService) RemoveDepartment(ctx context.Context, params *RemovePayrollDepartmentParams, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_org_chart/departments/remove", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CreateVacancy: Abrir una vacante
+//
+// Un puesto sin persona todavía, bajo un jefe, en un departamento y una sucursal: sale en el organigrama, pero no cuenta como empleado. Contesta el organigrama.
+//
+// POST /v1/payroll_org_chart/vacancies
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-payroll-vacancy
+func (s *PayrollOrgChartService) CreateVacancy(ctx context.Context, params *CreatePayrollVacancyParams, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_org_chart/vacancies", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateVacancy: Cambiar una vacante
+//
+// Cambia el puesto, departamento, jefe o sucursal de una vacante (vac_…).
+//
+// POST /v1/payroll_org_chart/vacancies/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-payroll-vacancy
+func (s *PayrollOrgChartService) UpdateVacancy(ctx context.Context, id string, params *UpdatePayrollVacancyParams, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "POST", "/v1/payroll_org_chart/vacancies/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeleteVacancy: Cerrar una vacante
+//
+// La quita del organigrama (se cubrió o ya no hace falta). Contesta el organigrama.
+//
+// DELETE /v1/payroll_org_chart/vacancies/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-payroll-vacancy
+func (s *PayrollOrgChartService) DeleteVacancy(ctx context.Context, id string, opts ...RequestOption) (*PayrollOrgChart, error) {
+	out := new(PayrollOrgChart)
+	if err := s.c.do(ctx, "DELETE", "/v1/payroll_org_chart/vacancies/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

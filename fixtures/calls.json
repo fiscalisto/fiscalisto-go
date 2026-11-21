@@ -874,6 +874,55 @@
 		"go": "PayrollCalendar.Mark",
 		"java": "payrollCalendar.mark"
 	},
+	"GET /v1/payroll_org_chart": {
+		"python": "payroll_org_chart.get",
+		"php": "payrollOrgChart->get",
+		"dotnet": "PayrollOrgChart.GetAsync",
+		"go": "PayrollOrgChart.Get",
+		"java": "payrollOrgChart.get"
+	},
+	"POST /v1/payroll_org_chart/assign": {
+		"python": "payroll_org_chart.assign",
+		"php": "payrollOrgChart->assign",
+		"dotnet": "PayrollOrgChart.AssignAsync",
+		"go": "PayrollOrgChart.Assign",
+		"java": "payrollOrgChart.assign"
+	},
+	"POST /v1/payroll_org_chart/departments": {
+		"python": "payroll_org_chart.save_department",
+		"php": "payrollOrgChart->saveDepartment",
+		"dotnet": "PayrollOrgChart.SaveDepartmentAsync",
+		"go": "PayrollOrgChart.SaveDepartment",
+		"java": "payrollOrgChart.saveDepartment"
+	},
+	"POST /v1/payroll_org_chart/departments/remove": {
+		"python": "payroll_org_chart.remove_department",
+		"php": "payrollOrgChart->removeDepartment",
+		"dotnet": "PayrollOrgChart.RemoveDepartmentAsync",
+		"go": "PayrollOrgChart.RemoveDepartment",
+		"java": "payrollOrgChart.removeDepartment"
+	},
+	"POST /v1/payroll_org_chart/vacancies": {
+		"python": "payroll_org_chart.create_vacancy",
+		"php": "payrollOrgChart->createVacancy",
+		"dotnet": "PayrollOrgChart.CreateVacancyAsync",
+		"go": "PayrollOrgChart.CreateVacancy",
+		"java": "payrollOrgChart.createVacancy"
+	},
+	"POST /v1/payroll_org_chart/vacancies/{id}": {
+		"python": "payroll_org_chart.update_vacancy",
+		"php": "payrollOrgChart->updateVacancy",
+		"dotnet": "PayrollOrgChart.UpdateVacancyAsync",
+		"go": "PayrollOrgChart.UpdateVacancy",
+		"java": "payrollOrgChart.updateVacancy"
+	},
+	"DELETE /v1/payroll_org_chart/vacancies/{id}": {
+		"python": "payroll_org_chart.delete_vacancy",
+		"php": "payrollOrgChart->deleteVacancy",
+		"dotnet": "PayrollOrgChart.DeleteVacancyAsync",
+		"go": "PayrollOrgChart.DeleteVacancy",
+		"java": "payrollOrgChart.deleteVacancy"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",
