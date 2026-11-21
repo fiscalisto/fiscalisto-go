@@ -5317,9 +5317,9 @@ type CreateRuleParams struct {
 
 // CreateRuleParamsAction: CreateRuleParamsAction.
 type CreateRuleParamsAction struct {
-	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla; hold_payment (facturas recibidas): retener su pago hasta que alguien lo suelte, con `note`; email_supplier (facturas recibidas): escribirle al proveedor a los correos de su tema `topic`, con `subject` y `message`; review_findings: dar por revisados los hallazgos `findings` de la factura.
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla; hold_payment (facturas recibidas): retener su pago hasta que alguien lo suelte, con `note`; email_supplier (facturas recibidas): escribirle al proveedor a los correos de su tema `topic`, con `subject` y `message`; review_findings: dar por revisados los hallazgos `findings` de la factura; extra_signature (payout.submitted): el pago necesita `signatures` firmas más que las de Configurar pagos, con `reason` para quien firma (nunca las baja; no cambia un pago que ya salió).
 	//
-	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, lote, hold_payment, email_supplier, review_findings.
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, lote, hold_payment, email_supplier, review_findings, extra_signature.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
@@ -5353,6 +5353,10 @@ type CreateRuleParamsAction struct {
 	Subject *string `json:"subject,omitempty"`
 	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}.
 	Message *string `json:"message,omitempty"`
+	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
+	Signatures *int64 `json:"signatures,omitempty"`
+	// extra_signature: por qué, para quien firma («Proveedor nuevo»).
+	Reason *string `json:"reason,omitempty"`
 	// review_findings: los hallazgos que da por revisados (sus códigos, `code` en GET /v1/sat_findings). No los que cambian impuestos o la lista negra: cancelado, efos_definitivo, efos_presunto, lista_69b_bis, lista_69.
 	Findings []string `json:"findings,omitempty"`
 }
@@ -12891,7 +12895,7 @@ type PayableInvoicePaymentHold struct {
 	Rule string `json:"rule"`
 	// Por qué, como lo dice la regla.
 	Note *string `json:"note,omitempty"`
-	// held_at.
+	// Cuándo lo retuvo (UTC).
 	HeldAt string `json:"held_at"`
 }
 
@@ -15497,7 +15501,7 @@ type Rule struct {
 type RuleAction struct {
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
-	// Valores: tag, cost_center, category, stage, close, ask_approval, notify, lote, hold_payment, email_supplier, review_findings.
+	// Valores: tag, cost_center, category, stage, close, ask_approval, notify, lote, hold_payment, email_supplier, review_findings, extra_signature.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags).
 	Tag *string `json:"tag,omitempty"`
@@ -15523,6 +15527,10 @@ type RuleAction struct {
 	Message *string `json:"message,omitempty"`
 	// review_findings: los hallazgos que da por revisados (sus códigos).
 	Findings []string `json:"findings,omitempty"`
+	// extra_signature: cuántas firmas más pide (1 a 3).
+	Signatures *int64 `json:"signatures,omitempty"`
+	// extra_signature: por qué, para quien firma.
+	Reason *string `json:"reason,omitempty"`
 	// lote: el nombre del lote; null: «Lote del jueves 27 nov».
 	LoteName *string `json:"lote_name,omitempty"`
 	// lote: el día que paga (siguiente día de la semana, a los días, o el del contrarecibo).
@@ -19343,9 +19351,9 @@ type UpdateRuleParams struct {
 
 // UpdateRuleParamsAction: UpdateRuleParamsAction.
 type UpdateRuleParamsAction struct {
-	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla; hold_payment (facturas recibidas): retener su pago hasta que alguien lo suelte, con `note`; email_supplier (facturas recibidas): escribirle al proveedor a los correos de su tema `topic`, con `subject` y `message`; review_findings: dar por revisados los hallazgos `findings` de la factura.
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla; hold_payment (facturas recibidas): retener su pago hasta que alguien lo suelte, con `note`; email_supplier (facturas recibidas): escribirle al proveedor a los correos de su tema `topic`, con `subject` y `message`; review_findings: dar por revisados los hallazgos `findings` de la factura; extra_signature (payout.submitted): el pago necesita `signatures` firmas más que las de Configurar pagos, con `reason` para quien firma (nunca las baja; no cambia un pago que ya salió).
 	//
-	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, lote, hold_payment, email_supplier, review_findings.
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, lote, hold_payment, email_supplier, review_findings, extra_signature.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
@@ -19379,6 +19387,10 @@ type UpdateRuleParamsAction struct {
 	Subject *string `json:"subject,omitempty"`
 	// email_supplier: el mensaje. Puede llevar {folio}, {total}, {fecha} y {empresa}.
 	Message *string `json:"message,omitempty"`
+	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
+	Signatures *int64 `json:"signatures,omitempty"`
+	// extra_signature: por qué, para quien firma («Proveedor nuevo»).
+	Reason *string `json:"reason,omitempty"`
 	// review_findings: los hallazgos que da por revisados (sus códigos, `code` en GET /v1/sat_findings). No los que cambian impuestos o la lista negra: cancelado, efos_definitivo, efos_presunto, lista_69b_bis, lista_69.
 	Findings []string `json:"findings,omitempty"`
 }
