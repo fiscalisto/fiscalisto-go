@@ -5317,9 +5317,9 @@ type CreateRuleParams struct {
 
 // CreateRuleParamsAction: CreateRuleParamsAction.
 type CreateRuleParamsAction struct {
-	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…).
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla.
 	//
-	// Valores: tag, cost_center, stage, close, ask_approval, notify, category.
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, lote.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
@@ -5329,6 +5329,14 @@ type CreateRuleParamsAction struct {
 	Category *string `json:"category,omitempty"`
 	// tag: quitarla si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// lote: el nombre del lote («Fletes»); vacío o null: «Lote del jueves 27 nov».
+	LoteName *string `json:"lote_name,omitempty"`
+	// lote: el día que paga: el siguiente lunes … viernes (hoy incluido), a los `days` días, o `due`, la fecha de pago del contrarecibo del portal. Un día inhábil pasa al siguiente hábil. Por omisión, friday.
+	//
+	// Valores: monday, tuesday, wednesday, thursday, friday, in_days, due.
+	PayOn *string `json:"pay_on,omitempty"`
+	// lote con pay_on in_days: cuántos días después.
+	Days *int64 `json:"days,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
 	CostCenter *string `json:"cost_center,omitempty"`
 	// stage: la etapa.
@@ -12881,6 +12889,10 @@ type PayeeAccount struct {
 	Verification *string `json:"verification,omitempty"`
 	// Cómo la verificó a mano quien la aprobó, o null.
 	VerifiedByHandReason *string `json:"verified_by_hand_reason,omitempty"`
+	// Su número de cuenta, si se anotó junto a la CLABE (solo de referencia: la transferencia usa la CLABE), o null.
+	AccountNumber *string `json:"account_number,omitempty"`
+	// true si es la cuenta predeterminada del proveedor: la que usa un pago cuando no se elige otra.
+	IsDefault bool `json:"is_default"`
 	// verifying (verificando con el banco), pending_approval (verificada, por aprobar), holder_mismatch (es de otra persona), failed (no existe o no recibe), approved, rejected o replaced (la sustituyó otra).
 	//
 	// Valores: verifying, pending_approval, holder_mismatch, failed, approved, rejected, replaced.
@@ -15431,7 +15443,7 @@ type Rule struct {
 type RuleAction struct {
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
-	// Valores: tag, cost_center, category, stage, close, ask_approval, notify.
+	// Valores: tag, cost_center, category, stage, close, ask_approval, notify, lote.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags).
 	Tag *string `json:"tag,omitempty"`
@@ -15447,6 +15459,14 @@ type RuleAction struct {
 	Members []string `json:"members,omitempty"`
 	// notify: lo que dice el aviso.
 	Note *string `json:"note,omitempty"`
+	// lote: el nombre del lote; null: «Lote del jueves 27 nov».
+	LoteName *string `json:"lote_name,omitempty"`
+	// lote: el día que paga (siguiente día de la semana, a los días, o el del contrarecibo).
+	//
+	// Valores: monday, tuesday, wednesday, thursday, friday, in_days, due.
+	PayOn *string `json:"pay_on,omitempty"`
+	// lote con pay_on in_days: cuántos días.
+	Days *int64 `json:"days,omitempty"`
 }
 
 // RuleConditions: Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
@@ -19259,9 +19279,9 @@ type UpdateRuleParams struct {
 
 // UpdateRuleParamsAction: UpdateRuleParamsAction.
 type UpdateRuleParamsAction struct {
-	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…).
+	// tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla.
 	//
-	// Valores: tag, cost_center, stage, close, ask_approval, notify, category.
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, lote.
 	Type string `json:"type"`
 	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
 	Tag json.RawMessage `json:"tag,omitempty"`
@@ -19271,6 +19291,14 @@ type UpdateRuleParamsAction struct {
 	Category *string `json:"category,omitempty"`
 	// tag: quitarla si la orden deja de cumplir.
 	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// lote: el nombre del lote («Fletes»); vacío o null: «Lote del jueves 27 nov».
+	LoteName *string `json:"lote_name,omitempty"`
+	// lote: el día que paga: el siguiente lunes … viernes (hoy incluido), a los `days` días, o `due`, la fecha de pago del contrarecibo del portal. Un día inhábil pasa al siguiente hábil. Por omisión, friday.
+	//
+	// Valores: monday, tuesday, wednesday, thursday, friday, in_days, due.
+	PayOn *string `json:"pay_on,omitempty"`
+	// lote con pay_on in_days: cuántos días después.
+	Days *int64 `json:"days,omitempty"`
 	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
 	CostCenter *string `json:"cost_center,omitempty"`
 	// stage: la etapa.
