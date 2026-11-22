@@ -1373,6 +1373,10 @@ type Branch struct {
 	//
 	// Valores: clasico, moderno, compacto, minimalista.
 	PDFStyle *string `json:"pdf_style,omitempty"`
+	// La zona horaria (IANA) en que cuenta su día: la elegida o, si no eligió, la de su código postal (Ley de los Husos Horarios). La fecha de sus facturas siempre es la hora local de su código postal.
+	TimeZone string `json:"time_zone"`
+	// true: time_zone se eligió; false: sigue la de su código postal.
+	TimeZoneChosen bool `json:"time_zone_chosen"`
 	// true si está archivada: ya no se factura desde ella.
 	Archived bool `json:"archived"`
 	// Cuándo se creó.
@@ -3247,6 +3251,10 @@ type CreateBranchParams struct {
 	//
 	// Valores: clasico, moderno, compacto, minimalista.
 	PDFStyle *string `json:"pdf_style,omitempty"`
+	// Su zona horaria (IANA), cuando no es la de su código postal: cuándo empieza su día para «hoy», los límites por día y los avisos. null sigue la de su código postal. La fecha de sus facturas siempre es la hora local de su código postal (Anexo 20).
+	//
+	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
+	TimeZone *string `json:"time_zone,omitempty"`
 }
 
 // CreateBranchParamsAddress: La dirección que va en el PDF de sus facturas.
@@ -9625,8 +9633,18 @@ type ImssMovement struct {
 	Status string `json:"status"`
 	// Cuándo se marcó como presentado, o null.
 	ReportedAt *string `json:"reported_at,omitempty"`
+	// El IMSS lo rechazó en el acuse del IDSE (sigue pending para corregirlo y enviarlo otra vez); null si no.
+	ImssRejection *ImssMovementImssRejection `json:"imss_rejection,omitempty"`
 	// Lo que el IMSS rechazaría en su renglón (vacío: listo para el archivo).
 	Problems []string `json:"problems"`
+}
+
+// ImssMovementImssRejection: ImssMovementImssRejection.
+type ImssMovementImssRejection struct {
+	// Lo que dijo el IMSS, como en su acuse.
+	Reason string `json:"reason"`
+	// Cuándo lo anotó (el acuse que se subió o la llamada que lo mandó en rejected).
+	RejectedAt string `json:"rejected_at"`
 }
 
 // ImssMovementList: Una página de la lista.
@@ -15792,9 +15810,19 @@ type ReportImssMovementsParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
 	// Los movimientos (imv_…) que el IMSS ya recibió, hasta 1,000.
-	Movements []string `json:"movements"`
+	Movements []string `json:"movements,omitempty"`
 	// true (por omisión): marcarlos como presentados; false: devolverlos a pendientes (si los marcó por error).
 	Reported *bool `json:"reported,omitempty"`
+	// Los que el IMSS rechazó en el acuse del IDSE, cada uno con su razón: vuelven a pendientes con imss_rejection, para corregirlos y enviarlos otra vez.
+	Rejected []ReportImssMovementsParamsRejectedItem `json:"rejected,omitempty"`
+}
+
+// ReportImssMovementsParamsRejectedItem: ReportImssMovementsParamsRejectedItem.
+type ReportImssMovementsParamsRejectedItem struct {
+	// El movimiento (imv_…).
+	Movement string `json:"movement"`
+	// Lo que dice el IMSS, como en su acuse del IDSE.
+	Reason string `json:"reason"`
 }
 
 // RequestPurchaseReceiptInvoiceParams: los campos de «Pedir la factura a la tienda».
@@ -19271,6 +19299,10 @@ type UpdateBranchParams struct {
 	//
 	// Valores: clasico, moderno, compacto, minimalista.
 	PDFStyle *string `json:"pdf_style,omitempty"`
+	// Su zona horaria (IANA), cuando no es la de su código postal: cuándo empieza su día para «hoy», los límites por día y los avisos. null sigue la de su código postal. La fecha de sus facturas siempre es la hora local de su código postal (Anexo 20).
+	//
+	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
+	TimeZone *string `json:"time_zone,omitempty"`
 	// true la archiva: ya no se puede facturar desde ella, y sus facturas la siguen nombrando. false la restaura.
 	Archived *bool `json:"archived,omitempty"`
 }
