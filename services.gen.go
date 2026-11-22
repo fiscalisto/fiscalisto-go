@@ -90,6 +90,14 @@ type services struct {
 	Training *TrainingService
 	// Nómina.
 	TrainingCourses *TrainingCoursesService
+	// Nómina.
+	Climate *ClimateService
+	// Nómina.
+	ClimateSurveys *ClimateSurveysService
+	// Nómina.
+	ClimateActions *ClimateActionsService
+	// Nómina.
+	ClimateComplaints *ClimateComplaintsService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -292,6 +300,10 @@ func (s *services) init(c *Client) {
 	s.Candidates = &CandidatesService{c}
 	s.Training = &TrainingService{c}
 	s.TrainingCourses = &TrainingCoursesService{c}
+	s.Climate = &ClimateService{c}
+	s.ClimateSurveys = &ClimateSurveysService{c}
+	s.ClimateActions = &ClimateActionsService{c}
+	s.ClimateComplaints = &ClimateComplaintsService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -3127,6 +3139,291 @@ func (s *TrainingCoursesService) Deliver(ctx context.Context, id string, params 
 // https://fiscalisto.com/docs/api/referencia/nomina/get-training-certificates-pdf
 func (s *TrainingCoursesService) PDF(ctx context.Context, id string, params *GetTrainingCertificatesPdfParams, opts ...RequestOption) ([]byte, error) {
 	return s.c.raw(ctx, "GET", "/v1/training_courses/"+url.PathEscape(id)+"/pdf", nil, params, false, opts)
+}
+
+// ClimateService: Nómina (client.Climate).
+type ClimateService struct{ c *Client }
+
+// Get: Clima laboral
+//
+// Como «Nómina › Clima laboral» de la app: la política de prevención de riesgos psicosociales y cuántos la leyeron (NOM-035-STPS-2018, numerales 5.1 y 5.7), cada centro de trabajo con la guía que le toca por cuántos trabajan ahí (numeral 7.1) y cuándo le toca la siguiente identificación (cada dos años como mínimo, numeral 7.9), cuántas acciones del Programa de intervención faltan y cuántas quejas del buzón esperan atención.
+//
+// GET /v1/climate
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-climate
+func (s *ClimateService) Get(ctx context.Context, params *GetClimateParams, opts ...RequestOption) (*Climate, error) {
+	out := new(Climate)
+	if err := s.c.do(ctx, "GET", "/v1/climate", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdatePolicy: Guardar la política de prevención
+//
+// El texto de la política (numeral 5.1) y con quién más presentar una queja. Con publish true la publica en el portal de cada trabajador como una versión nueva (numeral 5.7) y se les pide leerla otra vez. Lo que no manda no cambia. Contesta climate.
+//
+// POST /v1/climate/policy
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-climate-policy
+func (s *ClimateService) UpdatePolicy(ctx context.Context, params *UpdateClimatePolicyParams, opts ...RequestOption) (*Climate, error) {
+	out := new(Climate)
+	if err := s.c.do(ctx, "POST", "/v1/climate/policy", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ClimateSurveysService: Nómina (client.ClimateSurveys).
+type ClimateSurveysService struct{ c *Client }
+
+// List: Listar encuestas de clima laboral
+//
+// Las encuestas NOM-035 y de clima del emisor (cls_…), las más recientes primero, con a cuántos se les pidió y cuántos contestaron.
+//
+// GET /v1/climate_surveys
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-climate-surveys
+func (s *ClimateSurveysService) List(ctx context.Context, params *ListClimateSurveysParams, opts ...RequestOption) (*Page[ClimateSurvey], error) {
+	return list[ClimateSurvey](ctx, s.c, "/v1/climate_surveys", params, "", opts)
+}
+
+// ListAutoPaging: Listar encuestas de clima laboral, todos, página por página: for x, err := range …
+func (s *ClimateSurveysService) ListAutoPaging(ctx context.Context, params *ListClimateSurveysParams, opts ...RequestOption) iter.Seq2[ClimateSurvey, error] {
+	return listAll[ClimateSurvey](ctx, s.c, "/v1/climate_surveys", params, opts)
+}
+
+// Create: Crear una encuesta de clima laboral
+//
+// kind nom035 aplica la guía que le toca al centro de trabajo por cuántos trabajan ahí hoy: la Guía II de 16 a 50 y la Guía III con más de 50 (numeral 7.1), y la Guía I para identificar a quien vivió un acontecimiento traumático severo (numeral 5.5). Un centro tiene una sola encuesta NOM-035 abierta a la vez. kind clima es una encuesta propia con sus preguntas (scale, nps para el eNPS, choice o text). Queda en borrador salvo con open true. Las respuestas llegan solo desde el portal del empleado y nunca con nombre.
+//
+// POST /v1/climate_surveys
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-climate-survey
+func (s *ClimateSurveysService) Create(ctx context.Context, params *CreateClimateSurveyParams, opts ...RequestOption) (*ClimateSurvey, error) {
+	out := new(ClimateSurvey)
+	if err := s.c.do(ctx, "POST", "/v1/climate_surveys", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver una encuesta de clima laboral
+//
+// La encuesta con sus resultados: con la NOM-035, la calificación final y la de cada categoría y dominio con su nivel de riesgo según las tablas de la norma, y si pide un Programa de intervención (de medio para arriba, numeral 8.3); con la de clima, cada pregunta y el eNPS. Los resultados se muestran desde 5 respuestas (hidden true antes), y los departamentos con menos se dejan fuera, para que no se distinga lo que contestó cada quien. invites dice a quién se le pidió y si ya contestó, no qué.
+//
+// GET /v1/climate_surveys/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-climate-survey
+func (s *ClimateSurveysService) Get(ctx context.Context, id string, opts ...RequestOption) (*ClimateSurvey, error) {
+	out := new(ClimateSurvey)
+	if err := s.c.do(ctx, "GET", "/v1/climate_surveys/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar una encuesta de clima laboral
+//
+// Cambia un borrador. Una encuesta abierta o cerrada ya no cambia, porque hay quien contestó esas preguntas: ciérrela y haga otra.
+//
+// POST /v1/climate_surveys/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-climate-survey
+func (s *ClimateSurveysService) Update(ctx context.Context, id string, params *UpdateClimateSurveyParams, opts ...RequestOption) (*ClimateSurvey, error) {
+	out := new(ClimateSurvey)
+	if err := s.c.do(ctx, "POST", "/v1/climate_surveys/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una encuesta de clima laboral
+//
+// La borra si nadie la ha contestado. Con respuestas se conserva: los resultados se guardan al menos un año (numeral 5.8).
+//
+// DELETE /v1/climate_surveys/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-climate-survey
+func (s *ClimateSurveysService) Delete(ctx context.Context, id string, opts ...RequestOption) (*ClimateSurveyDeleted, error) {
+	out := new(ClimateSurveyDeleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/climate_surveys/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Open: Abrir una encuesta de clima laboral
+//
+// Invita a quien trabaja hoy en el centro (o a la muestra, con sample) y la encuesta aparece en su portal. Con la NOM-035 no se abre si el centro ya tiene otra abierta.
+//
+// POST /v1/climate_surveys/{id}/open
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/open-climate-survey
+func (s *ClimateSurveysService) Open(ctx context.Context, id string, opts ...RequestOption) (*ClimateSurvey, error) {
+	out := new(ClimateSurvey)
+	if err := s.c.do(ctx, "POST", "/v1/climate_surveys/"+url.PathEscape(id)+"/open", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Close: Cerrar una encuesta de clima laboral
+//
+// Deja de recibir respuestas. Una NOM-035 cerrada cuenta como la identificación del centro de trabajo, y la siguiente toca dos años después (numeral 7.9).
+//
+// POST /v1/climate_surveys/{id}/close
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/close-climate-survey
+func (s *ClimateSurveysService) Close(ctx context.Context, id string, opts ...RequestOption) (*ClimateSurvey, error) {
+	out := new(ClimateSurvey)
+	if err := s.c.do(ctx, "POST", "/v1/climate_surveys/"+url.PathEscape(id)+"/close", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateReport: Guardar el informe de una encuesta
+//
+// Solo de la NOM-035: lo que pide el informe de resultados además de lo que calcula Fiscalisto (numeral 7.7): domicilio y actividad del centro, objetivo, actividades, conclusiones y el responsable de la evaluación. Lo que no manda no cambia.
+//
+// POST /v1/climate_surveys/{id}/report
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-climate-survey-report
+func (s *ClimateSurveysService) UpdateReport(ctx context.Context, id string, params *UpdateClimateSurveyReportParams, opts ...RequestOption) (*ClimateSurvey, error) {
+	out := new(ClimateSurvey)
+	if err := s.c.do(ctx, "POST", "/v1/climate_surveys/"+url.PathEscape(id)+"/report", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TraumaticEvents: Listar acontecimientos traumáticos
+//
+// Quienes contestaron «Sí» en la Guía I, con su nombre, porque el patrón debe canalizar a quien lo requiera para su atención (numeral 5.5), y si requiere valoración clínica según la guía. Es lo único de una encuesta que lleva nombre.
+//
+// GET /v1/climate_surveys/{id}/traumatic_events
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-climate-traumatic-events
+func (s *ClimateSurveysService) TraumaticEvents(ctx context.Context, id string, opts ...RequestOption) (*ClimateTraumaticEventList, error) {
+	out := new(ClimateTraumaticEventList)
+	if err := s.c.do(ctx, "GET", "/v1/climate_surveys/"+url.PathEscape(id)+"/traumatic_events", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Refer: Anotar a dónde se canalizó a un trabajador
+//
+// A dónde se canalizó a quien vivió un acontecimiento traumático severo (el IMSS, un médico, un psicólogo), cuándo y una nota. Lo que no manda se borra.
+//
+// POST /v1/climate_surveys/{id}/referrals
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/refer-climate-traumatic-event
+func (s *ClimateSurveysService) Refer(ctx context.Context, id string, params *ReferClimateTraumaticEventParams, opts ...RequestOption) (*ClimateTraumaticEvent, error) {
+	out := new(ClimateTraumaticEvent)
+	if err := s.c.do(ctx, "POST", "/v1/climate_surveys/"+url.PathEscape(id)+"/referrals", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ClimateActionsService: Nómina (client.ClimateActions).
+type ClimateActionsService struct{ c *Client }
+
+// List: Listar acciones del Programa de intervención
+//
+// Las acciones del emisor (cla_…), las pendientes primero y por fecha, o solo las de una encuesta con survey.
+//
+// GET /v1/climate_actions
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-climate-actions
+func (s *ClimateActionsService) List(ctx context.Context, params *ListClimateActionsParams, opts ...RequestOption) (*Page[ClimateAction], error) {
+	return list[ClimateAction](ctx, s.c, "/v1/climate_actions", params, "", opts)
+}
+
+// ListAutoPaging: Listar acciones del Programa de intervención, todos, página por página: for x, err := range …
+func (s *ClimateActionsService) ListAutoPaging(ctx context.Context, params *ListClimateActionsParams, opts ...RequestOption) iter.Seq2[ClimateAction, error] {
+	return listAll[ClimateAction](ctx, s.c, "/v1/climate_actions", params, opts)
+}
+
+// Create: Agregar una acción del Programa de intervención
+//
+// Lo que pide el programa (numeral 8.4): el área que atiende, la acción, su nivel (primer nivel la organización, segundo los grupos, tercero cada persona, numeral 8.5), el responsable y la fecha. Al marcarla done se anota el día, y evaluation dice cómo resultó.
+//
+// POST /v1/climate_actions
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-climate-action
+func (s *ClimateActionsService) Create(ctx context.Context, params *CreateClimateActionParams, opts ...RequestOption) (*ClimateAction, error) {
+	out := new(ClimateAction)
+	if err := s.c.do(ctx, "POST", "/v1/climate_actions", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar una acción del Programa de intervención
+//
+// Reemplaza la acción con lo que manda: lo que no manda queda vacío o con su valor por omisión.
+//
+// POST /v1/climate_actions/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-climate-action
+func (s *ClimateActionsService) Update(ctx context.Context, id string, params *UpdateClimateActionParams, opts ...RequestOption) (*ClimateAction, error) {
+	out := new(ClimateAction)
+	if err := s.c.do(ctx, "POST", "/v1/climate_actions/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar una acción del Programa de intervención
+//
+// La borra. No se puede deshacer.
+//
+// DELETE /v1/climate_actions/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-climate-action
+func (s *ClimateActionsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*ClimateActionDeleted, error) {
+	out := new(ClimateActionDeleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/climate_actions/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ClimateComplaintsService: Nómina (client.ClimateComplaints).
+type ClimateComplaintsService struct{ c *Client }
+
+// List: Listar quejas del buzón
+//
+// Las quejas que mandaron los trabajadores desde su portal (numeral 8.1 b)): de violencia laboral, del entorno u otra. Llevan nombre solo si quien la mandó la firmó.
+//
+// GET /v1/climate_complaints
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-climate-complaints
+func (s *ClimateComplaintsService) List(ctx context.Context, params *ListClimateComplaintsParams, opts ...RequestOption) (*Page[ClimateComplaint], error) {
+	return list[ClimateComplaint](ctx, s.c, "/v1/climate_complaints", params, "", opts)
+}
+
+// ListAutoPaging: Listar quejas del buzón, todos, página por página: for x, err := range …
+func (s *ClimateComplaintsService) ListAutoPaging(ctx context.Context, params *ListClimateComplaintsParams, opts ...RequestOption) iter.Seq2[ClimateComplaint, error] {
+	return listAll[ClimateComplaint](ctx, s.c, "/v1/climate_complaints", params, opts)
+}
+
+// Update: Atender una queja del buzón
+//
+// Su estado y qué se hizo. Al marcarla atendida se anota el día. Lo que no manda no cambia.
+//
+// POST /v1/climate_complaints/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-climate-complaint
+func (s *ClimateComplaintsService) Update(ctx context.Context, id string, params *UpdateClimateComplaintParams, opts ...RequestOption) (*ClimateComplaint, error) {
+	out := new(ClimateComplaint)
+	if err := s.c.do(ctx, "POST", "/v1/climate_complaints/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // InvoiceBatchesService: Lotes (client.InvoiceBatches).

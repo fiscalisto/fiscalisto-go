@@ -2179,6 +2179,432 @@ type ClassifyBankTransactionParams struct {
 	Note *string `json:"note,omitempty"`
 }
 
+// Climate: El clima laboral de un emisor (Nómina › Clima laboral).
+type Climate struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Lo que se configura en POST /v1/climate/policy.
+	Settings ClimateSettings `json:"settings"`
+	// Cada centro de trabajo con su guía y cuándo le toca.
+	Centros []ClimateCentro `json:"centros"`
+	// Las acciones del Programa de intervención.
+	Actions ClimateActions `json:"actions"`
+	// Las quejas del buzón que esperan atención.
+	Complaints ClimateComplaints `json:"complaints"`
+}
+
+// ClimateAction: Una acción del Programa de intervención (numerales 8.3 a 8.5).
+type ClimateAction struct {
+	// La acción (cla_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// La encuesta de la que sale (cls_…).
+	Survey *string `json:"survey,omitempty"`
+	// La categoría o el dominio que atiende.
+	Area string `json:"area"`
+	// primer, segundo o tercer nivel (numeral 8.5).
+	Level string `json:"level"`
+	// Qué se va a hacer.
+	Action string `json:"action"`
+	// El responsable.
+	Owner *string `json:"owner,omitempty"`
+	// Para cuándo.
+	DueOn *string `json:"due_on,omitempty"`
+	// pending, in_progress o done.
+	Status string `json:"status"`
+	// Cuándo se terminó.
+	DoneOn *string `json:"done_on,omitempty"`
+	// Cómo resultó (numeral 8.4 c)).
+	Evaluation *string `json:"evaluation,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+}
+
+// ClimateActionDeleted: Una acción borrada.
+type ClimateActionDeleted struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Siempre true.
+	Deleted bool `json:"deleted"`
+}
+
+// ClimateActionList: Una página de la lista.
+type ClimateActionList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ClimateAction `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ClimateActions: Las acciones del Programa de intervención.
+type ClimateActions struct {
+	// Total en la moneda del comprobante (Total).
+	Total int64 `json:"total"`
+	// Las que no se han terminado.
+	Pending int64 `json:"pending"`
+	// De ellas, las que pasaron su fecha.
+	Late int64 `json:"late"`
+}
+
+// ClimateCentro: ClimateCentro.
+type ClimateCentro struct {
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Nombre.
+	Name string `json:"name"`
+	// Quienes trabajan ahí hoy.
+	Workers int64 `json:"workers"`
+	// II, III o null (solo la Guía I).
+	Guide *string `json:"guide,omitempty"`
+	// Cuándo se cerró la última identificación NOM-035 ahí.
+	LastOn *string `json:"last_on,omitempty"`
+	// Cuándo toca la siguiente: cada dos años como mínimo (numeral 7.9).
+	NextDue *string `json:"next_due,omitempty"`
+	// Si ya le tocaba (o nunca se ha hecho).
+	Overdue bool `json:"overdue"`
+}
+
+// ClimateComplaint: Una queja del buzón (numeral 8.1 b)).
+type ClimateComplaint struct {
+	// La queja (clq_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// violencia, entorno u otro.
+	Kind string `json:"kind"`
+	// Lo que escribió.
+	Body string `json:"body"`
+	// Solo si quien la mandó la firmó.
+	Employee *string `json:"employee,omitempty"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Cuándo llegó.
+	ReceivedOn string `json:"received_on"`
+	// nueva, en_atencion o atendida.
+	Status string `json:"status"`
+	// Qué se hizo.
+	Note *string `json:"note,omitempty"`
+	// Cuándo se atendió.
+	ClosedOn *string `json:"closed_on,omitempty"`
+}
+
+// ClimateComplaintList: Una página de la lista.
+type ClimateComplaintList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ClimateComplaint `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ClimateComplaints: Las quejas del buzón que esperan atención.
+type ClimateComplaints struct {
+	// Quejas nuevas.
+	New int64 `json:"new"`
+	// Quejas en atención.
+	InProgress int64 `json:"in_progress"`
+}
+
+// ClimateSettings: Lo que se configura en POST /v1/climate/policy.
+type ClimateSettings struct {
+	// La política de prevención de riesgos psicosociales (numeral 5.1).
+	Policy *string `json:"policy,omitempty"`
+	// La versión publicada (0: ninguna).
+	PolicyVersion int64 `json:"policy_version"`
+	// Cuándo se publicó.
+	PolicyPublishedAt *string `json:"policy_published_at,omitempty"`
+	// Con quién más presentar una queja, además del buzón.
+	ComplaintsContact *string `json:"complaints_contact,omitempty"`
+	// Quienes leyeron la versión publicada (numeral 5.7 a)).
+	PolicyReads int64 `json:"policy_reads"`
+	// Quienes trabajan hoy en el emisor.
+	Workers int64 `json:"workers"`
+}
+
+// ClimateSurvey: Una encuesta NOM-035 o de clima (Nómina › Clima laboral).
+type ClimateSurvey struct {
+	// La encuesta (cls_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// nom035 o clima.
+	Kind string `json:"kind"`
+	// Su nombre.
+	Title string `json:"title"`
+	// El centro de trabajo (brn_…); null: todos los trabajadores del emisor.
+	Branch *string `json:"branch,omitempty"`
+	// El nombre del centro de trabajo.
+	Centro string `json:"centro"`
+	// NOM-035: II (de 16 a 50 trabajadores), III (más de 50) o null (hasta 15: solo la Guía I), numeral 7.1.
+	Guide *string `json:"guide,omitempty"`
+	// Si también pregunta la Guía I.
+	GuideI bool `json:"guide_i"`
+	// Si se aplica a una muestra (Guía III).
+	Sample bool `json:"sample"`
+	// draft, open o closed.
+	Status string `json:"status"`
+	// La fecha límite para contestar.
+	ClosesOn *string `json:"closes_on,omitempty"`
+	// Los trabajadores del centro cuando se abrió.
+	Workers *int64 `json:"workers,omitempty"`
+	// A cuántos se les pidió contestarla.
+	Invited int64 `json:"invited"`
+	// Cuántos la contestaron.
+	Answered int64 `json:"answered"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+	// Cuándo se abrió.
+	OpenedAt *string `json:"opened_at,omitempty"`
+	// Cuándo se cerró.
+	ClosedAt *string `json:"closed_at,omitempty"`
+	// Encuesta de clima: sus preguntas (al ver una encuesta).
+	Questions []ClimateSurveyQuestion `json:"questions,omitempty"`
+	// Lo que dice el informe además de los resultados (numeral 7.7).
+	Report *ClimateSurveyReport `json:"report,omitempty"`
+	// Los resultados, sin nombres.
+	Results *ClimateSurveyResults `json:"results,omitempty"`
+	// A quién se le pidió y si contestó, para recordarle a quien falta.
+	Invites []ClimateSurveyInvite `json:"invites,omitempty"`
+}
+
+// ClimateSurveyDeleted: Una encuesta borrada.
+type ClimateSurveyDeleted struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Siempre true.
+	Deleted bool `json:"deleted"`
+}
+
+// ClimateSurveyInvite: ClimateSurveyInvite.
+type ClimateSurveyInvite struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Nombre.
+	Name string `json:"name"`
+	// Si ya contestó (no qué).
+	Answered bool `json:"answered"`
+}
+
+// ClimateSurveyList: Una página de la lista.
+type ClimateSurveyList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ClimateSurvey `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ClimateSurveyQuestion: ClimateSurveyQuestion.
+type ClimateSurveyQuestion struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Texto de la leyenda (textoLeyenda).
+	Text string `json:"text"`
+	// scale, nps, choice o text.
+	Type string `json:"type"`
+	// Con choice: sus opciones.
+	Options []string `json:"options,omitempty"`
+	// Si es obligatoria.
+	Required bool `json:"required"`
+}
+
+// ClimateSurveyReport: Lo que dice el informe además de los resultados (numeral 7.7).
+type ClimateSurveyReport struct {
+	// El domicilio del centro de trabajo.
+	Address *string `json:"address,omitempty"`
+	// Su actividad principal.
+	Activity *string `json:"activity,omitempty"`
+	// El objetivo de la evaluación.
+	Objective *string `json:"objective,omitempty"`
+	// Las principales actividades que se hacen ahí.
+	Activities *string `json:"activities,omitempty"`
+	// Las conclusiones.
+	Conclusions *string `json:"conclusions,omitempty"`
+	// El responsable de la evaluación.
+	Responsible *string `json:"responsible,omitempty"`
+	// Su cédula profesional.
+	License *string `json:"license,omitempty"`
+}
+
+// ClimateSurveyResults: Los resultados, sin nombres.
+type ClimateSurveyResults struct {
+	// A cuántos se les pidió.
+	Invited int64 `json:"invited"`
+	// Cuántos contestaron.
+	Answered int64 `json:"answered"`
+	// Cuántas respuestas hacen falta para mostrar resultados (5).
+	MinGroup int64 `json:"min_group"`
+	// true con menos de min_group respuestas: no se muestra nada, para que no se distinga lo que contestó cada quien.
+	Hidden bool `json:"hidden"`
+	// La calificación final, por categoría y por dominio (Guías II y III).
+	Nom035 *ClimateSurveyResultsNom035 `json:"nom035,omitempty"`
+	// Encuesta de clima: cada pregunta.
+	Climate []ClimateSurveyResultsClimateItem `json:"climate,omitempty"`
+	// Guía I: cuántos dijeron «Sí» (los nombres, en traumatic_events).
+	Traumatic *ClimateSurveyResultsTraumatic `json:"traumatic,omitempty"`
+}
+
+// ClimateSurveyResultsClimateItem: ClimateSurveyResultsClimateItem.
+type ClimateSurveyResultsClimateItem struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Texto de la leyenda (textoLeyenda).
+	Text string `json:"text"`
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	Type string `json:"type"`
+	// Cuántos la contestaron.
+	Answered int64 `json:"answered"`
+	// scale y nps: el promedio.
+	Average *float64 `json:"average,omitempty"`
+	// Cuántos dieron cada respuesta (cada número o cada opción).
+	Counts map[string]any `json:"counts,omitempty"`
+	// nps: el porcentaje de promotores menos el de detractores.
+	Enps *float64 `json:"enps,omitempty"`
+	// text: las respuestas, en orden alfabético y sin nombre.
+	Texts []string `json:"texts,omitempty"`
+}
+
+// ClimateSurveyResultsNom035: ClimateSurveyResultsNom035.
+type ClimateSurveyResultsNom035 struct {
+	// La calificación final y su nivel de riesgo.
+	Final ClimateSurveyResultsNom035Final `json:"final"`
+	// Cada categoría de la guía.
+	Categories []ClimateSurveyResultsNom035Category `json:"categories"`
+	// Cada dominio de la guía.
+	Domains []ClimateSurveyResultsNom035Domain `json:"domains"`
+	// Cada departamento con min_group respuestas o más.
+	Departments []ClimateSurveyResultsNom035Department `json:"departments"`
+	// Departamentos con menos de min_group respuestas, que no se muestran.
+	HiddenDepartments int64 `json:"hidden_departments"`
+}
+
+// ClimateSurveyResultsNom035Category: ClimateSurveyResultsNom035Category.
+type ClimateSurveyResultsNom035Category struct {
+	// Su clave (la que va en area de una acción).
+	Key string `json:"key"`
+	// Nombre.
+	Name string `json:"name"`
+	// El promedio de las calificaciones de los trabajadores.
+	Score float64 `json:"score"`
+	// El nivel de riesgo de ese promedio según las tablas de la norma: nulo, bajo, medio, alto o muy_alto.
+	Level string `json:"level"`
+	// Cuántos trabajadores quedaron en cada nivel (nulo, bajo, medio, alto, muy_alto).
+	Levels map[string]any `json:"levels"`
+	// De medio para arriba pide un Programa de intervención (numeral 8.3).
+	NeedsProgram bool `json:"needs_program"`
+}
+
+// ClimateSurveyResultsNom035Department: ClimateSurveyResultsNom035Department.
+type ClimateSurveyResultsNom035Department struct {
+	// Nombre.
+	Name string `json:"name"`
+	// Cuántos de ahí contestaron.
+	Answered int64 `json:"answered"`
+	// La calificación final promedio del departamento.
+	Score float64 `json:"score"`
+	// Nivel educativo (nivelEducativo).
+	Level string `json:"level"`
+}
+
+// ClimateSurveyResultsNom035Domain: ClimateSurveyResultsNom035Domain.
+type ClimateSurveyResultsNom035Domain struct {
+	// Su clave (la que va en area de una acción).
+	Key string `json:"key"`
+	// Nombre.
+	Name string `json:"name"`
+	// El promedio de las calificaciones de los trabajadores.
+	Score float64 `json:"score"`
+	// El nivel de riesgo de ese promedio según las tablas de la norma: nulo, bajo, medio, alto o muy_alto.
+	Level string `json:"level"`
+	// Cuántos trabajadores quedaron en cada nivel (nulo, bajo, medio, alto, muy_alto).
+	Levels map[string]any `json:"levels"`
+	// De medio para arriba pide un Programa de intervención (numeral 8.3).
+	NeedsProgram bool `json:"needs_program"`
+}
+
+// ClimateSurveyResultsNom035Final: La calificación final y su nivel de riesgo.
+type ClimateSurveyResultsNom035Final struct {
+	// La calificación final del cuestionario.
+	Score float64 `json:"score"`
+	// Nivel educativo (nivelEducativo).
+	Level string `json:"level"`
+	// Cuántos trabajadores quedaron en cada nivel (nulo, bajo, medio, alto, muy_alto).
+	Levels map[string]any `json:"levels"`
+}
+
+// ClimateSurveyResultsTraumatic: ClimateSurveyResultsTraumatic.
+type ClimateSurveyResultsTraumatic struct {
+	// Quienes dijeron haber vivido un acontecimiento traumático severo.
+	Yes int64 `json:"yes"`
+	// De ellos, quienes requieren valoración clínica (Guía I).
+	NeedsAttention int64 `json:"needs_attention"`
+}
+
+// ClimateTraumaticEvent: Quien dijo haber vivido un acontecimiento traumático severo (Guía I).
+type ClimateTraumaticEvent struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// La encuesta (cls_…).
+	Survey string `json:"survey"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Nombre.
+	Name string `json:"name"`
+	// Si requiere valoración clínica según la Guía I (numeral 5.5).
+	NeedsAttention bool `json:"needs_attention"`
+	// Cuándo contestó.
+	AnsweredOn string `json:"answered_on"`
+	// A dónde se le canalizó.
+	ReferredTo *string `json:"referred_to,omitempty"`
+	// Cuándo se le canalizó.
+	ReferredOn *string `json:"referred_on,omitempty"`
+	// Una nota.
+	Note *string `json:"note,omitempty"`
+}
+
+// ClimateTraumaticEventList: Una página de la lista.
+type ClimateTraumaticEventList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ClimateTraumaticEvent `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // CloseSalesOrderParams: los campos de «Cerrar un pedido».
 type CloseSalesOrderParams struct {
 	// Por qué (queda en el historial).
@@ -3313,6 +3739,72 @@ type CreateCashForecastItemParams struct {
 	Frequency *string `json:"frequency,omitempty"`
 	// El último día en que se repite; null sin fin.
 	Until *string `json:"until,omitempty"`
+}
+
+// CreateClimateActionParams: los campos de «Agregar una acción del Programa de intervención».
+type CreateClimateActionParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// La encuesta de la que sale (cls_…), si sale de una.
+	Survey *string `json:"survey,omitempty"`
+	// La categoría o el dominio que atiende (su clave en results), o un texto libre.
+	Area string `json:"area"`
+	// El nivel de la acción (numeral 8.5): primer (la organización, por omisión), segundo (grupos) o tercer (cada persona).
+	//
+	// Valores: primer, segundo, tercer.
+	Level *string `json:"level,omitempty"`
+	// Qué se va a hacer.
+	Action string `json:"action"`
+	// El responsable.
+	Owner *string `json:"owner,omitempty"`
+	// Para cuándo.
+	DueOn *string `json:"due_on,omitempty"`
+	// pending (por omisión), in_progress o done.
+	//
+	// Valores: pending, in_progress, done.
+	Status *string `json:"status,omitempty"`
+	// Al terminarla: cómo resultó (numeral 8.4 c)).
+	Evaluation *string `json:"evaluation,omitempty"`
+}
+
+// CreateClimateSurveyParams: los campos de «Crear una encuesta de clima laboral».
+type CreateClimateSurveyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// nom035 (las guías de la norma por centro de trabajo) o clima (una encuesta propia con sus preguntas).
+	//
+	// Valores: nom035, clima.
+	Kind string `json:"kind"`
+	// Su nombre; por omisión «NOM-035 2026» o «Encuesta de clima 2026».
+	Title *string `json:"title,omitempty"`
+	// El centro de trabajo: una sucursal (brn_…). null u omitido: todos los trabajadores del emisor.
+	Branch *string `json:"branch,omitempty"`
+	// NOM-035: también pregunta la Guía I, para identificar a quien vivió un acontecimiento traumático severo (numeral 5.5). Por omisión, sí.
+	GuideI *bool `json:"guide_i,omitempty"`
+	// NOM-035 con la Guía III (más de 50 trabajadores): la aplica a una muestra elegida al azar según la Ecuación 1 de la norma, en proporción de hombres y mujeres.
+	Sample *bool `json:"sample,omitempty"`
+	// Encuesta de clima: sus preguntas, en orden.
+	Questions []CreateClimateSurveyParamsQuestion `json:"questions,omitempty"`
+	// La fecha límite para contestar (opcional).
+	ClosesOn *string `json:"closes_on,omitempty"`
+	// true la abre de una vez: invita a quien trabaja hoy en ese centro y aparece en su portal.
+	Open *bool `json:"open,omitempty"`
+}
+
+// CreateClimateSurveyParamsQuestion: CreateClimateSurveyParamsQuestion.
+type CreateClimateSurveyParamsQuestion struct {
+	// Su id, único en la encuesta.
+	ID string `json:"id"`
+	// La pregunta.
+	Text string `json:"text"`
+	// scale (del 1 al 5, qué tan de acuerdo), nps (del 0 al 10, para el eNPS), choice (opciones) o text (respuesta abierta).
+	//
+	// Valores: scale, nps, choice, text.
+	Type string `json:"type"`
+	// Con choice: de 2 a 12 opciones.
+	Options []string `json:"options,omitempty"`
+	// Si es obligatoria (por omisión, sí).
+	Required *bool `json:"required,omitempty"`
 }
 
 // CreateConsolidationEliminationParams: los campos de «Capturar una eliminación de consolidación».
@@ -9029,6 +9521,12 @@ type GetCashForecastParams struct {
 	RecurringSalesChange *int64 `json:"recurring_sales_change,omitempty"`
 }
 
+// GetClimateParams: los campos de «Clima laboral».
+type GetClimateParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetClosedPeriodParams: los campos de «Ver hasta qué mes está cerrada la contabilidad».
 type GetClosedPeriodParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -12061,6 +12559,40 @@ type ListCandidatesParams struct {
 
 // ListChartTemplatesParams: los campos de «Listar los catálogos por giro».
 type ListChartTemplatesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListClimateActionsParams: los campos de «Listar acciones del Programa de intervención».
+type ListClimateActionsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las de esta encuesta (cls_…).
+	Survey *string `json:"survey,omitempty"`
+}
+
+// ListClimateComplaintsParams: los campos de «Listar quejas del buzón».
+type ListClimateComplaintsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo las nueva, en_atencion o atendida.
+	Status *string `json:"status,omitempty"`
+}
+
+// ListClimateSurveysParams: los campos de «Listar encuestas de clima laboral».
+type ListClimateSurveysParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -15785,6 +16317,18 @@ type RecurringInvoiceSchedule struct {
 	Hour int64 `json:"hour"`
 	// La zona de esa hora (America/Mexico_City, America/Cancun…).
 	TimeZone string `json:"time_zone"`
+}
+
+// ReferClimateTraumaticEventParams: los campos de «Anotar a dónde se canalizó a un trabajador».
+type ReferClimateTraumaticEventParams struct {
+	// Quien vivió el acontecimiento (emp_…), de GET /v1/climate_surveys/{id}/traumatic_events.
+	Employee string `json:"employee"`
+	// A dónde se le canalizó: el IMSS, un médico, un psicólogo.
+	ReferredTo *string `json:"referred_to,omitempty"`
+	// Cuándo.
+	ReferredOn *string `json:"referred_on,omitempty"`
+	// Una nota.
+	Note *string `json:"note,omitempty"`
 }
 
 // RefreshSatDeclarationsParams: los campos de «Consultar las declaraciones de un emisor en el SAT».
@@ -19521,6 +20065,110 @@ type UpdateCashForecastParamsStartingBalance struct {
 	Amount float64 `json:"amount"`
 	// El día de ese saldo (AAAA-MM-DD); hoy si no se indica.
 	Date *string `json:"date,omitempty"`
+}
+
+// UpdateClimateActionParams: los campos de «Cambiar una acción del Programa de intervención».
+type UpdateClimateActionParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// La encuesta de la que sale (cls_…), si sale de una.
+	Survey *string `json:"survey,omitempty"`
+	// La categoría o el dominio que atiende (su clave en results), o un texto libre.
+	Area string `json:"area"`
+	// El nivel de la acción (numeral 8.5): primer (la organización, por omisión), segundo (grupos) o tercer (cada persona).
+	//
+	// Valores: primer, segundo, tercer.
+	Level *string `json:"level,omitempty"`
+	// Qué se va a hacer.
+	Action string `json:"action"`
+	// El responsable.
+	Owner *string `json:"owner,omitempty"`
+	// Para cuándo.
+	DueOn *string `json:"due_on,omitempty"`
+	// pending (por omisión), in_progress o done.
+	//
+	// Valores: pending, in_progress, done.
+	Status *string `json:"status,omitempty"`
+	// Al terminarla: cómo resultó (numeral 8.4 c)).
+	Evaluation *string `json:"evaluation,omitempty"`
+}
+
+// UpdateClimateComplaintParams: los campos de «Atender una queja del buzón».
+type UpdateClimateComplaintParams struct {
+	// nueva, en_atencion o atendida.
+	//
+	// Valores: nueva, en_atencion, atendida.
+	Status *string `json:"status,omitempty"`
+	// Qué se hizo.
+	Note *string `json:"note,omitempty"`
+}
+
+// UpdateClimatePolicyParams: los campos de «Guardar la política de prevención».
+type UpdateClimatePolicyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El texto de la política de prevención de riesgos psicosociales (numeral 5.1). La Guía IV de la norma trae un ejemplo.
+	Policy *string `json:"policy,omitempty"`
+	// Con quién más pueden presentar una queja, además del buzón del portal (Recursos Humanos, por ejemplo).
+	ComplaintsContact *string `json:"complaints_contact,omitempty"`
+	// true la publica en el portal de cada trabajador (numeral 5.7) como una versión nueva, que se les pide leer otra vez.
+	Publish *bool `json:"publish,omitempty"`
+}
+
+// UpdateClimateSurveyParams: los campos de «Cambiar una encuesta de clima laboral».
+type UpdateClimateSurveyParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// nom035 (las guías de la norma por centro de trabajo) o clima (una encuesta propia con sus preguntas).
+	//
+	// Valores: nom035, clima.
+	Kind string `json:"kind"`
+	// Su nombre; por omisión «NOM-035 2026» o «Encuesta de clima 2026».
+	Title *string `json:"title,omitempty"`
+	// El centro de trabajo: una sucursal (brn_…). null u omitido: todos los trabajadores del emisor.
+	Branch *string `json:"branch,omitempty"`
+	// NOM-035: también pregunta la Guía I, para identificar a quien vivió un acontecimiento traumático severo (numeral 5.5). Por omisión, sí.
+	GuideI *bool `json:"guide_i,omitempty"`
+	// NOM-035 con la Guía III (más de 50 trabajadores): la aplica a una muestra elegida al azar según la Ecuación 1 de la norma, en proporción de hombres y mujeres.
+	Sample *bool `json:"sample,omitempty"`
+	// Encuesta de clima: sus preguntas, en orden.
+	Questions []UpdateClimateSurveyParamsQuestion `json:"questions,omitempty"`
+	// La fecha límite para contestar (opcional).
+	ClosesOn *string `json:"closes_on,omitempty"`
+}
+
+// UpdateClimateSurveyParamsQuestion: UpdateClimateSurveyParamsQuestion.
+type UpdateClimateSurveyParamsQuestion struct {
+	// Su id, único en la encuesta.
+	ID string `json:"id"`
+	// La pregunta.
+	Text string `json:"text"`
+	// scale (del 1 al 5, qué tan de acuerdo), nps (del 0 al 10, para el eNPS), choice (opciones) o text (respuesta abierta).
+	//
+	// Valores: scale, nps, choice, text.
+	Type string `json:"type"`
+	// Con choice: de 2 a 12 opciones.
+	Options []string `json:"options,omitempty"`
+	// Si es obligatoria (por omisión, sí).
+	Required *bool `json:"required,omitempty"`
+}
+
+// UpdateClimateSurveyReportParams: los campos de «Guardar el informe de una encuesta».
+type UpdateClimateSurveyReportParams struct {
+	// El domicilio del centro de trabajo (numeral 7.7 b)).
+	Address *string `json:"address,omitempty"`
+	// Su actividad principal.
+	Activity *string `json:"activity,omitempty"`
+	// El objetivo de la evaluación.
+	Objective *string `json:"objective,omitempty"`
+	// Las principales actividades que se hacen ahí.
+	Activities *string `json:"activities,omitempty"`
+	// Las conclusiones (numeral 7.7 g)).
+	Conclusions *string `json:"conclusions,omitempty"`
+	// El responsable de la evaluación.
+	Responsible *string `json:"responsible,omitempty"`
+	// Su cédula profesional, si la tiene.
+	License *string `json:"license,omitempty"`
 }
 
 // UpdateConsolidationEliminationParams: los campos de «Cambiar una eliminación de consolidación».

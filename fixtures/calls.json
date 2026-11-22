@@ -1140,6 +1140,132 @@
 		"go": "Employees.UpdateTraining",
 		"java": "employees.updateTraining"
 	},
+	"GET /v1/climate": {
+		"python": "climate.get",
+		"php": "climate->get",
+		"dotnet": "Climate.GetAsync",
+		"go": "Climate.Get",
+		"java": "climate.get"
+	},
+	"POST /v1/climate/policy": {
+		"python": "climate.update_policy",
+		"php": "climate->updatePolicy",
+		"dotnet": "Climate.UpdatePolicyAsync",
+		"go": "Climate.UpdatePolicy",
+		"java": "climate.updatePolicy"
+	},
+	"GET /v1/climate_surveys": {
+		"python": "climate_surveys.list",
+		"php": "climateSurveys->list",
+		"dotnet": "ClimateSurveys.ListAsync",
+		"go": "ClimateSurveys.List",
+		"java": "climateSurveys.list"
+	},
+	"POST /v1/climate_surveys": {
+		"python": "climate_surveys.create",
+		"php": "climateSurveys->create",
+		"dotnet": "ClimateSurveys.CreateAsync",
+		"go": "ClimateSurveys.Create",
+		"java": "climateSurveys.create"
+	},
+	"GET /v1/climate_surveys/{id}": {
+		"python": "climate_surveys.get",
+		"php": "climateSurveys->get",
+		"dotnet": "ClimateSurveys.GetAsync",
+		"go": "ClimateSurveys.Get",
+		"java": "climateSurveys.get"
+	},
+	"POST /v1/climate_surveys/{id}": {
+		"python": "climate_surveys.update",
+		"php": "climateSurveys->update",
+		"dotnet": "ClimateSurveys.UpdateAsync",
+		"go": "ClimateSurveys.Update",
+		"java": "climateSurveys.update"
+	},
+	"DELETE /v1/climate_surveys/{id}": {
+		"python": "climate_surveys.delete",
+		"php": "climateSurveys->delete",
+		"dotnet": "ClimateSurveys.DeleteAsync",
+		"go": "ClimateSurveys.Delete",
+		"java": "climateSurveys.delete"
+	},
+	"POST /v1/climate_surveys/{id}/open": {
+		"python": "climate_surveys.open",
+		"php": "climateSurveys->open",
+		"dotnet": "ClimateSurveys.OpenAsync",
+		"go": "ClimateSurveys.Open",
+		"java": "climateSurveys.open"
+	},
+	"POST /v1/climate_surveys/{id}/close": {
+		"python": "climate_surveys.close",
+		"php": "climateSurveys->close",
+		"dotnet": "ClimateSurveys.CloseAsync",
+		"go": "ClimateSurveys.Close",
+		"java": "climateSurveys.close"
+	},
+	"POST /v1/climate_surveys/{id}/report": {
+		"python": "climate_surveys.update_report",
+		"php": "climateSurveys->updateReport",
+		"dotnet": "ClimateSurveys.UpdateReportAsync",
+		"go": "ClimateSurveys.UpdateReport",
+		"java": "climateSurveys.updateReport"
+	},
+	"GET /v1/climate_surveys/{id}/traumatic_events": {
+		"python": "climate_surveys.traumatic_events",
+		"php": "climateSurveys->traumaticEvents",
+		"dotnet": "ClimateSurveys.TraumaticEventsAsync",
+		"go": "ClimateSurveys.TraumaticEvents",
+		"java": "climateSurveys.traumaticEvents"
+	},
+	"POST /v1/climate_surveys/{id}/referrals": {
+		"python": "climate_surveys.refer",
+		"php": "climateSurveys->refer",
+		"dotnet": "ClimateSurveys.ReferAsync",
+		"go": "ClimateSurveys.Refer",
+		"java": "climateSurveys.refer"
+	},
+	"GET /v1/climate_actions": {
+		"python": "climate_actions.list",
+		"php": "climateActions->list",
+		"dotnet": "ClimateActions.ListAsync",
+		"go": "ClimateActions.List",
+		"java": "climateActions.list"
+	},
+	"POST /v1/climate_actions": {
+		"python": "climate_actions.create",
+		"php": "climateActions->create",
+		"dotnet": "ClimateActions.CreateAsync",
+		"go": "ClimateActions.Create",
+		"java": "climateActions.create"
+	},
+	"POST /v1/climate_actions/{id}": {
+		"python": "climate_actions.update",
+		"php": "climateActions->update",
+		"dotnet": "ClimateActions.UpdateAsync",
+		"go": "ClimateActions.Update",
+		"java": "climateActions.update"
+	},
+	"DELETE /v1/climate_actions/{id}": {
+		"python": "climate_actions.delete",
+		"php": "climateActions->delete",
+		"dotnet": "ClimateActions.DeleteAsync",
+		"go": "ClimateActions.Delete",
+		"java": "climateActions.delete"
+	},
+	"GET /v1/climate_complaints": {
+		"python": "climate_complaints.list",
+		"php": "climateComplaints->list",
+		"dotnet": "ClimateComplaints.ListAsync",
+		"go": "ClimateComplaints.List",
+		"java": "climateComplaints.list"
+	},
+	"POST /v1/climate_complaints/{id}": {
+		"python": "climate_complaints.update",
+		"php": "climateComplaints->update",
+		"dotnet": "ClimateComplaints.UpdateAsync",
+		"go": "ClimateComplaints.Update",
+		"java": "climateComplaints.update"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",
