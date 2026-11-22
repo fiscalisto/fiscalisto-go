@@ -106,6 +106,10 @@ type services struct {
 	ClimateActions *ClimateActionsService
 	// Nómina.
 	ClimateComplaints *ClimateComplaintsService
+	// Nómina.
+	ReviewCycles *ReviewCyclesService
+	// Nómina.
+	ReviewObjectives *ReviewObjectivesService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -316,6 +320,8 @@ func (s *services) init(c *Client) {
 	s.ClimateSurveys = &ClimateSurveysService{c}
 	s.ClimateActions = &ClimateActionsService{c}
 	s.ClimateComplaints = &ClimateComplaintsService{c}
+	s.ReviewCycles = &ReviewCyclesService{c}
+	s.ReviewObjectives = &ReviewObjectivesService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -3596,6 +3602,223 @@ func (s *ClimateComplaintsService) ListAutoPaging(ctx context.Context, params *L
 func (s *ClimateComplaintsService) Update(ctx context.Context, id string, params *UpdateClimateComplaintParams, opts ...RequestOption) (*ClimateComplaint, error) {
 	out := new(ClimateComplaint)
 	if err := s.c.do(ctx, "POST", "/v1/climate_complaints/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ReviewCyclesService: Nómina (client.ReviewCycles).
+type ReviewCyclesService struct{ c *Client }
+
+// List: Listar ciclos de evaluación
+//
+// Los ciclos de evaluación de desempeño del emisor (rvc_…), los más recientes primero, con cuántas personas y cuántas evaluaciones van enviadas.
+//
+// GET /v1/review_cycles
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-review-cycles
+func (s *ReviewCyclesService) List(ctx context.Context, params *ListReviewCyclesParams, opts ...RequestOption) (*Page[ReviewCycle], error) {
+	return list[ReviewCycle](ctx, s.c, "/v1/review_cycles", params, "", opts)
+}
+
+// ListAutoPaging: Listar ciclos de evaluación, todos, página por página: for x, err := range …
+func (s *ReviewCyclesService) ListAutoPaging(ctx context.Context, params *ListReviewCyclesParams, opts ...RequestOption) iter.Seq2[ReviewCycle, error] {
+	return listAll[ReviewCycle](ctx, s.c, "/v1/review_cycles", params, opts)
+}
+
+// Create: Crear un ciclo de evaluación
+//
+// Lo crea en borrador con todas las personas que trabajan hoy en el emisor, o en la sucursal o el departamento que diga. Ninguna ley pide evaluar el desempeño, así que la escala, quién evalúa, los pesos y las competencias los decide usted; lo que no manda toma los valores por omisión. Ábralo con POST /v1/review_cycles/{id}/open.
+//
+// POST /v1/review_cycles
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-review-cycle
+func (s *ReviewCyclesService) Create(ctx context.Context, params *CreateReviewCycleParams, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "POST", "/v1/review_cycles", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un ciclo de evaluación
+//
+// El ciclo con sus reglas, competencias y cada persona: su jefe, quién la evalúa y si ya envió su evaluación (no qué contestó), sus objetivos y su resultado. Con el ciclo abierto el resultado se calcula con lo que va llegando; al cerrarlo queda guardado.
+//
+// GET /v1/review_cycles/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-review-cycle
+func (s *ReviewCyclesService) Get(ctx context.Context, id string, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "GET", "/v1/review_cycles/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un ciclo de evaluación
+//
+// En borrador cambia todo. Abierto, solo el nombre, el periodo, la fecha límite, compañeros por persona y share_results: la escala, las competencias y quién evalúa ya no cambian porque hay quien ya contestó con ellas. Cerrado ya no cambia.
+//
+// POST /v1/review_cycles/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-review-cycle
+func (s *ReviewCyclesService) Update(ctx context.Context, id string, params *UpdateReviewCycleParams, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "POST", "/v1/review_cycles/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un ciclo de evaluación
+//
+// Lo borra con sus personas y objetivos si nadie ha enviado una evaluación. Con evaluaciones, ciérrelo.
+//
+// DELETE /v1/review_cycles/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-review-cycle
+func (s *ReviewCyclesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*ReviewCycleDeleted, error) {
+	out := new(ReviewCycleDeleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/review_cycles/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Open: Abrir un ciclo de evaluación
+//
+// Arma quién evalúa a quién: la persona misma, su jefe en el organigrama, sus compañeros (los elegidos o, si no, peers_count al azar entre quienes tienen el mismo jefe) y las personas a su cargo, según rules.raters. A cada evaluador le aparece en su portal lo que le toca, con el aviso review si lo tiene encendido.
+//
+// POST /v1/review_cycles/{id}/open
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/open-review-cycle
+func (s *ReviewCyclesService) Open(ctx context.Context, id string, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "POST", "/v1/review_cycles/"+url.PathEscape(id)+"/open", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Close: Cerrar un ciclo de evaluación
+//
+// Deja de recibir evaluaciones y guarda el resultado de cada persona como quedó. Con share_results, cada persona lo ve en su portal.
+//
+// POST /v1/review_cycles/{id}/close
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/close-review-cycle
+func (s *ReviewCyclesService) Close(ctx context.Context, id string, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "POST", "/v1/review_cycles/"+url.PathEscape(id)+"/close", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SetParticipants: Elegir a quién se evalúa
+//
+// En borrador: reemplaza la lista de personas del ciclo. Quien sale pierde sus objetivos en el ciclo.
+//
+// POST /v1/review_cycles/{id}/participants
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/set-review-participants
+func (s *ReviewCyclesService) SetParticipants(ctx context.Context, id string, params *SetReviewParticipantsParams, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "POST", "/v1/review_cycles/"+url.PathEscape(id)+"/participants", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SetPeers: Elegir los compañeros que evalúan a alguien
+//
+// Los compañeros que evalúan a una persona. Con el ciclo abierto agrega las evaluaciones de los nuevos y quita las que no se han enviado de los que salen.
+//
+// POST /v1/review_cycles/{id}/peers
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/set-review-peers
+func (s *ReviewCyclesService) SetPeers(ctx context.Context, id string, params *SetReviewPeersParams, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "POST", "/v1/review_cycles/"+url.PathEscape(id)+"/peers", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Calibrate: Calibrar el resultado de una persona
+//
+// Con el ciclo abierto o cerrado: una calificación calibrada en lugar de la calculada (con la nota de por qué cambia) y su potencial para la matriz de 9 cuadros. Lo que no manda no cambia.
+//
+// POST /v1/review_cycles/{id}/calibrations
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/calibrate-review
+func (s *ReviewCyclesService) Calibrate(ctx context.Context, id string, params *CalibrateReviewParams, opts ...RequestOption) (*ReviewCycle, error) {
+	out := new(ReviewCycle)
+	if err := s.c.do(ctx, "POST", "/v1/review_cycles/"+url.PathEscape(id)+"/calibrations", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Result: Ver el resultado de una persona
+//
+// Su calificación por competencia y por tipo de evaluador, y los comentarios. Compañeros y personas a su cargo se promedian juntos y nunca llevan nombre; con menos respuestas que rules.anonymous_min no cuentan ni se muestran.
+//
+// GET /v1/review_cycles/{id}/results/{employee}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-review-result
+func (s *ReviewCyclesService) Result(ctx context.Context, id string, employee string, opts ...RequestOption) (*ReviewResult, error) {
+	out := new(ReviewResult)
+	if err := s.c.do(ctx, "GET", "/v1/review_cycles/"+url.PathEscape(id)+"/results/"+url.PathEscape(employee), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ReviewObjectivesService: Nómina (client.ReviewObjectives).
+type ReviewObjectivesService struct{ c *Client }
+
+// Create: Agregar un objetivo
+//
+// Un objetivo de una persona en un ciclo, con su meta, unidad y peso (hasta 20 por persona). Su jefe lo califica al evaluarla y la persona anota su avance en su portal. Ya no se agregan cuando el jefe la evaluó.
+//
+// POST /v1/review_objectives
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-review-objective
+func (s *ReviewObjectivesService) Create(ctx context.Context, params *CreateReviewObjectiveParams, opts ...RequestOption) (*ReviewObjective, error) {
+	out := new(ReviewObjective)
+	if err := s.c.do(ctx, "POST", "/v1/review_objectives", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un objetivo
+//
+// Reemplaza el objetivo con lo que manda: lo que no manda queda vacío o con su valor por omisión.
+//
+// POST /v1/review_objectives/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-review-objective
+func (s *ReviewObjectivesService) Update(ctx context.Context, id string, params *UpdateReviewObjectiveParams, opts ...RequestOption) (*ReviewObjective, error) {
+	out := new(ReviewObjective)
+	if err := s.c.do(ctx, "POST", "/v1/review_objectives/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un objetivo
+//
+// Lo borra, salvo que su jefe ya lo haya calificado.
+//
+// DELETE /v1/review_objectives/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-review-objective
+func (s *ReviewObjectivesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*ReviewObjectiveDeleted, error) {
+	out := new(ReviewObjectiveDeleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/review_objectives/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

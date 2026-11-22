@@ -1667,6 +1667,18 @@ type CFDIVerificationXML struct {
 	Currency *string `json:"currency,omitempty"`
 }
 
+// CalibrateReviewParams: los campos de «Calibrar el resultado de una persona».
+type CalibrateReviewParams struct {
+	// La persona (emp_…).
+	Employee string `json:"employee"`
+	// La calificación calibrada, en la escala del ciclo; null usa la calculada.
+	Calibrated *float64 `json:"calibrated,omitempty"`
+	// Por qué cambia; se pide con calibrated.
+	Note *string `json:"note,omitempty"`
+	// El potencial para la matriz de 9 cuadros: 1 bajo, 2 medio, 3 alto.
+	Potential *int64 `json:"potential,omitempty"`
+}
+
 // CancelInvoiceParams: los campos de «Cancelar una factura».
 type CancelInvoiceParams struct {
 	// Motivo de cancelación (c_MotivoCancelacion): 01 con errores con relación (lleva substitution), 02 con errores sin relación (por omisión), 03 no se llevó a cabo, 04 solo en una factura global, cuando una venta incluida se facturó a nombre del cliente.
@@ -5971,6 +5983,112 @@ type CreateRetentionParamsTrustWithholding struct {
 	Description string `json:"description"`
 }
 
+// CreateReviewCycleParams: los campos de «Crear un ciclo de evaluación».
+type CreateReviewCycleParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Su nombre, como «Evaluación 2026».
+	Title string `json:"title"`
+	// Desde cuándo se evalúa.
+	PeriodStart *string `json:"period_start,omitempty"`
+	// Hasta cuándo.
+	PeriodEnd *string `json:"period_end,omitempty"`
+	// La fecha límite para contestar que ve cada evaluador (opcional).
+	ClosesOn *string `json:"closes_on,omitempty"`
+	// Cómo se califica. Por omisión, escala de 1 a 5, autoevaluación y jefe, objetivos 60 %.
+	Rules *CreateReviewCycleParamsRules `json:"rules,omitempty"`
+	// Lo que se califica de cada persona. Por omisión, cinco de ejemplo.
+	Competencies []CreateReviewCycleParamsCompetency `json:"competencies,omitempty"`
+	// Con peer: cuántos compañeros se toman al azar, entre quienes tienen el mismo jefe, para quien no tenga elegidos. Por omisión, 3.
+	PeersCount *int64 `json:"peers_count,omitempty"`
+	// Al cerrar, cada persona ve su resultado en su portal. Por omisión, no.
+	ShareResults *bool `json:"share_results,omitempty"`
+	// Solo quien trabaja en esta sucursal (brn_…). null u omitido: todo el emisor.
+	Branch *string `json:"branch,omitempty"`
+	// Solo quien es de este departamento.
+	Department *string `json:"department,omitempty"`
+}
+
+// CreateReviewCycleParamsCompetency: CreateReviewCycleParamsCompetency.
+type CreateReviewCycleParamsCompetency struct {
+	// Su id, único en el ciclo.
+	ID string `json:"id"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Qué se espera, en una frase; lo ve cada evaluador.
+	Description *string `json:"description,omitempty"`
+}
+
+// CreateReviewCycleParamsRules: Cómo se califica. Por omisión, escala de 1 a 5, autoevaluación y jefe, objetivos 60 %.
+type CreateReviewCycleParamsRules struct {
+	// La escala.
+	Scale CreateReviewCycleParamsRulesScale `json:"scale"`
+	// Quién evalúa: self (autoevaluación), manager (su jefe en el organigrama), peer (compañeros), report (las personas a su cargo).
+	Raters CreateReviewCycleParamsRulesRaters `json:"raters"`
+	// El peso de cada uno en la calificación de competencias, de 0 a 100. Cuentan solo los que evalúan; no tienen que sumar 100.
+	RaterWeights CreateReviewCycleParamsRulesRaterWeights `json:"rater_weights"`
+	// Cuánto pesan los objetivos en el resultado, de 0 a 100; el resto son las competencias.
+	ObjectivesWeight float64 `json:"objectives_weight"`
+	// Compañeros o personas a su cargo con menos respuestas no cuentan, para que no se sepa quién contestó qué.
+	AnonymousMin int64 `json:"anonymous_min"`
+	// Los cortes de desempeño de la matriz de 9 cuadros: debajo del primero es bajo, desde el segundo es alto.
+	BoxCuts []float64 `json:"box_cuts"`
+}
+
+// CreateReviewCycleParamsRulesRaterWeights: El peso de cada uno en la calificación de competencias, de 0 a 100. Cuentan solo los que evalúan; no tienen que sumar 100.
+type CreateReviewCycleParamsRulesRaterWeights struct {
+	// El peso de lo que dice la persona misma.
+	Self float64 `json:"self"`
+	// El peso de lo que dice su jefe en el organigrama.
+	Manager float64 `json:"manager"`
+	// El peso de lo que dice sus compañeros.
+	Peer float64 `json:"peer"`
+	// El peso de lo que dice las personas a su cargo.
+	Report float64 `json:"report"`
+}
+
+// CreateReviewCycleParamsRulesRaters: Quién evalúa: self (autoevaluación), manager (su jefe en el organigrama), peer (compañeros), report (las personas a su cargo).
+type CreateReviewCycleParamsRulesRaters struct {
+	// Si cuenta lo que dice la persona misma.
+	Self bool `json:"self"`
+	// Si cuenta lo que dice su jefe en el organigrama.
+	Manager bool `json:"manager"`
+	// Si cuenta lo que dice sus compañeros.
+	Peer bool `json:"peer"`
+	// Si cuenta lo que dice las personas a su cargo.
+	Report bool `json:"report"`
+}
+
+// CreateReviewCycleParamsRulesScale: La escala.
+type CreateReviewCycleParamsRulesScale struct {
+	// Se califica de 1 a max (de 3 a 10).
+	Max int64 `json:"max"`
+	// El nombre de cada punto, del 1 al max; vacío: solo los números.
+	Labels []string `json:"labels"`
+}
+
+// CreateReviewObjectiveParams: los campos de «Agregar un objetivo».
+type CreateReviewObjectiveParams struct {
+	// El ciclo (rvc_…).
+	Cycle string `json:"cycle"`
+	// La persona (emp_…).
+	Employee string `json:"employee"`
+	// Qué tiene que lograr.
+	Title string `json:"title"`
+	// La meta, si se mide con un número.
+	Target *float64 `json:"target,omitempty"`
+	// El avance.
+	Actual *float64 `json:"actual,omitempty"`
+	// La unidad: pesos, %, piezas.
+	Unit *string `json:"unit,omitempty"`
+	// La meta es un máximo (quejas, mermas): menos es mejor.
+	LowerBetter *bool `json:"lower_better,omitempty"`
+	// Cuánto cuenta frente a sus otros objetivos. Por omisión, 1.
+	Weight *float64 `json:"weight,omitempty"`
+	// Una nota.
+	Note *string `json:"note,omitempty"`
+}
+
 // CreateRoleParams: los campos de «Crear un rol».
 type CreateRoleParams struct {
 	// El emisor (iss_…) de la empresa. Por omisión, su único emisor.
@@ -7679,6 +7797,8 @@ type EmployeeNoticeSettings struct {
 	Vacation bool `json:"vacation"`
 	// Avisar cuando se abre una encuesta NOM-035 o de clima para él.
 	Survey bool `json:"survey"`
+	// Avisar cuando se abre un ciclo de Desempeño con evaluaciones que le toca hacer.
+	Review bool `json:"review"`
 	// Los días después de timbrarse en que se le recuerda, una vez, firmar un recibo sin firmar; 0: nunca.
 	SignReminderDays int64 `json:"sign_reminder_days"`
 	// A quien no activó los avisos en su celular le llega el mismo aviso a su correo.
@@ -7715,9 +7835,9 @@ type EmployeePortal struct {
 
 // EmployeePortalNotice: EmployeePortalNotice.
 type EmployeePortalNotice struct {
-	// receipt: recibo nuevo; receipt_canceled: se canceló uno; vacation_approved / vacation_rejected: la respuesta a sus vacaciones; sign_reminder: tiene un recibo por firmar; survey: tiene una encuesta de clima laboral por contestar.
+	// receipt: recibo nuevo; receipt_canceled: se canceló uno; vacation_approved / vacation_rejected: la respuesta a sus vacaciones; sign_reminder: tiene un recibo por firmar; survey: tiene una encuesta de clima laboral por contestar; review: tiene evaluaciones de desempeño por hacer.
 	//
-	// Valores: receipt, receipt_canceled, vacation_approved, vacation_rejected, sign_reminder, survey.
+	// Valores: receipt, receipt_canceled, vacation_approved, vacation_rejected, sign_reminder, survey, review.
 	Kind string `json:"kind"`
 	// Cómo le llegó: push (a su celular), email (a su correo), off (usted o el empleado apagó ese aviso), none (no tiene avisos ni correo), skipped (ya no aplicaba: lo firmó, se canceló o se lo mandamos con el recibo), stale (no salió en 7 días); null mientras está por salir (por ejemplo, de noche).
 	//
@@ -13235,6 +13355,16 @@ type ListRetentionsParams struct {
 	Year *string `json:"year,omitempty"`
 }
 
+// ListReviewCyclesParams: los campos de «Listar ciclos de evaluación».
+type ListReviewCyclesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListRolesParams: los campos de «Listar roles».
 type ListRolesParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -17009,10 +17139,284 @@ type RevertAutomaticEntryParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// ReviewCycle: Un ciclo de evaluación (Nómina › Desempeño).
+type ReviewCycle struct {
+	// El ciclo (rvc_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Su nombre, como «Evaluación 2026».
+	Title string `json:"title"`
+	// draft, open o closed.
+	Status string `json:"status"`
+	// Desde cuándo se evalúa.
+	PeriodStart *string `json:"period_start,omitempty"`
+	// Hasta cuándo.
+	PeriodEnd *string `json:"period_end,omitempty"`
+	// La fecha límite para contestar.
+	ClosesOn *string `json:"closes_on,omitempty"`
+	// Cuántas personas se evalúan.
+	People int64 `json:"people"`
+	// Cuántas evaluaciones hay que hacer (cero en borrador).
+	Evaluations int64 `json:"evaluations"`
+	// Cuántas ya se enviaron.
+	EvaluationsDone int64 `json:"evaluations_done"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+	// La sucursal con que se armó (brn_…).
+	Branch *string `json:"branch,omitempty"`
+	// El departamento con que se armó.
+	Department *string `json:"department,omitempty"`
+	// Cómo se califica (al ver un ciclo).
+	Rules *ReviewCycleRules `json:"rules,omitempty"`
+	// Lo que se califica de cada persona.
+	Competencies []ReviewCycleCompetency `json:"competencies,omitempty"`
+	// Compañeros al azar por persona, para quien no tenga elegidos.
+	PeersCount *int64 `json:"peers_count,omitempty"`
+	// Si cada persona ve su resultado en su portal al cerrar.
+	ShareResults *bool `json:"share_results,omitempty"`
+	// Cuándo se abrió.
+	OpenedAt *string `json:"opened_at,omitempty"`
+	// Cuándo se cerró.
+	ClosedAt *string `json:"closed_at,omitempty"`
+	// Cada persona que se evalúa (al ver un ciclo).
+	Participants []ReviewCycleParticipant `json:"participants,omitempty"`
+}
+
+// ReviewCycleCompetency: ReviewCycleCompetency.
+type ReviewCycleCompetency struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Nombre.
+	Name string `json:"name"`
+	// Descripción.
+	Description *string `json:"description,omitempty"`
+}
+
+// ReviewCycleDeleted: Un ciclo borrado.
+type ReviewCycleDeleted struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Siempre true.
+	Deleted bool `json:"deleted"`
+}
+
+// ReviewCycleList: Una página de la lista.
+type ReviewCycleList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []ReviewCycle `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// ReviewCycleParticipant: ReviewCycleParticipant.
+type ReviewCycleParticipant struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Nombre.
+	Name string `json:"name"`
+	// Puesto (Puesto).
+	Position *string `json:"position,omitempty"`
+	// Departamento (Departamento).
+	Department *string `json:"department,omitempty"`
+	// Su jefe en el organigrama (emp_…), quien la evalúa como jefe.
+	Manager *string `json:"manager,omitempty"`
+	// Los compañeros elegidos para evaluarla (emp_…).
+	Peers []string `json:"peers"`
+	// Quién la evalúa, desde que se abre el ciclo.
+	Raters []ReviewCycleParticipantRater `json:"raters"`
+	// Sus objetivos.
+	Objectives []ReviewObjective `json:"objectives"`
+	// Su calificación de competencias.
+	CompetenciesScore *float64 `json:"competencies_score,omitempty"`
+	// Su calificación de objetivos.
+	ObjectivesScore *float64 `json:"objectives_score,omitempty"`
+	// El resultado calculado: vivo con el ciclo abierto, guardado al cerrar.
+	Final *float64 `json:"final,omitempty"`
+	// La calificación calibrada.
+	Calibrated *float64 `json:"calibrated,omitempty"`
+	// Por qué cambió.
+	CalibrationNote *string `json:"calibration_note,omitempty"`
+	// 1 bajo, 2 medio, 3 alto, para la matriz de 9 cuadros.
+	Potential *int64 `json:"potential,omitempty"`
+	// El que cuenta: calibrated, o si no, final.
+	Result *float64 `json:"result,omitempty"`
+}
+
+// ReviewCycleParticipantRater: ReviewCycleParticipantRater.
+type ReviewCycleParticipantRater struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Nombre.
+	Name string `json:"name"`
+	// self (autoevaluación), manager (su jefe), peer (compañeros) o report (personas a su cargo).
+	Relation string `json:"relation"`
+	// Si ya la envió (no qué contestó).
+	Done bool `json:"done"`
+	// Si tiene portal; sin él no puede contestar.
+	Portal bool `json:"portal"`
+}
+
+// ReviewCycleRules: Cómo se califica (al ver un ciclo).
+type ReviewCycleRules struct {
+	// La escala.
+	Scale ReviewCycleRulesScale `json:"scale"`
+	// Quién evalúa.
+	Raters ReviewCycleRulesRaters `json:"raters"`
+	// El peso de cada uno en las competencias; cuentan solo los que evalúan.
+	RaterWeights ReviewCycleRulesRaterWeights `json:"rater_weights"`
+	// Cuánto pesan los objetivos en el resultado, de 0 a 100.
+	ObjectivesWeight float64 `json:"objectives_weight"`
+	// Compañeros o personas a su cargo con menos respuestas no cuentan.
+	AnonymousMin int64 `json:"anonymous_min"`
+	// Los cortes de desempeño medio y alto de la matriz de 9 cuadros.
+	BoxCuts []float64 `json:"box_cuts"`
+}
+
+// ReviewCycleRulesRaterWeights: El peso de cada uno en las competencias; cuentan solo los que evalúan.
+type ReviewCycleRulesRaterWeights struct {
+	// El peso de lo que dice la persona misma.
+	Self float64 `json:"self"`
+	// El peso de lo que dice su jefe en el organigrama.
+	Manager float64 `json:"manager"`
+	// El peso de lo que dice sus compañeros.
+	Peer float64 `json:"peer"`
+	// El peso de lo que dice las personas a su cargo.
+	Report float64 `json:"report"`
+}
+
+// ReviewCycleRulesRaters: Quién evalúa.
+type ReviewCycleRulesRaters struct {
+	// Si cuenta lo que dice la persona misma.
+	Self bool `json:"self"`
+	// Si cuenta lo que dice su jefe en el organigrama.
+	Manager bool `json:"manager"`
+	// Si cuenta lo que dice sus compañeros.
+	Peer bool `json:"peer"`
+	// Si cuenta lo que dice las personas a su cargo.
+	Report bool `json:"report"`
+}
+
+// ReviewCycleRulesScale: La escala.
+type ReviewCycleRulesScale struct {
+	// Se califica de 1 a max.
+	Max int64 `json:"max"`
+	// El nombre de cada punto, del 1 al max; vacío: solo los números.
+	Labels []string `json:"labels"`
+}
+
 // ReviewFindingParams: los campos de «Marcar un hallazgo como revisado».
 type ReviewFindingParams struct {
 	// Por qué está bien (hasta 500 caracteres).
 	Note *string `json:"note,omitempty"`
+}
+
+// ReviewObjective: Un objetivo de una persona en un ciclo.
+type ReviewObjective struct {
+	// El objetivo (rvo_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El ciclo (rvc_…).
+	Cycle string `json:"cycle"`
+	// De quién es (emp_…).
+	Employee string `json:"employee"`
+	// Qué tiene que lograr.
+	Title string `json:"title"`
+	// La meta.
+	Target *float64 `json:"target,omitempty"`
+	// El avance; lo anota la persona en su portal o usted aquí.
+	Actual *float64 `json:"actual,omitempty"`
+	// La unidad.
+	Unit *string `json:"unit,omitempty"`
+	// La meta es un máximo: menos es mejor.
+	LowerBetter bool `json:"lower_better"`
+	// Cuánto cuenta frente a sus otros objetivos.
+	Weight float64 `json:"weight"`
+	// Una nota sobre el objetivo.
+	Note *string `json:"note,omitempty"`
+	// % logrado: avance entre meta, o al revés con lower_better. null sin los dos.
+	Achievement *float64 `json:"achievement,omitempty"`
+	// La calificación que le dio su jefe al evaluarla.
+	Score *float64 `json:"score,omitempty"`
+}
+
+// ReviewObjectiveDeleted: Un objetivo borrado.
+type ReviewObjectiveDeleted struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Siempre true.
+	Deleted bool `json:"deleted"`
+}
+
+// ReviewResult: El resultado de una persona en un ciclo, por competencia y tipo de evaluador.
+type ReviewResult struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El ciclo (rvc_…).
+	Cycle string `json:"cycle"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Nombre.
+	Name string `json:"name"`
+	// El resultado: competencias y objetivos con el peso de los objetivos.
+	Final *float64 `json:"final,omitempty"`
+	// El promedio de cada tipo de evaluador que cuenta, con su peso.
+	CompetenciesScore *float64 `json:"competencies_score,omitempty"`
+	// Lo que calificó el jefe en cada objetivo, con su peso.
+	ObjectivesScore *float64 `json:"objectives_score,omitempty"`
+	// Cada tipo de evaluador.
+	Relations []ReviewResultRelation `json:"relations"`
+	// La calificación de cada competencia.
+	Competencies []ReviewResultCompetency `json:"competencies"`
+	// Los comentarios.
+	Comments []ReviewResultComment `json:"comments"`
+}
+
+// ReviewResultComment: ReviewResultComment.
+type ReviewResultComment struct {
+	// self (autoevaluación), manager (su jefe), peer (compañeros) o report (personas a su cargo).
+	Relation string `json:"relation"`
+	// Texto de la leyenda (textoLeyenda).
+	Text string `json:"text"`
+	// Solo de la autoevaluación y del jefe; compañeros y personas a su cargo van sin nombre.
+	Name *string `json:"name,omitempty"`
+}
+
+// ReviewResultCompetency: ReviewResultCompetency.
+type ReviewResultCompetency struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Nombre.
+	Name string `json:"name"`
+	// Su calificación, con el peso de cada tipo de evaluador.
+	Score *float64 `json:"score,omitempty"`
+	// Lo que dio cada tipo de evaluador que cuenta.
+	ByRelation map[string]any `json:"by_relation"`
+}
+
+// ReviewResultRelation: ReviewResultRelation.
+type ReviewResultRelation struct {
+	// self (autoevaluación), manager (su jefe), peer (compañeros) o report (personas a su cargo).
+	Relation string `json:"relation"`
+	// Cuántos la evaluaron así.
+	Answers int64 `json:"answers"`
+	// Su promedio.
+	Score *float64 `json:"score,omitempty"`
+	// Menos respuestas que anonymous_min: no cuenta ni se muestra.
+	Hidden bool `json:"hidden"`
 }
 
 // Role: Un rol de la empresa: un nombre y sus permisos.
@@ -19125,6 +19529,20 @@ type SetOpeningBalancesParamsLine struct {
 	Credit *float64 `json:"credit,omitempty"`
 }
 
+// SetReviewParticipantsParams: los campos de «Elegir a quién se evalúa».
+type SetReviewParticipantsParams struct {
+	// Todas las personas que se evalúan (emp_…), en borrador. Reemplaza la lista.
+	Employees []string `json:"employees"`
+}
+
+// SetReviewPeersParams: los campos de «Elegir los compañeros que evalúan a alguien».
+type SetReviewPeersParams struct {
+	// La persona que se evalúa (emp_…).
+	Employee string `json:"employee"`
+	// Los compañeros que la evalúan (emp_…). Vacío: al abrir se toman al azar. Con el ciclo abierto agrega o quita sus evaluaciones (las ya contestadas se quedan).
+	Peers []string `json:"peers"`
+}
+
 // SetTrainingParticipantsParams: los campos de «Quién tomó un curso».
 type SetTrainingParticipantsParams struct {
 	// Los empleados (emp_…).
@@ -20759,6 +21177,8 @@ type UpdateEmployeeNoticeSettingsParams struct {
 	Vacation *bool `json:"vacation,omitempty"`
 	// Cuando se abre una encuesta NOM-035 o de clima para él (POST /v1/climate_surveys/{id}/open).
 	Survey *bool `json:"survey,omitempty"`
+	// Cuando se abre un ciclo de Desempeño con evaluaciones que le toca hacer (POST /v1/review_cycles/{id}/open).
+	Review *bool `json:"review,omitempty"`
 	// Si un recibo sigue sin firmar de recibido estos días después de timbrarse, se le recuerda una vez. 0: nunca.
 	SignReminderDays *int64 `json:"sign_reminder_days,omitempty"`
 	// A quien no activó los avisos en su celular le llega el mismo aviso a su correo.
@@ -21801,6 +22221,104 @@ type UpdateRepseProfileParams struct {
 	DeedDate *string `json:"deed_date,omitempty"`
 	// Folio mercantil (persona moral).
 	CommercialFolio *string `json:"commercial_folio,omitempty"`
+}
+
+// UpdateReviewCycleParams: los campos de «Cambiar un ciclo de evaluación».
+type UpdateReviewCycleParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Su nombre, como «Evaluación 2026».
+	Title string `json:"title"`
+	// Desde cuándo se evalúa.
+	PeriodStart *string `json:"period_start,omitempty"`
+	// Hasta cuándo.
+	PeriodEnd *string `json:"period_end,omitempty"`
+	// La fecha límite para contestar que ve cada evaluador (opcional).
+	ClosesOn *string `json:"closes_on,omitempty"`
+	// Cómo se califica. Por omisión, escala de 1 a 5, autoevaluación y jefe, objetivos 60 %.
+	Rules *UpdateReviewCycleParamsRules `json:"rules,omitempty"`
+	// Lo que se califica de cada persona. Por omisión, cinco de ejemplo.
+	Competencies []UpdateReviewCycleParamsCompetency `json:"competencies,omitempty"`
+	// Con peer: cuántos compañeros se toman al azar, entre quienes tienen el mismo jefe, para quien no tenga elegidos. Por omisión, 3.
+	PeersCount *int64 `json:"peers_count,omitempty"`
+	// Al cerrar, cada persona ve su resultado en su portal. Por omisión, no.
+	ShareResults *bool `json:"share_results,omitempty"`
+}
+
+// UpdateReviewCycleParamsCompetency: UpdateReviewCycleParamsCompetency.
+type UpdateReviewCycleParamsCompetency struct {
+	// Su id, único en el ciclo.
+	ID string `json:"id"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Qué se espera, en una frase; lo ve cada evaluador.
+	Description *string `json:"description,omitempty"`
+}
+
+// UpdateReviewCycleParamsRules: Cómo se califica. Por omisión, escala de 1 a 5, autoevaluación y jefe, objetivos 60 %.
+type UpdateReviewCycleParamsRules struct {
+	// La escala.
+	Scale UpdateReviewCycleParamsRulesScale `json:"scale"`
+	// Quién evalúa: self (autoevaluación), manager (su jefe en el organigrama), peer (compañeros), report (las personas a su cargo).
+	Raters UpdateReviewCycleParamsRulesRaters `json:"raters"`
+	// El peso de cada uno en la calificación de competencias, de 0 a 100. Cuentan solo los que evalúan; no tienen que sumar 100.
+	RaterWeights UpdateReviewCycleParamsRulesRaterWeights `json:"rater_weights"`
+	// Cuánto pesan los objetivos en el resultado, de 0 a 100; el resto son las competencias.
+	ObjectivesWeight float64 `json:"objectives_weight"`
+	// Compañeros o personas a su cargo con menos respuestas no cuentan, para que no se sepa quién contestó qué.
+	AnonymousMin int64 `json:"anonymous_min"`
+	// Los cortes de desempeño de la matriz de 9 cuadros: debajo del primero es bajo, desde el segundo es alto.
+	BoxCuts []float64 `json:"box_cuts"`
+}
+
+// UpdateReviewCycleParamsRulesRaterWeights: El peso de cada uno en la calificación de competencias, de 0 a 100. Cuentan solo los que evalúan; no tienen que sumar 100.
+type UpdateReviewCycleParamsRulesRaterWeights struct {
+	// El peso de lo que dice la persona misma.
+	Self float64 `json:"self"`
+	// El peso de lo que dice su jefe en el organigrama.
+	Manager float64 `json:"manager"`
+	// El peso de lo que dice sus compañeros.
+	Peer float64 `json:"peer"`
+	// El peso de lo que dice las personas a su cargo.
+	Report float64 `json:"report"`
+}
+
+// UpdateReviewCycleParamsRulesRaters: Quién evalúa: self (autoevaluación), manager (su jefe en el organigrama), peer (compañeros), report (las personas a su cargo).
+type UpdateReviewCycleParamsRulesRaters struct {
+	// Si cuenta lo que dice la persona misma.
+	Self bool `json:"self"`
+	// Si cuenta lo que dice su jefe en el organigrama.
+	Manager bool `json:"manager"`
+	// Si cuenta lo que dice sus compañeros.
+	Peer bool `json:"peer"`
+	// Si cuenta lo que dice las personas a su cargo.
+	Report bool `json:"report"`
+}
+
+// UpdateReviewCycleParamsRulesScale: La escala.
+type UpdateReviewCycleParamsRulesScale struct {
+	// Se califica de 1 a max (de 3 a 10).
+	Max int64 `json:"max"`
+	// El nombre de cada punto, del 1 al max; vacío: solo los números.
+	Labels []string `json:"labels"`
+}
+
+// UpdateReviewObjectiveParams: los campos de «Cambiar un objetivo».
+type UpdateReviewObjectiveParams struct {
+	// Qué tiene que lograr.
+	Title string `json:"title"`
+	// La meta, si se mide con un número.
+	Target *float64 `json:"target,omitempty"`
+	// El avance.
+	Actual *float64 `json:"actual,omitempty"`
+	// La unidad: pesos, %, piezas.
+	Unit *string `json:"unit,omitempty"`
+	// La meta es un máximo (quejas, mermas): menos es mejor.
+	LowerBetter *bool `json:"lower_better,omitempty"`
+	// Cuánto cuenta frente a sus otros objetivos. Por omisión, 1.
+	Weight *float64 `json:"weight,omitempty"`
+	// Una nota.
+	Note *string `json:"note,omitempty"`
 }
 
 // UpdateRoleParams: los campos de «Cambiar un rol».

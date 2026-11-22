@@ -1336,6 +1336,104 @@
 		"go": "ClimateComplaints.Update",
 		"java": "climateComplaints.update"
 	},
+	"GET /v1/review_cycles": {
+		"python": "review_cycles.list",
+		"php": "reviewCycles->list",
+		"dotnet": "ReviewCycles.ListAsync",
+		"go": "ReviewCycles.List",
+		"java": "reviewCycles.list"
+	},
+	"POST /v1/review_cycles": {
+		"python": "review_cycles.create",
+		"php": "reviewCycles->create",
+		"dotnet": "ReviewCycles.CreateAsync",
+		"go": "ReviewCycles.Create",
+		"java": "reviewCycles.create"
+	},
+	"GET /v1/review_cycles/{id}": {
+		"python": "review_cycles.get",
+		"php": "reviewCycles->get",
+		"dotnet": "ReviewCycles.GetAsync",
+		"go": "ReviewCycles.Get",
+		"java": "reviewCycles.get"
+	},
+	"POST /v1/review_cycles/{id}": {
+		"python": "review_cycles.update",
+		"php": "reviewCycles->update",
+		"dotnet": "ReviewCycles.UpdateAsync",
+		"go": "ReviewCycles.Update",
+		"java": "reviewCycles.update"
+	},
+	"DELETE /v1/review_cycles/{id}": {
+		"python": "review_cycles.delete",
+		"php": "reviewCycles->delete",
+		"dotnet": "ReviewCycles.DeleteAsync",
+		"go": "ReviewCycles.Delete",
+		"java": "reviewCycles.delete"
+	},
+	"POST /v1/review_cycles/{id}/open": {
+		"python": "review_cycles.open",
+		"php": "reviewCycles->open",
+		"dotnet": "ReviewCycles.OpenAsync",
+		"go": "ReviewCycles.Open",
+		"java": "reviewCycles.open"
+	},
+	"POST /v1/review_cycles/{id}/close": {
+		"python": "review_cycles.close",
+		"php": "reviewCycles->close",
+		"dotnet": "ReviewCycles.CloseAsync",
+		"go": "ReviewCycles.Close",
+		"java": "reviewCycles.close"
+	},
+	"POST /v1/review_cycles/{id}/participants": {
+		"python": "review_cycles.set_participants",
+		"php": "reviewCycles->setParticipants",
+		"dotnet": "ReviewCycles.SetParticipantsAsync",
+		"go": "ReviewCycles.SetParticipants",
+		"java": "reviewCycles.setParticipants"
+	},
+	"POST /v1/review_cycles/{id}/peers": {
+		"python": "review_cycles.set_peers",
+		"php": "reviewCycles->setPeers",
+		"dotnet": "ReviewCycles.SetPeersAsync",
+		"go": "ReviewCycles.SetPeers",
+		"java": "reviewCycles.setPeers"
+	},
+	"POST /v1/review_cycles/{id}/calibrations": {
+		"python": "review_cycles.calibrate",
+		"php": "reviewCycles->calibrate",
+		"dotnet": "ReviewCycles.CalibrateAsync",
+		"go": "ReviewCycles.Calibrate",
+		"java": "reviewCycles.calibrate"
+	},
+	"GET /v1/review_cycles/{id}/results/{employee}": {
+		"python": "review_cycles.result",
+		"php": "reviewCycles->result",
+		"dotnet": "ReviewCycles.ResultAsync",
+		"go": "ReviewCycles.Result",
+		"java": "reviewCycles.result"
+	},
+	"POST /v1/review_objectives": {
+		"python": "review_objectives.create",
+		"php": "reviewObjectives->create",
+		"dotnet": "ReviewObjectives.CreateAsync",
+		"go": "ReviewObjectives.Create",
+		"java": "reviewObjectives.create"
+	},
+	"POST /v1/review_objectives/{id}": {
+		"python": "review_objectives.update",
+		"php": "reviewObjectives->update",
+		"dotnet": "ReviewObjectives.UpdateAsync",
+		"go": "ReviewObjectives.Update",
+		"java": "reviewObjectives.update"
+	},
+	"DELETE /v1/review_objectives/{id}": {
+		"python": "review_objectives.delete",
+		"php": "reviewObjectives->delete",
+		"dotnet": "ReviewObjectives.DeleteAsync",
+		"go": "ReviewObjectives.Delete",
+		"java": "reviewObjectives.delete"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",
