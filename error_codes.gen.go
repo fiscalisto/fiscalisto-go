@@ -142,7 +142,7 @@ const (
 	CodeIssuerExists = "issuer_exists"
 	// El emisor no tiene equipo: el equipo es el de una empresa, en sus emisores propios (type own) y con una llave fk_live_. Un emisor conectado o uno de pruebas no tiene miembros.
 	CodeIssuerHasNoTeam = "issuer_has_no_team"
-	// El emisor es una empresa de la app conectada a la cuenta (source empresa): con la API solo se usa su Portal de proveedores.
+	// El emisor es una empresa de la app conectada a la cuenta (source empresa): con la API solo se usan su Portal de proveedores y, si alguien que puede los encendió, sus pagos a proveedores; o quien la conectó (o encendió sus pagos) ya no tiene en esa empresa el permiso que la ruta pide.
 	CodeIssuerLinkedEmpresa = "issuer_linked_empresa"
 	// No existe ese emisor en la cuenta (o es del otro modo).
 	CodeIssuerMissing = "issuer_missing"

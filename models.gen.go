@@ -12309,7 +12309,7 @@ type Issuer struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// api si lo creó con la API o en Desarrolladores; empresa si es una empresa de la app conectada a su cuenta (Desarrolladores › Emisores › Conectar una empresa): con ella solo se usa su Portal de proveedores, y status siempre es active.
+	// api si lo creó con la API o en Desarrolladores; empresa si es una empresa de la app conectada a su cuenta (Desarrolladores › Emisores › Conectar una empresa): con ella solo se usan su Portal de proveedores y, si se encendieron, sus pagos a proveedores, y status siempre es active.
 	//
 	// Valores: api, empresa.
 	Source string `json:"source"`
@@ -14185,9 +14185,9 @@ type PayeeAccount struct {
 	HolderName *string `json:"holder_name,omitempty"`
 	// true si es de un tercero que la empresa autorizó.
 	ThirdParty bool `json:"third_party"`
-	// Cómo se confió en la cuenta: bank (el banco confirmó el RFC del proveedor), by_hand (alguien la verificó a mano porque el RFC del banco solo cambiaba la homoclave o no venía), third_party (se autorizó como de un tercero), o null si aún no está aprobada.
+	// Cómo se confió en la cuenta: bank (el banco confirmó el RFC del proveedor), by_name (el banco no dio el RFC y el nombre del titular es el del proveedor según el SAT, cuando la empresa lo permite), by_hand (alguien la verificó a mano porque el RFC del banco solo cambiaba la homoclave o no venía), third_party (se autorizó como de un tercero), o null si aún no está aprobada.
 	//
-	// Valores: bank, by_hand, third_party.
+	// Valores: bank, by_name, by_hand, third_party.
 	Verification *string `json:"verification,omitempty"`
 	// Cómo la verificó a mano quien la aprobó, o null.
 	VerifiedByHandReason *string `json:"verified_by_hand_reason,omitempty"`
