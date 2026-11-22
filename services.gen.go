@@ -4254,7 +4254,7 @@ type FindingsService struct{ c *Client }
 
 // List: Listar hallazgos
 //
-// Lo que Fiscalisto encontró en las órdenes de compra, pagos, proveedores y contabilidad del emisor, el más reciente primero: una factura que no coincide con su orden, un proveedor en la lista 69-B, un documento vencido, Caja con saldo acreedor. Sin status, los que nadie ha revisado. Los de facturas están en GET /v1/sat_findings. No usa timbres.
+// Lo que Fiscalisto encontró en las órdenes de compra, pagos, proveedores, contabilidad y viáticos del emisor, el más reciente primero: una factura que no coincide con su orden, un proveedor en la lista 69-B, un documento vencido, Caja con saldo acreedor, una comprobación vencida. Sin status, los que nadie ha revisado. Los de facturas están en GET /v1/sat_findings. No usa timbres.
 //
 // GET /v1/findings
 //

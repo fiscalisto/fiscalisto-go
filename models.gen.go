@@ -9389,9 +9389,9 @@ type Finding struct {
 	Object string `json:"object"`
 	// El emisor (iss_…).
 	Issuer string `json:"issuer"`
-	// purchase_orders (órdenes de compra), payouts (pagos a proveedores), suppliers (proveedores), accounting (contabilidad) o bank (movimientos del banco).
+	// purchase_orders (órdenes de compra), payouts (pagos a proveedores), suppliers (proveedores), accounting (contabilidad), bank (movimientos del banco) o expense_reports (comprobaciones de viáticos).
 	//
-	// Valores: purchase_orders, payouts, suppliers, accounting, bank.
+	// Valores: purchase_orders, payouts, suppliers, accounting, bank, expense_reports.
 	Area *string `json:"area,omitempty"`
 	// En qué registro está.
 	Record FindingRecord `json:"record"`
@@ -9443,11 +9443,11 @@ type FindingList struct {
 
 // FindingRecord: En qué registro está.
 type FindingRecord struct {
-	// purchase_order, payout, supplier, poliza (la contabilidad de un mes), account (una cuenta en un mes) o bank_movement.
+	// purchase_order, payout, supplier, poliza (la contabilidad de un mes), account (una cuenta en un mes), bank_movement o expense_report (una comprobación de viáticos).
 	//
-	// Valores: purchase_order, payout, supplier, poliza, account, bank_movement.
+	// Valores: purchase_order, payout, supplier, poliza, account, bank_movement, expense_report.
 	Type string `json:"type"`
-	// Su id en la API: el pago (pyo_…) o el RFC del proveedor; null si no tiene.
+	// Su id en la API: el pago (pyo_…), la comprobación (exr_…) o el RFC del proveedor; null si no tiene.
 	ID *string `json:"id,omitempty"`
 	// Cómo lo nombra Fiscalisto: el número de la orden, el RFC, «RFC:AAAA-MM» un mes de contabilidad, «RFC:AAAA-MM:cuenta» una cuenta.
 	Reference string `json:"reference"`
@@ -12983,9 +12983,9 @@ type ListFindingsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// Solo los de un área: purchase_orders, payouts, suppliers, accounting o bank.
+	// Solo los de un área: purchase_orders, payouts, suppliers, accounting, bank o expense_reports.
 	//
-	// Valores: purchase_orders, payouts, suppliers, accounting, bank.
+	// Valores: purchase_orders, payouts, suppliers, accounting, bank, expense_reports.
 	Area *string `json:"area,omitempty"`
 	// open (por omisión: sin revisar), reviewed (revisados), resolved (ya no aplican) o all.
 	//
