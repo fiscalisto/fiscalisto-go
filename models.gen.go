@@ -9977,6 +9977,30 @@ type GetHiringParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 }
 
+// GetIepsCustomersFileParams: los campos de «Descargar los clientes con IEPS desglosado».
+type GetIepsCustomersFileParams struct {
+	// El año (AAAA), de 2015 al actual.
+	Year string `json:"year"`
+	// El trimestre (1 a 4).
+	//
+	// Valores: 1, 2, 3, 4.
+	Quarter string `json:"quarter"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetIepsCustomersParams: los campos de «Ver los clientes con IEPS desglosado».
+type GetIepsCustomersParams struct {
+	// El año (AAAA), de 2015 al actual.
+	Year string `json:"year"`
+	// Solo ese trimestre (1 a 4); por omisión, los cuatro.
+	//
+	// Valores: 1, 2, 3, 4.
+	Quarter *string `json:"quarter,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetInflationAdjustmentParams: los campos de «Calcular el ajuste anual por inflación».
 type GetInflationAdjustmentParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
@@ -10275,6 +10299,44 @@ type HiringVacancyCandidate struct {
 	Stage string `json:"stage"`
 	// Cuántos hay en ella.
 	Count int64 `json:"count"`
+}
+
+// IEPSCustomers: Los clientes a los que se les trasladó el IEPS por separado, por trimestre (artículo 19, fracción II de la Ley del IEPS).
+type IEPSCustomers struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// false en modo de prueba.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El año.
+	Year int64 `json:"year"`
+	// Cada trimestre pedido, también los que no tienen clientes.
+	Quarters []IEPSCustomersQuarter `json:"quarters"`
+}
+
+// IEPSCustomersQuarter: IEPSCustomersQuarter.
+type IEPSCustomersQuarter struct {
+	// El trimestre, 1 a 4.
+	Quarter int64 `json:"quarter"`
+	// El mes (AAAA-MM) en que se presenta en el MULTI-IEPS: el siguiente al trimestre.
+	DueMonth string `json:"due_month"`
+	// Los clientes, el de más IEPS primero.
+	Customers []IEPSCustomersQuarterCustomer `json:"customers"`
+	// El IEPS de todos, en pesos.
+	Total float64 `json:"total"`
+}
+
+// IEPSCustomersQuarterCustomer: IEPSCustomersQuarterCustomer.
+type IEPSCustomersQuarterCustomer struct {
+	// El RFC del cliente.
+	TaxID string `json:"tax_id"`
+	// Su nombre como viene en sus facturas.
+	Name *string `json:"name,omitempty"`
+	// Cuántas facturas del trimestre llevan ese IEPS.
+	Invoices int64 `json:"invoices"`
+	// El IEPS que se le trasladó en el trimestre, en pesos.
+	IEPS float64 `json:"ieps"`
 }
 
 // ImportManualEntriesParams: los campos de «Importar pólizas de otro sistema».

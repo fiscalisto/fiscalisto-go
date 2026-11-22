@@ -3394,6 +3394,20 @@
 		"go": "Accounting.DiotFile",
 		"java": "accounting.diotFile"
 	},
+	"GET /v1/accounting/ieps_customers": {
+		"python": "accounting.ieps_customers",
+		"php": "accounting->iepsCustomers",
+		"dotnet": "Accounting.IepsCustomersAsync",
+		"go": "Accounting.IEPSCustomers",
+		"java": "accounting.iepsCustomers"
+	},
+	"GET /v1/accounting/ieps_customers/file": {
+		"python": "accounting.ieps_customers_file",
+		"php": "accounting->iepsCustomersFile",
+		"dotnet": "Accounting.IepsCustomersFileAsync",
+		"go": "Accounting.IEPSCustomersFile",
+		"java": "accounting.iepsCustomersFile"
+	},
 	"POST /v1/store_connections": {
 		"python": "store_connections.create",
 		"php": "storeConnections->create",

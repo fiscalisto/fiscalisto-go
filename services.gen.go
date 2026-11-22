@@ -6975,6 +6975,33 @@ func (s *AccountingService) DiotFile(ctx context.Context, params *GetDiotFilePar
 	return string(b), err
 }
 
+// IepsCustomers: Ver los clientes con IEPS desglosado
+//
+// La relación trimestral de los clientes a los que el emisor les trasladó el IEPS por separado (artículo 19, fracción II, tercer párrafo de la Ley del IEPS): bebidas alcohólicas, bebidas energetizantes, bebidas saborizadas y alimentos de alta densidad calórica, de sus facturas de ingreso no canceladas. Público en general y extranjeros no van. Se presenta cada trimestre en el MULTI-IEPS, Anexo 1 (regla 5.2.2 de la RMF 2026), en el mes siguiente al trimestre.
+//
+// GET /v1/accounting/ieps_customers
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-ieps-customers
+func (s *AccountingService) IEPSCustomers(ctx context.Context, params *GetIepsCustomersParams, opts ...RequestOption) (*IEPSCustomers, error) {
+	out := new(IEPSCustomers)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/ieps_customers", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// IepsCustomersFile: Descargar los clientes con IEPS desglosado
+//
+// La relación de un trimestre en CSV (UTF-8): RFC, nombre, facturas e IEPS trasladado de cada cliente, y el total; la misma que descarga la app en Impuestos.
+//
+// GET /v1/accounting/ieps_customers/file
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-ieps-customers-file
+func (s *AccountingService) IEPSCustomersFile(ctx context.Context, params *GetIepsCustomersFileParams, opts ...RequestOption) (string, error) {
+	b, err := s.c.raw(ctx, "GET", "/v1/accounting/ieps_customers/file", nil, params, false, opts)
+	return string(b), err
+}
+
 // ManualEntriesService: Contabilidad (client.ManualEntries).
 type ManualEntriesService struct{ c *Client }
 
