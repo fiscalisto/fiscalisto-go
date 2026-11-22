@@ -6129,6 +6129,46 @@ type CreateTicketParamsLocalTax struct {
 	Rate float64 `json:"rate"`
 }
 
+// CreateTrainingCourseParams: los campos de «Registrar un curso de capacitación».
+type CreateTrainingCourseParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El nombre del curso, como va en la constancia.
+	Name string `json:"name"`
+	// La clave del área temática del catálogo de la STPS (1000 Producción general … 9000 Participación social).
+	ThematicArea string `json:"thematic_area"`
+	// La duración en horas.
+	Hours float64 `json:"hours"`
+	// presencial (por omisión), en_linea o mixta.
+	//
+	// Valores: presencial, en_linea, mixta.
+	Modality *string `json:"modality,omitempty"`
+	// El día en que empezó.
+	StartDate string `json:"start_date"`
+	// El día en que terminó; de ahí corren los 20 días hábiles para entregar las constancias.
+	EndDate string `json:"end_date"`
+	// Quién lo imparte: internal (instructor interno, por omisión: la constancia dice el nombre de la empresa como agente), external (agente capacitador externo, con su registro), supplier (proveedor de un bien o servicio), foreign (capacitador extranjero) o stps.
+	//
+	// Valores: internal, external, supplier, foreign, stps.
+	TrainerKind *string `json:"trainer_kind,omitempty"`
+	// El nombre del agente capacitador, salvo internal y stps.
+	TrainerName *string `json:"trainer_name,omitempty"`
+	// El registro del agente externo ante la STPS.
+	TrainerRegistration *string `json:"trainer_registration,omitempty"`
+	// Quien firma la constancia como instructor o tutor.
+	InstructorName *string `json:"instructor_name,omitempty"`
+	// Cada cuántos meses se renueva (para avisar); null, sin vigencia.
+	ValidityMonths *int64 `json:"validity_months,omitempty"`
+	// La calificación mínima para aprobar (opcional).
+	PassingScore *float64 `json:"passing_score,omitempty"`
+	// Dónde se impartió.
+	Place *string `json:"place,omitempty"`
+	// Su objetivo.
+	Objective *string `json:"objective,omitempty"`
+	// Quiénes lo tomaron (emp_…); en una actualización reemplaza la lista.
+	Employees []string `json:"employees,omitempty"`
+}
+
 // CreateWebhookEndpointParams: los campos de «Crear un webhook».
 type CreateWebhookEndpointParams struct {
 	// Dirección https de su servidor que recibe los avisos.
@@ -6707,6 +6747,18 @@ type Deleted struct {
 	Deleted bool `json:"deleted"`
 }
 
+// DeliverTrainingCertificatesParams: los campos de «Marcar constancias como entregadas».
+type DeliverTrainingCertificatesParams struct {
+	// A quiénes se entregó; por omisión todas las emitidas sin entregar.
+	Employees []string `json:"employees,omitempty"`
+	// El día de la entrega; por omisión hoy.
+	DeliveredOn *string `json:"delivered_on,omitempty"`
+	// Cómo: paper (en papel, por omisión), email o portal.
+	//
+	// Valores: paper, email, portal.
+	Via *string `json:"via,omitempty"`
+}
+
 // DepreciationReconciliation: La depreciación contable del año contra la deducción de inversiones (artículos 31 y 34 de la Ley del ISR) de cada activo, para la conciliación contable-fiscal.
 type DepreciationReconciliation struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -7049,6 +7101,54 @@ type EmployeeRaiseEmployee struct {
 	IntegratedDailySalary float64 `json:"integrated_daily_salary"`
 	// Por qué no puede recibir el aumento, o null.
 	Error *string `json:"error,omitempty"`
+}
+
+// EmployeeTraining: La capacitación de un empleado.
+type EmployeeTraining struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su ocupación: la suya o la de su puesto.
+	Occupation *string `json:"occupation,omitempty"`
+	// La suya, cuando no es la de su puesto.
+	OwnOccupation *string `json:"own_occupation,omitempty"`
+	// Su grado de estudios terminados.
+	Education *string `json:"education,omitempty"`
+	// Los cursos que tomó, del más reciente al más antiguo.
+	Courses []EmployeeTrainingCourse `json:"courses"`
+}
+
+// EmployeeTrainingCourse: EmployeeTrainingCourse.
+type EmployeeTrainingCourse struct {
+	// El curso (trc_…).
+	Course string `json:"course"`
+	// Su lugar en el curso (trp_…).
+	Participant string `json:"participant"`
+	// Nombre.
+	Name string `json:"name"`
+	// El área temática, clave y nombre.
+	ThematicArea string `json:"thematic_area"`
+	// La duración en horas.
+	Hours float64 `json:"hours"`
+	// Fecha de inicio de la relación laboral (FechaInicioRelLaboral), AAAA-MM-DD.
+	StartDate string `json:"start_date"`
+	// Último día trabajado si ya no trabaja ahí, AAAA-MM-DD.
+	EndDate string `json:"end_date"`
+	// pending, passed, failed o sufficiency.
+	Result string `json:"result"`
+	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	Folio *int64 `json:"folio,omitempty"`
+	// Cuándo se emitió su constancia.
+	IssuedAt *string `json:"issued_at,omitempty"`
+	// Cuándo se le entregó.
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+	// Hasta cuándo está vigente, si el curso tiene vigencia.
+	ExpiresOn *string `json:"expires_on,omitempty"`
 }
 
 // EmployeeVacations: Las vacaciones de un empleado por año de servicio (LFT 76, 81 y 516).
@@ -9217,6 +9317,18 @@ type GetTaxDiscrepancyParams struct {
 	Year *int64 `json:"year,omitempty"`
 	// Los ingresos de su declaración anual, si tiene ingresos que Fiscalisto no ve (rentas, intereses, otro patrón): reemplazan los que calcula.
 	DeclaredIncome *float64 `json:"declared_income,omitempty"`
+}
+
+// GetTrainingCertificatesPdfParams: los campos de «Descargar constancias DC-3».
+type GetTrainingCertificatesPdfParams struct {
+	// Solo las de estos empleados (emp_…, separados por comas).
+	Employees *string `json:"employees,omitempty"`
+}
+
+// GetTrainingParams: los campos de «Capacitación».
+type GetTrainingParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetTrialBalanceParams: los campos de «Ver la balanza de comprobación».
@@ -11471,6 +11583,12 @@ type InvoiceTaxes struct {
 	LocalWithheld *float64 `json:"local_withheld,omitempty"`
 }
 
+// IssueTrainingCertificatesParams: los campos de «Emitir constancias DC-3».
+type IssueTrainingCertificatesParams struct {
+	// A quiénes; por omisión a todos los que aprobaron y no la tienen.
+	Employees []string `json:"employees,omitempty"`
+}
+
 // Issuer: Un emisor: un RFC que timbra desde su cuenta API.
 type Issuer struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -12665,6 +12783,26 @@ type ListTicketsParams struct {
 	SoldAtGte *string `json:"sold_at_gte,omitempty"`
 	// Vendidos hasta (ISO 8601 o AAAA-MM-DD, el día completo).
 	SoldAtLte *string `json:"sold_at_lte,omitempty"`
+}
+
+// ListTrainingCertificatesParams: los campos de «Constancias para el aviso a la STPS».
+type ListTrainingCertificatesParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Desde (AAAA-MM-DD), por la fecha de fin del curso.
+	From string `json:"from"`
+	// Hasta (AAAA-MM-DD).
+	To string `json:"to"`
+}
+
+// ListTrainingCoursesParams: los campos de «Listar cursos de capacitación».
+type ListTrainingCoursesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // ListVacationRequestsParams: los campos de «Listar solicitudes de vacaciones».
@@ -17889,6 +18027,32 @@ type SetOpeningBalancesParamsLine struct {
 	Credit *float64 `json:"credit,omitempty"`
 }
 
+// SetTrainingParticipantsParams: los campos de «Quién tomó un curso».
+type SetTrainingParticipantsParams struct {
+	// Los empleados (emp_…).
+	Employees []string `json:"employees"`
+}
+
+// SetTrainingResultsParams: los campos de «Calificar un curso».
+type SetTrainingResultsParams struct {
+	// La calificación de cada empleado, hasta 1,000 a la vez.
+	Results []SetTrainingResultsParamsResult `json:"results"`
+}
+
+// SetTrainingResultsParamsResult: SetTrainingResultsParamsResult.
+type SetTrainingResultsParamsResult struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// pending (por calificar), passed (aprobó), failed (no aprobó) o sufficiency (aprobó el examen de suficiencia, art. 24, fr. III, inciso b).
+	//
+	// Valores: pending, passed, failed, sufficiency.
+	Result string `json:"result"`
+	// Su calificación de 0 a 100.
+	Score *float64 `json:"score,omitempty"`
+	// Una nota.
+	Note *string `json:"note,omitempty"`
+}
+
 // SignEfirmaParams: los campos de «Firmar el contrato con el PAC».
 type SignEfirmaParams struct {
 	// El archivo .cer en base64 (puede traer el prefijo data:).
@@ -18659,6 +18823,272 @@ type TicketList struct {
 	URL string `json:"url"`
 }
 
+// Training: La capacitación de un emisor (Nómina › Capacitación).
+type Training struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Lo que se configura en POST /v1/training/settings.
+	Settings TrainingSettings `json:"settings"`
+	// Los trabajadores que cuenta.
+	Workers int64 `json:"workers"`
+	// Si los cuenta de Nómina (true) o a mano (false).
+	WorkersFromPayroll bool `json:"workers_from_payroll"`
+	// Si son más de 50 y firman los representantes de la comisión mixta (artículo 24, fracción II).
+	MixedCommission bool `json:"mixed_commission"`
+	// Los años del plan de capacitación.
+	PlanYears []TrainingPlanYear `json:"plan_years"`
+	// Constancias que vencen en 60 días o ya vencieron.
+	Renewals []TrainingRenewal `json:"renewals"`
+	// Totales (Totales).
+	Totals TrainingTotals `json:"totals"`
+}
+
+// TrainingCertificate: Una constancia DC-3 emitida, con lo que pide el aviso a la STPS.
+type TrainingCertificate struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	Folio int64 `json:"folio"`
+	// Apellido paterno, materno y nombre(s).
+	Name string `json:"name"`
+	// CURP, 18 caracteres.
+	CURP string `json:"curp"`
+	// Su ocupación del Catálogo Nacional de Ocupaciones, clave y nombre («06 Transporte»).
+	Occupation string `json:"occupation"`
+	// Puesto (Puesto).
+	Position *string `json:"position,omitempty"`
+	// Su grado de estudios terminados.
+	Education *string `json:"education,omitempty"`
+	// El nombre del curso.
+	Course string `json:"course"`
+	// El área temática, clave y nombre («6000 Seguridad»).
+	ThematicArea string `json:"thematic_area"`
+	// La duración en horas.
+	Hours float64 `json:"hours"`
+	// Fecha de inicio de la relación laboral (FechaInicioRelLaboral), AAAA-MM-DD.
+	StartDate string `json:"start_date"`
+	// Último día trabajado si ya no trabaja ahí, AAAA-MM-DD.
+	EndDate string `json:"end_date"`
+	// El agente capacitador como va en la constancia.
+	Trainer string `json:"trainer"`
+	// El registro del agente externo ante la STPS.
+	TrainerRegistration *string `json:"trainer_registration,omitempty"`
+	// Cuándo se entregó.
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+}
+
+// TrainingCertificateList: Una página de la lista.
+type TrainingCertificateList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []TrainingCertificate `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// TrainingCourse: Un curso de capacitación (Nómina › Capacitación).
+type TrainingCourse struct {
+	// El curso (trc_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El nombre del curso.
+	Name string `json:"name"`
+	// La clave del área temática del catálogo de la STPS (1000 a 9000).
+	ThematicArea string `json:"thematic_area"`
+	// La duración en horas.
+	Hours float64 `json:"hours"`
+	// presencial, en_linea o mixta.
+	Modality string `json:"modality"`
+	// internal, external, supplier, foreign o stps.
+	TrainerKind string `json:"trainer_kind"`
+	// El agente capacitador.
+	TrainerName *string `json:"trainer_name,omitempty"`
+	// Fecha de inicio de la relación laboral (FechaInicioRelLaboral), AAAA-MM-DD.
+	StartDate string `json:"start_date"`
+	// Último día trabajado si ya no trabaja ahí, AAAA-MM-DD.
+	EndDate string `json:"end_date"`
+	// Si se canceló teniendo constancias emitidas (se conservan).
+	Cancelled bool `json:"cancelled"`
+	// El registro del agente externo ante la STPS.
+	TrainerRegistration *string `json:"trainer_registration,omitempty"`
+	// Quien firma como instructor o tutor.
+	InstructorName *string `json:"instructor_name,omitempty"`
+	// Cada cuántos meses se renueva.
+	ValidityMonths *int64 `json:"validity_months,omitempty"`
+	// La calificación mínima.
+	PassingScore *float64 `json:"passing_score,omitempty"`
+	// Dónde se imparte.
+	Place *string `json:"place,omitempty"`
+	// El objetivo del curso.
+	Objective *string `json:"objective,omitempty"`
+	// Qué falta de quién firma las constancias.
+	SignersProblem *string `json:"signers_problem,omitempty"`
+	// Quienes lo tomaron (al ver un curso; no en la lista).
+	Participants []TrainingParticipant `json:"participants,omitempty"`
+	// Los totales (en la lista).
+	Counts *TrainingCourseCounts `json:"counts,omitempty"`
+}
+
+// TrainingCourseCounts: Los totales (en la lista).
+type TrainingCourseCounts struct {
+	// Quienes lo tomaron.
+	Participants int64 `json:"participants"`
+	// Quienes aprobaron (o el examen de suficiencia).
+	Passed int64 `json:"passed"`
+	// Quienes faltan por calificar.
+	Pending int64 `json:"pending"`
+	// Constancias emitidas.
+	Issued int64 `json:"issued"`
+	// Constancias entregadas.
+	Delivered int64 `json:"delivered"`
+	// Constancias que se deben (aprobaron) y no se han entregado.
+	Due int64 `json:"due"`
+	// De due, las que pasaron los 20 días hábiles (artículo 24, fracción III).
+	Late int64 `json:"late"`
+}
+
+// TrainingCourseDeleted: Un curso borrado o cancelado.
+type TrainingCourseDeleted struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true si se borró.
+	Deleted bool `json:"deleted"`
+	// true si se canceló porque tenía constancias emitidas.
+	Cancelled bool `json:"cancelled"`
+}
+
+// TrainingCourseList: Una página de la lista.
+type TrainingCourseList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []TrainingCourse `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// TrainingParticipant: Quien tomó un curso y su constancia DC-3.
+type TrainingParticipant struct {
+	// Quien tomó el curso (trp_…).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Nombre.
+	Name string `json:"name"`
+	// Su clave del Catálogo Nacional de Ocupaciones.
+	Occupation *string `json:"occupation,omitempty"`
+	// pending, passed, failed o sufficiency.
+	Result string `json:"result"`
+	// Su calificación de 0 a 100.
+	Score *float64 `json:"score,omitempty"`
+	// Una nota sobre su resultado.
+	Note *string `json:"note,omitempty"`
+	// El folio de su constancia DC-3, consecutivo por emisor.
+	Folio *int64 `json:"folio,omitempty"`
+	// Cuándo se emitió.
+	IssuedAt *string `json:"issued_at,omitempty"`
+	// Cuándo se entregó.
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+	// paper, email o portal.
+	DeliveredVia *string `json:"delivered_via,omitempty"`
+	// none (sin constancia), waiting (el curso no termina), due (por entregar), late (pasó el plazo), issued (emitida, sin entregar) o delivered.
+	Status string `json:"status"`
+	// El día límite para entregarla (20 días hábiles desde el fin del curso).
+	DeliverBy *string `json:"deliver_by,omitempty"`
+	// Hasta cuándo está vigente, si el curso tiene vigencia.
+	ExpiresOn *string `json:"expires_on,omitempty"`
+	// Por qué todavía no se puede emitir su constancia.
+	Blocker *string `json:"blocker,omitempty"`
+}
+
+// TrainingPlanYear: TrainingPlanYear.
+type TrainingPlanYear struct {
+	// El primer día del año del plan.
+	From string `json:"from"`
+	// El último día del año del plan.
+	To string `json:"to"`
+	// El día límite del aviso a la STPS (60 días hábiles después de to).
+	ListBy string `json:"list_by"`
+}
+
+// TrainingRenewal: TrainingRenewal.
+type TrainingRenewal struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Nombre.
+	Name string `json:"name"`
+	// El nombre del curso.
+	Course string `json:"course"`
+	// La clave del área temática.
+	ThematicArea string `json:"thematic_area"`
+	// Hasta cuándo está vigente.
+	Until string `json:"until"`
+	// Si ya venció.
+	Expired bool `json:"expired"`
+}
+
+// TrainingSettings: Lo que se configura en POST /v1/training/settings.
+type TrainingSettings struct {
+	// El nombre en la constancia; null usa la razón social.
+	CompanyName *string `json:"company_name,omitempty"`
+	// Quien firma con hasta 50 trabajadores.
+	LegalRep *string `json:"legal_rep,omitempty"`
+	// El representante del patrón ante la comisión mixta.
+	CommissionEmployerRep *string `json:"commission_employer_rep,omitempty"`
+	// El representante de los trabajadores ante la comisión mixta.
+	WorkersRep *string `json:"workers_rep,omitempty"`
+	// Los integrantes de la comisión mixta de capacitación (artículo 153-E LFT).
+	Commission []TrainingSettingsCommissionItem `json:"commission"`
+	// El día en que se constituyó la comisión mixta.
+	CommissionConstitutedOn *string `json:"commission_constituted_on,omitempty"`
+	// Los trabajadores contados a mano; null cuenta Nómina.
+	WorkersCount *int64 `json:"workers_count,omitempty"`
+	// Cuándo empieza el plan de capacitación vigente.
+	PlanStart *string `json:"plan_start,omitempty"`
+	// Cuándo termina el plan de capacitación vigente.
+	PlanEnd *string `json:"plan_end,omitempty"`
+	// La ocupación de cada puesto.
+	Occupations map[string]string `json:"occupations"`
+}
+
+// TrainingSettingsCommissionItem: TrainingSettingsCommissionItem.
+type TrainingSettingsCommissionItem struct {
+	// Nombre.
+	Name string `json:"name"`
+	// patron o trabajadores.
+	Side string `json:"side"`
+	// Su cargo en la comisión (presidente, secretario…).
+	Role *string `json:"role,omitempty"`
+}
+
+// TrainingTotals: Totales (Totales).
+type TrainingTotals struct {
+	// Constancias por entregar.
+	Due int64 `json:"due"`
+	// De ellas, fuera de plazo.
+	Late int64 `json:"late"`
+	// Empleados activos sin ocupación del catálogo.
+	MissingOccupation int64 `json:"missing_occupation"`
+}
+
 // TrialBalance: La balanza de comprobación de un mes.
 type TrialBalance struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -19085,6 +19515,16 @@ type UpdateEmployeePortalParams struct {
 	Action string `json:"action"`
 	// Con enable o renew, le manda el enlace al correo del empleado. Falla si el empleado no tiene correo.
 	SendEmail *bool `json:"send_email,omitempty"`
+}
+
+// UpdateEmployeeTrainingParams: los campos de «Ocupación y estudios de un empleado».
+type UpdateEmployeeTrainingParams struct {
+	// Su clave del Catálogo Nacional de Ocupaciones cuando no es la de su puesto; null usa la de su puesto.
+	Occupation *string `json:"occupation,omitempty"`
+	// Su grado de estudios terminados, que pide el aviso a la STPS: primaria, secundaria, bachillerato, tecnico, licenciatura, especialidad, maestria o doctorado.
+	//
+	// Valores: primaria, secundaria, bachillerato, tecnico, licenciatura, especialidad, maestria, doctorado.
+	Education *string `json:"education,omitempty"`
 }
 
 // UpdateEmployeeVacationsParams: los campos de «Saldo de vacaciones antes de Fiscalisto».
@@ -20811,6 +21251,84 @@ type UpdateTagParams struct {
 	//
 	// Valores: info, positive, warning, critical, muted.
 	Color *string `json:"color,omitempty"`
+}
+
+// UpdateTrainingCourseParams: los campos de «Cambiar un curso de capacitación».
+type UpdateTrainingCourseParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El nombre del curso, como va en la constancia.
+	Name string `json:"name"`
+	// La clave del área temática del catálogo de la STPS (1000 Producción general … 9000 Participación social).
+	ThematicArea string `json:"thematic_area"`
+	// La duración en horas.
+	Hours float64 `json:"hours"`
+	// presencial (por omisión), en_linea o mixta.
+	//
+	// Valores: presencial, en_linea, mixta.
+	Modality *string `json:"modality,omitempty"`
+	// El día en que empezó.
+	StartDate string `json:"start_date"`
+	// El día en que terminó; de ahí corren los 20 días hábiles para entregar las constancias.
+	EndDate string `json:"end_date"`
+	// Quién lo imparte: internal (instructor interno, por omisión: la constancia dice el nombre de la empresa como agente), external (agente capacitador externo, con su registro), supplier (proveedor de un bien o servicio), foreign (capacitador extranjero) o stps.
+	//
+	// Valores: internal, external, supplier, foreign, stps.
+	TrainerKind *string `json:"trainer_kind,omitempty"`
+	// El nombre del agente capacitador, salvo internal y stps.
+	TrainerName *string `json:"trainer_name,omitempty"`
+	// El registro del agente externo ante la STPS.
+	TrainerRegistration *string `json:"trainer_registration,omitempty"`
+	// Quien firma la constancia como instructor o tutor.
+	InstructorName *string `json:"instructor_name,omitempty"`
+	// Cada cuántos meses se renueva (para avisar); null, sin vigencia.
+	ValidityMonths *int64 `json:"validity_months,omitempty"`
+	// La calificación mínima para aprobar (opcional).
+	PassingScore *float64 `json:"passing_score,omitempty"`
+	// Dónde se impartió.
+	Place *string `json:"place,omitempty"`
+	// Su objetivo.
+	Objective *string `json:"objective,omitempty"`
+	// Quiénes lo tomaron (emp_…); en una actualización reemplaza la lista.
+	Employees []string `json:"employees,omitempty"`
+}
+
+// UpdateTrainingSettingsParams: los campos de «Configurar la capacitación».
+type UpdateTrainingSettingsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El nombre de la empresa en la constancia; null usa la razón social. Persona física: apellido paterno, materno y nombre(s).
+	CompanyName *string `json:"company_name,omitempty"`
+	// Quien firma como patrón o representante legal cuando hay hasta 50 trabajadores (art. 24, fr. II).
+	LegalRep *string `json:"legal_rep,omitempty"`
+	// Con más de 50 trabajadores: el representante del patrón ante la comisión mixta de capacitación, que firma la constancia.
+	CommissionEmployerRep *string `json:"commission_employer_rep,omitempty"`
+	// Con más de 50 trabajadores: el representante de los trabajadores ante la comisión mixta, que también firma.
+	WorkersRep *string `json:"workers_rep,omitempty"`
+	// Los integrantes de la comisión mixta de capacitación (LFT 153-E: igual número por cada parte).
+	Commission []UpdateTrainingSettingsParamsCommissionItem `json:"commission,omitempty"`
+	// El día en que se constituyó la comisión mixta.
+	CommissionConstitutedOn *string `json:"commission_constituted_on,omitempty"`
+	// Los trabajadores de la empresa, si no todos están en Nómina; null cuenta los empleados activos.
+	WorkersCount *int64 `json:"workers_count,omitempty"`
+	// El día en que empieza el plan de capacitación (dos años como máximo, LFT 153-H).
+	PlanStart *string `json:"plan_start,omitempty"`
+	// El día en que termina el plan.
+	PlanEnd *string `json:"plan_end,omitempty"`
+	// La ocupación del Catálogo Nacional de Ocupaciones de cada puesto: {"Operador de montacargas": "06.2"}. Reemplaza las de antes.
+	Occupations map[string]string `json:"occupations,omitempty"`
+}
+
+// UpdateTrainingSettingsParamsCommissionItem: UpdateTrainingSettingsParamsCommissionItem.
+type UpdateTrainingSettingsParamsCommissionItem struct {
+	// Su nombre.
+	Name string `json:"name"`
+	// A quién representa: patron o trabajadores.
+	//
+	// Valores: patron, trabajadores.
+	Side string `json:"side"`
+	// Su cargo en la comisión (opcional).
+	Role *string `json:"role,omitempty"`
 }
 
 // UpdateWebhookEndpointParams: los campos de «Actualizar un webhook».

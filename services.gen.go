@@ -84,6 +84,10 @@ type services struct {
 	Hiring *HiringService
 	// Nómina.
 	Candidates *CandidatesService
+	// Nómina.
+	Training *TrainingService
+	// Nómina.
+	TrainingCourses *TrainingCoursesService
 	// Lotes.
 	InvoiceBatches *InvoiceBatchesService
 	// Clientes.
@@ -281,6 +285,8 @@ func (s *services) init(c *Client) {
 	s.PayrollOrgChart = &PayrollOrgChartService{c}
 	s.Hiring = &HiringService{c}
 	s.Candidates = &CandidatesService{c}
+	s.Training = &TrainingService{c}
+	s.TrainingCourses = &TrainingCoursesService{c}
 	s.InvoiceBatches = &InvoiceBatchesService{c}
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
@@ -1874,6 +1880,36 @@ func (s *EmployeesService) UpdatePortal(ctx context.Context, id string, params *
 	return out, nil
 }
 
+// Training: Capacitación de un empleado
+//
+// Su ocupación del Catálogo Nacional de Ocupaciones (la suya o la de su puesto), su grado de estudios y los cursos que tomó con su constancia.
+//
+// GET /v1/employees/{id}/training
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-employee-training
+func (s *EmployeesService) Training(ctx context.Context, id string, opts ...RequestOption) (*EmployeeTraining, error) {
+	out := new(EmployeeTraining)
+	if err := s.c.do(ctx, "GET", "/v1/employees/"+url.PathEscape(id)+"/training", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateTraining: Ocupación y estudios de un empleado
+//
+// Su ocupación cuando no es la de su puesto (null usa la del puesto) y su grado de estudios terminados, que pide el aviso a la STPS.
+//
+// POST /v1/employees/{id}/training
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-employee-training
+func (s *EmployeesService) UpdateTraining(ctx context.Context, id string, params *UpdateEmployeeTrainingParams, opts ...RequestOption) (*EmployeeTraining, error) {
+	out := new(EmployeeTraining)
+	if err := s.c.do(ctx, "POST", "/v1/employees/"+url.PathEscape(id)+"/training", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // VacationRequestsService: Nómina (client.VacationRequests).
 type VacationRequestsService struct{ c *Client }
 
@@ -2854,6 +2890,204 @@ func (s *CandidatesService) Hire(ctx context.Context, id string, params *HireCan
 func (s *CandidatesService) File(ctx context.Context, id string, question string, opts ...RequestOption) (string, error) {
 	b, err := s.c.raw(ctx, "GET", "/v1/candidates/"+url.PathEscape(id)+"/files/"+url.PathEscape(question), nil, nil, false, opts)
 	return string(b), err
+}
+
+// TrainingService: Nómina (client.Training).
+type TrainingService struct{ c *Client }
+
+// Get: Capacitación
+//
+// Como «Nómina › Capacitación» de la app: quién firma las constancias DC-3 (con hasta 50 trabajadores el patrón o su representante legal; con más, el representante del patrón y el de los trabajadores ante la comisión mixta: Acuerdo de la STPS del 14 de junio de 2013, artículo 24, fracción II), cuántos trabajadores cuenta, los años del plan de capacitación con el día límite del aviso a la STPS de cada uno (60 días hábiles, artículo 26, fracción I), las constancias por renovar y cuántas faltan por entregar.
+//
+// GET /v1/training
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-training
+func (s *TrainingService) Get(ctx context.Context, params *GetTrainingParams, opts ...RequestOption) (*Training, error) {
+	out := new(Training)
+	if err := s.c.do(ctx, "GET", "/v1/training", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateSettings: Configurar la capacitación
+//
+// Quién firma las constancias, la comisión mixta (LFT 153-E: igual número por cada parte), cuántos trabajadores contar si no todos están en Nómina, las fechas del plan (dos años como máximo, LFT 153-H) y la ocupación del Catálogo Nacional de Ocupaciones de cada puesto. Lo que no manda no cambia. Contesta training.
+//
+// POST /v1/training/settings
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-training-settings
+func (s *TrainingService) UpdateSettings(ctx context.Context, params *UpdateTrainingSettingsParams, opts ...RequestOption) (*Training, error) {
+	out := new(Training)
+	if err := s.c.do(ctx, "POST", "/v1/training/settings", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Certificates: Constancias para el aviso a la STPS
+//
+// Las constancias DC-3 emitidas de los cursos que terminaron entre from y to, con lo que pide el aviso a la STPS (artículo 26, fracción I: nombre, CURP, ocupación, puesto, estudios, curso, área temática, horas, fechas y agente capacitador), ordenadas por folio. El día límite para presentarlo de cada año del plan viene en plan_years de GET /v1/training. El aviso se presenta en el sistema de la STPS, que no tiene API.
+//
+// GET /v1/training/certificates
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-training-certificates
+func (s *TrainingService) Certificates(ctx context.Context, params *ListTrainingCertificatesParams, opts ...RequestOption) (*TrainingCertificateList, error) {
+	out := new(TrainingCertificateList)
+	if err := s.c.do(ctx, "GET", "/v1/training/certificates", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TrainingCoursesService: Nómina (client.TrainingCourses).
+type TrainingCoursesService struct{ c *Client }
+
+// List: Listar cursos de capacitación
+//
+// Los cursos del emisor (trc_…), los más recientes primero, con cuántos lo tomaron, aprobaron, tienen su constancia y faltan por entregar (due) o ya pasaron los 20 días hábiles (late).
+//
+// GET /v1/training_courses
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-training-courses
+func (s *TrainingCoursesService) List(ctx context.Context, params *ListTrainingCoursesParams, opts ...RequestOption) (*Page[TrainingCourse], error) {
+	return list[TrainingCourse](ctx, s.c, "/v1/training_courses", params, "", opts)
+}
+
+// ListAutoPaging: Listar cursos de capacitación, todos, página por página: for x, err := range …
+func (s *TrainingCoursesService) ListAutoPaging(ctx context.Context, params *ListTrainingCoursesParams, opts ...RequestOption) iter.Seq2[TrainingCourse, error] {
+	return listAll[TrainingCourse](ctx, s.c, "/v1/training_courses", params, opts)
+}
+
+// Create: Registrar un curso de capacitación
+//
+// Lo que pide la constancia DC-3 (artículo 24, fracción IV): nombre, área temática del catálogo de la STPS, horas, periodo y quién lo imparte (con un instructor interno la constancia dice el nombre de la empresa como agente capacitador), con quiénes lo tomaron (employees).
+//
+// POST /v1/training_courses
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-training-course
+func (s *TrainingCoursesService) Create(ctx context.Context, params *CreateTrainingCourseParams, opts ...RequestOption) (*TrainingCourse, error) {
+	out := new(TrainingCourse)
+	if err := s.c.do(ctx, "POST", "/v1/training_courses", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Get: Ver un curso de capacitación
+//
+// Un curso (trc_…) con quienes lo tomaron (trp_…): su resultado, el folio de su constancia, el día límite para entregarla (20 días hábiles desde el fin del curso, artículo 24, fracción III), si ya se entregó y, cuando todavía no se puede emitir, por qué (blocker).
+//
+// GET /v1/training_courses/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-training-course
+func (s *TrainingCoursesService) Get(ctx context.Context, id string, opts ...RequestOption) (*TrainingCourse, error) {
+	out := new(TrainingCourse)
+	if err := s.c.do(ctx, "GET", "/v1/training_courses/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un curso de capacitación
+//
+// Cambia sus datos; employees reemplaza la lista (quien ya tiene su constancia se queda). Las constancias ya emitidas guardan lo que decían.
+//
+// POST /v1/training_courses/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-training-course
+func (s *TrainingCoursesService) Update(ctx context.Context, id string, params *UpdateTrainingCourseParams, opts ...RequestOption) (*TrainingCourse, error) {
+	out := new(TrainingCourse)
+	if err := s.c.do(ctx, "POST", "/v1/training_courses/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Borrar un curso de capacitación
+//
+// Lo borra si nadie tiene su constancia; si alguien la tiene, lo cancela (cancelled true), porque las copias se conservan a disposición de la STPS (artículo 26, fracción III).
+//
+// DELETE /v1/training_courses/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-training-course
+func (s *TrainingCoursesService) Delete(ctx context.Context, id string, opts ...RequestOption) (*TrainingCourseDeleted, error) {
+	out := new(TrainingCourseDeleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/training_courses/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SetParticipants: Quién tomó un curso
+//
+// Reemplaza la lista de quienes lo tomaron (emp_…). Quien ya tiene su constancia se queda.
+//
+// POST /v1/training_courses/{id}/participants
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/set-training-participants
+func (s *TrainingCoursesService) SetParticipants(ctx context.Context, id string, params *SetTrainingParticipantsParams, opts ...RequestOption) (*TrainingCourse, error) {
+	out := new(TrainingCourse)
+	if err := s.c.do(ctx, "POST", "/v1/training_courses/"+url.PathEscape(id)+"/participants", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SetResults: Calificar un curso
+//
+// El resultado de cada quien: pending, passed, failed o sufficiency (aprobó el examen de suficiencia, artículo 24, fracción III, inciso b), con su calificación. A quien ya tiene su constancia no se le puede poner failed.
+//
+// POST /v1/training_courses/{id}/results
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/set-training-results
+func (s *TrainingCoursesService) SetResults(ctx context.Context, id string, params *SetTrainingResultsParams, opts ...RequestOption) (*TrainingCourse, error) {
+	out := new(TrainingCourse)
+	if err := s.c.do(ctx, "POST", "/v1/training_courses/"+url.PathEscape(id)+"/results", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Issue: Emitir constancias DC-3
+//
+// Emite la constancia de quienes aprobaron (o de los que mande en employees), cada una con el folio siguiente del emisor. Pide que el curso haya terminado (salvo el examen de suficiencia), el CURP y la ocupación de cada quien y quién firma; lo que falte se lee en blocker de cada participante.
+//
+// POST /v1/training_courses/{id}/issue
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/issue-training-certificates
+func (s *TrainingCoursesService) Issue(ctx context.Context, id string, params *IssueTrainingCertificatesParams, opts ...RequestOption) (*TrainingCourse, error) {
+	out := new(TrainingCourse)
+	if err := s.c.do(ctx, "POST", "/v1/training_courses/"+url.PathEscape(id)+"/issue", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Deliver: Marcar constancias como entregadas
+//
+// Anota que se entregaron (en papel, por correo o en el portal del empleado) y el día. Por omisión todas las emitidas sin entregar.
+//
+// POST /v1/training_courses/{id}/deliver
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/deliver-training-certificates
+func (s *TrainingCoursesService) Deliver(ctx context.Context, id string, params *DeliverTrainingCertificatesParams, opts ...RequestOption) (*TrainingCourse, error) {
+	out := new(TrainingCourse)
+	if err := s.c.do(ctx, "POST", "/v1/training_courses/"+url.PathEscape(id)+"/deliver", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Pdf: Descargar constancias DC-3
+//
+// Las constancias emitidas del curso en el formato DC-3 de la STPS, una página cada una con su reverso de catálogos, listas para firmar. El logo de la empresa va si lo tiene (artículo 25: solo logotipos).
+//
+// GET /v1/training_courses/{id}/pdf
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-training-certificates-pdf
+func (s *TrainingCoursesService) PDF(ctx context.Context, id string, params *GetTrainingCertificatesPdfParams, opts ...RequestOption) ([]byte, error) {
+	return s.c.raw(ctx, "GET", "/v1/training_courses/"+url.PathEscape(id)+"/pdf", nil, params, false, opts)
 }
 
 // InvoiceBatchesService: Lotes (client.InvoiceBatches).

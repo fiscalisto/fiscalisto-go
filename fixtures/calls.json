@@ -1021,6 +1021,111 @@
 		"go": "Candidates.File",
 		"java": "candidates.file"
 	},
+	"GET /v1/training": {
+		"python": "training.get",
+		"php": "training->get",
+		"dotnet": "Training.GetAsync",
+		"go": "Training.Get",
+		"java": "training.get"
+	},
+	"POST /v1/training/settings": {
+		"python": "training.update_settings",
+		"php": "training->updateSettings",
+		"dotnet": "Training.UpdateSettingsAsync",
+		"go": "Training.UpdateSettings",
+		"java": "training.updateSettings"
+	},
+	"GET /v1/training/certificates": {
+		"python": "training.certificates",
+		"php": "training->certificates",
+		"dotnet": "Training.CertificatesAsync",
+		"go": "Training.Certificates",
+		"java": "training.certificates"
+	},
+	"GET /v1/training_courses": {
+		"python": "training_courses.list",
+		"php": "trainingCourses->list",
+		"dotnet": "TrainingCourses.ListAsync",
+		"go": "TrainingCourses.List",
+		"java": "trainingCourses.list"
+	},
+	"POST /v1/training_courses": {
+		"python": "training_courses.create",
+		"php": "trainingCourses->create",
+		"dotnet": "TrainingCourses.CreateAsync",
+		"go": "TrainingCourses.Create",
+		"java": "trainingCourses.create"
+	},
+	"GET /v1/training_courses/{id}": {
+		"python": "training_courses.get",
+		"php": "trainingCourses->get",
+		"dotnet": "TrainingCourses.GetAsync",
+		"go": "TrainingCourses.Get",
+		"java": "trainingCourses.get"
+	},
+	"POST /v1/training_courses/{id}": {
+		"python": "training_courses.update",
+		"php": "trainingCourses->update",
+		"dotnet": "TrainingCourses.UpdateAsync",
+		"go": "TrainingCourses.Update",
+		"java": "trainingCourses.update"
+	},
+	"DELETE /v1/training_courses/{id}": {
+		"python": "training_courses.delete",
+		"php": "trainingCourses->delete",
+		"dotnet": "TrainingCourses.DeleteAsync",
+		"go": "TrainingCourses.Delete",
+		"java": "trainingCourses.delete"
+	},
+	"POST /v1/training_courses/{id}/participants": {
+		"python": "training_courses.set_participants",
+		"php": "trainingCourses->setParticipants",
+		"dotnet": "TrainingCourses.SetParticipantsAsync",
+		"go": "TrainingCourses.SetParticipants",
+		"java": "trainingCourses.setParticipants"
+	},
+	"POST /v1/training_courses/{id}/results": {
+		"python": "training_courses.set_results",
+		"php": "trainingCourses->setResults",
+		"dotnet": "TrainingCourses.SetResultsAsync",
+		"go": "TrainingCourses.SetResults",
+		"java": "trainingCourses.setResults"
+	},
+	"POST /v1/training_courses/{id}/issue": {
+		"python": "training_courses.issue",
+		"php": "trainingCourses->issue",
+		"dotnet": "TrainingCourses.IssueAsync",
+		"go": "TrainingCourses.Issue",
+		"java": "trainingCourses.issue"
+	},
+	"POST /v1/training_courses/{id}/deliver": {
+		"python": "training_courses.deliver",
+		"php": "trainingCourses->deliver",
+		"dotnet": "TrainingCourses.DeliverAsync",
+		"go": "TrainingCourses.Deliver",
+		"java": "trainingCourses.deliver"
+	},
+	"GET /v1/training_courses/{id}/pdf": {
+		"python": "training_courses.pdf",
+		"php": "trainingCourses->pdf",
+		"dotnet": "TrainingCourses.PdfAsync",
+		"go": "TrainingCourses.PDF",
+		"java": "trainingCourses.pdf"
+	},
+	"GET /v1/employees/{id}/training": {
+		"python": "employees.training",
+		"php": "employees->training",
+		"dotnet": "Employees.TrainingAsync",
+		"go": "Employees.Training",
+		"java": "employees.training"
+	},
+	"POST /v1/employees/{id}/training": {
+		"python": "employees.update_training",
+		"php": "employees->updateTraining",
+		"dotnet": "Employees.UpdateTrainingAsync",
+		"go": "Employees.UpdateTraining",
+		"java": "employees.updateTraining"
+	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",
