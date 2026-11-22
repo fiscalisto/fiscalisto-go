@@ -9401,9 +9401,9 @@ type Finding struct {
 	Object string `json:"object"`
 	// El emisor (iss_…).
 	Issuer string `json:"issuer"`
-	// purchase_orders (órdenes de compra), payouts (pagos a proveedores), suppliers (proveedores), accounting (contabilidad), bank (movimientos del banco), expense_reports (comprobaciones de viáticos) o purchase_receipts (tickets de compra).
+	// purchase_orders (órdenes de compra), payouts (pagos a proveedores), suppliers (proveedores), accounting (contabilidad), bank (movimientos del banco), expense_reports (comprobaciones de viáticos), purchase_receipts (tickets de compra) o inventory (inventario).
 	//
-	// Valores: purchase_orders, payouts, suppliers, accounting, bank, expense_reports, purchase_receipts.
+	// Valores: purchase_orders, payouts, suppliers, accounting, bank, expense_reports, purchase_receipts, inventory.
 	Area *string `json:"area,omitempty"`
 	// En qué registro está.
 	Record FindingRecord `json:"record"`
@@ -9455,11 +9455,11 @@ type FindingList struct {
 
 // FindingRecord: En qué registro está.
 type FindingRecord struct {
-	// purchase_order, payout, supplier, poliza (la contabilidad de un mes), account (una cuenta en un mes), bank_movement, expense_report (una comprobación de viáticos) o expense_ticket (un ticket de compra).
+	// purchase_order, payout, supplier, poliza (la contabilidad de un mes), account (una cuenta en un mes), bank_movement, expense_report (una comprobación de viáticos), expense_ticket (un ticket de compra) o product (la existencia de un producto).
 	//
-	// Valores: purchase_order, payout, supplier, poliza, account, bank_movement, expense_report, expense_ticket.
+	// Valores: purchase_order, payout, supplier, poliza, account, bank_movement, expense_report, expense_ticket, product.
 	Type string `json:"type"`
-	// Su id en la API: el pago (pyo_…), la comprobación (exr_…), el ticket (rct_…) o el RFC del proveedor; null si no tiene.
+	// Su id en la API: el pago (pyo_…), la comprobación (exr_…), el ticket (rct_…), el producto (prd_…) o el RFC del proveedor; null si no tiene.
 	ID *string `json:"id,omitempty"`
 	// Cómo lo nombra Fiscalisto: el número de la orden, el RFC, «RFC:AAAA-MM» un mes de contabilidad, «RFC:AAAA-MM:cuenta» una cuenta.
 	Reference string `json:"reference"`
@@ -13057,9 +13057,9 @@ type ListFindingsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// Solo los de un área: purchase_orders, payouts, suppliers, accounting, bank, expense_reports o purchase_receipts.
+	// Solo los de un área: purchase_orders, payouts, suppliers, accounting, bank, expense_reports, purchase_receipts o inventory.
 	//
-	// Valores: purchase_orders, payouts, suppliers, accounting, bank, expense_reports, purchase_receipts.
+	// Valores: purchase_orders, payouts, suppliers, accounting, bank, expense_reports, purchase_receipts, inventory.
 	Area *string `json:"area,omitempty"`
 	// open (por omisión: sin revisar), reviewed (revisados), resolved (ya no aplican) o all.
 	//
@@ -14317,7 +14317,7 @@ type PayableInvoice struct {
 	Withheld *PayableInvoiceWithheld `json:"withheld,omitempty"`
 	// Pronto pago del portal de proveedores. Aceptado, amount_due ya es el total menos el descuento hasta que llega la nota de crédito del proveedor. null: no tiene.
 	EarlyPayment *PayableInvoiceEarlyPayment `json:"early_payment,omitempty"`
-	// El pago abierto (pyo_…) en el que ya está, o null.
+	// El pago abierto (pyo_…) en el que ya está, o null. Si se dividió en varios pagos, el primero: un pago nuevo solo toma lo que esos no cubren.
 	InPayout *string `json:"in_payout,omitempty"`
 	// Si una regla de Ajustes › Reglas retuvo su pago: no se paga hasta que alguien con permiso lo suelte en la app («Soltar el pago»). null: no está retenido.
 	PaymentHold *PayableInvoicePaymentHold `json:"payment_hold,omitempty"`
