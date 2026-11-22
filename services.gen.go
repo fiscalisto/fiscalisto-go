@@ -81,6 +81,12 @@ type services struct {
 	// Nómina.
 	PayrollCalendar *PayrollCalendarService
 	// Nómina.
+	RepseContracts *RepseContractsService
+	// Nómina.
+	RepseProfile *RepseProfileService
+	// Nómina.
+	RepseReturns *RepseReturnsService
+	// Nómina.
 	PayrollOrgChart *PayrollOrgChartService
 	// Nómina.
 	Hiring *HiringService
@@ -295,6 +301,9 @@ func (s *services) init(c *Client) {
 	s.PayrollTaxes = &PayrollTaxesService{c}
 	s.PayrollReports = &PayrollReportsService{c}
 	s.PayrollCalendar = &PayrollCalendarService{c}
+	s.RepseContracts = &RepseContractsService{c}
+	s.RepseProfile = &RepseProfileService{c}
+	s.RepseReturns = &RepseReturnsService{c}
 	s.PayrollOrgChart = &PayrollOrgChartService{c}
 	s.Hiring = &HiringService{c}
 	s.Candidates = &CandidatesService{c}
@@ -2623,7 +2632,7 @@ func (s *PayrollCalendarService) Get(ctx context.Context, params *GetPayrollCale
 
 // Mark: Marcar un pago de nómina como pagado
 //
-// Marca (paid true) o desmarca (false) un pago del calendario de nómina: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo o ajuste_anual, con su key como lo da GET /v1/payroll_calendar. Una nómina (pago) queda hecha al timbrar sus recibos.
+// Marca (paid true) o desmarca (false) un pago del calendario de nómina: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe o sisub, con su key como lo da GET /v1/payroll_calendar. Una nómina (pago) queda hecha al timbrar sus recibos.
 //
 // POST /v1/payroll_calendar/mark
 //
@@ -2631,6 +2640,136 @@ func (s *PayrollCalendarService) Get(ctx context.Context, params *GetPayrollCale
 func (s *PayrollCalendarService) Mark(ctx context.Context, params *MarkPayrollCalendarEventParams, opts ...RequestOption) (*PayrollCalendarEvent, error) {
 	out := new(PayrollCalendarEvent)
 	if err := s.c.do(ctx, "POST", "/v1/payroll_calendar/mark", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RepseContractsService: Nómina (client.RepseContracts).
+type RepseContractsService struct{ c *Client }
+
+// Create: Registrar un contrato de servicios especializados
+//
+// Un contrato de servicios u obras especializadas (LFT art. 15 y 15-A) con su cliente, el centro de trabajo y quién trabaja en él y desde cuándo, como «Nómina › REPSE › + Contrato» en la app. Con él se arman los informes cuatrimestrales ICSOE del IMSS (LSS art. 15-A) y SISUB del Infonavit (Ley del Infonavit art. 29 Bis) de GET /v1/repse_returns/{period}, y aparecen sus fechas en el calendario de nómina. Un número de contrato que ya usó contesta parameter_invalid en number; un trabajador de otro emisor, en workers.
+//
+// POST /v1/repse_contracts
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/create-repse-contract
+func (s *RepseContractsService) Create(ctx context.Context, params *CreateRepseContractParams, opts ...RequestOption) (*RepseContract, error) {
+	out := new(RepseContract)
+	if err := s.c.do(ctx, "POST", "/v1/repse_contracts", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar contratos de servicios especializados
+//
+// Los contratos del emisor que no ha archivado, por fecha de inicio (el más antiguo primero) y número.
+//
+// GET /v1/repse_contracts
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/list-repse-contracts
+func (s *RepseContractsService) List(ctx context.Context, params *ListRepseContractsParams, opts ...RequestOption) (*Page[RepseContract], error) {
+	return list[RepseContract](ctx, s.c, "/v1/repse_contracts", params, "", opts)
+}
+
+// ListAutoPaging: Listar contratos de servicios especializados, todos, página por página: for x, err := range …
+func (s *RepseContractsService) ListAutoPaging(ctx context.Context, params *ListRepseContractsParams, opts ...RequestOption) iter.Seq2[RepseContract, error] {
+	return listAll[RepseContract](ctx, s.c, "/v1/repse_contracts", params, opts)
+}
+
+// Get: Ver un contrato de servicios especializados
+//
+// Un contrato con su cliente, centro de trabajo y trabajadores.
+//
+// GET /v1/repse_contracts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-repse-contract
+func (s *RepseContractsService) Get(ctx context.Context, id string, opts ...RequestOption) (*RepseContract, error) {
+	out := new(RepseContract)
+	if err := s.c.do(ctx, "GET", "/v1/repse_contracts/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar un contrato de servicios especializados
+//
+// Cambia lo que mande; lo demás queda. workers reemplaza la lista completa: para que alguien deje el contrato, póngale end_date en vez de quitarlo, así sigue en los informes de los meses que trabajó. Un contrato que terminó lleva su end_date.
+//
+// POST /v1/repse_contracts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-repse-contract
+func (s *RepseContractsService) Update(ctx context.Context, id string, params *UpdateRepseContractParams, opts ...RequestOption) (*RepseContract, error) {
+	out := new(RepseContract)
+	if err := s.c.do(ctx, "POST", "/v1/repse_contracts/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Archivar un contrato de servicios especializados
+//
+// Lo archiva: sale de la lista y de todos los informes, también de los pasados. Para un contrato que terminó, mejor póngale end_date con POST /v1/repse_contracts/{id}.
+//
+// DELETE /v1/repse_contracts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/delete-repse-contract
+func (s *RepseContractsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/repse_contracts/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RepseProfileService: Nómina (client.RepseProfile).
+type RepseProfileService struct{ c *Client }
+
+// Get: Ver los datos del sujeto obligado
+//
+// Los datos del emisor que pide el SISUB del Infonavit y no están en Fiscalisto: folio del REPSE, correo, teléfono, domicilio, representante legal y, de una persona moral, su acta constitutiva y folio mercantil. Como «Datos del sujeto obligado» en «Nómina › REPSE».
+//
+// GET /v1/repse_profile
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-repse-profile
+func (s *RepseProfileService) Get(ctx context.Context, params *GetRepseProfileParams, opts ...RequestOption) (*RepseProfile, error) {
+	out := new(RepseProfile)
+	if err := s.c.do(ctx, "GET", "/v1/repse_profile", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Guardar los datos del sujeto obligado
+//
+// Cambia lo que mande; lo demás queda y "" lo vacía. El teléfono va con 10 dígitos y deed_date como AAAA-MM-DD; si no, contesta parameter_invalid en ese campo.
+//
+// POST /v1/repse_profile
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-repse-profile
+func (s *RepseProfileService) Update(ctx context.Context, params *UpdateRepseProfileParams, opts ...RequestOption) (*RepseProfile, error) {
+	out := new(RepseProfile)
+	if err := s.c.do(ctx, "POST", "/v1/repse_profile", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RepseReturnsService: Nómina (client.RepseReturns).
+type RepseReturnsService struct{ c *Client }
+
+// Get: Informes ICSOE y SISUB de un cuatrimestre
+//
+// Lo que se presenta del cuatrimestre (AAAA-1 enero a abril, AAAA-2 mayo a agosto, AAAA-3 septiembre a diciembre) a más tardar el día 17 del mes siguiente, o el siguiente día hábil: por contrato, sus trabajadores con NSS, CURP y último salario base de cotización (ICSOE, LSS art. 15-A), y por trabajador y bimestre las percepciones, el salario topado a 25 UMA, la aportación del 5% y la amortización de su crédito (SISUB, Ley del Infonavit art. 29 Bis), calculados de los recibos timbrados. files trae los archivos para subir: los tres del SISUB y uno del ICSOE por contrato. problems dice lo que falta para presentarlos.
+//
+// GET /v1/repse_returns/{period}
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-repse-return
+func (s *RepseReturnsService) Get(ctx context.Context, period string, params *GetRepseReturnParams, opts ...RequestOption) (*RepseReturn, error) {
+	out := new(RepseReturn)
+	if err := s.c.do(ctx, "GET", "/v1/repse_returns/"+url.PathEscape(period), nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

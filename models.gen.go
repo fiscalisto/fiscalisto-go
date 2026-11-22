@@ -5533,6 +5533,86 @@ type CreateRecurringInvoiceParamsSchedule struct {
 	TimeZone *string `json:"time_zone,omitempty"`
 }
 
+// CreateRepseContractParams: los campos de «Registrar un contrato de servicios especializados».
+type CreateRepseContractParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Número de contrato: dígitos, hasta 20 (así lo pide el SISUB).
+	Number string `json:"number"`
+	// Tipo de contrato, como lo dice el contrato.
+	Kind string `json:"kind"`
+	// Objeto del contrato.
+	ContractObject string `json:"contract_object"`
+	// El servicio u obra especializada registrado en el REPSE que cubre.
+	Service string `json:"service"`
+	// Monto pactado, en pesos.
+	Amount float64 `json:"amount"`
+	// Inicio de su vigencia (YYYY-MM-DD).
+	StartDate string `json:"start_date"`
+	// Fecha de término; null si es por tiempo indefinido.
+	EndDate *string `json:"end_date,omitempty"`
+	// Número estimado mensual de trabajadores que pone a disposición.
+	EstimatedWorkers int64 `json:"estimated_workers"`
+	// RFC del cliente (el beneficiario de los servicios).
+	ClientTaxID string `json:"client_tax_id"`
+	// Razón social del cliente.
+	ClientName string `json:"client_name"`
+	// Registro patronal del cliente ante el IMSS, si tiene.
+	ClientEmployerRegistration *string `json:"client_employer_registration,omitempty"`
+	// Domicilio fiscal del cliente.
+	ClientAddress CreateRepseContractParamsClientAddress `json:"client_address"`
+	// El centro de trabajo donde trabajan las personas que pone a disposición.
+	SiteAddress CreateRepseContractParamsSiteAddress `json:"site_address"`
+	// Quién trabaja en el contrato y desde cuándo (hasta 2,000).
+	Workers []CreateRepseContractParamsWorker `json:"workers"`
+}
+
+// CreateRepseContractParamsClientAddress: Domicilio fiscal del cliente.
+type CreateRepseContractParamsClientAddress struct {
+	// Calle.
+	Street string `json:"street"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Código postal, 5 dígitos.
+	Zip string `json:"zip"`
+	// Municipio o demarcación territorial, sin abreviar.
+	Municipality string `json:"municipality"`
+	// Estado (c_Estado: NLE, CMX…).
+	State string `json:"state"`
+}
+
+// CreateRepseContractParamsSiteAddress: El centro de trabajo donde trabajan las personas que pone a disposición.
+type CreateRepseContractParamsSiteAddress struct {
+	// Calle.
+	Street string `json:"street"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Código postal, 5 dígitos.
+	Zip string `json:"zip"`
+	// Municipio o demarcación territorial, sin abreviar.
+	Municipality string `json:"municipality"`
+	// Estado (c_Estado: NLE, CMX…).
+	State string `json:"state"`
+}
+
+// CreateRepseContractParamsWorker: CreateRepseContractParamsWorker.
+type CreateRepseContractParamsWorker struct {
+	// El empleado (emp_…) del mismo emisor.
+	Employee string `json:"employee"`
+	// Desde cuándo trabaja en el contrato (YYYY-MM-DD).
+	StartDate string `json:"start_date"`
+	// Hasta cuándo; null mientras siga.
+	EndDate *string `json:"end_date,omitempty"`
+}
+
 // CreateRetentionParams: los campos de «Timbrar una constancia de retenciones».
 type CreateRetentionParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
@@ -9831,6 +9911,18 @@ type GetPayrollTaxParams struct {
 	Month string `json:"month"`
 }
 
+// GetRepseProfileParams: los campos de «Ver los datos del sujeto obligado».
+type GetRepseProfileParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetRepseReturnParams: los campos de «Informes ICSOE y SISUB de un cuatrimestre».
+type GetRepseReturnParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // GetRetentionParams: los campos de «Ver una constancia».
 type GetRetentionParams struct {
 	// Con un UUID en vez del id, el emisor (iss_…) si la cuenta tiene varios.
@@ -13083,6 +13175,16 @@ type ListRecurringInvoicesParams struct {
 	Status *string `json:"status,omitempty"`
 }
 
+// ListRepseContractsParams: los campos de «Listar contratos de servicios especializados».
+type ListRepseContractsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListRetentionsParams: los campos de «Listar constancias».
 type ListRetentionsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -13607,11 +13709,11 @@ type MarkInvoicePaidParams struct {
 type MarkPayrollCalendarEventParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
-	// imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo o ajuste_anual.
+	// imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe o sisub.
 	//
-	// Valores: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual.
+	// Valores: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe, sisub.
 	Obligation string `json:"obligation"`
-	// Como lo da GET /v1/payroll_calendar: 2026-11, 2026-B6, 2026, 2026-11:CMX.
+	// Como lo da GET /v1/payroll_calendar: 2026-11, 2026-B6, 2026-C3, 2026, 2026-11:CMX.
 	Key string `json:"key"`
 	// true lo marca pagado; false lo desmarca.
 	Paid bool `json:"paid"`
@@ -14405,8 +14507,10 @@ type PayrollApproval struct {
 	RequestedAt string `json:"requested_at"`
 	// Cuándo se aprobó, rechazó o retiró, o null.
 	DecidedAt *string `json:"decided_at,omitempty"`
-	// Por qué se rechazó (o el comentario de quien la aprobó), o null.
+	// Por qué se rechazó, el comentario de quien la aprobó, o el paso que la aprobó solo; o null.
 	Note *string `json:"note,omitempty"`
+	// Mientras espera (pending): en qué paso de sus «Pasos de aprobación» va (Ajustes › Aprobaciones › Prenómina); null en otro estado.
+	Step *PayrollApprovalStep `json:"step,omitempty"`
 }
 
 // PayrollApprovalList: Una página de la lista.
@@ -14459,6 +14563,16 @@ type PayrollApprovalReceiptTotals struct {
 	TaxesWithheld float64 `json:"taxes_withheld"`
 	// Neto a pagar.
 	Net float64 `json:"net"`
+}
+
+// PayrollApprovalStep: PayrollApprovalStep.
+type PayrollApprovalStep struct {
+	// El paso en que va, desde 1.
+	Number int64 `json:"number"`
+	// Cuántos pasos tiene.
+	Of int64 `json:"of"`
+	// El nombre del paso, como «Finanzas».
+	Name string `json:"name"`
 }
 
 // PayrollBankFile: El archivo para pagar la nómina desde el portal del banco (no cobra nada).
@@ -14633,9 +14747,9 @@ type PayrollCalendar struct {
 type PayrollCalendarEvent struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// pago (una nómina, en su fecha de pago), imss (cuotas del mes, LSS art. 39), rcv_infonavit (bimestrales), isn (impuesto sobre nómina de un estado), aguinaldo (LFT art. 87), ptu (LFT art. 122), prima_riesgo (determinación anual, RACERF art. 32) o ajuste_anual (LISR art. 97).
+	// pago (una nómina, en su fecha de pago), imss (cuotas del mes, LSS art. 39), rcv_infonavit (bimestrales), isn (impuesto sobre nómina de un estado), aguinaldo (LFT art. 87), ptu (LFT art. 122), prima_riesgo (determinación anual, RACERF art. 32), ajuste_anual (LISR art. 97), icsoe (informativa cuatrimestral al IMSS de un contratista REPSE, LSS art. 15-A) o sisub (la del Infonavit, Ley del Infonavit art. 29 Bis).
 	//
-	// Valores: pago, imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual.
+	// Valores: pago, imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe, sisub.
 	Obligation string `json:"obligation"`
 	// Lo identifica junto con obligation: 2026-11 (mes), 2026-B6 (bimestre), 2026 (año), 2026-11:CMX (ISN de un estado) o 2026-11-16/2026-11-30:04 (una nómina).
 	Key string `json:"key"`
@@ -16399,6 +16513,244 @@ type ReportImssMovementsParamsRejectedItem struct {
 	Movement string `json:"movement"`
 	// Lo que dice el IMSS, como en su acuse del IDSE.
 	Reason string `json:"reason"`
+}
+
+// RepseContract: Un contrato de servicios u obras especializados (LFT art. 15) con un cliente, y quién del personal del emisor trabaja en él: lo que piden el ICSOE y el SISUB. Como Nómina › REPSE en la app.
+type RepseContract struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Número de contrato (dígitos, hasta 20).
+	Number string `json:"number"`
+	// Tipo de contrato.
+	Kind string `json:"kind"`
+	// Objeto del contrato.
+	ContractObject string `json:"contract_object"`
+	// El servicio u obra especializada registrado en el REPSE que cubre.
+	Service string `json:"service"`
+	// Monto pactado, en pesos.
+	Amount float64 `json:"amount"`
+	// Inicio de su vigencia (YYYY-MM-DD).
+	StartDate string `json:"start_date"`
+	// Fecha de término, o null si es por tiempo indefinido.
+	EndDate *string `json:"end_date,omitempty"`
+	// Número estimado mensual de trabajadores que pone a disposición.
+	EstimatedWorkers int64 `json:"estimated_workers"`
+	// RFC del cliente (el beneficiario).
+	ClientTaxID string `json:"client_tax_id"`
+	// Razón social del cliente.
+	ClientName string `json:"client_name"`
+	// Registro patronal del cliente, o null si no tiene.
+	ClientEmployerRegistration *string `json:"client_employer_registration,omitempty"`
+	// Domicilio fiscal del cliente.
+	ClientAddress RepseContractClientAddress `json:"client_address"`
+	// El centro de trabajo donde trabajan las personas que pone a disposición.
+	SiteAddress RepseContractSiteAddress `json:"site_address"`
+	// Quién trabaja en el contrato y desde cuándo.
+	Workers []RepseContractWorker `json:"workers"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+}
+
+// RepseContractClientAddress: Domicilio fiscal del cliente.
+type RepseContractClientAddress struct {
+	// Calle.
+	Street string `json:"street"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Código postal.
+	Zip string `json:"zip"`
+	// Municipio o demarcación territorial.
+	Municipality string `json:"municipality"`
+	// Estado (c_Estado).
+	State string `json:"state"`
+}
+
+// RepseContractList: Una página de la lista.
+type RepseContractList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []RepseContract `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// RepseContractSiteAddress: El centro de trabajo donde trabajan las personas que pone a disposición.
+type RepseContractSiteAddress struct {
+	// Calle.
+	Street string `json:"street"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Código postal.
+	Zip string `json:"zip"`
+	// Municipio o demarcación territorial.
+	Municipality string `json:"municipality"`
+	// Estado (c_Estado).
+	State string `json:"state"`
+}
+
+// RepseContractWorker: RepseContractWorker.
+type RepseContractWorker struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Desde cuándo trabaja en el contrato (YYYY-MM-DD).
+	StartDate string `json:"start_date"`
+	// Hasta cuándo, o null mientras siga.
+	EndDate *string `json:"end_date,omitempty"`
+}
+
+// RepseProfile: Lo que el SISUB pide del sujeto obligado (el contratista); la razón social y el registro patronal salen de sus datos fiscales.
+type RepseProfile struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Folio de su registro en el REPSE que dio la STPS.
+	StpsFolio *string `json:"stps_folio,omitempty"`
+	// Correo del sujeto obligado.
+	Email *string `json:"email,omitempty"`
+	// Teléfono, 10 dígitos.
+	Phone *string `json:"phone,omitempty"`
+	// Domicilio fiscal en una línea.
+	Address *string `json:"address,omitempty"`
+	// Representante legal (persona moral).
+	LegalRepresentative *string `json:"legal_representative,omitempty"`
+	// Administrador único (persona moral).
+	SoleAdministrator *string `json:"sole_administrator,omitempty"`
+	// Número de la escritura constitutiva.
+	DeedNumber *string `json:"deed_number,omitempty"`
+	// Nombre del notario público.
+	NotaryName *string `json:"notary_name,omitempty"`
+	// Número de la notaría.
+	NotaryNumber *string `json:"notary_number,omitempty"`
+	// Fecha de la escritura (YYYY-MM-DD).
+	DeedDate *string `json:"deed_date,omitempty"`
+	// Folio mercantil.
+	CommercialFolio *string `json:"commercial_folio,omitempty"`
+}
+
+// RepseReturn: El ICSOE (IMSS, LSS art. 15-A) y el SISUB (Infonavit, Ley del Infonavit art. 29 Bis) de un cuatrimestre, hechos de los contratos y los recibos timbrados. No hay forma de mandarlos por API: se suben, firmados con la e.firma, en cada portal.
+type RepseReturn struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El cuatrimestre: AAAA-1 (enero a abril), AAAA-2 o AAAA-3.
+	Period string `json:"period"`
+	// Primer día del cuatrimestre.
+	StartDate string `json:"start_date"`
+	// Último día del cuatrimestre.
+	EndDate string `json:"end_date"`
+	// Último día para presentarlos: el 17 de enero, mayo o septiembre, o el siguiente día hábil (CFF art. 12).
+	DueDate string `json:"due_date"`
+	// Los contratos vigentes en el cuatrimestre.
+	Contracts []RepseReturnContract `json:"contracts"`
+	// Cada trabajador por bimestre (el detalle de trabajadores del SISUB).
+	Workers []RepseReturnWorker `json:"workers"`
+	// Lo que el archivo del sujeto obligado del SISUB suma.
+	Totals RepseReturnTotals `json:"totals"`
+	// Lo que falta o está mal antes de presentarlos; vacío si nada.
+	Problems []string `json:"problems"`
+	// Los 3 CSV del SISUB (sujeto obligado, contratos, trabajadores) y un CSV de trabajadores del ICSOE por contrato.
+	Files []RepseReturnFile `json:"files"`
+}
+
+// RepseReturnContract: RepseReturnContract.
+type RepseReturnContract struct {
+	// El contrato (rpc_…).
+	Contract string `json:"contract"`
+	// Su número de contrato.
+	Number string `json:"number"`
+	// Sus trabajadores en el cuatrimestre (el CSV del ICSOE).
+	Workers []RepseReturnContractWorker `json:"workers"`
+}
+
+// RepseReturnContractWorker: RepseReturnContractWorker.
+type RepseReturnContractWorker struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su NSS, 11 dígitos.
+	NSS string `json:"nss"`
+	// Su CURP.
+	CURP string `json:"curp"`
+	// Su último salario base de cotización del cuatrimestre, hasta 25 UMA.
+	Sbc float64 `json:"sbc"`
+}
+
+// RepseReturnFile: RepseReturnFile.
+type RepseReturnFile struct {
+	// Nombre del archivo.
+	Name string `json:"name"`
+	// sisub (Infonavit) o icsoe (IMSS).
+	//
+	// Valores: sisub, icsoe.
+	System string `json:"system"`
+	// El CSV, en texto.
+	Content string `json:"content"`
+}
+
+// RepseReturnTotals: Lo que el archivo del sujeto obligado del SISUB suma.
+type RepseReturnTotals struct {
+	// Aportaciones de los trabajadores sin crédito.
+	ContributionsWithoutCredit float64 `json:"contributions_without_credit"`
+	// Aportaciones de los trabajadores con crédito.
+	ContributionsWithCredit float64 `json:"contributions_with_credit"`
+	// Amortizaciones descontadas.
+	Amortizations float64 `json:"amortizations"`
+}
+
+// RepseReturnWorker: RepseReturnWorker.
+type RepseReturnWorker struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su NSS.
+	NSS string `json:"nss"`
+	// El bimestre del año (1 a 6).
+	Bimester int64 `json:"bimester"`
+	// Los números de los contratos en que trabajó ese bimestre.
+	Contracts []string `json:"contracts"`
+	// Las percepciones variables del bimestre anterior que integraron su salario (LSS arts. 27 y 30).
+	VariablePerceptions float64 `json:"variable_perceptions"`
+	// Lo pagado en el bimestre de sueldos, aguinaldo y prima vacacional.
+	FixedPerceptions float64 `json:"fixed_perceptions"`
+	// Días de incapacidad del bimestre.
+	DisabilityDays int64 `json:"disability_days"`
+	// Lo demás pagado en el bimestre que no integra el salario.
+	NonIntegrablePerceptions float64 `json:"non_integrable_perceptions"`
+	// Su salario base al cierre del bimestre, hasta 25 UMA.
+	CappedSalary float64 `json:"capped_salary"`
+	// Su aportación al Infonavit del bimestre (5% del salario base).
+	InfonavitContribution float64 `json:"infonavit_contribution"`
+	// true si tuvo descuento de crédito Infonavit en el bimestre.
+	HasCredit bool `json:"has_credit"`
+	// Lo que se le descontó de amortización del crédito en el bimestre.
+	Amortization float64 `json:"amortization"`
 }
 
 // RequestPurchaseReceiptInvoiceParams: los campos de «Pedir la factura a la tienda».
@@ -21241,6 +21593,112 @@ type UpdateRecurringInvoiceParamsSchedule struct {
 	//
 	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
+}
+
+// UpdateRepseContractParams: los campos de «Cambiar un contrato de servicios especializados».
+type UpdateRepseContractParams struct {
+	// Número de contrato: dígitos, hasta 20 (así lo pide el SISUB).
+	Number *string `json:"number,omitempty"`
+	// Tipo de contrato, como lo dice el contrato.
+	Kind *string `json:"kind,omitempty"`
+	// Objeto del contrato.
+	ContractObject *string `json:"contract_object,omitempty"`
+	// El servicio u obra especializada registrado en el REPSE que cubre.
+	Service *string `json:"service,omitempty"`
+	// Monto pactado, en pesos.
+	Amount *float64 `json:"amount,omitempty"`
+	// Inicio de su vigencia (YYYY-MM-DD).
+	StartDate *string `json:"start_date,omitempty"`
+	// Fecha de término; null si es por tiempo indefinido.
+	EndDate *string `json:"end_date,omitempty"`
+	// Número estimado mensual de trabajadores que pone a disposición.
+	EstimatedWorkers *int64 `json:"estimated_workers,omitempty"`
+	// RFC del cliente (el beneficiario de los servicios).
+	ClientTaxID *string `json:"client_tax_id,omitempty"`
+	// Razón social del cliente.
+	ClientName *string `json:"client_name,omitempty"`
+	// Registro patronal del cliente ante el IMSS, si tiene.
+	ClientEmployerRegistration *string `json:"client_employer_registration,omitempty"`
+	// Domicilio fiscal del cliente.
+	ClientAddress *UpdateRepseContractParamsClientAddress `json:"client_address,omitempty"`
+	// El centro de trabajo donde trabajan las personas que pone a disposición.
+	SiteAddress *UpdateRepseContractParamsSiteAddress `json:"site_address,omitempty"`
+	// Quién trabaja en el contrato y desde cuándo (hasta 2,000).
+	Workers []UpdateRepseContractParamsWorker `json:"workers,omitempty"`
+}
+
+// UpdateRepseContractParamsClientAddress: Domicilio fiscal del cliente.
+type UpdateRepseContractParamsClientAddress struct {
+	// Calle.
+	Street string `json:"street"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Código postal, 5 dígitos.
+	Zip string `json:"zip"`
+	// Municipio o demarcación territorial, sin abreviar.
+	Municipality string `json:"municipality"`
+	// Estado (c_Estado: NLE, CMX…).
+	State string `json:"state"`
+}
+
+// UpdateRepseContractParamsSiteAddress: El centro de trabajo donde trabajan las personas que pone a disposición.
+type UpdateRepseContractParamsSiteAddress struct {
+	// Calle.
+	Street string `json:"street"`
+	// Número exterior.
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior.
+	Interior *string `json:"interior,omitempty"`
+	// Colonia.
+	Neighborhood *string `json:"neighborhood,omitempty"`
+	// Código postal, 5 dígitos.
+	Zip string `json:"zip"`
+	// Municipio o demarcación territorial, sin abreviar.
+	Municipality string `json:"municipality"`
+	// Estado (c_Estado: NLE, CMX…).
+	State string `json:"state"`
+}
+
+// UpdateRepseContractParamsWorker: UpdateRepseContractParamsWorker.
+type UpdateRepseContractParamsWorker struct {
+	// El empleado (emp_…) del mismo emisor.
+	Employee string `json:"employee"`
+	// Desde cuándo trabaja en el contrato (YYYY-MM-DD).
+	StartDate string `json:"start_date"`
+	// Hasta cuándo; null mientras siga.
+	EndDate *string `json:"end_date,omitempty"`
+}
+
+// UpdateRepseProfileParams: los campos de «Guardar los datos del sujeto obligado».
+type UpdateRepseProfileParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Folio de su registro en el REPSE que dio la STPS (AR65000).
+	StpsFolio *string `json:"stps_folio,omitempty"`
+	// Correo del sujeto obligado.
+	Email *string `json:"email,omitempty"`
+	// Teléfono, 10 dígitos.
+	Phone *string `json:"phone,omitempty"`
+	// Domicilio fiscal en una línea: calle, números, colonia, C.P., municipio y estado.
+	Address *string `json:"address,omitempty"`
+	// Representante legal (persona moral).
+	LegalRepresentative *string `json:"legal_representative,omitempty"`
+	// Administrador único, si tiene (persona moral).
+	SoleAdministrator *string `json:"sole_administrator,omitempty"`
+	// Número de la escritura constitutiva (persona moral).
+	DeedNumber *string `json:"deed_number,omitempty"`
+	// Nombre del notario público de la escritura.
+	NotaryName *string `json:"notary_name,omitempty"`
+	// Número de la notaría.
+	NotaryNumber *string `json:"notary_number,omitempty"`
+	// Fecha de la escritura (YYYY-MM-DD).
+	DeedDate *string `json:"deed_date,omitempty"`
+	// Folio mercantil (persona moral).
+	CommercialFolio *string `json:"commercial_folio,omitempty"`
 }
 
 // UpdateRoleParams: los campos de «Cambiar un rol».

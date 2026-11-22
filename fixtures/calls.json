@@ -895,6 +895,62 @@
 		"go": "PayrollCalendar.Mark",
 		"java": "payrollCalendar.mark"
 	},
+	"POST /v1/repse_contracts": {
+		"python": "repse_contracts.create",
+		"php": "repseContracts->create",
+		"dotnet": "RepseContracts.CreateAsync",
+		"go": "RepseContracts.Create",
+		"java": "repseContracts.create"
+	},
+	"GET /v1/repse_contracts": {
+		"python": "repse_contracts.list",
+		"php": "repseContracts->list",
+		"dotnet": "RepseContracts.ListAsync",
+		"go": "RepseContracts.List",
+		"java": "repseContracts.list"
+	},
+	"GET /v1/repse_contracts/{id}": {
+		"python": "repse_contracts.get",
+		"php": "repseContracts->get",
+		"dotnet": "RepseContracts.GetAsync",
+		"go": "RepseContracts.Get",
+		"java": "repseContracts.get"
+	},
+	"POST /v1/repse_contracts/{id}": {
+		"python": "repse_contracts.update",
+		"php": "repseContracts->update",
+		"dotnet": "RepseContracts.UpdateAsync",
+		"go": "RepseContracts.Update",
+		"java": "repseContracts.update"
+	},
+	"DELETE /v1/repse_contracts/{id}": {
+		"python": "repse_contracts.delete",
+		"php": "repseContracts->delete",
+		"dotnet": "RepseContracts.DeleteAsync",
+		"go": "RepseContracts.Delete",
+		"java": "repseContracts.delete"
+	},
+	"GET /v1/repse_profile": {
+		"python": "repse_profile.get",
+		"php": "repseProfile->get",
+		"dotnet": "RepseProfile.GetAsync",
+		"go": "RepseProfile.Get",
+		"java": "repseProfile.get"
+	},
+	"POST /v1/repse_profile": {
+		"python": "repse_profile.update",
+		"php": "repseProfile->update",
+		"dotnet": "RepseProfile.UpdateAsync",
+		"go": "RepseProfile.Update",
+		"java": "repseProfile.update"
+	},
+	"GET /v1/repse_returns/{period}": {
+		"python": "repse_returns.get",
+		"php": "repseReturns->get",
+		"dotnet": "RepseReturns.GetAsync",
+		"go": "RepseReturns.Get",
+		"java": "repseReturns.get"
+	},
 	"GET /v1/payroll_org_chart": {
 		"python": "payroll_org_chart.get",
 		"php": "payrollOrgChart->get",
