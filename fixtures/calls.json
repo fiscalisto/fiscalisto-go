@@ -1280,6 +1280,41 @@
 		"go": "Rules.ListRuns",
 		"java": "rules.listRuns"
 	},
+	"POST /v1/supplier_groups": {
+		"python": "supplier_groups.create",
+		"php": "supplierGroups->create",
+		"dotnet": "SupplierGroups.CreateAsync",
+		"go": "SupplierGroups.Create",
+		"java": "supplierGroups.create"
+	},
+	"GET /v1/supplier_groups": {
+		"python": "supplier_groups.list",
+		"php": "supplierGroups->list",
+		"dotnet": "SupplierGroups.ListAsync",
+		"go": "SupplierGroups.List",
+		"java": "supplierGroups.list"
+	},
+	"GET /v1/supplier_groups/{id}": {
+		"python": "supplier_groups.get",
+		"php": "supplierGroups->get",
+		"dotnet": "SupplierGroups.GetAsync",
+		"go": "SupplierGroups.Get",
+		"java": "supplierGroups.get"
+	},
+	"POST /v1/supplier_groups/{id}": {
+		"python": "supplier_groups.update",
+		"php": "supplierGroups->update",
+		"dotnet": "SupplierGroups.UpdateAsync",
+		"go": "SupplierGroups.Update",
+		"java": "supplierGroups.update"
+	},
+	"DELETE /v1/supplier_groups/{id}": {
+		"python": "supplier_groups.delete",
+		"php": "supplierGroups->delete",
+		"dotnet": "SupplierGroups.DeleteAsync",
+		"go": "SupplierGroups.Delete",
+		"java": "supplierGroups.delete"
+	},
 	"GET /v1/findings": {
 		"python": "findings.list",
 		"php": "findings->list",
@@ -2945,6 +2980,13 @@
 		"dotnet": "PayrollProvisions.DeleteAsync",
 		"go": "PayrollProvisions.Delete",
 		"java": "payrollProvisions.delete"
+	},
+	"POST /v1/accounting/payroll_provisions/{month}/sua_comparison": {
+		"python": "payroll_provisions.compare_sua",
+		"php": "payrollProvisions->compareSua",
+		"dotnet": "PayrollProvisions.CompareSuaAsync",
+		"go": "PayrollProvisions.CompareSua",
+		"java": "payrollProvisions.compareSua"
 	},
 	"GET /v1/accounting/tax_determinations/{month}": {
 		"python": "tax_determinations.get",

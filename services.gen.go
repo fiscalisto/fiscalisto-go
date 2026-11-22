@@ -98,6 +98,8 @@ type services struct {
 	Branches *BranchesService
 	// Reglas.
 	Rules *RulesService
+	// Reglas.
+	SupplierGroups *SupplierGroupsService
 	// Hallazgos.
 	Findings *FindingsService
 	// Centros de costo.
@@ -294,6 +296,7 @@ func (s *services) init(c *Client) {
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
 	s.Rules = &RulesService{c}
+	s.SupplierGroups = &SupplierGroupsService{c}
 	s.Findings = &FindingsService{c}
 	s.CostCenters = &CostCentersService{c}
 	s.Tags = &TagsService{c}
@@ -3425,6 +3428,85 @@ func (s *RulesService) ListRuns(ctx context.Context, id string, params *ListRule
 // ListRunsAutoPaging: Historial de una regla, todos, página por página: for x, err := range …
 func (s *RulesService) ListRunsAutoPaging(ctx context.Context, id string, params *ListRuleRunsParams, opts ...RequestOption) iter.Seq2[RuleRun, error] {
 	return listAll[RuleRun](ctx, s.c, "/v1/rules/"+url.PathEscape(id)+"/runs", params, opts)
+}
+
+// SupplierGroupsService: Reglas (client.SupplierGroups).
+type SupplierGroupsService struct{ c *Client }
+
+// Create: Crear un grupo de proveedores
+//
+// Un grupo de proveedores (fletes, materia prima…), como Proveedores › Grupos en la app. Cada proveedor está en un solo grupo: los de suppliers salen del que tenían. Una regla vale para todo el grupo con la condición supplierGroup.
+//
+// POST /v1/supplier_groups
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/create-supplier-group
+func (s *SupplierGroupsService) Create(ctx context.Context, params *CreateSupplierGroupParams, opts ...RequestOption) (*SupplierGroup, error) {
+	out := new(SupplierGroup)
+	if err := s.c.do(ctx, "POST", "/v1/supplier_groups", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// List: Listar grupos de proveedores
+//
+// Los grupos de proveedores, con cuántos proveedores tiene cada uno.
+//
+// GET /v1/supplier_groups
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/list-supplier-groups
+func (s *SupplierGroupsService) List(ctx context.Context, params *ListSupplierGroupsParams, opts ...RequestOption) (*Page[SupplierGroup], error) {
+	return list[SupplierGroup](ctx, s.c, "/v1/supplier_groups", params, "", opts)
+}
+
+// ListAutoPaging: Listar grupos de proveedores, todos, página por página: for x, err := range …
+func (s *SupplierGroupsService) ListAutoPaging(ctx context.Context, params *ListSupplierGroupsParams, opts ...RequestOption) iter.Seq2[SupplierGroup, error] {
+	return listAll[SupplierGroup](ctx, s.c, "/v1/supplier_groups", params, opts)
+}
+
+// Get: Ver un grupo de proveedores
+//
+// Un grupo de proveedores.
+//
+// GET /v1/supplier_groups/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/get-supplier-group
+func (s *SupplierGroupsService) Get(ctx context.Context, id string, opts ...RequestOption) (*SupplierGroup, error) {
+	out := new(SupplierGroup)
+	if err := s.c.do(ctx, "GET", "/v1/supplier_groups/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Actualizar un grupo de proveedores
+//
+// Cambia solo lo que manda: su nombre, su color, los proveedores que entran (add_suppliers) y los que salen (remove_suppliers).
+//
+// POST /v1/supplier_groups/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/update-supplier-group
+func (s *SupplierGroupsService) Update(ctx context.Context, id string, params *UpdateSupplierGroupParams, opts ...RequestOption) (*SupplierGroup, error) {
+	out := new(SupplierGroup)
+	if err := s.c.do(ctx, "POST", "/v1/supplier_groups/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Delete: Quitar un grupo de proveedores
+//
+// Sus proveedores se quedan sin grupo, y las reglas que lo usan ya no aplican a nadie.
+//
+// DELETE /v1/supplier_groups/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/delete-supplier-group
+func (s *SupplierGroupsService) Delete(ctx context.Context, id string, opts ...RequestOption) (*Deleted, error) {
+	out := new(Deleted)
+	if err := s.c.do(ctx, "DELETE", "/v1/supplier_groups/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // FindingsService: Hallazgos (client.Findings).
@@ -7023,6 +7105,21 @@ func (s *PayrollProvisionsService) Create(ctx context.Context, month string, par
 func (s *PayrollProvisionsService) Delete(ctx context.Context, month string, params *DeletePayrollProvisionParams, opts ...RequestOption) (*PayrollProvision, error) {
 	out := new(PayrollProvision)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/payroll_provisions/"+url.PathEscape(month), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CompareSua: Comparar las cuotas de un mes con el SUA
+//
+// Lee la cédula de determinación de cuotas que imprimió el SUA para el mes (la mensual, del IMSS: cuota fija, excedente, prestaciones en dinero, gastos médicos de pensionados, riesgos de trabajo, invalidez y vida y guarderías) y la compara trabajador por trabajador, por su NSS, con lo que Fiscalisto calculó de los recibos timbrados: quién está solo en uno de los dos y en qué difieren los días, el salario base de cotización o las cuotas (hasta un peso es redondeo del SUA). Se calcula con la prima de riesgo de la cédula. No guarda nada: si el SUA tiene razón, mande sus importes a POST /v1/accounting/payroll_provisions/{month}. Como Cierre del mes › Cuotas patronales del mes › Comparar con el SUA en la app. Una cédula de otro mes contesta workers vacío y cedula_month con su mes.
+//
+// POST /v1/accounting/payroll_provisions/{month}/sua_comparison
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/compare-sua-cedula
+func (s *PayrollProvisionsService) CompareSua(ctx context.Context, month string, params *CompareSuaCedulaParams, opts ...RequestOption) (*SuaComparison, error) {
+	out := new(SuaComparison)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/payroll_provisions/"+url.PathEscape(month)+"/sua_comparison", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
