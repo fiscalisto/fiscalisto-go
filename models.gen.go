@@ -5527,7 +5527,7 @@ type CreateRecurringInvoiceParamsSchedule struct {
 	StartDate *string `json:"start_date,omitempty"`
 	// La hora (0 a 23) en que se timbra, en time_zone. Por omisión 7.
 	Hour *int64 `json:"hour,omitempty"`
-	// La zona de esa hora. Por omisión America/Mexico_City.
+	// La zona de esa hora. Por omisión, la de la empresa emisora (su «Zona horaria»).
 	//
 	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
@@ -13713,9 +13713,9 @@ type MarkInvoicePaidParams struct {
 type MarkPayrollCalendarEventParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
-	// imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe o sisub.
+	// imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe, sisub o renovacion_repse.
 	//
-	// Valores: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe, sisub.
+	// Valores: imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe, sisub, renovacion_repse.
 	Obligation string `json:"obligation"`
 	// Como lo da GET /v1/payroll_calendar: 2026-11, 2026-B6, 2026-C3, 2026, 2026-11:CMX.
 	Key string `json:"key"`
@@ -14751,9 +14751,9 @@ type PayrollCalendar struct {
 type PayrollCalendarEvent struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// pago (una nómina, en su fecha de pago), imss (cuotas del mes, LSS art. 39), rcv_infonavit (bimestrales), isn (impuesto sobre nómina de un estado), aguinaldo (LFT art. 87), ptu (LFT art. 122), prima_riesgo (determinación anual, RACERF art. 32), ajuste_anual (LISR art. 97), icsoe (informativa cuatrimestral al IMSS de un contratista REPSE, LSS art. 15-A) o sisub (la del Infonavit, Ley del Infonavit art. 29 Bis).
+	// pago (una nómina, en su fecha de pago), imss (cuotas del mes, LSS art. 39), rcv_infonavit (bimestrales), isn (impuesto sobre nómina de un estado), aguinaldo (LFT art. 87), ptu (LFT art. 122), prima_riesgo (determinación anual, RACERF art. 32), ajuste_anual (LISR art. 97), icsoe (informativa cuatrimestral al IMSS de un contratista REPSE, LSS art. 15-A), sisub (la del Infonavit, Ley del Infonavit art. 29 Bis) o renovacion_repse (la renovación del registro en el REPSE cada tres años, LFT art. 15).
 	//
-	// Valores: pago, imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe, sisub.
+	// Valores: pago, imss, rcv_infonavit, isn, aguinaldo, ptu, prima_riesgo, ajuste_anual, icsoe, sisub, renovacion_repse.
 	Obligation string `json:"obligation"`
 	// Lo identifica junto con obligation: 2026-11 (mes), 2026-B6 (bimestre), 2026 (año), 2026-11:CMX (ISN de un estado) o 2026-11-16/2026-11-30:04 (una nómina).
 	Key string `json:"key"`
@@ -16433,7 +16433,7 @@ type RecurringInvoiceSchedule struct {
 	DayOfMonth json.RawMessage `json:"day_of_month,omitempty"`
 	// La hora (0 a 23) en que se timbra, en time_zone.
 	Hour int64 `json:"hour"`
-	// La zona de esa hora (America/Mexico_City, America/Cancun…).
+	// La zona de esa hora (America/Mexico_City, America/Cancun…); sin ella, la de la empresa emisora.
 	TimeZone string `json:"time_zone"`
 }
 
@@ -16631,6 +16631,10 @@ type RepseProfile struct {
 	Issuer string `json:"issuer"`
 	// Folio de su registro en el REPSE que dio la STPS.
 	StpsFolio *string `json:"stps_folio,omitempty"`
+	// Fecha en que la STPS otorgó el registro o su última renovación.
+	StpsRegistrationDate *string `json:"stps_registration_date,omitempty"`
+	// Cuándo renovar el registro; null sin fecha de registro.
+	Renewal *RepseProfileRenewal `json:"renewal,omitempty"`
 	// Correo del sujeto obligado.
 	Email *string `json:"email,omitempty"`
 	// Teléfono, 10 dígitos.
@@ -16651,6 +16655,14 @@ type RepseProfile struct {
 	DeedDate *string `json:"deed_date,omitempty"`
 	// Folio mercantil.
 	CommercialFolio *string `json:"commercial_folio,omitempty"`
+}
+
+// RepseProfileRenewal: RepseProfileRenewal.
+type RepseProfileRenewal struct {
+	// Primer día para pedir la renovación (tres meses antes del vencimiento).
+	OpensOn string `json:"opens_on"`
+	// Último día de vigencia del registro: tres años desde que se otorgó (LFT art. 15).
+	LastDay string `json:"last_day"`
 }
 
 // RepseReturn: El ICSOE (IMSS, LSS art. 15-A) y el SISUB (Infonavit, Ley del Infonavit art. 29 Bis) de un cuatrimestre, hechos de los contratos y los recibos timbrados. No hay forma de mandarlos por API: se suben, firmados con la e.firma, en cada portal.
@@ -21597,7 +21609,7 @@ type UpdateRecurringInvoiceParamsSchedule struct {
 	StartDate *string `json:"start_date,omitempty"`
 	// La hora (0 a 23) en que se timbra, en time_zone. Por omisión 7.
 	Hour *int64 `json:"hour,omitempty"`
-	// La zona de esa hora. Por omisión America/Mexico_City.
+	// La zona de esa hora. Por omisión, la de la empresa emisora (su «Zona horaria»).
 	//
 	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
@@ -21687,6 +21699,8 @@ type UpdateRepseProfileParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Folio de su registro en el REPSE que dio la STPS (AR65000).
 	StpsFolio *string `json:"stps_folio,omitempty"`
+	// Fecha en que la STPS otorgó el registro o su última renovación (YYYY-MM-DD). Se renueva cada tres años (LFT art. 15).
+	StpsRegistrationDate *string `json:"stps_registration_date,omitempty"`
 	// Correo del sujeto obligado.
 	Email *string `json:"email,omitempty"`
 	// Teléfono, 10 dígitos.
