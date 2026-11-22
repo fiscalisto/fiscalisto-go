@@ -1342,7 +1342,7 @@ func (s *BankTransactionsService) Match(ctx context.Context, id string, params *
 
 // Classify: Explicar un depósito sin factura
 //
-// Un depósito que ninguna factura explica: venta (aún sin facturar), prestamo, traspaso o devolucion. El SAT puede presumir ingreso un depósito sin explicar (CFF art. 59 fr. III).
+// Un depósito que ninguna factura explica: venta (aún sin facturar), prestamo, traspaso, devolucion o intereses. El SAT puede presumir ingreso un depósito sin explicar (CFF art. 59 fr. III).
 //
 // POST /v1/bank_transactions/{id}/classify
 //
@@ -6777,7 +6777,7 @@ type BankMovementsService struct{ c *Client }
 
 // List: Listar los movimientos de banco sin factura
 //
-// Los movimientos de banco de un mes que ninguna factura explica: los retiros de los estados de cuenta importados en la conciliación (comisiones, impuestos, pagos de préstamos, traspasos) y los depósitos que ahí se clasificaron como préstamo, traspaso o devolución. Cada uno con su póliza, si ya se registró, y la cuenta sugerida. Lo que pagó o cobró una factura ya está en la contabilidad por su CFDI.
+// Los movimientos de banco de un mes que ninguna factura explica: los retiros de los estados de cuenta importados en la conciliación (comisiones, impuestos, pagos de préstamos, traspasos) y los depósitos que ahí se clasificaron como préstamo, traspaso, devolución o intereses. Cada uno con su póliza, si ya se registró, y la cuenta sugerida. Lo que pagó o cobró una factura ya está en la contabilidad por su CFDI.
 //
 // GET /v1/accounting/bank_movements
 //
