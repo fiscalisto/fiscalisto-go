@@ -4125,6 +4125,51 @@ func (s *RulesService) ListRunsAutoPaging(ctx context.Context, id string, params
 	return listAll[RuleRun](ctx, s.c, "/v1/rules/"+url.PathEscape(id)+"/runs", params, opts)
 }
 
+// Backtest: Probar una regla en los últimos días
+//
+// Con todos los registros de su trigger de los últimos days días (90 por omisión, hasta 2,000): en cuántos se cumple, cuánto suman y qué habría hecho. No cambia nada.
+//
+// POST /v1/rules/{id}/backtest
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/backtest-rule
+func (s *RulesService) Backtest(ctx context.Context, id string, params *BacktestRuleParams, opts ...RequestOption) (*RuleBacktest, error) {
+	out := new(RuleBacktest)
+	if err := s.c.do(ctx, "POST", "/v1/rules/"+url.PathEscape(id)+"/backtest", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ListVersions: Cambios de una regla
+//
+// Cada cambio, el más reciente primero, con quién lo hizo y la regla como quedó. También de una regla borrada (90 días).
+//
+// GET /v1/rules/{id}/versions
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/list-rule-versions
+func (s *RulesService) ListVersions(ctx context.Context, id string, opts ...RequestOption) (*RuleVersionList, error) {
+	out := new(RuleVersionList)
+	if err := s.c.do(ctx, "GET", "/v1/rules/"+url.PathEscape(id)+"/versions", nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RestoreVersion: Regresar una regla a una versión
+//
+// La regla vuelve a como quedó en esa versión; una borrada vuelve a existir. Se revisa como cualquier cambio y queda como una versión más.
+//
+// POST /v1/rules/{id}/versions/{version}/restore
+//
+// https://fiscalisto.com/docs/api/referencia/reglas/restore-rule-version
+func (s *RulesService) RestoreVersion(ctx context.Context, id string, version string, opts ...RequestOption) (*Rule, error) {
+	out := new(Rule)
+	if err := s.c.do(ctx, "POST", "/v1/rules/"+url.PathEscape(id)+"/versions/"+url.PathEscape(version)+"/restore", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SupplierGroupsService: Reglas (client.SupplierGroups).
 type SupplierGroupsService struct{ c *Client }
 

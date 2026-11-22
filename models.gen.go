@@ -1115,6 +1115,12 @@ type AutomaticJournalEntryOriginalLine struct {
 	CostCenter *string `json:"cost_center,omitempty"`
 }
 
+// BacktestRuleParams: los campos de «Probar una regla en los últimos días».
+type BacktestRuleParams struct {
+	// Cuántos días hacia atrás (90 por omisión, hasta 90).
+	Days *int64 `json:"days,omitempty"`
+}
+
 // Balance: Timbres de producción de la cuenta, por paquete, el que vence antes primero.
 type Balance struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -17579,6 +17585,32 @@ type RuleActionColumns struct {
 	TablaProductos []string `json:"tabla_productos,omitempty"`
 }
 
+// RuleBacktest: Lo que la regla habría hecho en los últimos días, contado (sin cambiar nada).
+type RuleBacktest struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// La regla (rul_…).
+	Rule string `json:"rule"`
+	// Cuántos días hacia atrás revisó.
+	Days int64 `json:"days"`
+	// Desde qué día (YYYY-MM-DD, hora de México).
+	Since string `json:"since"`
+	// Cuántas facturas, órdenes, movimientos o avisos de su trigger revisó.
+	Records int64 `json:"records"`
+	// En cuántos se habrían cumplido sus condiciones.
+	Matches int64 `json:"matches"`
+	// Lo que suman los que cumplen, en pesos; null para los avisos del SAT o si ninguno cumple.
+	Amount *float64 `json:"amount,omitempty"`
+	// true: revisó los 2,000 más recientes y se detuvo ahí.
+	Capped bool `json:"capped"`
+	// Lo que habría hecho con cada uno que cumple, en palabras.
+	WouldDo []string `json:"would_do"`
+	// Lo que habría hecho con los demás («Si no se cumple»), en palabras.
+	ElseWouldDo []string `json:"else_would_do"`
+	// Días que espera y vuelve a revisar antes de actuar (0: actúa en seguida).
+	WaitDays int64 `json:"wait_days"`
+}
+
 // RuleConditions: Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
 type RuleConditions struct {
 	// all: se cumplen todas; any: basta con una.
@@ -17849,6 +17881,36 @@ type RuleTestList struct {
 	Object string `json:"object"`
 	// Los objetos de esta página.
 	Data []RuleTest `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// RuleVersion: Un cambio a una regla, con la regla como quedó. Se guardan las últimas 50 de cada regla; las de una regla borrada, 90 días.
+type RuleVersion struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Qué cambió: created, edited, paused (en pausa), resumed (activada), deleted o restored (regresó a una versión anterior).
+	//
+	// Valores: created, edited, paused, resumed, deleted, restored.
+	Change string `json:"change"`
+	// El miembro (mem_…) que la cambió; null si fue la API o Fiscalisto.
+	ChangedBy *string `json:"changed_by,omitempty"`
+	// La regla como quedó después de este cambio.
+	Rule Rule `json:"rule"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt string `json:"created_at"`
+}
+
+// RuleVersionList: Una página de la lista.
+type RuleVersionList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []RuleVersion `json:"data"`
 	// true si hay más: pida la siguiente con starting_after igual al id del último.
 	HasMore bool `json:"has_more"`
 	// La ruta de esta lista.

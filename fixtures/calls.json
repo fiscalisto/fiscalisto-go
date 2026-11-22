@@ -1574,6 +1574,27 @@
 		"go": "Rules.ListRuns",
 		"java": "rules.listRuns"
 	},
+	"POST /v1/rules/{id}/backtest": {
+		"python": "rules.backtest",
+		"php": "rules->backtest",
+		"dotnet": "Rules.BacktestAsync",
+		"go": "Rules.Backtest",
+		"java": "rules.backtest"
+	},
+	"GET /v1/rules/{id}/versions": {
+		"python": "rules.list_versions",
+		"php": "rules->listVersions",
+		"dotnet": "Rules.ListVersionsAsync",
+		"go": "Rules.ListVersions",
+		"java": "rules.listVersions"
+	},
+	"POST /v1/rules/{id}/versions/{version}/restore": {
+		"python": "rules.restore_version",
+		"php": "rules->restoreVersion",
+		"dotnet": "Rules.RestoreVersionAsync",
+		"go": "Rules.RestoreVersion",
+		"java": "rules.restoreVersion"
+	},
 	"POST /v1/supplier_groups": {
 		"python": "supplier_groups.create",
 		"php": "supplierGroups->create",
