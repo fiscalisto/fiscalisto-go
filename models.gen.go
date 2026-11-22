@@ -6815,6 +6815,12 @@ type CreateTicketParams struct {
 	IVA *string `json:"iva,omitempty"`
 	// Impuestos locales incluidos en su total, como el ISH 3.5% de hospedaje, con `product_key` (un producto lleva los suyos). Cada uno se calcula sobre la base de este concepto y la factura los suma por nombre y tasa en el complemento de impuestos locales.
 	LocalTaxes []CreateTicketParamsLocalTax `json:"local_taxes,omitempty"`
+	// IEPS incluido en su total, con `product_key` (un producto lleva el suyo): una tasa de c_TasaOCuota como 0.08 (botanas) o, con `ieps_factor` `Cuota`, pesos por unidad. La factura global lo desglosa aparte (RMF 2026 regla 2.7.1.21); la factura de un cliente que no paga IEPS lo lleva dentro del precio (LIEPS art. 19 fr. II).
+	IEPS *float64 `json:"ieps,omitempty"`
+	// `Tasa` (por omisión) o `Cuota` (pesos por unidad).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// Quién pagó, para reconocer la venta en Tickets. No es el receptor de la factura (eso lo escribe el comprador en el portal) y no se le manda nada.
 	Buyer *CreateTicketParamsBuyer `json:"buyer,omitempty"`
 	// Sucursal (brn_…) donde se hizo la venta: su factura se timbra desde ahí (su código postal en LugarExpedicion) y el portal muestra el nombre comercial y el logo de la sucursal. Sin ella, la Matriz.
@@ -6847,6 +6853,12 @@ type CreateTicketParamsLine struct {
 	IVA *string `json:"iva,omitempty"`
 	// Impuestos locales incluidos en su total, como el ISH 3.5% de hospedaje, con `product_key` (un producto lleva los suyos). Cada uno se calcula sobre la base de este concepto y la factura los suma por nombre y tasa en el complemento de impuestos locales.
 	LocalTaxes []CreateTicketParamsLineLocalTax `json:"local_taxes,omitempty"`
+	// IEPS incluido en su total, con `product_key` (un producto lleva el suyo): una tasa de c_TasaOCuota como 0.08 (botanas) o, con `ieps_factor` `Cuota`, pesos por unidad. La factura global lo desglosa aparte (RMF 2026 regla 2.7.1.21); la factura de un cliente que no paga IEPS lo lleva dentro del precio (LIEPS art. 19 fr. II).
+	IEPS *float64 `json:"ieps,omitempty"`
+	// `Tasa` (por omisión) o `Cuota` (pesos por unidad).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// Lo que solo dice esta venta, como las noches, fechas y número de reservación de una estancia. Con él, la factura dice «Hospedaje · 6 noches, del 14 al 20 de noviembre»; cuándo va lo decide `invoice_concepts.line_detail` de la autofactura (por omisión, el cliente lo elige en el portal).
 	Detail *string `json:"detail,omitempty"`
 	// Unidades (noches, piezas). Por omisión 1.
@@ -20481,6 +20493,12 @@ type TicketLine struct {
 	IVA *string `json:"iva,omitempty"`
 	// Sus impuestos locales (los de su producto o los que mandó), incluidos en su total.
 	LocalTaxes []TicketLineLocalTax `json:"local_taxes"`
+	// Su IEPS (el de su producto o el que mandó), incluido en su total: una tasa o, con `ieps_factor` `Cuota`, pesos por unidad. `null`: sin IEPS.
+	IEPS *float64 `json:"ieps,omitempty"`
+	// Tasa o Cuota (TipoFactor del IEPS).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// El detalle que mandó (noches, fechas, reservación): va después de la descripción en la factura según `invoice_concepts.line_detail` de la autofactura.
 	Detail *string `json:"detail,omitempty"`
 	// Cantidad (Cantidad). Por omisión 1.
