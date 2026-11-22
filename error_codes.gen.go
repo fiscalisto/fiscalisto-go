@@ -104,6 +104,8 @@ const (
 	CodeExportNotReady = "export_not_ready"
 	// En producción, inventario avanzado, portal de proveedores, pedidos de venta y comprobación de gastos siguen el plan de la empresa, como en la app: vienen con Operaciones (se agrega a cualquier plan de pago; incluida en Corporativo). La contabilidad (/v1/accounting/…, salvo DIOT, cross_checks, vat_refund y fixed_assets) viene con Contabilidad (se agrega a Independiente, Emprendedor o Negocio; incluida en Despacho y Corporativo): sin ella, cambiar los libros responde este error, y leerlos solo funciona hasta el último mes en que la tuvo. En modo de pruebas están todos.
 	CodeFeatureNotInPlan = "feature_not_in_plan"
+	// El hallazgo ya no aplica: lo que lo causó cambió (status resolved). No hay nada que revisar.
+	CodeFindingResolved = "finding_resolved"
 	// Idempotency-Key es de 1 a 255 caracteres ASCII, sin acentos ni ñ: el id de su pedido o un UUID.
 	CodeIdempotencyKeyInvalid = "idempotency_key_invalid"
 	// Lo que timbra exige el encabezado Idempotency-Key (8 a 255 caracteres, uno nuevo por comprobante). Así un reintento nunca timbra dos veces.

@@ -5021,7 +5021,7 @@ type CreateRecurringInvoiceParamsSchedule struct {
 	Hour *int64 `json:"hour,omitempty"`
 	// La zona de esa hora. Por omisión America/Mexico_City.
 	//
-	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Ciudad_Juarez.
+	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
 }
 
@@ -8481,6 +8481,82 @@ type FinancialStatementsIncomeStatementYearToDateSectionGroupAccount struct {
 	Amount float64 `json:"amount"`
 }
 
+// Finding: Un hallazgo en una orden de compra, un pago, un proveedor o la contabilidad: lo que Fiscalisto encontró y conviene revisar. Los de facturas están en SatFinding.
+type Finding struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// purchase_orders (órdenes de compra), payouts (pagos a proveedores), suppliers (proveedores), accounting (contabilidad) o bank (movimientos del banco).
+	//
+	// Valores: purchase_orders, payouts, suppliers, accounting, bank.
+	Area *string `json:"area,omitempty"`
+	// En qué registro está.
+	Record FindingRecord `json:"record"`
+	// El tipo de hallazgo (oc_factura_distinta, prov_lista_sat…).
+	Code string `json:"code"`
+	// critical (grave), warning (revisar) o info (aviso), como lo puso la empresa.
+	//
+	// Valores: critical, warning, info.
+	Severity string `json:"severity"`
+	// El tipo de hallazgo en palabras.
+	Title string `json:"title"`
+	// Qué significa y por qué, con el artículo.
+	Explanation *string `json:"explanation,omitempty"`
+	// Qué encontró exactamente en este registro.
+	Text string `json:"text"`
+	// El monto en cuestión, en pesos, o null.
+	Amount *float64 `json:"amount,omitempty"`
+	// El RFC del proveedor, o null.
+	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
+	// open: nadie lo ha revisado; reviewed: alguien dijo que está bien; resolved: ya no aplica (lo que lo causó cambió).
+	//
+	// Valores: open, reviewed, resolved.
+	Status string `json:"status"`
+	// true si detiene su registro hasta que alguien lo revise («No dejar aprobar», «No dejar pagar»).
+	HoldsRecord bool `json:"holds_record"`
+	// Por qué está bien, si quien lo revisó lo dijo.
+	Note *string `json:"note,omitempty"`
+	// Cuándo lo encontró.
+	CreatedAt *string `json:"created_at,omitempty"`
+	// La última vez que cambió su texto.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	// Cuándo lo revisaron, o null.
+	ReviewedAt *string `json:"reviewed_at,omitempty"`
+	// Cuándo dejó de aplicar, o null.
+	ResolvedAt *string `json:"resolved_at,omitempty"`
+}
+
+// FindingList: Una página de la lista.
+type FindingList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []Finding `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// FindingRecord: En qué registro está.
+type FindingRecord struct {
+	// purchase_order, payout, supplier, poliza (la contabilidad de un mes), account (una cuenta en un mes) o bank_movement.
+	//
+	// Valores: purchase_order, payout, supplier, poliza, account, bank_movement.
+	Type string `json:"type"`
+	// Su id en la API: el pago (pyo_…) o el RFC del proveedor; null si no tiene.
+	ID *string `json:"id,omitempty"`
+	// Cómo lo nombra Fiscalisto: el número de la orden, el RFC, «RFC:AAAA-MM» un mes de contabilidad, «RFC:AAAA-MM:cuenta» una cuenta.
+	Reference string `json:"reference"`
+	// El registro en palabras: «Orden de compra 12».
+	Description string `json:"description"`
+}
+
 // FixedAsset: Un activo fijo del emisor en su contabilidad al cierre de un mes: su monto original, su depreciación en línea recta (tasas del artículo 34 de la LISR) y su valor en libros.
 type FixedAsset struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -11907,6 +11983,32 @@ type ListExportsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListFindingsParams: los campos de «Listar hallazgos».
+type ListFindingsParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// Solo los de un área: purchase_orders, payouts, suppliers, accounting o bank.
+	//
+	// Valores: purchase_orders, payouts, suppliers, accounting, bank.
+	Area *string `json:"area,omitempty"`
+	// open (por omisión: sin revisar), reviewed (revisados), resolved (ya no aplican) o all.
+	//
+	// Valores: open, reviewed, resolved, all.
+	Status *string `json:"status,omitempty"`
+	// Solo los de esta gravedad: critical, warning o info.
+	//
+	// Valores: critical, warning, info.
+	Severity *string `json:"severity,omitempty"`
+	// Solo este tipo de hallazgo (oc_factura_distinta…).
+	Code *string `json:"code,omitempty"`
+	// Solo los de este proveedor (su RFC).
+	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
 }
 
 // ListFixedAssetsParams: los campos de «Listar los activos fijos».
@@ -15717,6 +15819,12 @@ type ReturnExpenseReportParams struct {
 type RevertAutomaticEntryParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ReviewFindingParams: los campos de «Marcar un hallazgo como revisado».
+type ReviewFindingParams struct {
+	// Por qué está bien (hasta 500 caracteres).
+	Note *string `json:"note,omitempty"`
 }
 
 // Role: Un rol de la empresa: un nombre y sus permisos.
@@ -19803,7 +19911,7 @@ type UpdateRecurringInvoiceParamsSchedule struct {
 	Hour *int64 `json:"hour,omitempty"`
 	// La zona de esa hora. Por omisión America/Mexico_City.
 	//
-	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Ciudad_Juarez.
+	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
 }
 

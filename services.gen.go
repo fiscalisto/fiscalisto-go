@@ -92,6 +92,8 @@ type services struct {
 	Branches *BranchesService
 	// Reglas.
 	Rules *RulesService
+	// Hallazgos.
+	Findings *FindingsService
 	// Centros de costo.
 	CostCenters *CostCentersService
 	// Etiquetas.
@@ -283,6 +285,7 @@ func (s *services) init(c *Client) {
 	s.TaxIds = &TaxIdsService{c}
 	s.Branches = &BranchesService{c}
 	s.Rules = &RulesService{c}
+	s.Findings = &FindingsService{c}
 	s.CostCenters = &CostCentersService{c}
 	s.Tags = &TagsService{c}
 	s.PriceLists = &PriceListsService{c}
@@ -3152,6 +3155,70 @@ func (s *RulesService) ListRuns(ctx context.Context, id string, params *ListRule
 // ListRunsAutoPaging: Historial de una regla, todos, página por página: for x, err := range …
 func (s *RulesService) ListRunsAutoPaging(ctx context.Context, id string, params *ListRuleRunsParams, opts ...RequestOption) iter.Seq2[RuleRun, error] {
 	return listAll[RuleRun](ctx, s.c, "/v1/rules/"+url.PathEscape(id)+"/runs", params, opts)
+}
+
+// FindingsService: Hallazgos (client.Findings).
+type FindingsService struct{ c *Client }
+
+// List: Listar hallazgos
+//
+// Lo que Fiscalisto encontró en las órdenes de compra, pagos, proveedores y contabilidad del emisor, el más reciente primero: una factura que no coincide con su orden, un proveedor en la lista 69-B, un documento vencido, Caja con saldo acreedor. Sin status, los que nadie ha revisado. Los de facturas están en GET /v1/sat_findings. No usa timbres.
+//
+// GET /v1/findings
+//
+// https://fiscalisto.com/docs/api/referencia/hallazgos/list-findings
+func (s *FindingsService) List(ctx context.Context, params *ListFindingsParams, opts ...RequestOption) (*Page[Finding], error) {
+	return list[Finding](ctx, s.c, "/v1/findings", params, "", opts)
+}
+
+// ListAutoPaging: Listar hallazgos, todos, página por página: for x, err := range …
+func (s *FindingsService) ListAutoPaging(ctx context.Context, params *ListFindingsParams, opts ...RequestOption) iter.Seq2[Finding, error] {
+	return listAll[Finding](ctx, s.c, "/v1/findings", params, opts)
+}
+
+// Get: Ver un hallazgo
+//
+// Un hallazgo, con su registro y si lo revisaron.
+//
+// GET /v1/findings/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/hallazgos/get-finding
+func (s *FindingsService) Get(ctx context.Context, id string, opts ...RequestOption) (*Finding, error) {
+	out := new(Finding)
+	if err := s.c.do(ctx, "GET", "/v1/findings/"+url.PathEscape(id), nil, nil, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Review: Marcar un hallazgo como revisado
+//
+// Como «Revisado» en la app: alguien vio el hallazgo y está bien, con una nota opcional de por qué. Si detenía su registro, ya no lo detiene. Uno ya revisado cambia su nota. Uno que ya no aplica contesta finding_resolved. Si lo que lo causó cambia después, vuelve a abrirse solo.
+//
+// POST /v1/findings/{id}/review
+//
+// https://fiscalisto.com/docs/api/referencia/hallazgos/review-finding
+func (s *FindingsService) Review(ctx context.Context, id string, params *ReviewFindingParams, opts ...RequestOption) (*Finding, error) {
+	out := new(Finding)
+	if err := s.c.do(ctx, "POST", "/v1/findings/"+url.PathEscape(id)+"/review", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reopen: Volver a abrir un hallazgo
+//
+// Como «Deshacer» en la app: un hallazgo revisado vuelve a «Sin revisar», sin su nota, y si su ajuste es detener el registro, lo vuelve a detener.
+//
+// POST /v1/findings/{id}/reopen
+//
+// https://fiscalisto.com/docs/api/referencia/hallazgos/reopen-finding
+func (s *FindingsService) Reopen(ctx context.Context, id string, opts ...RequestOption) (*Finding, error) {
+	out := new(Finding)
+	if err := s.c.do(ctx, "POST", "/v1/findings/"+url.PathEscape(id)+"/reopen", nil, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // CostCentersService: Centros de costo (client.CostCenters).

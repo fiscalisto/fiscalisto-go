@@ -1161,6 +1161,34 @@
 		"go": "Rules.ListRuns",
 		"java": "rules.listRuns"
 	},
+	"GET /v1/findings": {
+		"python": "findings.list",
+		"php": "findings->list",
+		"dotnet": "Findings.ListAsync",
+		"go": "Findings.List",
+		"java": "findings.list"
+	},
+	"GET /v1/findings/{id}": {
+		"python": "findings.get",
+		"php": "findings->get",
+		"dotnet": "Findings.GetAsync",
+		"go": "Findings.Get",
+		"java": "findings.get"
+	},
+	"POST /v1/findings/{id}/review": {
+		"python": "findings.review",
+		"php": "findings->review",
+		"dotnet": "Findings.ReviewAsync",
+		"go": "Findings.Review",
+		"java": "findings.review"
+	},
+	"POST /v1/findings/{id}/reopen": {
+		"python": "findings.reopen",
+		"php": "findings->reopen",
+		"dotnet": "Findings.ReopenAsync",
+		"go": "Findings.Reopen",
+		"java": "findings.reopen"
+	},
 	"POST /v1/cost_centers": {
 		"python": "cost_centers.create",
 		"php": "costCenters->create",
