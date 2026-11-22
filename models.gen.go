@@ -19047,6 +19047,12 @@ type SelfInvoicing struct {
 	CustomerNotes bool `json:"customer_notes"`
 	// true: cuando un comprador no puede facturar por algo del emisor, se avisa por correo; false: solo queda en Alertas.
 	FailureEmail bool `json:"failure_email"`
+	// Cuántas facturas puede tener un ticket como máximo (dividir un ticket en varias facturas), contando la que toma todo lo que queda; 0: no se puede dividir.
+	SplitMax int64 `json:"split_max"`
+	// Lo menos que puede ser cada factura de un ticket dividido, con impuestos; tampoco puede quedar menos por facturar, salvo la factura que toma todo lo que queda.
+	SplitMin float64 `json:"split_min"`
+	// true: un comprador puede hacerse varias facturas con los mismos datos de una vez (4 de 250 de un ticket de 1,000).
+	SplitSame bool `json:"split_same"`
 	// ticket: la factura global lleva un concepto «Venta» por ticket, con su folio. summary: solo el monto total del periodo, uno por combinación de impuestos (NoIdentificacion «Resumen»), para una persona física en RESICO (regla 2.7.1.21 de la RMF 2026).
 	//
 	// Valores: ticket, summary.
@@ -19953,6 +19959,8 @@ type Ticket struct {
 	Invoice *string `json:"invoice,omitempty"`
 	// La factura global (inv_…) en que entró, o null.
 	GlobalInvoice *string `json:"global_invoice,omitempty"`
+	// Lo que ya cubren las facturas de un ticket dividido en varias (la autofactura lo permite con `split_max`), con impuestos. 0 si no se ha dividido; un ticket `pending` con más de 0 tiene `total - invoiced_amount` por facturar con el mismo código, y un ticket `invoiced` dividido tiene `invoice` null.
+	InvoicedAmount float64 `json:"invoiced_amount"`
 	// A quién se facturó, o null.
 	Customer *TicketCustomer `json:"customer,omitempty"`
 	// La sucursal (brn_…) donde se hizo la venta, o null (la Matriz). Su factura se timbra desde ahí y el portal muestra su nombre y su logo.
@@ -22367,6 +22375,12 @@ type UpdateSelfInvoicingParams struct {
 	CustomerNotes *bool `json:"customer_notes,omitempty"`
 	// `true` (por omisión): cuando un comprador no puede facturar por algo del emisor (su CSD, sus datos, el PAC), se avisa por correo a los dueños y administradores. `false`: solo queda en Alertas, sin correo. Un error en los datos del comprador nunca avisa: el portal le dice cómo corregirlo.
 	FailureEmail *bool `json:"failure_email,omitempty"`
+	// Dividir un ticket en varias facturas (Autofactura › Reglas de los tickets): cuántas facturas puede tener un ticket como máximo, de 2 a 50, contando la que toma todo lo que queda. `0` (por omisión): el comprador no puede dividirlo. Cada factura usa un timbre.
+	SplitMax *int64 `json:"split_max,omitempty"`
+	// Lo menos que puede ser cada factura de un ticket dividido, con impuestos (por omisión 100). Tampoco puede quedar por facturar menos que esto, salvo la factura que toma todo lo que queda.
+	SplitMin *float64 `json:"split_min,omitempty"`
+	// `true` (por omisión): un comprador puede hacerse varias facturas con los mismos datos de una vez (4 de 250 de un ticket de 1,000). `false`: una por persona.
+	SplitSame *bool `json:"split_same,omitempty"`
 	// Los conceptos de la factura que se hace el comprador (Autofactura › Conceptos de la factura): desglosados o en uno solo, y si el comprador puede elegir. Mande solo lo que cambia; `null` regresa a desglosados sin elección.
 	InvoiceConcepts *UpdateSelfInvoicingParamsInvoiceConcepts `json:"invoice_concepts,omitempty"`
 	// Los conceptos de la factura global: `ticket` (por omisión), uno «Venta» por ticket con su folio como `NoIdentificacion`; `summary`, solo el monto total del periodo, uno por combinación de impuestos con `NoIdentificacion` «Resumen» (regla 2.7.1.21 de la RMF 2026). `summary` es solo para un emisor persona física en RESICO (626); otro contesta `invalid_request`.
