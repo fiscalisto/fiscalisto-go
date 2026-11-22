@@ -51,6 +51,8 @@ type services struct {
 	// Nómina.
 	Employees *EmployeesService
 	// Nómina.
+	EmployeeNoticeSettings *EmployeeNoticeSettingsService
+	// Nómina.
 	VacationRequests *VacationRequestsService
 	// Nómina.
 	PayrollReceipts *PayrollReceiptsService
@@ -268,6 +270,7 @@ func (s *services) init(c *Client) {
 	s.Advances = &AdvancesService{c}
 	s.Retentions = &RetentionsService{c}
 	s.Employees = &EmployeesService{c}
+	s.EmployeeNoticeSettings = &EmployeeNoticeSettingsService{c}
 	s.VacationRequests = &VacationRequestsService{c}
 	s.PayrollReceipts = &PayrollReceiptsService{c}
 	s.PayrollBatches = &PayrollBatchesService{c}
@@ -1852,7 +1855,7 @@ func (s *EmployeesService) PayStatement(ctx context.Context, id string, params *
 
 // Portal: Portal del empleado
 //
-// El enlace personal del empleado (sin cuenta) para ver, descargar y firmar de recibido sus recibos de nómina, ver sus vacaciones y pedir días; los celulares ligados y los recibos que firmó.
+// El enlace personal del empleado (sin cuenta) para ver, descargar y firmar de recibido sus recibos de nómina, ver sus vacaciones y pedir días; los celulares ligados, los que tienen avisos, sus últimos avisos y los recibos que firmó.
 //
 // GET /v1/employees/{id}/portal
 //
@@ -1905,6 +1908,39 @@ func (s *EmployeesService) Training(ctx context.Context, id string, opts ...Requ
 func (s *EmployeesService) UpdateTraining(ctx context.Context, id string, params *UpdateEmployeeTrainingParams, opts ...RequestOption) (*EmployeeTraining, error) {
 	out := new(EmployeeTraining)
 	if err := s.c.do(ctx, "POST", "/v1/employees/"+url.PathEscape(id)+"/training", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// EmployeeNoticeSettingsService: Nómina (client.EmployeeNoticeSettings).
+type EmployeeNoticeSettingsService struct{ c *Client }
+
+// Get: Avisos a empleados
+//
+// Qué avisos les llegan a los empleados del emisor en Mi nómina: recibo nuevo, recibo cancelado, la respuesta a sus vacaciones y el recordatorio de firmar. Llegan al celular de quien instaló Mi nómina y activó sus avisos; si no, a su correo (email_fallback).
+//
+// GET /v1/employee_notice_settings
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/get-employee-notice-settings
+func (s *EmployeeNoticeSettingsService) Get(ctx context.Context, params *GetEmployeeNoticeSettingsParams, opts ...RequestOption) (*EmployeeNoticeSettings, error) {
+	out := new(EmployeeNoticeSettings)
+	if err := s.c.do(ctx, "GET", "/v1/employee_notice_settings", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar los avisos a empleados
+//
+// Lo que no mande se queda como estaba. Cada empleado puede, además, apagar los suyos desde su enlace.
+//
+// POST /v1/employee_notice_settings
+//
+// https://fiscalisto.com/docs/api/referencia/nomina/update-employee-notice-settings
+func (s *EmployeeNoticeSettingsService) Update(ctx context.Context, params *UpdateEmployeeNoticeSettingsParams, opts ...RequestOption) (*EmployeeNoticeSettings, error) {
+	out := new(EmployeeNoticeSettings)
+	if err := s.c.do(ctx, "POST", "/v1/employee_notice_settings", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

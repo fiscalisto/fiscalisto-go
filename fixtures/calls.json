@@ -594,6 +594,20 @@
 		"go": "Employees.UpdatePortal",
 		"java": "employees.updatePortal"
 	},
+	"GET /v1/employee_notice_settings": {
+		"python": "employee_notice_settings.get",
+		"php": "employeeNoticeSettings->get",
+		"dotnet": "EmployeeNoticeSettings.GetAsync",
+		"go": "EmployeeNoticeSettings.Get",
+		"java": "employeeNoticeSettings.get"
+	},
+	"POST /v1/employee_notice_settings": {
+		"python": "employee_notice_settings.update",
+		"php": "employeeNoticeSettings->update",
+		"dotnet": "EmployeeNoticeSettings.UpdateAsync",
+		"go": "EmployeeNoticeSettings.Update",
+		"java": "employeeNoticeSettings.update"
+	},
 	"GET /v1/vacation_requests": {
 		"python": "vacation_requests.list",
 		"php": "vacationRequests->list",

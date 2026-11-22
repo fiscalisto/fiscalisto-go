@@ -7037,7 +7037,31 @@ type EmployeeList struct {
 	URL string `json:"url"`
 }
 
-// EmployeePortal: El portal del empleado: su enlace y los recibos que firmó de recibido.
+// EmployeeNoticeSettings: Qué avisos les llegan a los empleados del emisor en Mi nómina (al celular o a su correo). Cada empleado puede apagar los suyos.
+type EmployeeNoticeSettings struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// Avisar cada recibo nuevo en cuanto se timbra.
+	Receipt bool `json:"receipt"`
+	// Avisar cuando un recibo suyo se cancela ante el SAT.
+	ReceiptCanceled bool `json:"receipt_canceled"`
+	// Avisar la respuesta a sus vacaciones, con su nota.
+	Vacation bool `json:"vacation"`
+	// Los días después de timbrarse en que se le recuerda, una vez, firmar un recibo sin firmar; 0: nunca.
+	SignReminderDays int64 `json:"sign_reminder_days"`
+	// A quien no activó los avisos en su celular le llega el mismo aviso a su correo.
+	EmailFallback bool `json:"email_fallback"`
+	// Los avisos de entre las 21:00 y las 7:00 (hora del centro) llegan a las 7:00.
+	QuietHours bool `json:"quiet_hours"`
+	// Cuándo se cambiaron; null, nunca (son los de omisión).
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// EmployeePortal: El portal del empleado: su enlace, los avisos que le llegan y los recibos que firmó de recibido.
 type EmployeePortal struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
@@ -7049,12 +7073,32 @@ type EmployeePortal struct {
 	URL *string `json:"url,omitempty"`
 	// Cuándo se hizo el enlace.
 	EnabledAt *string `json:"enabled_at,omitempty"`
-	// Los celulares ligados: el primero que lo abre y los que lo abren en la hora siguiente, hasta 3.
+	// Los celulares ligados: el primero que lo abre, los que lo abren en la hora siguiente (hasta 3) y la app Mi nómina que instala desde su enlace (hasta 6 en total).
 	Phones int64 `json:"phones"`
 	// La última vez que lo abrió.
 	LastSeenAt *string `json:"last_seen_at,omitempty"`
+	// Los celulares en que instaló Mi nómina y activó los avisos (recibo nuevo, recibo cancelado, respuesta a sus vacaciones, recibo sin firmar).
+	PushPhones int64 `json:"push_phones"`
+	// Sus últimos 10 avisos, los más recientes primero.
+	Notices []EmployeePortalNotice `json:"notices"`
 	// Los recibos que firmó de recibido desde su enlace (con el día, su celular y su IP guardados), los más recientes primero.
 	SignedReceipts []EmployeePortalSignedReceipt `json:"signed_receipts"`
+}
+
+// EmployeePortalNotice: EmployeePortalNotice.
+type EmployeePortalNotice struct {
+	// receipt: recibo nuevo; receipt_canceled: se canceló uno; vacation_approved / vacation_rejected: la respuesta a sus vacaciones; sign_reminder: tiene un recibo por firmar.
+	//
+	// Valores: receipt, receipt_canceled, vacation_approved, vacation_rejected, sign_reminder.
+	Kind string `json:"kind"`
+	// Cómo le llegó: push (a su celular), email (a su correo), off (usted o el empleado apagó ese aviso), none (no tiene avisos ni correo), skipped (ya no aplicaba: lo firmó, se canceló o se lo mandamos con el recibo), stale (no salió en 7 días); null mientras está por salir (por ejemplo, de noche).
+	//
+	// Valores: push, email, off, none, skipped, stale.
+	Channel *string `json:"channel,omitempty"`
+	// Cuándo se generó.
+	CreatedAt string `json:"created_at"`
+	// Cuándo salió.
+	SentAt *string `json:"sent_at,omitempty"`
 }
 
 // EmployeePortalSignedReceipt: EmployeePortalSignedReceipt.
@@ -9075,6 +9119,12 @@ type GetElectronicAccountingParams struct {
 	OrderNumber *string `json:"order_number,omitempty"`
 	// DE y CO: el número de trámite (AB123456789012).
 	ProcedureNumber *string `json:"procedure_number,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetEmployeeNoticeSettingsParams: los campos de «Avisos a empleados».
+type GetEmployeeNoticeSettingsParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -19425,6 +19475,24 @@ type UpdateEmployeeDeductionParams struct {
 	EndDate *string `json:"end_date,omitempty"`
 	// Solo pension: también se descuenta del aguinaldo, la PTU y el finiquito (por omisión, true).
 	Extraordinary *bool `json:"extraordinary,omitempty"`
+}
+
+// UpdateEmployeeNoticeSettingsParams: los campos de «Cambiar los avisos a empleados».
+type UpdateEmployeeNoticeSettingsParams struct {
+	// El emisor (iss_…); por omisión, el único de la cuenta.
+	Issuer *string `json:"issuer,omitempty"`
+	// «Ya está su recibo de nómina» en cuanto se timbra.
+	Receipt *bool `json:"receipt,omitempty"`
+	// Cuando un recibo suyo se cancela ante el SAT.
+	ReceiptCanceled *bool `json:"receipt_canceled,omitempty"`
+	// Al aprobar o rechazar los días que pidió, con su nota.
+	Vacation *bool `json:"vacation,omitempty"`
+	// Si un recibo sigue sin firmar de recibido estos días después de timbrarse, se le recuerda una vez. 0: nunca.
+	SignReminderDays *int64 `json:"sign_reminder_days,omitempty"`
+	// A quien no activó los avisos en su celular le llega el mismo aviso a su correo.
+	EmailFallback *bool `json:"email_fallback,omitempty"`
+	// Los avisos de entre las 21:00 y las 7:00 (hora del centro) llegan a las 7:00.
+	QuietHours *bool `json:"quiet_hours,omitempty"`
 }
 
 // UpdateEmployeeParams: los campos de «Actualizar un empleado».
