@@ -139,6 +139,20 @@
 		"go": "Issuers.UpdateBranding",
 		"java": "issuers.updateBranding"
 	},
+	"GET /v1/schedule_settings": {
+		"python": "schedule_settings.get",
+		"php": "scheduleSettings->get",
+		"dotnet": "ScheduleSettings.GetAsync",
+		"go": "ScheduleSettings.Get",
+		"java": "scheduleSettings.get"
+	},
+	"POST /v1/schedule_settings": {
+		"python": "schedule_settings.update",
+		"php": "scheduleSettings->update",
+		"dotnet": "ScheduleSettings.UpdateAsync",
+		"go": "ScheduleSettings.Update",
+		"java": "scheduleSettings.update"
+	},
 	"POST /v1/issuers/{id}/logo": {
 		"python": "issuers.upload_logo",
 		"php": "issuers->uploadLogo",

@@ -3903,6 +3903,8 @@ type CreateCustomerGroupParams struct {
 	DiscountPercent *float64 `json:"discount_percent,omitempty"`
 	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
 	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Días que vale una cotización nueva para sus clientes; null: los de la empresa (Ajustes › Horarios). Un cliente con los suyos los usa antes.
+	QuoteValidDays *int64 `json:"quote_valid_days,omitempty"`
 	// El pedido mínimo antes de IVA desde el Portal del cliente.
 	MinOrder *float64 `json:"min_order,omitempty"`
 	// Sus clientes pueden hacer pedidos desde su Portal del cliente (true por omisión).
@@ -3947,6 +3949,8 @@ type CreateCustomerParams struct {
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 	// Sus días de crédito: sus facturas vencen estos días después de su fecha (due_date, cobranza); null: los de su grupo o los de la empresa.
 	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Días que vale una cotización nueva para este cliente (valid_until); null: los de su grupo o los de la empresa (Ajustes › Horarios).
+	QuoteValidDays *int64 `json:"quote_valid_days,omitempty"`
 	// Sus condiciones de pago («Crédito a 30 días»): las facturas nuevas en la app empiezan con ellas; null: las de la empresa. POST /v1/invoices no las pone solas: mándelas en payment_terms.
 	PaymentTerms *string `json:"payment_terms,omitempty"`
 }
@@ -7053,6 +7057,8 @@ type Customer struct {
 	IEPSTaxpayer bool `json:"ieps_taxpayer"`
 	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
 	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Días que vale una cotización nueva (1 a 366). En un cliente o grupo, null usa los de su grupo o los de la empresa (Ajustes › Horarios).
+	QuoteValidDays *int64 `json:"quote_valid_days,omitempty"`
 	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
 	PaymentTerms *string `json:"payment_terms,omitempty"`
 	// Su grupo de clientes (cgr_…), o null si no está en ninguno.
@@ -7161,6 +7167,8 @@ type CustomerGroup struct {
 	DiscountPercent float64 `json:"discount_percent"`
 	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
 	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Días que vale una cotización nueva (1 a 366). En un cliente o grupo, null usa los de su grupo o los de la empresa (Ajustes › Horarios).
+	QuoteValidDays *int64 `json:"quote_valid_days,omitempty"`
 	// Pedido mínimo, sin IVA, para pedir desde el Portal del cliente, o null sin mínimo.
 	MinOrder *float64 `json:"min_order,omitempty"`
 	// true si sus clientes pueden hacer pedidos desde su Portal del cliente.
@@ -9987,6 +9995,12 @@ type GetSatDeclarationCalendarParams struct {
 
 // GetSatRiskCheckParams: los campos de «Revisar como el SAT».
 type GetSatRiskCheckParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// GetScheduleSettingsParams: los campos de «Ver los horarios».
+type GetScheduleSettingsParams struct {
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
@@ -18951,6 +18965,28 @@ type SavePayrollDepartmentParams struct {
 	Lead *string `json:"lead,omitempty"`
 }
 
+// ScheduleSettings: Los horarios de la empresa (Ajustes › Horarios): cuánto vale una cotización nueva y a qué hora vence, y a qué hora corren las reglas «Cada mañana», los hallazgos diarios y el resumen semanal, en su zona horaria.
+type ScheduleSettings struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…) con que se leyeron; valen para toda la empresa.
+	Issuer string `json:"issuer"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// La zona horaria de la empresa (Ajustes › Datos fiscales), en la que van todas las horas.
+	TimeZone string `json:"time_zone"`
+	// Días que vale una cotización nueva cuando el cliente y su grupo no tienen los suyos.
+	QuoteValidDays int64 `json:"quote_valid_days"`
+	// A qué hora (0 a 23) vence una cotización su último día; null: al terminar ese día.
+	QuoteExpiryHour *int64 `json:"quote_expiry_hour,omitempty"`
+	// A qué hora (0 a 23) corren las reglas «Cada mañana».
+	RulesHour int64 `json:"rules_hour"`
+	// A qué hora (0 a 23) corre la revisión diaria de hallazgos.
+	FindingsHour int64 `json:"findings_hour"`
+	// A qué hora (0 a 23) del lunes sale el resumen semanal.
+	DigestHour int64 `json:"digest_hour"`
+}
+
 // ScheduleSupplierInvoiceParams: los campos de «Programar el pago de una factura de proveedor».
 type ScheduleSupplierInvoiceParams struct {
 	// El día en que la pagará (AAAA-MM-DD, hoy o después). El proveedor lo ve.
@@ -20619,6 +20655,8 @@ type UpdateCustomerGroupParams struct {
 	DiscountPercent *float64 `json:"discount_percent,omitempty"`
 	// Días de crédito que se le dan, de 0 a 365, o null para no cambiar los del cliente.
 	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Días que vale una cotización nueva para sus clientes; null: los de la empresa (Ajustes › Horarios). Un cliente con los suyos los usa antes.
+	QuoteValidDays *int64 `json:"quote_valid_days,omitempty"`
 	// El pedido mínimo antes de IVA desde el Portal del cliente.
 	MinOrder *float64 `json:"min_order,omitempty"`
 	// Sus clientes pueden hacer pedidos desde su Portal del cliente (true por omisión).
@@ -20661,6 +20699,8 @@ type UpdateCustomerParams struct {
 	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
 	// Sus días de crédito: sus facturas vencen estos días después de su fecha (due_date, cobranza); null: los de su grupo o los de la empresa.
 	CreditDays *int64 `json:"credit_days,omitempty"`
+	// Días que vale una cotización nueva para este cliente (valid_until); null: los de su grupo o los de la empresa (Ajustes › Horarios).
+	QuoteValidDays *int64 `json:"quote_valid_days,omitempty"`
 	// Sus condiciones de pago («Crédito a 30 días»): las facturas nuevas en la app empiezan con ellas; null: las de la empresa. POST /v1/invoices no las pone solas: mándelas en payment_terms.
 	PaymentTerms *string `json:"payment_terms,omitempty"`
 }
@@ -22265,6 +22305,22 @@ type UpdateSatReviewParamsRequest struct {
 	Done *bool `json:"done,omitempty"`
 	// Una nota suya.
 	Note *string `json:"note,omitempty"`
+}
+
+// UpdateScheduleSettingsParams: los campos de «Cambiar los horarios».
+type UpdateScheduleSettingsParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Días que vale una cotización nueva, de 1 a 366. Un cliente o su grupo pueden tener los suyos (quote_valid_days en /v1/customers y /v1/customer_groups).
+	QuoteValidDays *int64 `json:"quote_valid_days,omitempty"`
+	// A qué hora (0 a 23) vence una cotización su último día; null: al terminar ese día, a medianoche.
+	QuoteExpiryHour *int64 `json:"quote_expiry_hour,omitempty"`
+	// A qué hora (0 a 23) corren las reglas «Cada mañana» (triggers invoice.daily y purchase_order.daily).
+	RulesHour *int64 `json:"rules_hour,omitempty"`
+	// A qué hora (0 a 23) corre la revisión diaria de hallazgos.
+	FindingsHour *int64 `json:"findings_hour,omitempty"`
+	// A qué hora (0 a 23) del lunes sale el resumen semanal por correo.
+	DigestHour *int64 `json:"digest_hour,omitempty"`
 }
 
 // UpdateSelfInvoicingParams: los campos de «Cambiar las reglas de autofactura».

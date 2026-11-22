@@ -28,6 +28,8 @@ type services struct {
 	Balance *BalanceService
 	// Emisores.
 	Issuers *IssuersService
+	// Emisores.
+	ScheduleSettings *ScheduleSettingsService
 	// Facturas.
 	Invoices *InvoicesService
 	// Cuentas por cobrar.
@@ -275,6 +277,7 @@ func (s *services) init(c *Client) {
 	s.TestClocks = &TestClocksService{c}
 	s.Balance = &BalanceService{c}
 	s.Issuers = &IssuersService{c}
+	s.ScheduleSettings = &ScheduleSettingsService{c}
 	s.Invoices = &InvoicesService{c}
 	s.Receivables = &ReceivablesService{c}
 	s.Customers = &CustomersService{c}
@@ -912,6 +915,39 @@ func (s *IssuersService) GetSelfInvoicing(ctx context.Context, id string, opts .
 func (s *IssuersService) UpdateSelfInvoicing(ctx context.Context, id string, params *UpdateSelfInvoicingParams, opts ...RequestOption) (*SelfInvoicing, error) {
 	out := new(SelfInvoicing)
 	if err := s.c.do(ctx, "POST", "/v1/issuers/"+url.PathEscape(id)+"/self_invoicing", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ScheduleSettingsService: Emisores (client.ScheduleSettings).
+type ScheduleSettingsService struct{ c *Client }
+
+// Get: Ver los horarios
+//
+// Los horarios de la empresa, como Ajustes › Horarios en la app: cuántos días vale una cotización nueva y a qué hora vence, y a qué hora corren las reglas «Cada mañana», la revisión diaria de hallazgos y el resumen semanal de los lunes, todo en su zona horaria (time_zone). Valen para toda la empresa: cualquiera de sus emisores lee los mismos.
+//
+// GET /v1/schedule_settings
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/get-schedule-settings
+func (s *ScheduleSettingsService) Get(ctx context.Context, params *GetScheduleSettingsParams, opts ...RequestOption) (*ScheduleSettings, error) {
+	out := new(ScheduleSettings)
+	if err := s.c.do(ctx, "GET", "/v1/schedule_settings", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Cambiar los horarios
+//
+// Cambia los horarios de la empresa (para todos sus emisores). Lo que no mande se queda como está. Un cliente o su grupo pueden tener su propia vigencia de cotizaciones (quote_valid_days), que gana a la de la empresa.
+//
+// POST /v1/schedule_settings
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/update-schedule-settings
+func (s *ScheduleSettingsService) Update(ctx context.Context, params *UpdateScheduleSettingsParams, opts ...RequestOption) (*ScheduleSettings, error) {
+	out := new(ScheduleSettings)
+	if err := s.c.do(ctx, "POST", "/v1/schedule_settings", params, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil
