@@ -863,6 +863,98 @@ type AssignPayrollOrgChartParams struct {
 	Branch *string `json:"branch,omitempty"`
 }
 
+// AttendanceCalendar: El calendario de turnos de un mes, como Nómina › Asistencia › Turnos: el turno de cada empleado cada día y de dónde sale.
+type AttendanceCalendar struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El mes, AAAA-MM.
+	Month string `json:"month"`
+	// Primer día, AAAA-MM-DD.
+	From string `json:"from"`
+	// Último día, AAAA-MM-DD.
+	To string `json:"to"`
+	// Desde cuándo un día da horas extra: agreed, al pasar el horario acordado de cada quien (LFT art. 58); law, al pasar la jornada de la ley para su turno (art. 61).
+	//
+	// Valores: agreed, law.
+	DailyJornada string `json:"daily_jornada"`
+	// Cada empleado del emisor que registra asistencia.
+	Employees []AttendanceCalendarEmployee `json:"employees"`
+}
+
+// AttendanceCalendarChange: Lo que cambió en el calendario de turnos.
+type AttendanceCalendarChange struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// A cuántos empleados.
+	Employees int64 `json:"employees"`
+	// Cuántos días a cada uno.
+	Days int64 `json:"days"`
+	// El turno que se puso (ats_…), o null: descanso o quitado.
+	Shift *string `json:"shift,omitempty"`
+	// true: se quitó lo del calendario y esos días vuelven a su rol u horario.
+	Cleared bool `json:"cleared"`
+}
+
+// AttendanceCalendarEmployee: AttendanceCalendarEmployee.
+type AttendanceCalendarEmployee struct {
+	// El empleado (emp_…).
+	Employee string `json:"employee"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su número de empleado, o null.
+	Number *string `json:"number,omitempty"`
+	// Su rol de turnos (atr_…), o null.
+	Rotation *string `json:"rotation,omitempty"`
+	// Más de seis días de trabajo seguidos sin descanso en el mes (LFT art. 69).
+	Warning *string `json:"warning,omitempty"`
+	// Cada día del mes.
+	Days []AttendanceCalendarEmployeeDay `json:"days"`
+}
+
+// AttendanceCalendarEmployeeDay: AttendanceCalendarEmployeeDay.
+type AttendanceCalendarEmployeeDay struct {
+	// AAAA-MM-DD.
+	Date string `json:"date"`
+	// De dónde sale: calendar (un cambio puesto en el calendario), rotation (su rol de turnos) o week (su horario de la semana).
+	//
+	// Valores: calendar, rotation, week.
+	Source string `json:"source"`
+	// El turno (ats_…), o null.
+	Shift *string `json:"shift,omitempty"`
+	// Hora de entrada, HH:MM; null si descansa.
+	Start *string `json:"start,omitempty"`
+	// Hora de salida, HH:MM, o null.
+	End *string `json:"end,omitempty"`
+	// Sus tramos, o null si descansa.
+	Segments []AttendanceCalendarEmployeeDaySegment `json:"segments,omitempty"`
+	// Minutos de jornada.
+	Minutes int64 `json:"minutes"`
+	// Su jornada por ley (LFT art. 60): diurna, nocturna o mixta; null si descansa.
+	//
+	// Valores: diurna, nocturna, mixta.
+	Jornada *string `json:"jornada,omitempty"`
+	// La nota del día que puso la empresa, o null.
+	//
+	// Valores: vacaciones, incapacidad, permiso_con_goce, permiso_sin_goce, descanso, festivo, falta.
+	Note *string `json:"note,omitempty"`
+}
+
+// AttendanceCalendarEmployeeDaySegment: AttendanceCalendarEmployeeDaySegment.
+type AttendanceCalendarEmployeeDaySegment struct {
+	// Entrada del tramo, HH:MM.
+	Start string `json:"start"`
+	// Salida del tramo, HH:MM (antes de la entrada: al día siguiente).
+	End string `json:"end"`
+}
+
 // AttendanceMark: Una marca de entrada o salida de Asistencia (registro electrónico de jornada, LFT art. 132).
 type AttendanceMark struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -891,7 +983,7 @@ type AttendanceMark struct {
 	Place *string `json:"place,omitempty"`
 	// A cuántos metros del lugar estaba, si dio su ubicación; si no, null.
 	DistanceM *float64 `json:"distance_m,omitempty"`
-	// Notas para revisar (la marca nunca se rechaza por ellas): no_location (no dio su ubicación), far (lejos del lugar), imprecise (ubicación imprecisa), remote (fuera de la sucursal), new_device (un celular nuevo).
+	// Notas para revisar (la marca nunca se rechaza por ellas): no_location (no dio su ubicación), far (lejos del lugar), imprecise (ubicación imprecisa), remote (fuera de la sucursal), new_device (un celular nuevo), offline (se hizo sin conexión y llegó después; at es la hora en que se hizo, corregida por el reloj del celular), code_time (sin conexión, con un código del checador de otra hora).
 	Flags []string `json:"flags"`
 	// Por qué se agregó, en una corrección o desde la API (el empleado lo ve); null si la hizo él.
 	Reason *string `json:"reason,omitempty"`
@@ -947,6 +1039,10 @@ type AttendanceReport struct {
 	OrdinaryWeekHours int64 `json:"ordinary_week_hours"`
 	// La jornada semanal que fijó la empresa en Horario y reglas, o null si sigue la de la ley.
 	WeeklyHours *int64 `json:"weekly_hours,omitempty"`
+	// Desde cuándo un día da horas extra: agreed, al pasar el horario acordado de cada quien (LFT art. 58); law, al pasar la jornada de la ley para su turno (art. 61).
+	//
+	// Valores: agreed, law.
+	DailyJornada string `json:"daily_jornada"`
 	// Cada empleado del emisor en el periodo.
 	Employees []AttendanceReportEmployee `json:"employees"`
 }
@@ -1015,6 +1111,10 @@ type AttendanceReportEmployeeDay struct {
 	Status string `json:"status"`
 	// Su horario ese día, o null si descansa.
 	Scheduled *AttendanceReportEmployeeDayScheduled `json:"scheduled,omitempty"`
+	// La jornada de ese día por ley, o null si descansa.
+	//
+	// Valores: diurna, nocturna, mixta.
+	Jornada *string `json:"jornada,omitempty"`
 	// Minutos trabajados ese día.
 	WorkedMinutes int64 `json:"worked_minutes"`
 	// Minutos de retardo, pasada la tolerancia.
@@ -1043,6 +1143,20 @@ type AttendanceReportEmployeeDayScheduled struct {
 	End string `json:"end"`
 	// Minutos de comida que no se pagan.
 	BreakMinutes int64 `json:"break_minutes"`
+	// Sus tramos: uno, o dos o tres en un turno partido.
+	Segments []AttendanceReportEmployeeDayScheduledSegment `json:"segments"`
+	// true: el descanso cuenta como jornada porque no puede salir del lugar (LFT art. 64).
+	BreakPaid bool `json:"break_paid"`
+	// El turno (ats_…) de ese día, de su rol o del calendario; null: su horario.
+	Shift *string `json:"shift,omitempty"`
+}
+
+// AttendanceReportEmployeeDayScheduledSegment: AttendanceReportEmployeeDayScheduledSegment.
+type AttendanceReportEmployeeDayScheduledSegment struct {
+	// Entrada del tramo, HH:MM.
+	Start string `json:"start"`
+	// Salida del tramo, HH:MM (antes de la entrada: al día siguiente).
+	End string `json:"end"`
 }
 
 // AttendanceReportEmployeeWeeksDisputedItem: AttendanceReportEmployeeWeeksDisputedItem.
@@ -1051,6 +1165,92 @@ type AttendanceReportEmployeeWeeksDisputedItem struct {
 	Week string `json:"week"`
 	// Lo que el empleado dijo que no coincide.
 	Text string `json:"text"`
+}
+
+// AttendanceRotation: Un rol de turnos: turnos y descansos que se repiten en un ciclo (4×4, semana y semana).
+type AttendanceRotation struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Su nombre.
+	Name string `json:"name"`
+	// El ciclo en orden: cada día un turno (ats_…) o null para descanso.
+	Days []*string `json:"days"`
+	// Minutos a la semana en promedio en el ciclo.
+	WeekMinutes int64 `json:"week_minutes"`
+	// Si pasan más de seis días de trabajo seguidos sin descanso (LFT art. 69), lo dice; si no, null.
+	Warning *string `json:"warning,omitempty"`
+	// true: archivado, ya no se le pone a nadie más.
+	Archived bool `json:"archived"`
+}
+
+// AttendanceRotationList: Una página de la lista.
+type AttendanceRotationList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []AttendanceRotation `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// AttendanceShift: Un turno de Asistencia › Turnos: a qué hora se entra y se sale, en uno a tres tramos, y su jornada por ley.
+type AttendanceShift struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Su nombre.
+	Name string `json:"name"`
+	// Su color en el calendario.
+	//
+	// Valores: teal, blue, violet, amber, rose, slate.
+	Color string `json:"color"`
+	// Sus tramos: uno, o dos o tres en un turno partido.
+	Segments []AttendanceShiftSegment `json:"segments"`
+	// Minutos de descanso dentro del turno.
+	BreakMinutes int64 `json:"break_minutes"`
+	// true: el descanso cuenta como jornada (LFT art. 64).
+	BreakPaid bool `json:"break_paid"`
+	// Minutos de jornada del turno.
+	Minutes int64 `json:"minutes"`
+	// La jornada por ley (LFT art. 60): diurna (entre 6:00 y 20:00), nocturna (entre 20:00 y 6:00) o mixta (con menos de 3 h 30 min de noche; con más es nocturna). Su máximo es de 8 h, 7 h y 7 h 30 min (art. 61).
+	//
+	// Valores: diurna, nocturna, mixta.
+	Jornada string `json:"jornada"`
+	// true: termina al día siguiente.
+	Overnight bool `json:"overnight"`
+	// Lo que dice la ley de este turno: pasa de la jornada del art. 61, o le falta la media hora de descanso del art. 63.
+	Warnings []string `json:"warnings"`
+	// true: archivado, ya no se pone en días ni roles nuevos.
+	Archived bool `json:"archived"`
+}
+
+// AttendanceShiftList: Una página de la lista.
+type AttendanceShiftList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []AttendanceShift `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
+// AttendanceShiftSegment: AttendanceShiftSegment.
+type AttendanceShiftSegment struct {
+	// Entrada del tramo, HH:MM.
+	Start string `json:"start"`
+	// Salida del tramo, HH:MM (antes de la entrada: al día siguiente).
+	End string `json:"end"`
 }
 
 // AutomaticJournalEntry: La póliza que Fiscalisto arma para un CFDI (factura, nota de crédito o recibo de nómina), con la edición a mano si la tiene: se queda aunque el CFDI se vuelva a descargar, hasta volver a la original.
@@ -1309,7 +1509,7 @@ type BooksLogEntry struct {
 	CreatedAt string `json:"created_at"`
 	// Qué cambió: una póliza a mano (manual_journal_entry), los saldos iniciales, una cuenta, el catálogo completo (una importación o una renumeración), el cierre del mes (period_close), una eliminación de consolidación, una póliza modelo o la baja de un activo fijo.
 	//
-	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account, automatic_journal_entry.
+	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account, automatic_journal_entry, prepaid_expense.
 	Subject string `json:"subject"`
 	// El id de lo que cambió cuando tiene uno en la API (mje_, cel_, mjt_); null en los demás.
 	SubjectID *string `json:"subject_id,omitempty"`
@@ -3657,6 +3857,42 @@ type CreateAttendanceMarkParams struct {
 	At string `json:"at"`
 	// Por qué se registra (se guarda y el empleado lo ve en su enlace). Por omisión «Registrada por la API».
 	Reason *string `json:"reason,omitempty"`
+}
+
+// CreateAttendanceRotationParams: los campos de «Crear un rol de turnos».
+type CreateAttendanceRotationParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Su nombre, como «4×4».
+	Name string `json:"name"`
+	// El ciclo en orden, de 1 a 56 días: cada uno un turno (ats_…) o null para descanso. Al terminar vuelve a empezar.
+	Days []*string `json:"days"`
+}
+
+// CreateAttendanceShiftParams: los campos de «Crear un turno».
+type CreateAttendanceShiftParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Su nombre, como «Nocturno».
+	Name string `json:"name"`
+	// Sus tramos: uno, o dos o tres para un turno partido (el tiempo entre tramos no es jornada). Un tramo puede pasar de la medianoche (22:00 a 06:00).
+	Segments []CreateAttendanceShiftParamsSegment `json:"segments"`
+	// Minutos de descanso dentro de un turno de un tramo. Por omisión 0.
+	BreakMinutes *int64 `json:"break_minutes,omitempty"`
+	// El descanso cuenta como jornada: el trabajador no puede salir del lugar (LFT art. 64).
+	BreakPaid *bool `json:"break_paid,omitempty"`
+	// Su color en el calendario. Por omisión teal.
+	//
+	// Valores: teal, blue, violet, amber, rose, slate.
+	Color *string `json:"color,omitempty"`
+}
+
+// CreateAttendanceShiftParamsSegment: CreateAttendanceShiftParamsSegment.
+type CreateAttendanceShiftParamsSegment struct {
+	// Entrada del tramo, HH:MM.
+	Start string `json:"start"`
+	// Salida del tramo, HH:MM. Antes de la entrada: termina al día siguiente.
+	End string `json:"end"`
 }
 
 // CreateBankTransactionsParams: los campos de «Mandar depósitos».
@@ -9749,7 +9985,7 @@ type GeneralLedgerAccountMovement struct {
 	JournalEntry string `json:"journal_entry"`
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification, foreign_supplier_operations.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification, foreign_supplier_operations, prepaid_amortization.
 	Type string `json:"type"`
 	// Descripción.
 	Description string `json:"description"`
@@ -9785,6 +10021,16 @@ type GetAnnualReturnParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El último mes, de 1 a 12, para estimar el año en curso. Por omisión 12 en un año pasado y el mes actual en el año en curso.
 	ThroughMonth *int64 `json:"through_month,omitempty"`
+}
+
+// GetAttendanceCalendarParams: los campos de «Ver el calendario de turnos».
+type GetAttendanceCalendarParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// El mes, AAAA-MM.
+	Month string `json:"month"`
+	// Solo este empleado (emp_…).
+	Employee *string `json:"employee,omitempty"`
 }
 
 // GetAttendanceParams: los campos de «Ver la asistencia de un periodo».
@@ -10187,6 +10433,12 @@ type GetPayrollTaxParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// El mes: 2026-11.
 	Month string `json:"month"`
+}
+
+// GetPrepaidExpenseParams: los campos de «Ver si una factura se amortiza».
+type GetPrepaidExpenseParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetRepseProfileParams: los campos de «Ver los datos del sujeto obligado».
@@ -12785,7 +13037,7 @@ type JournalEntry struct {
 	Issuer string `json:"issuer"`
 	// De qué es: invoice (un CFDI de ingreso o egreso), payment_received o payment_made (un pago de un complemento), payroll (un recibo de nómina), employee_expenses (un anticipo, reembolso, devolución o comprobación de viáticos, contra 107.01 «Funcionarios y empleados»), depreciation (la depreciación del mes de los activos fijos), manual (una póliza capturada a mano, o la reversión de una provisión) o asset_disposal (la venta o baja de un activo fijo).
 	//
-	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification, foreign_supplier_operations.
+	// Valores: invoice, payment_received, payment_made, payroll, employee_expenses, depreciation, manual, asset_disposal, bank_identification, foreign_supplier_operations, prepaid_amortization.
 	Type string `json:"type"`
 	// Con type manual: la póliza capturada (mje_…), también en su reversión; null en las demás.
 	ManualEntry *string `json:"manual_entry,omitempty"`
@@ -12903,6 +13155,26 @@ type ListAdvancesParams struct {
 	Customer *string `json:"customer,omitempty"`
 }
 
+// ListAttendanceRotationsParams: los campos de «Listar los roles de turnos».
+type ListAttendanceRotationsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// ListAttendanceShiftsParams: los campos de «Listar los turnos».
+type ListAttendanceShiftsParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // ListBankMovementsParams: los campos de «Listar los movimientos de banco sin factura».
 type ListBankMovementsParams struct {
 	// El mes (AAAA-MM). Por omisión, el actual.
@@ -12929,7 +13201,7 @@ type ListBankTransactionsParams struct {
 type ListBooksLogParams struct {
 	// Solo los cambios de una cosa: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account (la cuenta de una factura) o automatic_journal_entry (una póliza automática editada).
 	//
-	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account, automatic_journal_entry.
+	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account, automatic_journal_entry, prepaid_expense.
 	Subject *string `json:"subject,omitempty"`
 	// Desde este día (AAAA-MM-DD, hora de la Ciudad de México).
 	From *string `json:"from,omitempty"`
@@ -16043,6 +16315,52 @@ type PostBankMovementParams struct {
 	Remember *bool `json:"remember,omitempty"`
 }
 
+// PrepaidExpense: Un gasto pagado por anticipado (NIF C-5): una factura recibida de un seguro, una renta adelantada o una licencia que cubre varios meses. Queda en pagos anticipados y pasa a su gasto al final de cada mes que cubre. Impuestos no cambia.
+type PrepaidExpense struct {
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// El UUID de la factura recibida.
+	UUID string `json:"uuid"`
+	// true si se amortiza; false si se registra como gasto del mes.
+	Active bool `json:"active"`
+	// Qué pagó: insurance (seguros y fianzas), rent (rentas) u other.
+	//
+	// Valores: insurance, rent, other.
+	Kind *string `json:"kind,omitempty"`
+	// La cuenta de pagos anticipados (código agrupador 109) a la que va su póliza.
+	Account *string `json:"account,omitempty"`
+	// La cuenta de costos o gastos a la que se amortiza.
+	ExpenseAccount *string `json:"expense_account,omitempty"`
+	// Su nombre en el catálogo.
+	ExpenseAccountName *string `json:"expense_account_name,omitempty"`
+	// Primer mes que cubre, AAAA-MM.
+	StartMonth *string `json:"start_month,omitempty"`
+	// Cuántos meses cubre, de 1 a 120: una póliza de amortización por mes.
+	Months *int64 `json:"months,omitempty"`
+	// Pesos que se amortizan en total: lo que su póliza carga a la cuenta 109 (sin el IVA acreditable).
+	Amount *float64 `json:"amount,omitempty"`
+	// Lo que queda en la cuenta 109: las pólizas de los meses que no han terminado.
+	Pending *float64 `json:"pending,omitempty"`
+	// Una póliza de amortización por mes: cargo a su gasto, abono a la cuenta 109. Todas iguales al centavo; la última lleva el redondeo.
+	Schedule []PrepaidExpenseScheduleItem `json:"schedule"`
+}
+
+// PrepaidExpenseScheduleItem: PrepaidExpenseScheduleItem.
+type PrepaidExpenseScheduleItem struct {
+	// Un solo mes, del 1 al 12 (MesIni y MesFin iguales).
+	Month int64 `json:"month"`
+	// El último día del mes, AAAA-MM-DD.
+	Date string `json:"date"`
+	// Importe.
+	Amount float64 `json:"amount"`
+	// true si su fecha ya pasó.
+	Posted bool `json:"posted"`
+}
+
 // PreviewExtraordinaryPayrollReceiptParams: los campos de «Calcular un aguinaldo, PTU o finiquito sin timbrar».
 type PreviewExtraordinaryPayrollReceiptParams struct {
 	// El empleado (emp_…).
@@ -16875,6 +17193,12 @@ type RemovePayrollDepartmentParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Nombre.
 	Name string `json:"name"`
+}
+
+// RemovePrepaidExpenseParams: los campos de «Dejar de amortizar una factura».
+type RemovePrepaidExpenseParams struct {
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
 }
 
 // RenumberAccountsParams: los campos de «Renumerar el catálogo».
@@ -19887,6 +20211,20 @@ type SendSalesOrderParams struct {
 	Message *string `json:"message,omitempty"`
 }
 
+// SetAttendanceCalendarParams: los campos de «Poner turnos en el calendario».
+type SetAttendanceCalendarParams struct {
+	// Los empleados (emp_…), todos del mismo emisor.
+	Employees []string `json:"employees"`
+	// Los días, AAAA-MM-DD (hasta 62).
+	Dates []string `json:"dates"`
+	// El turno (ats_…) que tienen esos días, o null para descanso. Gana sobre su rol y su horario.
+	Shift *string `json:"shift,omitempty"`
+	// true quita lo que se puso en el calendario: esos días vuelven a su rol de turnos o a su horario de la semana (shift se ignora).
+	Clear *bool `json:"clear,omitempty"`
+	// Por qué (un cambio de turno, un descanso extra).
+	Comment *string `json:"comment,omitempty"`
+}
+
 // SetClosedPeriodParams: los campos de «Cerrar o reabrir meses de la contabilidad».
 type SetClosedPeriodParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
@@ -21185,6 +21523,42 @@ type UpdateAnnualAdjustmentParams struct {
 	Employees []string `json:"employees"`
 }
 
+// UpdateAttendanceRotationParams: los campos de «Cambiar un rol de turnos».
+type UpdateAttendanceRotationParams struct {
+	// Su nombre, como «4×4».
+	Name *string `json:"name,omitempty"`
+	// El ciclo en orden, de 1 a 56 días: cada uno un turno (ats_…) o null para descanso. Al terminar vuelve a empezar.
+	Days []*string `json:"days,omitempty"`
+	// true lo archiva: quien lo tiene lo sigue usando; ya no se le puede poner a nadie más.
+	Archived *bool `json:"archived,omitempty"`
+}
+
+// UpdateAttendanceShiftParams: los campos de «Cambiar un turno».
+type UpdateAttendanceShiftParams struct {
+	// Su nombre, como «Nocturno».
+	Name *string `json:"name,omitempty"`
+	// Sus tramos: uno, o dos o tres para un turno partido (el tiempo entre tramos no es jornada). Un tramo puede pasar de la medianoche (22:00 a 06:00).
+	Segments []UpdateAttendanceShiftParamsSegment `json:"segments,omitempty"`
+	// Minutos de descanso dentro de un turno de un tramo. Por omisión 0.
+	BreakMinutes *int64 `json:"break_minutes,omitempty"`
+	// El descanso cuenta como jornada: el trabajador no puede salir del lugar (LFT art. 64).
+	BreakPaid *bool `json:"break_paid,omitempty"`
+	// Su color en el calendario. Por omisión teal.
+	//
+	// Valores: teal, blue, violet, amber, rose, slate.
+	Color *string `json:"color,omitempty"`
+	// true lo archiva: ya no se puede poner en días ni roles nuevos; los días que ya lo tienen lo conservan.
+	Archived *bool `json:"archived,omitempty"`
+}
+
+// UpdateAttendanceShiftParamsSegment: UpdateAttendanceShiftParamsSegment.
+type UpdateAttendanceShiftParamsSegment struct {
+	// Entrada del tramo, HH:MM.
+	Start string `json:"start"`
+	// Salida del tramo, HH:MM. Antes de la entrada: termina al día siguiente.
+	End string `json:"end"`
+}
+
 // UpdateAutomaticEntryParams: los campos de «Editar la póliza de un CFDI».
 type UpdateAutomaticEntryParams struct {
 	// El emisor (iss_…). Por omisión, su único emisor.
@@ -22077,6 +22451,22 @@ type UpdatePayrollVacancyParams struct {
 	SalaryMax *float64 `json:"salary_max,omitempty"`
 	// Estado donde trabajará, como c_Estado (NLE, CMX…), para su impuesto sobre nómina; null para el de su jefe o el de la mayoría.
 	State *string `json:"state,omitempty"`
+}
+
+// UpdatePrepaidExpenseParams: los campos de «Amortizar una factura pagada por anticipado».
+type UpdatePrepaidExpenseParams struct {
+	// El emisor (iss_…). Por omisión, su único emisor.
+	Issuer *string `json:"issuer,omitempty"`
+	// Qué pagó: insurance (109.01 Seguros y fianzas), rent (109.05 Rentas) u other (109.23 Otros pagos anticipados). Sin él, el que tiene, o el que sugiere su categoría.
+	//
+	// Valores: insurance, rent, other.
+	Kind *string `json:"kind,omitempty"`
+	// Meses que cubre, de 1 a 120.
+	Months int64 `json:"months"`
+	// Primer mes que cubre, AAAA-MM: el de la factura o después. Sin él, el que tiene, o el de la factura.
+	StartMonth *string `json:"start_month,omitempty"`
+	// Número de la cuenta de costos o gastos (500, 600 o 700) a la que se amortiza. Sin él, la que tiene, o la de su categoría.
+	ExpenseAccount *string `json:"expense_account,omitempty"`
 }
 
 // UpdatePriceListParams: los campos de «Actualizar una lista de precios».

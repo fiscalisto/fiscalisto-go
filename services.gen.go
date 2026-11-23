@@ -217,6 +217,8 @@ type services struct {
 	// Contabilidad.
 	AutomaticEntries *AutomaticEntriesService
 	// Contabilidad.
+	PrepaidExpenses *PrepaidExpensesService
+	// Contabilidad.
 	OpeningBalances *OpeningBalancesService
 	// Contabilidad.
 	FixedAssets *FixedAssetsService
@@ -375,6 +377,7 @@ func (s *services) init(c *Client) {
 	s.Accounting = &AccountingService{c}
 	s.ManualEntries = &ManualEntriesService{c}
 	s.AutomaticEntries = &AutomaticEntriesService{c}
+	s.PrepaidExpenses = &PrepaidExpensesService{c}
 	s.OpeningBalances = &OpeningBalancesService{c}
 	s.FixedAssets = &FixedAssetsService{c}
 	s.AccountingSettings = &AccountingSettingsService{c}
@@ -4710,6 +4713,128 @@ func (s *AttendanceService) ApproveOvertime(ctx context.Context, params *Approve
 	return out, nil
 }
 
+// ListShifts: Listar los turnos
+//
+// Los turnos de Asistencia › Turnos (ats_…), los archivados también: sus tramos, sus minutos y su jornada por ley (diurna, nocturna o mixta, LFT art. 60) con lo que dice la ley de ellos.
+//
+// GET /v1/attendance/shifts
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/list-attendance-shifts
+func (s *AttendanceService) ListShifts(ctx context.Context, params *ListAttendanceShiftsParams, opts ...RequestOption) (*Page[AttendanceShift], error) {
+	return list[AttendanceShift](ctx, s.c, "/v1/attendance/shifts", params, "", opts)
+}
+
+// ListShiftsAutoPaging: Listar los turnos, todos, página por página: for x, err := range …
+func (s *AttendanceService) ListShiftsAutoPaging(ctx context.Context, params *ListAttendanceShiftsParams, opts ...RequestOption) iter.Seq2[AttendanceShift, error] {
+	return listAll[AttendanceShift](ctx, s.c, "/v1/attendance/shifts", params, opts)
+}
+
+// CreateShift: Crear un turno
+//
+// Un turno con uno a tres tramos (con dos o tres es partido: el tiempo entre tramos no es jornada); un tramo puede pasar de la medianoche. Se guarda aunque pase de la jornada del art. 61 (con el acuerdo del trabajador, art. 58) y lo dice en warnings.
+//
+// POST /v1/attendance/shifts
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/create-attendance-shift
+func (s *AttendanceService) CreateShift(ctx context.Context, params *CreateAttendanceShiftParams, opts ...RequestOption) (*AttendanceShift, error) {
+	out := new(AttendanceShift)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/shifts", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateShift: Cambiar un turno
+//
+// Cambia lo que mande y deja lo demás. Cambiar sus horas cambia los días que lo tienen desde hoy; archived: true lo archiva.
+//
+// POST /v1/attendance/shifts/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/update-attendance-shift
+func (s *AttendanceService) UpdateShift(ctx context.Context, id string, params *UpdateAttendanceShiftParams, opts ...RequestOption) (*AttendanceShift, error) {
+	out := new(AttendanceShift)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/shifts/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ListRotations: Listar los roles de turnos
+//
+// Los roles de turnos (atr_…), los archivados también: el ciclo de turnos y descansos, el promedio a la semana y el aviso del art. 69 si pasan más de seis días de trabajo sin descanso.
+//
+// GET /v1/attendance/rotations
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/list-attendance-rotations
+func (s *AttendanceService) ListRotations(ctx context.Context, params *ListAttendanceRotationsParams, opts ...RequestOption) (*Page[AttendanceRotation], error) {
+	return list[AttendanceRotation](ctx, s.c, "/v1/attendance/rotations", params, "", opts)
+}
+
+// ListRotationsAutoPaging: Listar los roles de turnos, todos, página por página: for x, err := range …
+func (s *AttendanceService) ListRotationsAutoPaging(ctx context.Context, params *ListAttendanceRotationsParams, opts ...RequestOption) iter.Seq2[AttendanceRotation, error] {
+	return listAll[AttendanceRotation](ctx, s.c, "/v1/attendance/rotations", params, opts)
+}
+
+// CreateRotation: Crear un rol de turnos
+//
+// Un ciclo de turnos y descansos en orden que vuelve a empezar al terminar (4×4: cuatro días un turno y cuatro null). A cada empleado se le pone en la app, en Asistencia › Personas, con el día en que cae su día 1.
+//
+// POST /v1/attendance/rotations
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/create-attendance-rotation
+func (s *AttendanceService) CreateRotation(ctx context.Context, params *CreateAttendanceRotationParams, opts ...RequestOption) (*AttendanceRotation, error) {
+	out := new(AttendanceRotation)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/rotations", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// UpdateRotation: Cambiar un rol de turnos
+//
+// Cambia su nombre o su ciclo; archived: true lo archiva.
+//
+// POST /v1/attendance/rotations/{id}
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/update-attendance-rotation
+func (s *AttendanceService) UpdateRotation(ctx context.Context, id string, params *UpdateAttendanceRotationParams, opts ...RequestOption) (*AttendanceRotation, error) {
+	out := new(AttendanceRotation)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/rotations/"+url.PathEscape(id), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetCalendar: Ver el calendario de turnos
+//
+// El turno de cada empleado cada día de un mes y de dónde sale: un cambio puesto en el calendario, su rol de turnos o su horario de la semana.
+//
+// GET /v1/attendance/calendar
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/get-attendance-calendar
+func (s *AttendanceService) GetCalendar(ctx context.Context, params *GetAttendanceCalendarParams, opts ...RequestOption) (*AttendanceCalendar, error) {
+	out := new(AttendanceCalendar)
+	if err := s.c.do(ctx, "GET", "/v1/attendance/calendar", nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SetCalendar: Poner turnos en el calendario
+//
+// Pone un turno (o descanso, shift null) en unos días de unos empleados, y gana sobre su rol y su horario: un cambio de turno, un descanso extra. clear: true lo quita y esos días vuelven a su rol u horario. Hasta 62 días y 500 empleados a la vez.
+//
+// POST /v1/attendance/calendar
+//
+// https://fiscalisto.com/docs/api/referencia/asistencia/set-attendance-calendar
+func (s *AttendanceService) SetCalendar(ctx context.Context, params *SetAttendanceCalendarParams, opts ...RequestOption) (*AttendanceCalendarChange, error) {
+	out := new(AttendanceCalendarChange)
+	if err := s.c.do(ctx, "POST", "/v1/attendance/calendar", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExpensePeopleService: Viáticos y gastos (client.ExpensePeople).
 type ExpensePeopleService struct{ c *Client }
 
@@ -7154,6 +7279,54 @@ func (s *AutomaticEntriesService) Update(ctx context.Context, uuid string, param
 func (s *AutomaticEntriesService) Revert(ctx context.Context, uuid string, params *RevertAutomaticEntryParams, opts ...RequestOption) (*AutomaticJournalEntry, error) {
 	out := new(AutomaticJournalEntry)
 	if err := s.c.do(ctx, "DELETE", "/v1/accounting/automatic_entries/"+url.PathEscape(uuid), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PrepaidExpensesService: Contabilidad (client.PrepaidExpenses).
+type PrepaidExpensesService struct{ c *Client }
+
+// Get: Ver si una factura se amortiza
+//
+// Si una factura recibida (por su UUID) es un gasto pagado por anticipado y su calendario: una póliza de amortización al final de cada mes que cubre.
+//
+// GET /v1/accounting/prepaid_expenses/{uuid}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/get-prepaid-expense
+func (s *PrepaidExpensesService) Get(ctx context.Context, uuid string, params *GetPrepaidExpenseParams, opts ...RequestOption) (*PrepaidExpense, error) {
+	out := new(PrepaidExpense)
+	if err := s.c.do(ctx, "GET", "/v1/accounting/prepaid_expenses/"+url.PathEscape(uuid), nil, params, false, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Update: Amortizar una factura pagada por anticipado
+//
+// Su póliza va a pagos anticipados (109.01, 109.05 o 109.23) y los libros la pasan a su gasto al final de cada mes que cubre (NIF C-5). Solo una factura de ingreso recibida que se registra como gasto: un activo fijo, un movimiento o una por aclarar no se amortiza, ni una cuya póliza se editó a mano. Un mes cerrado contesta period_closed. Impuestos no cambia.
+//
+// POST /v1/accounting/prepaid_expenses/{uuid}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/update-prepaid-expense
+func (s *PrepaidExpensesService) Update(ctx context.Context, uuid string, params *UpdatePrepaidExpenseParams, opts ...RequestOption) (*PrepaidExpense, error) {
+	out := new(PrepaidExpense)
+	if err := s.c.do(ctx, "POST", "/v1/accounting/prepaid_expenses/"+url.PathEscape(uuid), params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Remove: Dejar de amortizar una factura
+//
+// Vuelve a registrarse como gasto del mes en la cuenta a la que se amortizaba, y sus pólizas de amortización salen de los libros. Un mes cerrado contesta period_closed.
+//
+// DELETE /v1/accounting/prepaid_expenses/{uuid}
+//
+// https://fiscalisto.com/docs/api/referencia/contabilidad/remove-prepaid-expense
+func (s *PrepaidExpensesService) Remove(ctx context.Context, uuid string, params *RemovePrepaidExpenseParams, opts ...RequestOption) (*PrepaidExpense, error) {
+	out := new(PrepaidExpense)
+	if err := s.c.do(ctx, "DELETE", "/v1/accounting/prepaid_expenses/"+url.PathEscape(uuid), nil, params, false, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

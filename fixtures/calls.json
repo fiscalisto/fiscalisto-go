@@ -1833,6 +1833,62 @@
 		"go": "Attendance.ApproveOvertime",
 		"java": "attendance.approveOvertime"
 	},
+	"GET /v1/attendance/shifts": {
+		"python": "attendance.list_shifts",
+		"php": "attendance->listShifts",
+		"dotnet": "Attendance.ListShiftsAsync",
+		"go": "Attendance.ListShifts",
+		"java": "attendance.listShifts"
+	},
+	"POST /v1/attendance/shifts": {
+		"python": "attendance.create_shift",
+		"php": "attendance->createShift",
+		"dotnet": "Attendance.CreateShiftAsync",
+		"go": "Attendance.CreateShift",
+		"java": "attendance.createShift"
+	},
+	"POST /v1/attendance/shifts/{id}": {
+		"python": "attendance.update_shift",
+		"php": "attendance->updateShift",
+		"dotnet": "Attendance.UpdateShiftAsync",
+		"go": "Attendance.UpdateShift",
+		"java": "attendance.updateShift"
+	},
+	"GET /v1/attendance/rotations": {
+		"python": "attendance.list_rotations",
+		"php": "attendance->listRotations",
+		"dotnet": "Attendance.ListRotationsAsync",
+		"go": "Attendance.ListRotations",
+		"java": "attendance.listRotations"
+	},
+	"POST /v1/attendance/rotations": {
+		"python": "attendance.create_rotation",
+		"php": "attendance->createRotation",
+		"dotnet": "Attendance.CreateRotationAsync",
+		"go": "Attendance.CreateRotation",
+		"java": "attendance.createRotation"
+	},
+	"POST /v1/attendance/rotations/{id}": {
+		"python": "attendance.update_rotation",
+		"php": "attendance->updateRotation",
+		"dotnet": "Attendance.UpdateRotationAsync",
+		"go": "Attendance.UpdateRotation",
+		"java": "attendance.updateRotation"
+	},
+	"GET /v1/attendance/calendar": {
+		"python": "attendance.get_calendar",
+		"php": "attendance->getCalendar",
+		"dotnet": "Attendance.GetCalendarAsync",
+		"go": "Attendance.GetCalendar",
+		"java": "attendance.getCalendar"
+	},
+	"POST /v1/attendance/calendar": {
+		"python": "attendance.set_calendar",
+		"php": "attendance->setCalendar",
+		"dotnet": "Attendance.SetCalendarAsync",
+		"go": "Attendance.SetCalendar",
+		"java": "attendance.setCalendar"
+	},
 	"POST /v1/expense_people": {
 		"python": "expense_people.create",
 		"php": "expensePeople->create",
@@ -2966,6 +3022,27 @@
 		"dotnet": "AutomaticEntries.RevertAsync",
 		"go": "AutomaticEntries.Revert",
 		"java": "automaticEntries.revert"
+	},
+	"GET /v1/accounting/prepaid_expenses/{uuid}": {
+		"python": "prepaid_expenses.get",
+		"php": "prepaidExpenses->get",
+		"dotnet": "PrepaidExpenses.GetAsync",
+		"go": "PrepaidExpenses.Get",
+		"java": "prepaidExpenses.get"
+	},
+	"POST /v1/accounting/prepaid_expenses/{uuid}": {
+		"python": "prepaid_expenses.update",
+		"php": "prepaidExpenses->update",
+		"dotnet": "PrepaidExpenses.UpdateAsync",
+		"go": "PrepaidExpenses.Update",
+		"java": "prepaidExpenses.update"
+	},
+	"DELETE /v1/accounting/prepaid_expenses/{uuid}": {
+		"python": "prepaid_expenses.remove",
+		"php": "prepaidExpenses->remove",
+		"dotnet": "PrepaidExpenses.RemoveAsync",
+		"go": "PrepaidExpenses.Remove",
+		"java": "prepaidExpenses.remove"
 	},
 	"POST /v1/accounting/manual_entry_imports": {
 		"python": "manual_entries.import_entries",
