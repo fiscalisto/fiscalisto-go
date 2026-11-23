@@ -14405,12 +14405,28 @@ type PayableInvoice struct {
 	EarlyPayment *PayableInvoiceEarlyPayment `json:"early_payment,omitempty"`
 	// El pago abierto (pyo_…) en el que ya está, o null. Si se dividió en varios pagos, el primero: un pago nuevo solo toma lo que esos no cubren.
 	InPayout *string `json:"in_payout,omitempty"`
+	// Con «Notas de crédito relacionadas con la factura: Esperar a que alguien las acepte» en Configurar pagos: las notas que el proveedor relacionó con esta factura y que todavía no se restan de amount_due. Se aceptan en la app (**Aceptar nota de crédito**) o aplicándolas en un pago de esta factura (`credit_notes` de la línea). Vacío si la empresa las resta solas.
+	CreditNotesToReview []PayableInvoiceCreditNotesToReviewItem `json:"credit_notes_to_review"`
 	// Si una regla de Ajustes › Reglas retuvo su pago: no se paga hasta que alguien con permiso lo suelte en la app («Soltar el pago»). null: no está retenido.
 	PaymentHold *PayableInvoicePaymentHold `json:"payment_hold,omitempty"`
 	// Lo que las Reglas antes de pagar encontraron (por ejemplo cancelada en el SAT, o proveedor en la lista 69-B).
 	Warnings []string `json:"warnings"`
 	// La factura en la app.
 	AppURL string `json:"app_url"`
+}
+
+// PayableInvoiceCreditNotesToReviewItem: PayableInvoiceCreditNotesToReviewItem.
+type PayableInvoiceCreditNotesToReviewItem struct {
+	// Folio fiscal de la nota de crédito.
+	UUID string `json:"uuid"`
+	// Serie y folio de la nota.
+	SeriesFolio string `json:"series_folio"`
+	// Su fecha (AAAA-MM-DD).
+	Date string `json:"date"`
+	// Lo que descuenta, en la moneda de la factura.
+	Amount float64 `json:"amount"`
+	// true: alguien eligió «No restarla» en la app (se le pide al proveedor que la cancele); false: espera a que alguien la acepte.
+	Declined bool `json:"declined"`
 }
 
 // PayableInvoiceEarlyPayment: PayableInvoiceEarlyPayment.
