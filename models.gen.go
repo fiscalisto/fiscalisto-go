@@ -15505,6 +15505,8 @@ type PayrollReceiptPreview struct {
 	ISR PayrollReceiptPreviewISR `json:"isr"`
 	// Totales: percepciones, deducciones, otros pagos y el neto a pagar.
 	Totals PayrollReceiptPreviewTotals `json:"totals"`
+	// Cómo se calculó cada línea de ISR, subsidio para el empleo e IMSS: base, tasa o renglón de la tarifa, la operación y el artículo de la ley. Son las mismas cifras del recibo, no un recálculo.
+	Explanation []PayrollReceiptPreviewExplanationItem `json:"explanation"`
 }
 
 // PayrollReceiptPreviewDeduction: PayrollReceiptPreviewDeduction.
@@ -15517,6 +15519,48 @@ type PayrollReceiptPreviewDeduction struct {
 	Concept string `json:"concept"`
 	// Importe (Importe).
 	Amount float64 `json:"amount"`
+}
+
+// PayrollReceiptPreviewExplanationItem: PayrollReceiptPreviewExplanationItem.
+type PayrollReceiptPreviewExplanationItem struct {
+	// isr, subsidio, isr_ajuste (ajuste mensual del subsidio) o imss_eym_excedente, imss_eym_dinero, imss_gmp, imss_iv, imss_cv (cada cuota obrera del IMSS).
+	ID string `json:"id"`
+	// isr: el impuesto; subsidio: subsidio para el empleo; imss: una cuota obrera.
+	//
+	// Valores: isr, subsidio, imss.
+	Kind string `json:"kind"`
+	// La línea como la nombra el recibo.
+	Concept string `json:"concept"`
+	// Lo que el recibo tiene en esa línea.
+	Amount float64 `json:"amount"`
+	// Qué es la línea y por qué salió así, en una frase.
+	Summary string `json:"summary"`
+	// La base, la tasa o el renglón de la tarifa y la operación, en orden; el último paso es el importe.
+	Steps []PayrollReceiptPreviewExplanationItemStep `json:"steps"`
+	// El fundamento de cada cifra.
+	Law []PayrollReceiptPreviewExplanationItemLawItem `json:"law"`
+}
+
+// PayrollReceiptPreviewExplanationItemLawItem: PayrollReceiptPreviewExplanationItemLawItem.
+type PayrollReceiptPreviewExplanationItemLawItem struct {
+	// Ley y artículo: «LISR art. 96», «LSS art. 147».
+	Ref string `json:"ref"`
+	// Lo que dice que importa aquí.
+	Says string `json:"says"`
+}
+
+// PayrollReceiptPreviewExplanationItemStep: PayrollReceiptPreviewExplanationItemStep.
+type PayrollReceiptPreviewExplanationItemStep struct {
+	// Qué cifra es: la base, la tasa, los días…
+	Label string `json:"label"`
+	// La cifra, en la unidad de unit.
+	Value float64 `json:"value"`
+	// mxn: pesos; pct: tasa (0.01125 es 1.125%); days: días.
+	//
+	// Valores: mxn, pct, days.
+	Unit string `json:"unit"`
+	// La operación con las cifras del recibo.
+	Formula *string `json:"formula,omitempty"`
 }
 
 // PayrollReceiptPreviewISR: El cálculo del ISR del periodo: base, tarifa, subsidio y resultado.
