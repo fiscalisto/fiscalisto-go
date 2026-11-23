@@ -153,6 +153,20 @@
 		"go": "ScheduleSettings.Update",
 		"java": "scheduleSettings.update"
 	},
+	"GET /v1/setting_changes": {
+		"python": "setting_changes.list",
+		"php": "settingChanges->list",
+		"dotnet": "SettingChanges.ListAsync",
+		"go": "SettingChanges.List",
+		"java": "settingChanges.list"
+	},
+	"POST /v1/setting_changes/{id}/undo": {
+		"python": "setting_changes.undo",
+		"php": "settingChanges->undo",
+		"dotnet": "SettingChanges.UndoAsync",
+		"go": "SettingChanges.Undo",
+		"java": "settingChanges.undo"
+	},
 	"POST /v1/issuers/{id}/logo": {
 		"python": "issuers.upload_logo",
 		"php": "issuers->uploadLogo",

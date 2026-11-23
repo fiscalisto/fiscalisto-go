@@ -30,6 +30,8 @@ type services struct {
 	Issuers *IssuersService
 	// Emisores.
 	ScheduleSettings *ScheduleSettingsService
+	// Emisores.
+	SettingChanges *SettingChangesService
 	// Facturas.
 	Invoices *InvoicesService
 	// Cuentas por cobrar.
@@ -284,6 +286,7 @@ func (s *services) init(c *Client) {
 	s.Balance = &BalanceService{c}
 	s.Issuers = &IssuersService{c}
 	s.ScheduleSettings = &ScheduleSettingsService{c}
+	s.SettingChanges = &SettingChangesService{c}
 	s.Invoices = &InvoicesService{c}
 	s.Receivables = &ReceivablesService{c}
 	s.Customers = &CustomersService{c}
@@ -957,6 +960,40 @@ func (s *ScheduleSettingsService) Get(ctx context.Context, params *GetScheduleSe
 func (s *ScheduleSettingsService) Update(ctx context.Context, params *UpdateScheduleSettingsParams, opts ...RequestOption) (*ScheduleSettings, error) {
 	out := new(ScheduleSettings)
 	if err := s.c.do(ctx, "POST", "/v1/schedule_settings", params, nil, true, out, opts); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SettingChangesService: Emisores (client.SettingChanges).
+type SettingChangesService struct{ c *Client }
+
+// List: Listar los cambios a los ajustes
+//
+// Como Ajustes › Cambios en la app: cada ajuste de la empresa que alguien cambió (por ahora la cobranza automática y los horarios), de qué a qué, quién, por dónde y cuándo, del más reciente al más antiguo. Valen para toda la empresa: cualquiera de sus emisores lee los mismos.
+//
+// GET /v1/setting_changes
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/list-setting-changes
+func (s *SettingChangesService) List(ctx context.Context, params *ListSettingChangesParams, opts ...RequestOption) (*Page[SettingChange], error) {
+	return list[SettingChange](ctx, s.c, "/v1/setting_changes", params, "", opts)
+}
+
+// ListAutoPaging: Listar los cambios a los ajustes, todos, página por página: for x, err := range …
+func (s *SettingChangesService) ListAutoPaging(ctx context.Context, params *ListSettingChangesParams, opts ...RequestOption) iter.Seq2[SettingChange, error] {
+	return listAll[SettingChange](ctx, s.c, "/v1/setting_changes", params, opts)
+}
+
+// Undo: Deshacer un cambio a un ajuste
+//
+// Regresa el ajuste al valor que tenía antes de ese cambio, como «Deshacer» en la app, y devuelve el cambio nuevo que eso hizo (que también se puede deshacer). Solo el cambio más reciente de cada ajuste y mientras conserve el valor que dejó: si no, 400 setting_change_not_undoable.
+//
+// POST /v1/setting_changes/{id}/undo
+//
+// https://fiscalisto.com/docs/api/referencia/emisores/undo-setting-change
+func (s *SettingChangesService) Undo(ctx context.Context, id string, opts ...RequestOption) (*SettingChange, error) {
+	out := new(SettingChange)
+	if err := s.c.do(ctx, "POST", "/v1/setting_changes/"+url.PathEscape(id)+"/undo", nil, nil, true, out, opts); err != nil {
 		return nil, err
 	}
 	return out, nil

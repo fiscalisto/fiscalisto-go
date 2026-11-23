@@ -14019,6 +14019,18 @@ type ListSatReviewsParams struct {
 	Status *string `json:"status,omitempty"`
 }
 
+// ListSettingChangesParams: los campos de «Listar los cambios a los ajustes».
+type ListSettingChangesParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+	// Solo los de este ajuste, por ejemplo cobranza.dias-credito.
+	Setting *string `json:"setting,omitempty"`
+}
+
 // ListStockAdjustmentsParams: los campos de «Listar ajustes».
 type ListStockAdjustmentsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -20291,6 +20303,50 @@ type SetTrainingResultsParamsResult struct {
 	Score *float64 `json:"score,omitempty"`
 	// Una nota.
 	Note *string `json:"note,omitempty"`
+}
+
+// SettingChange: Un cambio a un ajuste de la empresa (Ajustes › Cambios): cuál (setting, su id, y name, su nombre en la app), de qué a qué como lo escribe la app (before, after), quién (changed_by: su nombre; null si fue con la API o su cuenta ya no existe) y por dónde (source: app, api o mcp), cuándo, si ya se deshizo (undone) y si todavía se puede deshacer (undoable: es el cambio más reciente de ese ajuste).
+type SettingChange struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// El emisor (iss_…).
+	Issuer string `json:"issuer"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// El ajuste que cambió, por su id (cobranza.dias-credito, horarios.vigencia-cotizaciones…).
+	Setting string `json:"setting"`
+	// Nombre.
+	Name string `json:"name"`
+	// Lo que tenía antes, como lo escribe la app («30 días», «Encendido»).
+	Before string `json:"before"`
+	// Lo que quedó, como lo escribe la app.
+	After string `json:"after"`
+	// Quién lo cambió, por su nombre; «La API» si fue con una llave, null si su cuenta ya no existe.
+	ChangedBy *string `json:"changed_by,omitempty"`
+	// Por dónde: app (la app), api (la API) o mcp (un asistente como ChatGPT o Claude).
+	//
+	// Valores: app, api, mcp.
+	Source string `json:"source"`
+	// Cuándo se cambió.
+	Created string `json:"created"`
+	// Cuándo se deshizo; null si no.
+	Undone *string `json:"undone,omitempty"`
+	// Si todavía se puede deshacer (POST /v1/setting_changes/{id}/undo): es el cambio más reciente de ese ajuste y no se ha deshecho.
+	Undoable bool `json:"undoable"`
+}
+
+// SettingChangeList: Una página de la lista.
+type SettingChangeList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []SettingChange `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
 }
 
 // SignEfirmaParams: los campos de «Firmar el contrato con el PAC».
