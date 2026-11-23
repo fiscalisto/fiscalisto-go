@@ -10051,6 +10051,8 @@ type GetGeneralLedgerParams struct {
 	ToMonth *string `json:"to_month,omitempty"`
 	// Solo esta cuenta, por su número en el catálogo.
 	Account *string `json:"account,omitempty"`
+	// Solo las cuentas de este código agrupador del SAT (102 trae 102.01, 102.02…), como el renglón de un estado financiero. Con account no se usa.
+	GroupingCode *string `json:"grouping_code,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
 }
