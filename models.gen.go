@@ -3353,6 +3353,10 @@ type ComplianceOpinion struct {
 	CheckedAt *string `json:"checked_at,omitempty"`
 	// Por qué falló la última consulta, o null.
 	LastError *string `json:"last_error,omitempty"`
+	// De quién es la falla de last_error, para decidir sin leer el texto. sat_unavailable: el servicio del SAT no está disponible o no respondió (es del SAT; se vuelve a pedir solo). sat_refused: el SAT respondió que no, con su motivo en el mensaje. account: le toca a su cliente (e.firma vencida, sin autorización, su plan). internal: ni lo uno ni lo otro; se vuelve a intentar. null si no falló.
+	//
+	// Valores: sat_unavailable, sat_refused, account, internal.
+	LastErrorCause *string `json:"last_error_cause,omitempty"`
 }
 
 // ConsolidatedStatements: Los estados financieros consolidados de varios RFC de un mes: sus balanzas sumadas cuenta por cuenta menos las eliminaciones del mes.
@@ -18803,6 +18807,10 @@ type SATDeclaration struct {
 	Files SATDeclarationFiles `json:"files"`
 	// Por qué falta un archivo, como lo dijo el SAT (por ejemplo «No se puede generar el archivo»). Se vuelve a pedir en la siguiente consulta.
 	FilesError *string `json:"files_error,omitempty"`
+	// De quién es la falla de files_error, para decidir sin leer el texto. sat_unavailable: el servicio del SAT no está disponible o no respondió (es del SAT; se vuelve a pedir solo). sat_refused: el SAT respondió que no, con su motivo en el mensaje. account: le toca a su cliente (e.firma vencida, sin autorización, su plan). internal: ni lo uno ni lo otro; se vuelve a intentar. null si no falló.
+	//
+	// Valores: sat_unavailable, sat_refused, account, internal.
+	FilesErrorCause *string `json:"files_error_cause,omitempty"`
 	// Cuándo se trajo por primera vez.
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Cuándo cambió por última vez.
@@ -19013,6 +19021,10 @@ type SATDownload struct {
 	NewInvoices *int64 `json:"new_invoices,omitempty"`
 	// Por qué falló, como lo dijo el SAT. null si no falló.
 	Error *string `json:"error,omitempty"`
+	// De quién es la falla de error, para decidir sin leer el texto. sat_unavailable: el servicio del SAT no está disponible o no respondió (es del SAT; se vuelve a pedir solo). sat_refused: el SAT respondió que no, con su motivo en el mensaje. account: le toca a su cliente (e.firma vencida, sin autorización, su plan). internal: ni lo uno ni lo otro; se vuelve a intentar. null si no falló.
+	//
+	// Valores: sat_unavailable, sat_refused, account, internal.
+	ErrorCause *string `json:"error_cause,omitempty"`
 	// Cuándo se pidió.
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Cuándo terminó, o null.
