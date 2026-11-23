@@ -1048,6 +1048,22 @@ func (s *InvoicesService) Preview(ctx context.Context, params *InvoiceCreate, op
 	return out, nil
 }
 
+// Search: Buscar facturas
+//
+// Con un lenguaje de búsqueda, como el de Stripe: campo:'valor' (igual, sin importar mayúsculas), campo~'valor' (contiene, 3 caracteres o más), >, >=, < y <= en números y fechas, -campo:'valor' (no) y campo:null; hasta 10 cláusulas unidas con AND o con OR. Se busca por customer (RFC), customer_name, uuid, series, folio, total, status (valid, pending, canceled, rejected o processing) y created. Los más recientes primero, por páginas como las listas. Una búsqueda que no se entiende responde search_query_invalid diciendo dónde.
+//
+// GET /v1/invoices/search
+//
+// https://fiscalisto.com/docs/api/referencia/facturas/search-invoices
+func (s *InvoicesService) Search(ctx context.Context, params *SearchInvoicesParams, opts ...RequestOption) (*Page[Invoice], error) {
+	return list[Invoice](ctx, s.c, "/v1/invoices/search", params, "", opts)
+}
+
+// SearchAutoPaging: Buscar facturas, todos, página por página: for x, err := range …
+func (s *InvoicesService) SearchAutoPaging(ctx context.Context, params *SearchInvoicesParams, opts ...RequestOption) iter.Seq2[Invoice, error] {
+	return listAll[Invoice](ctx, s.c, "/v1/invoices/search", params, opts)
+}
+
 // Get: Ver una factura
 //
 // Por su id (inv_…) o por su folio fiscal (UUID).
@@ -1254,6 +1270,22 @@ func (s *CustomersService) List(ctx context.Context, params *ListCustomersParams
 // ListAutoPaging: Listar clientes, todos, página por página: for x, err := range …
 func (s *CustomersService) ListAutoPaging(ctx context.Context, params *ListCustomersParams, opts ...RequestOption) iter.Seq2[Customer, error] {
 	return listAll[Customer](ctx, s.c, "/v1/customers", params, opts)
+}
+
+// Search: Buscar clientes
+//
+// Con un lenguaje de búsqueda, como el de Stripe: campo:'valor' (igual, sin importar mayúsculas), campo~'valor' (contiene, 3 caracteres o más), >, >=, < y <= en números y fechas, -campo:'valor' (no) y campo:null; hasta 10 cláusulas unidas con AND o con OR. Se busca por tax_id, legal_name, email, zip, tax_system, use y created. Los más recientes primero, por páginas como las listas. Una búsqueda que no se entiende responde search_query_invalid diciendo dónde.
+//
+// GET /v1/customers/search
+//
+// https://fiscalisto.com/docs/api/referencia/clientes/search-customers
+func (s *CustomersService) Search(ctx context.Context, params *SearchCustomersParams, opts ...RequestOption) (*Page[Customer], error) {
+	return list[Customer](ctx, s.c, "/v1/customers/search", params, "", opts)
+}
+
+// SearchAutoPaging: Buscar clientes, todos, página por página: for x, err := range …
+func (s *CustomersService) SearchAutoPaging(ctx context.Context, params *SearchCustomersParams, opts ...RequestOption) iter.Seq2[Customer, error] {
+	return listAll[Customer](ctx, s.c, "/v1/customers/search", params, opts)
 }
 
 // Get: Ver un cliente
@@ -5309,6 +5341,22 @@ func (s *ProductsService) List(ctx context.Context, params *ListProductsParams, 
 // ListAutoPaging: Listar productos, todos, página por página: for x, err := range …
 func (s *ProductsService) ListAutoPaging(ctx context.Context, params *ListProductsParams, opts ...RequestOption) iter.Seq2[Product, error] {
 	return listAll[Product](ctx, s.c, "/v1/products", params, opts)
+}
+
+// Search: Buscar productos
+//
+// Con un lenguaje de búsqueda, como el de Stripe: campo:'valor' (igual, sin importar mayúsculas), campo~'valor' (contiene, 3 caracteres o más), >, >=, < y <= en números y fechas, -campo:'valor' (no) y campo:null; hasta 10 cláusulas unidas con AND o con OR. Se busca por name, description, sku, product_key, unit_key, unit_price y created. Los más recientes primero, por páginas como las listas. Una búsqueda que no se entiende responde search_query_invalid diciendo dónde.
+//
+// GET /v1/products/search
+//
+// https://fiscalisto.com/docs/api/referencia/productos/search-products
+func (s *ProductsService) Search(ctx context.Context, params *SearchProductsParams, opts ...RequestOption) (*Page[Product], error) {
+	return list[Product](ctx, s.c, "/v1/products/search", params, "", opts)
+}
+
+// SearchAutoPaging: Buscar productos, todos, página por página: for x, err := range …
+func (s *ProductsService) SearchAutoPaging(ctx context.Context, params *SearchProductsParams, opts ...RequestOption) iter.Seq2[Product, error] {
+	return listAll[Product](ctx, s.c, "/v1/products/search", params, opts)
 }
 
 // Get: Ver un producto

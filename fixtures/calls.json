@@ -223,6 +223,13 @@
 		"go": "Invoices.Preview",
 		"java": "invoices.preview"
 	},
+	"GET /v1/invoices/search": {
+		"python": "invoices.search",
+		"php": "invoices->search",
+		"dotnet": "Invoices.SearchAsync",
+		"go": "Invoices.Search",
+		"java": "invoices.search"
+	},
 	"GET /v1/invoices/{id}": {
 		"python": "invoices.get",
 		"php": "invoices->get",
@@ -2071,6 +2078,13 @@
 		"go": "Customers.List",
 		"java": "customers.list"
 	},
+	"GET /v1/customers/search": {
+		"python": "customers.search",
+		"php": "customers->search",
+		"dotnet": "Customers.SearchAsync",
+		"go": "Customers.Search",
+		"java": "customers.search"
+	},
 	"GET /v1/customers/{id}": {
 		"python": "customers.get",
 		"php": "customers->get",
@@ -2133,6 +2147,13 @@
 		"dotnet": "Products.ListAsync",
 		"go": "Products.List",
 		"java": "products.list"
+	},
+	"GET /v1/products/search": {
+		"python": "products.search",
+		"php": "products->search",
+		"dotnet": "Products.SearchAsync",
+		"go": "Products.Search",
+		"java": "products.search"
 	},
 	"GET /v1/products/{id}": {
 		"python": "products.get",

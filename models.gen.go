@@ -33,6 +33,10 @@ type AccountKey struct {
 	Issuers []string `json:"issuers,omitempty"`
 	// true si la llave solo consulta (key_read_only en lo demás).
 	ReadOnly bool `json:"read_only"`
+	// Una llave con permisos por recurso: read (consulta) o write (consulta y cambia) en cada recurso (invoices, customers, payouts…, uno por sección de la referencia); uno que no aparece no tiene acceso (key_resource_denied). null si tiene todos los permisos.
+	Permissions map[string]string `json:"permissions,omitempty"`
+	// Las IP o rangos (CIDR, IPv4 o IPv6) desde los que funciona la llave; desde otra responde ip_not_allowed. null si funciona desde cualquiera.
+	AllowedIps []string `json:"allowed_ips,omitempty"`
 	// Cuándo deja de funcionar: la vigencia elegida al crearla, o el fin del traslape al cambiarla. null si no vence.
 	ExpiresAt *string `json:"expires_at,omitempty"`
 	// El entorno de prueba (sbx_…) de la llave: solo ve sus emisores, webhooks y eventos. null si es de la cuenta.
@@ -1297,6 +1301,8 @@ type AutomaticJournalEntryLine struct {
 	Credit float64 `json:"credit"`
 	// Su centro de costo (ccn_…), o null.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Por qué este renglón va a esa cuenta, con el artículo de la ley que lo decide (la categoría y quién la puso, PUE o PPD, la tasa del IVA, una retención…). null en los renglones de una edición a mano y en los de un recibo de nómina.
+	Reason *string `json:"reason,omitempty"`
 }
 
 // AutomaticJournalEntryOriginalLine: AutomaticJournalEntryOriginalLine.
@@ -1313,6 +1319,8 @@ type AutomaticJournalEntryOriginalLine struct {
 	Credit float64 `json:"credit"`
 	// Su centro de costo (ccn_…), o null.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Por qué este renglón va a esa cuenta, con el artículo de la ley que lo decide (la categoría y quién la puso, PUE o PPD, la tasa del IVA, una retención…). null en los renglones de una edición a mano y en los de un recibo de nómina.
+	Reason *string `json:"reason,omitempty"`
 }
 
 // BacktestRuleParams: los campos de «Probar una regla en los últimos días».
@@ -8527,7 +8535,7 @@ type Event struct {
 	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
-	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready o rule.matched.
+	// Qué pasó: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer.created, customer.updated, customer.deleted, product.created, product.updated, product.deleted, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready o rule.matched.
 	Type string `json:"type"`
 	// Versión de la API con que se armó el objeto.
 	APIVersion string `json:"api_version"`
@@ -8535,14 +8543,16 @@ type Event struct {
 	Livemode bool `json:"livemode"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
-	// Lo que cambió, en data.object: el comprobante (o el lote) completo, como lo contesta su GET.
+	// Lo que cambió, en data.object: el comprobante (o el lote, el cliente…) completo, como lo contesta su GET. En customer.updated y product.updated, data.previous_attributes trae lo que tenían antes los campos que cambiaron.
 	Data EventData `json:"data"`
 }
 
-// EventData: Lo que cambió, en data.object: el comprobante (o el lote) completo, como lo contesta su GET.
+// EventData: Lo que cambió, en data.object: el comprobante (o el lote, el cliente…) completo, como lo contesta su GET. En customer.updated y product.updated, data.previous_attributes trae lo que tenían antes los campos que cambiaron.
 type EventData struct {
 	// El objeto como quedó: una factura, una constancia o un lote.
 	Object map[string]any `json:"object"`
+	// Solo en customer.updated y product.updated: los campos que cambiaron, con el valor que tenían antes. Los demás quedaron igual.
+	PreviousAttributes map[string]any `json:"previous_attributes,omitempty"`
 }
 
 // EventList: Una página de la lista.
@@ -13367,7 +13377,7 @@ type ListEventsParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, payout.*, payout_transfer.*, ticket.*, retention.*, customer_data_request.*, sat_download.*, sat_declaration.*, sat_refresh.*, issuer.*, balance.*, usage.*, test_clock.*, rule.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer.created, customer.updated, customer.deleted, product.created, product.updated, product.deleted, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, payout.*, payout_transfer.*, ticket.*, retention.*, customer.*, product.*, customer_data_request.*, sat_download.*, sat_declaration.*, sat_refresh.*, issuer.*, balance.*, usage.*, test_clock.*, rule.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
@@ -20123,6 +20133,42 @@ type ScheduleSupplierInvoiceParams struct {
 	PayOn string `json:"pay_on"`
 }
 
+// SearchCustomersParams: los campos de «Buscar clientes».
+type SearchCustomersParams struct {
+	// La búsqueda, por ejemplo legal_name~'robotica' AND zip:'86991'.
+	Query string `json:"query"`
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// SearchInvoicesParams: los campos de «Buscar facturas».
+type SearchInvoicesParams struct {
+	// La búsqueda, por ejemplo customer:'URE180429TM6' AND total>1000 AND created>'2026-11-01'.
+	Query string `json:"query"`
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
+// SearchProductsParams: los campos de «Buscar productos».
+type SearchProductsParams struct {
+	// La búsqueda, por ejemplo description~'tornillo' AND unit_price<10.
+	Query string `json:"query"`
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	Issuer *string `json:"issuer,omitempty"`
+}
+
 // SelfInvoicing: El portal de autofactura de un emisor y sus reglas.
 type SelfInvoicing struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
@@ -21117,7 +21163,7 @@ type TestRuleParams struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer.created, customer.updated, customer.deleted, product.created, product.updated, product.deleted, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched.
 	Type *string `json:"type,omitempty"`
 }
 
