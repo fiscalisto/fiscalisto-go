@@ -6129,6 +6129,8 @@ type CreateRuleParams struct {
 	OncePerRecord *bool `json:"once_per_record,omitempty"`
 	// Esperar y volver a revisar: si se cumple, espera estos días (1 a 90) y revisa de nuevo el registro como esté entonces; solo actúa si aún se cumple. 0 (por omisión): actúa al momento.
 	WaitDays *int64 `json:"wait_days,omitempty"`
+	// Si sigue así: hasta 5 pasos días después de que actuó (recordatorios, escalar). El día de cada paso revisa de nuevo sus condiciones; si ya no se cumplen, los pasos que siguen no corren. [] los quita.
+	FollowUps []CreateRuleParamsFollowUp `json:"follow_ups,omitempty"`
 	// true: si se cumple, las reglas que siguen no corren para ese registro.
 	StopAfter *bool `json:"stop_after,omitempty"`
 	// false la deja en pausa.
@@ -6337,6 +6339,88 @@ type CreateRuleParamsElseAction struct {
 
 // CreateRuleParamsElseActionColumns: CreateRuleParamsElseActionColumns.
 type CreateRuleParamsElseActionColumns struct {
+	// Columnas de {tabla_facturas}, en su orden.
+	TablaFacturas []string `json:"tabla_facturas,omitempty"`
+	// Columnas de {tabla_conceptos}, en su orden.
+	TablaConceptos []string `json:"tabla_conceptos,omitempty"`
+	// Columnas de {tabla_productos}, en su orden.
+	TablaProductos []string `json:"tabla_productos,omitempty"`
+}
+
+// CreateRuleParamsFollowUp: CreateRuleParamsFollowUp.
+type CreateRuleParamsFollowUp struct {
+	// Días después de que hizo lo de actions (cada paso, más que el anterior).
+	Days int64 `json:"days"`
+	// Lo que hace ese día, si sus condiciones aún se cumplen.
+	Actions []CreateRuleParamsFollowUpAction `json:"actions"`
+}
+
+// CreateRuleParamsFollowUpAction: CreateRuleParamsFollowUpAction.
+type CreateRuleParamsFollowUpAction struct {
+	// flag (facturas, órdenes y movimientos del banco): marcar el hallazgo propio de la regla, con su nombre, `severity` y `detail`; queda abierto en Hallazgos hasta que alguien lo revise y se va si se borra la regla (`finding_code` es su código en GET /v1/findings y GET /v1/sat_findings); tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; account (facturas): registrar su ingreso o gasto en la cuenta `account` del catálogo en vez de la de su categoría, nunca sobre la que eligió una persona ni en un mes cerrado; en bank.movement, registrar el movimiento con su póliza de ingresos o egresos contra esa cuenta (otra cuenta de banco de la empresa es un traspaso), si no tiene una ni es un mes cerrado; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla; hold_payment (facturas recibidas): retener su pago hasta que alguien lo suelte, con `note`; en sat.listed, retener todas las facturas por pagar de ese proveedor; email_supplier (facturas recibidas): escribirle al proveedor a los correos de su tema `topic`, con `subject` y `message`; review_findings: dar por revisados los hallazgos `findings` de la factura; extra_signature (payout.submitted): el pago necesita `signatures` firmas más que las de Configurar pagos, con `reason` para quien firma (nunca las baja; no cambia un pago que ya salió); webhook: mandar el evento rule.matched, con el registro y todos los campos de sus condiciones, a `url` (Zapier, Make, n8n o su sistema), firmado y con reintentos como los demás webhooks; al guardar se usa o se crea el webhook de esa dirección en Desarrolladores › Webhooks. Pide permiso de administrar la API.
+	//
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, account, lote, hold_payment, email_supplier, review_findings, extra_signature, webhook, flag.
+	Type string `json:"type"`
+	// webhook: la dirección https a la que manda rule.matched.
+	URL *string `json:"url,omitempty"`
+	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
+	Tag json.RawMessage `json:"tag,omitempty"`
+	// category: la categoría de gasto, como la app la nombra («Combustible»).
+	//
+	// Valores: Renta y arrendamiento, Servicios profesionales, Nómina y personal, Transporte y fletes, Combustible, Viáticos y viajes, Alimentos y representación, Telecomunicaciones e internet, Energía y agua, Software y suscripciones, Equipo de cómputo, Papelería y oficina, Mantenimiento y reparaciones, Publicidad y marketing, Seguros y fianzas, Comisiones bancarias y financieras, Impuestos y derechos, Compras de mercancía e inventario, Materias primas y producción, Activo fijo y mobiliario, Vehículos, Capacitación, Donativos, Otros gastos.
+	Category *string `json:"category,omitempty"`
+	// account: el número de la cuenta del catálogo («601-84-002», GET /v1/accounting/accounts). No una de Caja o Bancos.
+	Account *string `json:"account,omitempty"`
+	// tag: quitarla si la orden deja de cumplir.
+	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// lote: el nombre del lote («Fletes»); vacío o null: «Lote del jueves 27 nov».
+	LoteName *string `json:"lote_name,omitempty"`
+	// lote: el día que paga: el siguiente lunes … viernes (hoy incluido), a los `days` días, o `due`, la fecha de pago del contrarecibo del portal. Un día inhábil pasa al siguiente hábil. Por omisión, friday.
+	//
+	// Valores: monday, tuesday, wednesday, thursday, friday, in_days, due.
+	PayOn *string `json:"pay_on,omitempty"`
+	// lote con pay_on in_days: cuántos días después.
+	Days *int64 `json:"days,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// stage: la etapa.
+	Stage *int64 `json:"stage,omitempty"`
+	// notify: a quién (mem_…, GET /v1/members).
+	Members []string `json:"members,omitempty"`
+	// notify: lo que dice el aviso. hold_payment: por qué se retiene (hasta 200). Puede llevar las variables de `message`, menos las tablas.
+	Note *string `json:"note,omitempty"`
+	// email_supplier: el tema de los correos del proveedor a los que va (ordenes, pagos, facturas, complementos, documentos, precios; Ajustes › Correos a proveedores). Sin correos de ese tema, va a sus correos generales. Por omisión, facturas.
+	//
+	// Valores: ordenes, pagos, facturas, complementos, documentos, precios.
+	Topic *string `json:"topic,omitempty"`
+	// email_supplier: el asunto. Lleva las variables de `message`, menos las tablas.
+	Subject *string `json:"subject,omitempty"`
+	// email_supplier: el mensaje. Variables: {folio}, {total}, {fecha}, {empresa}, {rfc_empresa}, {proveedor}, {rfc_proveedor}, {subtotal}, {iva}, {retenciones} y {moneda}; de una factura también {uuid}, {metodo_pago}, {forma_pago}, {uso_cfdi}, {conceptos}, {categoria}, {saldo}, {orden}, {contrarecibo}, {fecha_promesa}, {hallazgos} y la tabla {tabla_conceptos}; de una orden {entrega}, {almacen}, {credito}, {comprador}, {nota}, {enlace} y la tabla {tabla_productos}; en invoice.rejected y purchase_order.rejected, {motivo_rechazo}; en los momentos de pagos {facturas}, la tabla {tabla_facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}, en payout.paid {rastreo} y {cep}, en payout.failed {motivo}. Un correo por pago (per payout) no lleva las de una sola factura. Cada {tabla_…} se dibuja como tabla, con las columnas de `columns`; un dato que el registro no tiene queda en blanco.
+	Message *string `json:"message,omitempty"`
+	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
+	//
+	// Valores: payout, invoice.
+	Per *string `json:"per,omitempty"`
+	// email_supplier: las columnas de cada tabla del mensaje, en su orden. tabla_facturas: folio, uuid, fecha, total, retenido, pagado; tabla_conceptos: clave, descripcion, cantidad, unidad, precio, importe; tabla_productos: producto, codigo, cantidad, recibido, pendiente, precio, importe. Sin columnas, las de siempre.
+	Columns *CreateRuleParamsFollowUpActionColumns `json:"columns,omitempty"`
+	// email_supplier: personas del equipo que reciben copia (mem_…, GET /v1/members).
+	Cc []string `json:"cc,omitempty"`
+	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
+	Signatures *int64 `json:"signatures,omitempty"`
+	// extra_signature: por qué, para quien firma («Proveedor nuevo»). Puede llevar las variables de `message`, menos las tablas.
+	Reason *string `json:"reason,omitempty"`
+	// flag: qué tan grave es su hallazgo. Por omisión, warning.
+	//
+	// Valores: critical, warning, info.
+	Severity *string `json:"severity,omitempty"`
+	// flag: qué revisar, como sale en Hallazgos.
+	Detail *string `json:"detail,omitempty"`
+	// review_findings: los hallazgos que da por revisados (sus códigos, `code` en GET /v1/sat_findings). No los que cambian impuestos o la lista negra: cancelado, efos_definitivo, efos_presunto, lista_69b_bis, lista_69.
+	Findings []string `json:"findings,omitempty"`
+}
+
+// CreateRuleParamsFollowUpActionColumns: CreateRuleParamsFollowUpActionColumns.
+type CreateRuleParamsFollowUpActionColumns struct {
 	// Columnas de {tabla_facturas}, en su orden.
 	TablaFacturas []string `json:"tabla_facturas,omitempty"`
 	// Columnas de {tabla_conceptos}, en su orden.
@@ -17571,6 +17655,8 @@ type Rule struct {
 	OncePerRecord bool `json:"once_per_record"`
 	// Esperar y volver a revisar: los días que espera antes de actuar, revisando de nuevo el registro (0: actúa al momento).
 	WaitDays int64 `json:"wait_days"`
+	// Si sigue así: pasos días después de que actuó (recordatorios, escalar); si sus condiciones ya no se cumplen, los que siguen no corren ([]: ninguno).
+	FollowUps []RuleFollowUp `json:"follow_ups"`
 	// true: si se cumple, las reglas que siguen no corren para ese registro.
 	StopAfter bool `json:"stop_after"`
 	// false: en pausa.
@@ -17815,6 +17901,90 @@ type RuleElseAction struct {
 
 // RuleElseActionColumns: RuleElseActionColumns.
 type RuleElseActionColumns struct {
+	// Columnas de {tabla_facturas}, en su orden.
+	TablaFacturas []string `json:"tabla_facturas,omitempty"`
+	// Columnas de {tabla_conceptos}, en su orden.
+	TablaConceptos []string `json:"tabla_conceptos,omitempty"`
+	// Columnas de {tabla_productos}, en su orden.
+	TablaProductos []string `json:"tabla_productos,omitempty"`
+}
+
+// RuleFollowUp: RuleFollowUp.
+type RuleFollowUp struct {
+	// Días después de que hizo lo de actions.
+	Days int64 `json:"days"`
+	// Lo que hace ese día, si sus condiciones aún se cumplen.
+	Actions []RuleFollowUpAction `json:"actions"`
+}
+
+// RuleFollowUpAction: RuleFollowUpAction.
+type RuleFollowUpAction struct {
+	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
+	//
+	// Valores: tag, cost_center, category, stage, close, ask_approval, notify, lote, hold_payment, email_supplier, review_findings, extra_signature, account, webhook, flag.
+	Type string `json:"type"`
+	// flag: qué tan grave es el hallazgo de la regla.
+	//
+	// Valores: critical, warning, info.
+	Severity *string `json:"severity,omitempty"`
+	// flag: qué revisar, como sale en Hallazgos.
+	Detail *string `json:"detail,omitempty"`
+	// flag: el código de su hallazgo (regla_…), el `code` en GET /v1/findings y GET /v1/sat_findings.
+	FindingCode *string `json:"finding_code,omitempty"`
+	// tag: la etiqueta (tag_…, GET /v1/tags).
+	Tag *string `json:"tag,omitempty"`
+	// webhook: la dirección a la que manda rule.matched.
+	URL *string `json:"url,omitempty"`
+	// webhook: el webhook de Desarrolladores › Webhooks con esa dirección (we_…), donde están su secreto y sus envíos.
+	WebhookEndpoint *string `json:"webhook_endpoint,omitempty"`
+	// account: el número de cuenta del catálogo en que se registra la factura, en vez de la de su categoría (no cambia la que eligió una persona).
+	Account *string `json:"account,omitempty"`
+	// category: la categoría de gasto (facturas recibidas).
+	Category *string `json:"category,omitempty"`
+	// tag: se quita si la orden deja de cumplir.
+	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// stage: la etapa.
+	Stage *int64 `json:"stage,omitempty"`
+	// notify: a quién (mem_…).
+	Members []string `json:"members,omitempty"`
+	// notify: lo que dice el aviso. hold_payment: por qué se retiene.
+	Note *string `json:"note,omitempty"`
+	// email_supplier: el tema de los correos del proveedor a los que va.
+	//
+	// Valores: ordenes, pagos, facturas, complementos, documentos, precios.
+	Topic *string `json:"topic,omitempty"`
+	// email_supplier: el asunto.
+	Subject *string `json:"subject,omitempty"`
+	// email_supplier: el mensaje.
+	Message *string `json:"message,omitempty"`
+	// email_supplier en los disparadores de pagos: payout, un correo por pago y proveedor; invoice, uno por factura.
+	//
+	// Valores: payout, invoice.
+	Per *string `json:"per,omitempty"`
+	// email_supplier: las columnas de cada tabla del mensaje; null: las de siempre.
+	Columns *RuleFollowUpActionColumns `json:"columns,omitempty"`
+	// email_supplier: personas del equipo con copia (mem_…).
+	Cc []string `json:"cc,omitempty"`
+	// review_findings: los hallazgos que da por revisados (sus códigos).
+	Findings []string `json:"findings,omitempty"`
+	// extra_signature: cuántas firmas más pide (1 a 3).
+	Signatures *int64 `json:"signatures,omitempty"`
+	// extra_signature: por qué, para quien firma.
+	Reason *string `json:"reason,omitempty"`
+	// lote: el nombre del lote; null: «Lote del jueves 27 nov».
+	LoteName *string `json:"lote_name,omitempty"`
+	// lote: el día que paga (siguiente día de la semana, a los días, o el del contrarecibo).
+	//
+	// Valores: monday, tuesday, wednesday, thursday, friday, in_days, due.
+	PayOn *string `json:"pay_on,omitempty"`
+	// lote con pay_on in_days: cuántos días.
+	Days *int64 `json:"days,omitempty"`
+}
+
+// RuleFollowUpActionColumns: RuleFollowUpActionColumns.
+type RuleFollowUpActionColumns struct {
 	// Columnas de {tabla_facturas}, en su orden.
 	TablaFacturas []string `json:"tabla_facturas,omitempty"`
 	// Columnas de {tabla_conceptos}, en su orden.
@@ -22495,6 +22665,8 @@ type UpdateRuleParams struct {
 	OncePerRecord *bool `json:"once_per_record,omitempty"`
 	// Esperar y volver a revisar: si se cumple, espera estos días (1 a 90) y revisa de nuevo el registro como esté entonces; solo actúa si aún se cumple. 0 (por omisión): actúa al momento.
 	WaitDays *int64 `json:"wait_days,omitempty"`
+	// Si sigue así: hasta 5 pasos días después de que actuó (recordatorios, escalar). El día de cada paso revisa de nuevo sus condiciones; si ya no se cumplen, los pasos que siguen no corren. [] los quita.
+	FollowUps []UpdateRuleParamsFollowUp `json:"follow_ups,omitempty"`
 	// true: si se cumple, las reglas que siguen no corren para ese registro.
 	StopAfter *bool `json:"stop_after,omitempty"`
 	// false la deja en pausa.
@@ -22703,6 +22875,88 @@ type UpdateRuleParamsElseAction struct {
 
 // UpdateRuleParamsElseActionColumns: UpdateRuleParamsElseActionColumns.
 type UpdateRuleParamsElseActionColumns struct {
+	// Columnas de {tabla_facturas}, en su orden.
+	TablaFacturas []string `json:"tabla_facturas,omitempty"`
+	// Columnas de {tabla_conceptos}, en su orden.
+	TablaConceptos []string `json:"tabla_conceptos,omitempty"`
+	// Columnas de {tabla_productos}, en su orden.
+	TablaProductos []string `json:"tabla_productos,omitempty"`
+}
+
+// UpdateRuleParamsFollowUp: UpdateRuleParamsFollowUp.
+type UpdateRuleParamsFollowUp struct {
+	// Días después de que hizo lo de actions (cada paso, más que el anterior).
+	Days int64 `json:"days"`
+	// Lo que hace ese día, si sus condiciones aún se cumplen.
+	Actions []UpdateRuleParamsFollowUpAction `json:"actions"`
+}
+
+// UpdateRuleParamsFollowUpAction: UpdateRuleParamsFollowUpAction.
+type UpdateRuleParamsFollowUpAction struct {
+	// flag (facturas, órdenes y movimientos del banco): marcar el hallazgo propio de la regla, con su nombre, `severity` y `detail`; queda abierto en Hallazgos hasta que alguien lo revise y se va si se borra la regla (`finding_code` es su código en GET /v1/findings y GET /v1/sat_findings); tag (facturas y órdenes): poner la etiqueta `tag`; category (facturas recibidas): poner la categoría de gasto `category`, nunca sobre la que eligió una persona; account (facturas): registrar su ingreso o gasto en la cuenta `account` del catálogo en vez de la de su categoría, nunca sobre la que eligió una persona ni en un mes cerrado; en bank.movement, registrar el movimiento con su póliza de ingresos o egresos contra esa cuenta (otra cuenta de banco de la empresa es un traspaso), si no tiene una ni es un mes cerrado; cost_center (facturas): poner `cost_center` (ccn_…), nunca sobre lo que puso una persona; stage (órdenes): pasar a la etapa `stage`; close (órdenes): cerrarla si ya llegó todo; ask_approval (órdenes en borrador): pedir aprobación por sus pasos de aprobación; notify: avisar a `members` (mem_…); lote (invoice.received e invoice.approved): agregar la factura al lote de pagos abierto `lote_name` que paga `pay_on`, o crear uno, preparado como quien hizo la regla; hold_payment (facturas recibidas): retener su pago hasta que alguien lo suelte, con `note`; en sat.listed, retener todas las facturas por pagar de ese proveedor; email_supplier (facturas recibidas): escribirle al proveedor a los correos de su tema `topic`, con `subject` y `message`; review_findings: dar por revisados los hallazgos `findings` de la factura; extra_signature (payout.submitted): el pago necesita `signatures` firmas más que las de Configurar pagos, con `reason` para quien firma (nunca las baja; no cambia un pago que ya salió); webhook: mandar el evento rule.matched, con el registro y todos los campos de sus condiciones, a `url` (Zapier, Make, n8n o su sistema), firmado y con reintentos como los demás webhooks; al guardar se usa o se crea el webhook de esa dirección en Desarrolladores › Webhooks. Pide permiso de administrar la API.
+	//
+	// Valores: tag, cost_center, stage, close, ask_approval, notify, category, account, lote, hold_payment, email_supplier, review_findings, extra_signature, webhook, flag.
+	Type string `json:"type"`
+	// webhook: la dirección https a la que manda rule.matched.
+	URL *string `json:"url,omitempty"`
+	// tag: la etiqueta (tag_…, GET /v1/tags). Un número, el id de antes, también se acepta.
+	Tag json.RawMessage `json:"tag,omitempty"`
+	// category: la categoría de gasto, como la app la nombra («Combustible»).
+	//
+	// Valores: Renta y arrendamiento, Servicios profesionales, Nómina y personal, Transporte y fletes, Combustible, Viáticos y viajes, Alimentos y representación, Telecomunicaciones e internet, Energía y agua, Software y suscripciones, Equipo de cómputo, Papelería y oficina, Mantenimiento y reparaciones, Publicidad y marketing, Seguros y fianzas, Comisiones bancarias y financieras, Impuestos y derechos, Compras de mercancía e inventario, Materias primas y producción, Activo fijo y mobiliario, Vehículos, Capacitación, Donativos, Otros gastos.
+	Category *string `json:"category,omitempty"`
+	// account: el número de la cuenta del catálogo («601-84-002», GET /v1/accounting/accounts). No una de Caja o Bancos.
+	Account *string `json:"account,omitempty"`
+	// tag: quitarla si la orden deja de cumplir.
+	RemoveWhenUnmet *bool `json:"remove_when_unmet,omitempty"`
+	// lote: el nombre del lote («Fletes»); vacío o null: «Lote del jueves 27 nov».
+	LoteName *string `json:"lote_name,omitempty"`
+	// lote: el día que paga: el siguiente lunes … viernes (hoy incluido), a los `days` días, o `due`, la fecha de pago del contrarecibo del portal. Un día inhábil pasa al siguiente hábil. Por omisión, friday.
+	//
+	// Valores: monday, tuesday, wednesday, thursday, friday, in_days, due.
+	PayOn *string `json:"pay_on,omitempty"`
+	// lote con pay_on in_days: cuántos días después.
+	Days *int64 `json:"days,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
+	CostCenter *string `json:"cost_center,omitempty"`
+	// stage: la etapa.
+	Stage *int64 `json:"stage,omitempty"`
+	// notify: a quién (mem_…, GET /v1/members).
+	Members []string `json:"members,omitempty"`
+	// notify: lo que dice el aviso. hold_payment: por qué se retiene (hasta 200). Puede llevar las variables de `message`, menos las tablas.
+	Note *string `json:"note,omitempty"`
+	// email_supplier: el tema de los correos del proveedor a los que va (ordenes, pagos, facturas, complementos, documentos, precios; Ajustes › Correos a proveedores). Sin correos de ese tema, va a sus correos generales. Por omisión, facturas.
+	//
+	// Valores: ordenes, pagos, facturas, complementos, documentos, precios.
+	Topic *string `json:"topic,omitempty"`
+	// email_supplier: el asunto. Lleva las variables de `message`, menos las tablas.
+	Subject *string `json:"subject,omitempty"`
+	// email_supplier: el mensaje. Variables: {folio}, {total}, {fecha}, {empresa}, {rfc_empresa}, {proveedor}, {rfc_proveedor}, {subtotal}, {iva}, {retenciones} y {moneda}; de una factura también {uuid}, {metodo_pago}, {forma_pago}, {uso_cfdi}, {conceptos}, {categoria}, {saldo}, {orden}, {contrarecibo}, {fecha_promesa}, {hallazgos} y la tabla {tabla_conceptos}; de una orden {entrega}, {almacen}, {credito}, {comprador}, {nota}, {enlace} y la tabla {tabla_productos}; en invoice.rejected y purchase_order.rejected, {motivo_rechazo}; en los momentos de pagos {facturas}, la tabla {tabla_facturas}, {pagado}, {fecha_pago}, {pago}, {cuenta}, {banco} y {referencia}, en payout.paid {rastreo} y {cep}, en payout.failed {motivo}. Un correo por pago (per payout) no lleva las de una sola factura. Cada {tabla_…} se dibuja como tabla, con las columnas de `columns`; un dato que el registro no tiene queda en blanco.
+	Message *string `json:"message,omitempty"`
+	// email_supplier en payout.submitted, payout.paid y payout.failed: payout manda un correo por pago y proveedor con todas sus facturas ({folio} es la lista de folios, {total} lo que se le paga y {fecha} la fecha del pago); invoice, uno por factura. Por omisión, payout.
+	//
+	// Valores: payout, invoice.
+	Per *string `json:"per,omitempty"`
+	// email_supplier: las columnas de cada tabla del mensaje, en su orden. tabla_facturas: folio, uuid, fecha, total, retenido, pagado; tabla_conceptos: clave, descripcion, cantidad, unidad, precio, importe; tabla_productos: producto, codigo, cantidad, recibido, pendiente, precio, importe. Sin columnas, las de siempre.
+	Columns *UpdateRuleParamsFollowUpActionColumns `json:"columns,omitempty"`
+	// email_supplier: personas del equipo que reciben copia (mem_…, GET /v1/members).
+	Cc []string `json:"cc,omitempty"`
+	// extra_signature: cuántas firmas más pide (1 a 3). Por omisión, 1.
+	Signatures *int64 `json:"signatures,omitempty"`
+	// extra_signature: por qué, para quien firma («Proveedor nuevo»). Puede llevar las variables de `message`, menos las tablas.
+	Reason *string `json:"reason,omitempty"`
+	// flag: qué tan grave es su hallazgo. Por omisión, warning.
+	//
+	// Valores: critical, warning, info.
+	Severity *string `json:"severity,omitempty"`
+	// flag: qué revisar, como sale en Hallazgos.
+	Detail *string `json:"detail,omitempty"`
+	// review_findings: los hallazgos que da por revisados (sus códigos, `code` en GET /v1/sat_findings). No los que cambian impuestos o la lista negra: cancelado, efos_definitivo, efos_presunto, lista_69b_bis, lista_69.
+	Findings []string `json:"findings,omitempty"`
+}
+
+// UpdateRuleParamsFollowUpActionColumns: UpdateRuleParamsFollowUpActionColumns.
+type UpdateRuleParamsFollowUpActionColumns struct {
 	// Columnas de {tabla_facturas}, en su orden.
 	TablaFacturas []string `json:"tabla_facturas,omitempty"`
 	// Columnas de {tabla_conceptos}, en su orden.
