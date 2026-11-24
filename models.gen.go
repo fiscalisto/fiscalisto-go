@@ -175,7 +175,7 @@ type Advance struct {
 	Amount float64 `json:"amount"`
 	// Total en la moneda del comprobante (Total).
 	Total float64 `json:"total"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	IVA string `json:"iva"`
 	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
 	Currency string `json:"currency"`
@@ -779,7 +779,7 @@ type ApplyAdvanceParams struct {
 	Related *InvoiceCreateRelated `json:"related,omitempty"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
 	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// Folio (Folio) de esta factura en vez del siguiente de la serie: ese número toma su lugar en la numeración. También acepta un texto de hasta 40 caracteres sin «|» ("TIME002", "000120"), como lo acepta el SAT (Anexo 20): va solo en esta factura y la numeración no cambia; "120" es el folio 120. Si otro CFDI del RFC y la serie ya lo tiene, se rechaza.
 	Folio *int64 `json:"folio,omitempty"`
 	// Con un folio elegido: true para que los siguientes sigan desde ese número.
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
@@ -3809,7 +3809,7 @@ type CreateAdvanceParams struct {
 	Use *string `json:"use,omitempty"`
 	// Lo que pagó el cliente, con IVA incluido.
 	Amount float64 `json:"amount"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -4721,7 +4721,7 @@ type CreateInvoiceBatchParamsInvoice struct {
 	Related *InvoiceCreateRelated `json:"related,omitempty"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
 	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// Folio (Folio) de esta factura en vez del siguiente de la serie: ese número toma su lugar en la numeración. También acepta un texto de hasta 40 caracteres sin «|» ("TIME002", "000120"), como lo acepta el SAT (Anexo 20): va solo en esta factura y la numeración no cambia; "120" es el folio 120. Si otro CFDI del RFC y la serie ya lo tiene, se rechaza.
 	Folio *int64 `json:"folio,omitempty"`
 	// Con un folio elegido: true para que los siguientes sigan desde ese número.
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
@@ -5405,7 +5405,7 @@ type CreateProductParams struct {
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
 	Taxability *string `json:"taxability,omitempty"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -5415,9 +5415,9 @@ type CreateProductParams struct {
 	//
 	// Valores: Tasa, Cuota.
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention *float64 `json:"iva_retention,omitempty"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
 	LocalTaxes []CreateProductParamsLocalTax `json:"local_taxes,omitempty"`
@@ -5579,7 +5579,7 @@ type CreateQuoteParamsItem struct {
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
 	Taxability *string `json:"taxability,omitempty"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -5591,9 +5591,9 @@ type CreateQuoteParamsItem struct {
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
 	IEPSUnits *float64 `json:"ieps_units,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention *float64 `json:"iva_retention,omitempty"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Números de cuenta predial (CuentaPredial) en arrendamiento.
 	Predial []string `json:"predial,omitempty"`
@@ -5771,7 +5771,7 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	Related *InvoiceCreateRelated `json:"related,omitempty"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
 	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// Folio (Folio) de esta factura en vez del siguiente de la serie: ese número toma su lugar en la numeración. También acepta un texto de hasta 40 caracteres sin «|» ("TIME002", "000120"), como lo acepta el SAT (Anexo 20): va solo en esta factura y la numeración no cambia; "120" es el folio 120. Si otro CFDI del RFC y la serie ya lo tiene, se rechaza.
 	Folio *int64 `json:"folio,omitempty"`
 	// Con un folio elegido: true para que los siguientes sigan desde ese número.
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
@@ -6801,7 +6801,7 @@ type CreateSalesOrderParamsItem struct {
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
 	Taxability *string `json:"taxability,omitempty"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -6813,9 +6813,9 @@ type CreateSalesOrderParamsItem struct {
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
 	IEPSUnits *float64 `json:"ieps_units,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention *float64 `json:"iva_retention,omitempty"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Números de cuenta predial (CuentaPredial) en arrendamiento.
 	Predial []string `json:"predial,omitempty"`
@@ -7065,7 +7065,7 @@ type CreateStoreConnectionParamsSettings struct {
 	ProductKey *string `json:"product_key,omitempty"`
 	// c_ClaveUnidad. Por omisión, la de la clave del producto.
 	UnitKey *string `json:"unit_key,omitempty"`
-	// Tasa de IVA incluida en los precios. Por omisión 0.16.
+	// Tasa de IVA incluida en los precios. Por omisión 0.16; también como número (0.16 o 16).
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -7145,7 +7145,7 @@ type CreateTicketParams struct {
 	ProductKey *string `json:"product_key,omitempty"`
 	// c_ClaveUnidad. Por omisión, la de la clave del producto.
 	UnitKey *string `json:"unit_key,omitempty"`
-	// Tasa de IVA incluida en el total. Por omisión 0.16.
+	// Tasa de IVA incluida en el total. Por omisión 0.16; también como número (0.16 o 16).
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -7183,7 +7183,7 @@ type CreateTicketParamsLine struct {
 	ProductKey *string `json:"product_key,omitempty"`
 	// c_ClaveUnidad. Por omisión, la de la clave del producto.
 	UnitKey *string `json:"unit_key,omitempty"`
-	// Tasa de IVA incluida en su total. Por omisión 0.16.
+	// Tasa de IVA incluida en su total. Por omisión 0.16; también como número (0.16 o 16).
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -11315,7 +11315,7 @@ type InvoiceCreate struct {
 	Related *InvoiceCreateRelated `json:"related,omitempty"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
 	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// Folio (Folio) de esta factura en vez del siguiente de la serie: ese número toma su lugar en la numeración. También acepta un texto de hasta 40 caracteres sin «|» ("TIME002", "000120"), como lo acepta el SAT (Anexo 20): va solo en esta factura y la numeración no cambia; "120" es el folio 120. Si otro CFDI del RFC y la serie ya lo tiene, se rechaza.
 	Folio *int64 `json:"folio,omitempty"`
 	// Con un folio elegido: true para que los siguientes sigan desde ese número.
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
@@ -12157,7 +12157,7 @@ type InvoiceCreateItem struct {
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
 	Taxability *string `json:"taxability,omitempty"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -12169,9 +12169,9 @@ type InvoiceCreateItem struct {
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
 	IEPSUnits *float64 `json:"ieps_units,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention *float64 `json:"iva_retention,omitempty"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Números de cuenta predial (CuentaPredial) en arrendamiento.
 	Predial []string `json:"predial,omitempty"`
@@ -16651,15 +16651,15 @@ type Product struct {
 	OpenPrice bool `json:"open_price"`
 	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
 	Taxability string `json:"taxability"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	IVA string `json:"iva"`
 	// IEPS trasladado: tasa (0.265…) o cuota en pesos por unidad, según ieps_factor.
 	IEPS *float64 `json:"ieps,omitempty"`
 	// Tasa o Cuota (TipoFactor del IEPS).
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention float64 `json:"iva_retention"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention float64 `json:"isr_retention"`
 	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
 	LocalTaxes []ProductLocalTax `json:"local_taxes"`
@@ -21257,7 +21257,7 @@ type TicketLine struct {
 	ProductKey string `json:"product_key"`
 	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
 	UnitKey string `json:"unit_key"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	IVA *string `json:"iva,omitempty"`
 	// Sus impuestos locales (los de su producto o los que mandó), incluidos en su total.
 	LocalTaxes []TicketLineLocalTax `json:"local_taxes"`
@@ -22649,7 +22649,7 @@ type UpdateProductParams struct {
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
 	Taxability *string `json:"taxability,omitempty"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -22659,9 +22659,9 @@ type UpdateProductParams struct {
 	//
 	// Valores: Tasa, Cuota.
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention *float64 `json:"iva_retention,omitempty"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Impuestos locales que lleva, como el ISH 3% de hospedaje: van en cada factura con él, sobre sus conceptos.
 	LocalTaxes []UpdateProductParamsLocalTax `json:"local_taxes,omitempty"`
@@ -22791,7 +22791,7 @@ type UpdateQuoteParamsItem struct {
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
 	Taxability *string `json:"taxability,omitempty"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -22803,9 +22803,9 @@ type UpdateQuoteParamsItem struct {
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
 	IEPSUnits *float64 `json:"ieps_units,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention *float64 `json:"iva_retention,omitempty"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Números de cuenta predial (CuentaPredial) en arrendamiento.
 	Predial []string `json:"predial,omitempty"`
@@ -22983,7 +22983,7 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	Related *InvoiceCreateRelated `json:"related,omitempty"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
 	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
-	// Folio (Folio). Fiscalisto asigna el siguiente de la serie; mande uno solo si debe ser ese.
+	// Folio (Folio) de esta factura en vez del siguiente de la serie: ese número toma su lugar en la numeración. También acepta un texto de hasta 40 caracteres sin «|» ("TIME002", "000120"), como lo acepta el SAT (Anexo 20): va solo en esta factura y la numeración no cambia; "120" es el folio 120. Si otro CFDI del RFC y la serie ya lo tiene, se rechaza.
 	Folio *int64 `json:"folio,omitempty"`
 	// Con un folio elegido: true para que los siguientes sigan desde ese número.
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
@@ -23647,7 +23647,7 @@ type UpdateSalesOrderParamsItem struct {
 	//
 	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
 	Taxability *string `json:"taxability,omitempty"`
-	// Tasa de IVA trasladado: 0.16 (por omisión), 0.08 (región fronteriza), 0 o exento.
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
@@ -23659,9 +23659,9 @@ type UpdateSalesOrderParamsItem struct {
 	IEPSFactor *string `json:"ieps_factor,omitempty"`
 	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
 	IEPSUnits *float64 `json:"ieps_units,omitempty"`
-	// Tasa de IVA retenido (por ejemplo 0.106667, dos terceras partes del 16%).
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
 	IVARetention *float64 `json:"iva_retention,omitempty"`
-	// Tasa de ISR retenido (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
 	ISRRetention *float64 `json:"isr_retention,omitempty"`
 	// Números de cuenta predial (CuentaPredial) en arrendamiento.
 	Predial []string `json:"predial,omitempty"`
@@ -24217,7 +24217,7 @@ type UpdateStoreConnectionParamsSettings struct {
 	ProductKey *string `json:"product_key,omitempty"`
 	// c_ClaveUnidad. Por omisión, la de la clave del producto.
 	UnitKey *string `json:"unit_key,omitempty"`
-	// Tasa de IVA incluida en los precios. Por omisión 0.16.
+	// Tasa de IVA incluida en los precios. Por omisión 0.16; también como número (0.16 o 16).
 	//
 	// Valores: 0, 0.16, 0.08, exento.
 	IVA *string `json:"iva,omitempty"`
