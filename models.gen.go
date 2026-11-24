@@ -19199,6 +19199,8 @@ type SATInvoice struct {
 	//
 	// Valores: pending, confirmed.
 	CashConfirmation *string `json:"cash_confirmation,omitempty"`
+	// Cuándo alguien confirmó el pago en efectivo (cash_confirmation confirmed), en hora del centro de México. Null en las demás.
+	CashConfirmedAt *string `json:"cash_confirmed_at,omitempty"`
 	// Su centro de costo (ccn_…), o null. Póngalo o cámbielo con POST /v1/sat_invoices/{id}.
 	CostCenter *string `json:"cost_center,omitempty"`
 	// El número de cuenta de su catálogo en que se registra su ingreso o gasto en vez de la de su categoría (en la app, en una regla de Ajustes › Reglas o con account). Null: la de su categoría.
