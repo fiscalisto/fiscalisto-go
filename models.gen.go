@@ -5,6 +5,52 @@ package fiscalisto
 
 import "encoding/json"
 
+// APIKey: Una llave secreta de la API, con permisos por recurso.
+type APIKey struct {
+	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
+	ID string `json:"id"`
+	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
+	Livemode bool `json:"livemode"`
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// El principio de la llave (fk_live_AbC…), para reconocerla. El secreto completo solo viene en secret.
+	Redacted string `json:"redacted"`
+	// read o write en cada recurso; uno que no está es sin acceso.
+	Permissions map[string]string `json:"permissions"`
+	// Los emisores con que trabaja; vacío: todos los del modo.
+	Issuers []string `json:"issuers"`
+	// Solo funciona desde estas IP o rangos; vacío: desde cualquiera.
+	AllowedIps []string `json:"allowed_ips"`
+	// La duración que se le dio al crearla, en horas (la nueva al cambiarla dura lo mismo); null: no vence.
+	LifetimeHours *int64 `json:"lifetime_hours,omitempty"`
+	// Cuándo deja de funcionar (su duración, o el plazo de una llave que se cambió); null: no vence.
+	ExpiresAt *string `json:"expires_at,omitempty"`
+	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
+	CreatedAt *string `json:"created_at,omitempty"`
+	// Su última solicitud (al minuto), o null.
+	LastUsedAt *string `json:"last_used_at,omitempty"`
+	// Ya se cambió por otra (POST /v1/api_keys/{id}/roll): funciona solo hasta expires_at.
+	Rolled bool `json:"rolled"`
+	// El entorno de prueba (sbx_…) en que funciona, o null.
+	Sandbox *StringOr[Sandbox] `json:"sandbox,omitempty"`
+	// La llave completa (fk_live_… o fk_test_…): solo en la respuesta que la crea o la cambia. Guárdela; no se vuelve a mostrar.
+	Secret *string `json:"secret,omitempty"`
+}
+
+// APIKeyList: Una página de la lista.
+type APIKeyList struct {
+	// Qué tipo de objeto es («invoice», «customer»…).
+	Object string `json:"object"`
+	// Los objetos de esta página.
+	Data []APIKey `json:"data"`
+	// true si hay más: pida la siguiente con starting_after igual al id del último.
+	HasMore bool `json:"has_more"`
+	// La ruta de esta lista.
+	URL string `json:"url"`
+}
+
 // Account: La cuenta API de la llave que hizo la solicitud.
 type Account struct {
 	// Identificador del objeto, con su prefijo (iss_, inv_, ret_, cus_, prd_, emp_, bat_, brn_, whs_, stm_, adj_, evt_, whe_).
@@ -40,7 +86,7 @@ type AccountKey struct {
 	// Cuándo deja de funcionar: la vigencia elegida al crearla, o el fin del traslape al cambiarla. null si no vence.
 	ExpiresAt *string `json:"expires_at,omitempty"`
 	// El entorno de prueba (sbx_…) de la llave: solo ve sus emisores, webhooks y eventos. null si es de la cuenta.
-	Sandbox *string `json:"sandbox,omitempty"`
+	Sandbox *StringOr[Sandbox] `json:"sandbox,omitempty"`
 }
 
 // AccountRenumbering: Una renumeración del catálogo: cada cuenta que cambia de número (o no puede) con el de antes y el nuevo.
@@ -214,7 +260,7 @@ type AnnualAdjustment struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El ejercicio.
 	Year int64 `json:"year"`
 	// Desde cuándo lo llevan los recibos: el 1 de enero del año siguiente.
@@ -228,7 +274,7 @@ type AnnualAdjustment struct {
 // AnnualAdjustmentEmployee: AnnualAdjustmentEmployee.
 type AnnualAdjustmentEmployee struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su número de empleado.
 	EmployeeNumber string `json:"employee_number"`
 	// Su nombre.
@@ -785,12 +831,14 @@ type ApplyAdvanceParams struct {
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
 	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
 	Date *string `json:"date,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correos con copia, separados por comas.
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: la guarda como borrador (status draft) sin timbrar ni usar timbres, con las mismas revisiones que al timbrar (un error responde invoice_invalid; los avisos vienen en warnings). Se cambia con POST /v1/invoices/{id}, se timbra con POST /v1/invoices/{id}/stamp y se borra con DELETE /v1/invoices/{id}; también aparece en Por facturar de Fiscalisto. Idempotency-Key es opcional: con ella, repetir la solicitud devuelve el mismo borrador. En las demás rutas que reciben una factura no cambia nada.
+	Draft *bool `json:"draft,omitempty"`
 	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
 	Async *bool `json:"async,omitempty"`
 }
@@ -874,7 +922,7 @@ type AttendanceCalendar struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El mes, AAAA-MM.
 	Month string `json:"month"`
 	// Primer día, AAAA-MM-DD.
@@ -896,7 +944,7 @@ type AttendanceCalendarChange struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// A cuántos empleados.
 	Employees int64 `json:"employees"`
 	// Cuántos días a cada uno.
@@ -910,7 +958,7 @@ type AttendanceCalendarChange struct {
 // AttendanceCalendarEmployee: AttendanceCalendarEmployee.
 type AttendanceCalendarEmployee struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su nombre.
 	Name string `json:"name"`
 	// Su número de empleado, o null.
@@ -968,7 +1016,7 @@ type AttendanceMark struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// in: entrada; out: salida.
 	//
 	// Valores: in, out.
@@ -1010,7 +1058,7 @@ type AttendanceOvertime struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// El día, AAAA-MM-DD.
 	Date string `json:"date"`
 	// Hasta cuántos minutos de horas extra de ese día cuentan para la nómina (0 si se rechazaron); null: sin decisión.
@@ -1028,7 +1076,7 @@ type AttendanceReport struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…), el patrón.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Primer día del periodo, AAAA-MM-DD.
 	From string `json:"from"`
 	// Último día del periodo, AAAA-MM-DD.
@@ -1054,7 +1102,7 @@ type AttendanceReport struct {
 // AttendanceReportEmployee: AttendanceReportEmployee.
 type AttendanceReportEmployee struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su nombre.
 	Name string `json:"name"`
 	// Su número de empleado, o null.
@@ -1341,7 +1389,7 @@ type Balance struct {
 	//
 	// Deprecated: se conserva por compatibilidad.
 	Unlimited bool `json:"unlimited"`
-	// Con esta cantidad o menos llega balance.low (y otra vez al acabarse). Se elige en Desarrolladores › Timbres y pagos.
+	// Con esta cantidad o menos llega balance.low (y otra vez al acabarse). Se elige en Desarrolladores › Timbres y pagos. Si solo le quedan timbres de regalo, llega al quedar 2.
 	LowBalanceAt int64 `json:"low_balance_at"`
 	// La recarga automática con la tarjeta guardada, o null si está apagada (se enciende en Desarrolladores › Timbres y pagos).
 	AutoRecharge *BalanceAutoRecharge `json:"auto_recharge,omitempty"`
@@ -1442,9 +1490,9 @@ type BankTransaction struct {
 	// Una nota al clasificarlo, o null.
 	Note *string `json:"note,omitempty"`
 	// Las facturas (inv_…) que pagó, si está conciliado.
-	Invoices []string `json:"invoices"`
+	Invoices []StringOr[Invoice] `json:"invoices"`
 	// El complemento de pago (inv_…) timbrado con él, o null.
-	Payment *string `json:"payment,omitempty"`
+	Payment *StringOr[Invoice] `json:"payment,omitempty"`
 	// Si está abierto, las facturas que parece pagar (por monto, RFC, folio en el concepto y fecha): invoices, lo que toca a cada una (amounts), method, confidence (high o medium) y por qué (reasons). null si ninguna encaja.
 	SuggestedMatch *BankTransactionSuggestedMatch `json:"suggested_match,omitempty"`
 	// Cuándo se mandó.
@@ -1567,6 +1615,8 @@ type Branch struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor de la sucursal.
 	Issuer string `json:"issuer"`
 	// Cómo la llama su equipo; va en el PDF.
@@ -1650,7 +1700,7 @@ type Budget struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Año (Ejercicio).
 	Year int64 `json:"year"`
 	// El mes de la comparación: el que pidió, el actual en el año en curso, 12 en uno pasado (0 en uno futuro).
@@ -1905,6 +1955,8 @@ type CancelInvoiceParams struct {
 	Motive *string `json:"motive,omitempty"`
 	// El comprobante que sustituye a este (su id o su UUID), con el motivo 01.
 	Substitution *string `json:"substitution,omitempty"`
+	// true para avisarle al cliente por correo que se canceló, con el diseño de Fiscalisto, a las direcciones a las que se le mandó la factura (con la que la sustituye, si hay). Por omisión no se avisa. Solo si la factura se le mandó por correo; quien se dio de baja de los avisos no lo recibe.
+	NotifyCustomer *bool `json:"notify_customer,omitempty"`
 }
 
 // CancelPayoutParams: los campos de «Cancelar un pago a proveedores».
@@ -1954,7 +2006,7 @@ type Candidate struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// La vacante a la que se postuló (vac_…).
 	Vacancy string `json:"vacancy"`
 	// Nombre.
@@ -1976,7 +2028,7 @@ type Candidate struct {
 	// Sus respuestas, en el orden de las preguntas que contestó.
 	Answers []CandidateAnswer `json:"answers"`
 	// El empleado (emp_…) si se le contrató.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
 }
@@ -2128,7 +2180,7 @@ type CashForecast struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Hoy en la Ciudad de México (AAAA-MM-DD): el inicio.
 	Today string `json:"today"`
 	// El último día de la semana 13.
@@ -2166,7 +2218,7 @@ type CashForecastItem struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Qué es: «Renta», «Crédito del banco».
 	Description string `json:"description"`
 	// inflow entra dinero; outflow sale.
@@ -2416,7 +2468,7 @@ type Climate struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Lo que se configura en POST /v1/climate/policy.
 	Settings ClimateSettings `json:"settings"`
 	// Cada centro de trabajo con su guía y cuándo le toca.
@@ -2436,7 +2488,7 @@ type ClimateAction struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// La encuesta de la que sale (cls_…).
 	Survey *string `json:"survey,omitempty"`
 	// La categoría o el dominio que atiende.
@@ -2518,7 +2570,7 @@ type ClimateComplaint struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// violencia, entorno u otro.
 	Kind string `json:"kind"`
 	// Lo que escribió.
@@ -2582,7 +2634,7 @@ type ClimateSurvey struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// nom035 o clima.
 	Kind string `json:"kind"`
 	// Su nombre.
@@ -2636,7 +2688,7 @@ type ClimateSurveyDeleted struct {
 // ClimateSurveyInvite: ClimateSurveyInvite.
 type ClimateSurveyInvite struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Nombre.
 	Name string `json:"name"`
 	// Si ya contestó (no qué).
@@ -2808,7 +2860,7 @@ type ClimateTraumaticEvent struct {
 	// La encuesta (cls_…).
 	Survey string `json:"survey"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Nombre.
 	Name string `json:"name"`
 	// Si requiere valoración clínica según la Guía I (numeral 5.5).
@@ -2862,7 +2914,7 @@ type CompanyReport struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Su RFC.
 	TaxID string `json:"tax_id"`
 	// Su razón social, o null si Fiscalisto no la conoce.
@@ -3080,7 +3132,7 @@ type CompanyReportYear struct {
 	// Ingresos facturados sin impuestos, no cancelados.
 	Income float64 `json:"income"`
 	// Ingresos facturados y cancelados.
-	IncomeCancelled float64 `json:"income_cancelled"`
+	IncomeCanceled float64 `json:"income_canceled"`
 	// Por ciento de ingresos en PUE.
 	CashShare *float64 `json:"cash_share,omitempty"`
 	// Por ciento de ingresos en PPD.
@@ -3092,7 +3144,7 @@ type CompanyReportYear struct {
 	// Gastos recibidos sin impuestos, no cancelados.
 	Expenses float64 `json:"expenses"`
 	// Gastos recibidos y cancelados.
-	ExpensesCancelled float64 `json:"expenses_cancelled"`
+	ExpensesCanceled float64 `json:"expenses_canceled"`
 	// Por ciento de lo PPD ya pagado.
 	PaidShare *float64 `json:"paid_share,omitempty"`
 	// Días promedio de la factura al pago.
@@ -3669,6 +3721,8 @@ type CostCenter struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor del centro de costo.
 	Issuer string `json:"issuer"`
 	// Cómo lo llama su equipo, por ejemplo «Obra Norte».
@@ -3823,7 +3877,7 @@ type CreateAdvanceParams struct {
 	Series *string `json:"series,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correos con copia, separados por comas.
 	EmailCc *string `json:"email_cc,omitempty"`
@@ -3855,6 +3909,22 @@ type CreateAdvanceParamsCustomerForeign struct {
 	Country string `json:"country"`
 	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
 	TaxID string `json:"tax_id"`
+}
+
+// CreateApiKeyParams: los campos de «Crear una llave».
+type CreateApiKeyParams struct {
+	// Para qué es, para usted (por ejemplo, el nombre de su cliente).
+	Name string `json:"name"`
+	// Qué puede hacer la llave en cada recurso: `read` o `write` (escritura incluye lectura). Un recurso que no está es sin acceso. Cada uno, como mucho lo que tiene la llave que la crea.
+	Permissions map[string]string `json:"permissions"`
+	// Los emisores con que trabaja (sus id). Vacío o sin mandar: todos los del modo; si la llave que la crea está limitada a algunos emisores, sin mandar son esos mismos y la nueva solo puede tener algunos de ellos.
+	Issuers []string `json:"issuers,omitempty"`
+	// Solo funciona desde estas IP o rangos CIDR (203.0.113.7, 203.0.113.0/24, 2001:db8::/32). Vacío: desde cualquiera; si la llave que la crea tiene IP, sin mandar son esas mismas y la nueva solo puede tener direcciones dentro de ellas.
+	AllowedIps []string `json:"allowed_ips,omitempty"`
+	// Horas hasta que deja de funcionar (1 hora a 3 años); null: no vence. Sin mandar: vence cuando vence la llave que la crea, o nunca. No puede pasar del vencimiento de la llave que la crea.
+	LifetimeHours *int64 `json:"lifetime_hours,omitempty"`
+	// En vez de lifetime_hours: el momento en que deja de funcionar (ISO 8601), entre 1 hora y 3 años después.
+	ExpiresAt *string `json:"expires_at,omitempty"`
 }
 
 // CreateAttendanceMarkParams: los campos de «Registrar una marca».
@@ -3959,6 +4029,8 @@ type CreateBranchParams struct {
 	//
 	// Valores: America/Mexico_City, America/Cancun, America/Mazatlan, America/Hermosillo, America/Tijuana, America/Matamoros, America/Ciudad_Juarez.
 	TimeZone *string `json:"time_zone,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateBranchParamsAddress: La dirección que va en el PDF de sus facturas.
@@ -4109,6 +4181,8 @@ type CreateCostCenterParams struct {
 	Name string `json:"name"`
 	// Su clave, si su contabilidad usa claves (por ejemplo «CC-01»).
 	Code *string `json:"code,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateCostOfSalesParams: los campos de «Registrar el costo de ventas de un mes».
@@ -4135,7 +4209,7 @@ type CreateCreditNoteParams struct {
 	//
 	// Valores: 01, 03.
 	Relationship *string `json:"relationship,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
 	Email *string `json:"email,omitempty"`
@@ -4155,6 +4229,8 @@ type CreateCustomerDataRequestParams struct {
 	Description *string `json:"description,omitempty"`
 	// Días que la liga sirve, de 1 a 60. Por omisión 60.
 	ExpiresInDays *int64 `json:"expires_in_days,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateCustomerGroupParams: los campos de «Crear un grupo de clientes».
@@ -4189,12 +4265,16 @@ type CreateCustomerGroupParams struct {
 	CutoffHour *int64 `json:"cutoff_hour,omitempty"`
 	// Días para preparar un pedido antes de poder entregarlo (0 por omisión).
 	PrepDays *int64 `json:"prep_days,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateCustomerParams: los campos de «Crear un cliente».
 type CreateCustomerParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
 	TaxID string `json:"tax_id"`
 	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
@@ -4341,6 +4421,8 @@ type CreateEmployeeParams struct {
 	//
 	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
 	ExitReason *string `json:"exit_reason,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateEmployeeRaiseParams: los campos de «Aumento de sueldo».
@@ -4473,6 +4555,8 @@ type CreateExpensePersonParams struct {
 	BaseCity *string `json:"base_city,omitempty"`
 	// Su área.
 	Department *string `json:"department,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateExpenseReportParams: los campos de «Abrir una comprobación».
@@ -4497,6 +4581,8 @@ type CreateExpenseReportParams struct {
 	StartDate *string `json:"start_date,omitempty"`
 	// El regreso (o el fin del periodo).
 	EndDate *string `json:"end_date,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateExportParams: los campos de «Exportar las facturas de un mes».
@@ -4557,7 +4643,7 @@ type CreateExtraordinaryPayrollReceiptParams struct {
 	VacationDaysTaken *float64 `json:"vacation_days_taken,omitempty"`
 	// finiquito: los días de vacaciones de años de servicio cumplidos que no disfrutó ni han prescrito; se pagan con su prima vacacional. Por omisión, pending_days de sus vacaciones.
 	VacationDaysOwed *float64 `json:"vacation_days_owed,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -4727,12 +4813,14 @@ type CreateInvoiceBatchParamsInvoice struct {
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
 	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
 	Date *string `json:"date,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correos con copia, separados por comas.
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: la guarda como borrador (status draft) sin timbrar ni usar timbres, con las mismas revisiones que al timbrar (un error responde invoice_invalid; los avisos vienen en warnings). Se cambia con POST /v1/invoices/{id}, se timbra con POST /v1/invoices/{id}/stamp y se borra con DELETE /v1/invoices/{id}; también aparece en Por facturar de Fiscalisto. Idempotency-Key es opcional: con ella, repetir la solicitud devuelve el mismo borrador. En las demás rutas que reciben una factura no cambia nada.
+	Draft *bool `json:"draft,omitempty"`
 	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
 	Async *bool `json:"async,omitempty"`
 	// Su identificador de esta factura (su número de pedido), hasta 100 caracteres.
@@ -4931,7 +5019,7 @@ type CreatePaymentParams struct {
 	Series *string `json:"series,omitempty"`
 	// Las facturas que paga (DoctoRelacionado).
 	Documents []CreatePaymentParamsDocument `json:"documents"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
 	Email *string `json:"email,omitempty"`
@@ -4971,6 +5059,8 @@ type CreatePayoutParams struct {
 	Invoices []CreatePayoutParamsInvoice `json:"invoices,omitempty"`
 	// Pagos sin factura (hasta 500 entre los dos arreglos): una nómina, un anticipo, un reembolso. Los de un mismo RFC van en una sola transferencia.
 	Payments []CreatePayoutParamsPayment `json:"payments,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreatePayoutParamsInvoice: CreatePayoutParamsInvoice.
@@ -5159,7 +5249,7 @@ type CreatePayrollBatchParamsExternalReceipt struct {
 	References *ExternalPayrollReceiptCreateReferences `json:"references,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este sustituye: relación 04 y se cancela con motivo 01.
 	Replaces *string `json:"replaces,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -5213,6 +5303,8 @@ type CreatePayrollPayoutParams struct {
 	PaymentDate string `json:"payment_date"`
 	// El día en que sale (AAAA-MM-DD, hoy o después). Por omisión, hoy: sale en cuanto lo firmen.
 	PayOn *string `json:"pay_on,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreatePayrollProvisionParams: los campos de «Registrar las cuotas patronales de un mes».
@@ -5247,7 +5339,7 @@ type CreatePayrollReceiptParams struct {
 	Incidents *CreatePayrollReceiptParamsIncidents `json:"incidents,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
 	Replaces *string `json:"replaces,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -5365,6 +5457,8 @@ type CreatePriceListParams struct {
 	IsDefault *bool `json:"is_default,omitempty"`
 	// Sus precios propios; al mandarlos reemplazan a los que tenía.
 	Items []CreatePriceListParamsItem `json:"items,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreatePriceListParamsItem: CreatePriceListParamsItem.
@@ -5385,6 +5479,8 @@ type CreatePriceListParamsItem struct {
 type CreateProductParams struct {
 	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
 	Issuer *string `json:"issuer,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 	// Nombre corto para encontrarlo, solo para usted; en el CFDI va description.
 	Name *string `json:"name,omitempty"`
 	// Descripción.
@@ -5477,6 +5573,8 @@ type CreateProductionOrderParams struct {
 	DueDate *string `json:"due_date,omitempty"`
 	// Una nota.
 	Note *string `json:"note,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreatePurchaseReceiptParams: los campos de «Guardar un ticket de compra».
@@ -5515,6 +5613,8 @@ type CreatePurchaseReceiptParams struct {
 	Use *string `json:"use,omitempty"`
 	// Una nota para su equipo.
 	Note *string `json:"note,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreatePurchaseReceiptParamsField: CreatePurchaseReceiptParamsField.
@@ -5543,10 +5643,14 @@ type CreateQuoteParams struct {
 	//
 	// Valores: PUE, PPD.
 	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Con PUE: true si aún no le pagan («Por cobrar» en la app) aunque se pagará este mes.
+	PaidLater *bool `json:"paid_later,omitempty"`
 	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
 	Use *string `json:"use,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 	// Hasta cuándo es válida (AAAA-MM-DD, hasta un año). Por omisión, en 15 días.
 	ValidUntil *string `json:"valid_until,omitempty"`
 	// Condiciones: tiempo de entrega, anticipo, garantía…
@@ -5701,6 +5805,8 @@ type CreateRecurringInvoiceParams struct {
 	//
 	// Valores: all, latest.
 	CatchUp *string `json:"catch_up,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateRecurringInvoiceParamsInvoice: La factura que se repite: el cuerpo de POST /v1/invoices, sin issuer, folio, date, global ni metadata. En description puede usar {mes}, {mes anterior}, {mes siguiente}, {año}, {año anterior}, {año siguiente} y {periodo}: cada factura los llena con su fecha. Como se escriben es como salen: {mes} «noviembre», {Mes} «Noviembre», {MES} «NOVIEMBRE».
@@ -5777,12 +5883,14 @@ type CreateRecurringInvoiceParamsInvoice struct {
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
 	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
 	Date *string `json:"date,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correos con copia, separados por comas.
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: la guarda como borrador (status draft) sin timbrar ni usar timbres, con las mismas revisiones que al timbrar (un error responde invoice_invalid; los avisos vienen en warnings). Se cambia con POST /v1/invoices/{id}, se timbra con POST /v1/invoices/{id}/stamp y se borra con DELETE /v1/invoices/{id}; también aparece en Por facturar de Fiscalisto. Idempotency-Key es opcional: con ella, repetir la solicitud devuelve el mismo borrador. En las demás rutas que reciben una factura no cambia nada.
+	Draft *bool `json:"draft,omitempty"`
 	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
 	Async *bool `json:"async,omitempty"`
 }
@@ -5839,6 +5947,8 @@ type CreateRepseContractParams struct {
 	SiteAddress CreateRepseContractParamsSiteAddress `json:"site_address"`
 	// Quién trabaja en el contrato y desde cuándo (hasta 2,000).
 	Workers []CreateRepseContractParamsWorker `json:"workers"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateRepseContractParamsClientAddress: Domicilio fiscal del cliente.
@@ -5929,7 +6039,7 @@ type CreateRetentionParams struct {
 	FinancialDerivatives *CreateRetentionParamsFinancialDerivatives `json:"financial_derivatives,omitempty"`
 	// Folio fiscal (UUID) de la constancia que esta corrige: vigente, del mismo emisor y al mismo receptor (emitida aquí o en otro sistema). Va en CfdiRetenRelacionados (04) y, timbrada esta, la anterior se cancela con el motivo 01; `replaced` dice si se canceló.
 	Replaces *string `json:"replaces,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
 	Email *string `json:"email,omitempty"`
@@ -6367,9 +6477,9 @@ type CreateRuleParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
 	Name *string `json:"name,omitempty"`
-	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), invoice.approved (se aprueba en el Portal de proveedores), invoice.rejected (se rechaza en el portal), payout.submitted (se manda a firmar un pago que la incluye), payout.paid (se le paga una factura a un proveedor), payout.failed (falla o se devuelve su pago), invoice.daily (cada mañana a las 8, a cada factura con saldo, recibida o emitida, de Ingreso y no cancelada), purchase_order.daily (cada mañana a las 8, a cada orden que aún no llega toda ni está cerrada o cancelada), finding.created (aparece un hallazgo en una factura de los últimos 45 días), purchase_order.saved, .approved, .rejected, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered, bank.movement (llega un movimiento del banco: un retiro al importar el estado de cuenta, un depósito cuando Conciliación lo clasifica como préstamo, traspaso, devolución o intereses), sat.listed (un proveedor, cliente o RFC suyo aparece en una lista del SAT; cada mañana, una vez por RFC, lista y situación), sat.opinion (cambia la opinión de cumplimiento de un RFC suyo), sat.buzon (llega un comunicado, una notificación por abrir o el buzón no tiene medios de contacto), sat.certificate (cada mañana a las 8, a cada CSD y e.firma, con sus días para vencer).
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.canceled (el SAT la cancela; también se acepta invoice.cancelled), invoice.approved (se aprueba en el Portal de proveedores), invoice.rejected (se rechaza en el portal), payout.submitted (se manda a firmar un pago que la incluye), payout.paid (se le paga una factura a un proveedor), payout.failed (falla o se devuelve su pago), invoice.daily (cada mañana a las 8, a cada factura con saldo, recibida o emitida, de Ingreso y no cancelada), purchase_order.daily (cada mañana a las 8, a cada orden que aún no llega toda ni está cerrada o cancelada), finding.created (aparece un hallazgo en una factura de los últimos 45 días), purchase_order.saved, .approved, .rejected, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered, bank.movement (llega un movimiento del banco: un retiro al importar el estado de cuenta, un depósito cuando Conciliación lo clasifica como préstamo, traspaso, devolución o intereses), sat.listed (un proveedor, cliente o RFC suyo aparece en una lista del SAT; cada mañana, una vez por RFC, lista y situación), sat.opinion (cambia la opinión de cumplimiento de un RFC suyo), sat.buzon (llega un comunicado, una notificación por abrir o el buzón no tiene medios de contacto), sat.certificate (cada mañana a las 8, a cada CSD y e.firma, con sus días para vencer).
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
+	// Valores: invoice.cancelled, invoice.received, invoice.issued, invoice.paid, invoice.canceled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
 	Trigger string `json:"trigger"`
 	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
 	Conditions *CreateRuleParamsConditions `json:"conditions,omitempty"`
@@ -6477,7 +6587,7 @@ type CreateRuleParamsConditions struct {
 
 // CreateRuleParamsConditionsCondition: CreateRuleParamsConditionsCondition.
 type CreateRuleParamsConditionsCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
+	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.canceled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to; o contra otro campo con compare_to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
@@ -6507,7 +6617,7 @@ type CreateRuleParamsConditionsGroup struct {
 
 // CreateRuleParamsConditionsGroupCondition: CreateRuleParamsConditionsGroupCondition.
 type CreateRuleParamsConditionsGroupCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
+	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.canceled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to; o contra otro campo con compare_to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
@@ -6717,6 +6827,8 @@ type CreateSalesOrderParams struct {
 	Items []CreateSalesOrderParamsItem `json:"items,omitempty"`
 	// Confirmarlo en el mismo paso (por omisión false: queda en draft). Confirmado, aparta lo pedido en el almacén.
 	Confirm *bool `json:"confirm,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
 	Currency *string `json:"currency,omitempty"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
@@ -6727,6 +6839,8 @@ type CreateSalesOrderParams struct {
 	//
 	// Valores: PUE, PPD.
 	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Con PUE: true si aún no le pagan («Por cobrar» en la app) aunque se pagará este mes.
+	PaidLater *bool `json:"paid_later,omitempty"`
 	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
 	Use *string `json:"use,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
@@ -7009,6 +7123,8 @@ type CreateStockAdjustmentParams struct {
 	Note *string `json:"note,omitempty"`
 	// Lo que entra o sale de cada producto, hasta 500 líneas.
 	Lines []CreateStockAdjustmentParamsLine `json:"lines"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateStockAdjustmentParamsLine: CreateStockAdjustmentParamsLine.
@@ -7095,6 +7211,8 @@ type CreateSupplierGroupParams struct {
 	Color *string `json:"color,omitempty"`
 	// RFC de los proveedores que entran al grupo (hasta 500); salen del que tenían.
 	Suppliers []string `json:"suppliers,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateTagParams: los campos de «Crear una etiqueta».
@@ -7107,6 +7225,8 @@ type CreateTagParams struct {
 	//
 	// Valores: info, positive, warning, critical, muted.
 	Color *string `json:"color,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateTaxDeterminationParams: los campos de «Registrar la determinación de impuestos de un mes».
@@ -7163,6 +7283,8 @@ type CreateTicketParams struct {
 	Branch *string `json:"branch,omitempty"`
 	// Una venta de varios conceptos (el folio de un hotel: noches, desayunos, lavandería), cada uno con su producto o sus claves, sus impuestos y lo que se cobró por él; hasta 200. En lugar de `product`, `description`, `product_key`, `unit_key` e `iva`. La factura del cliente lleva un concepto por línea; la factura global, uno por cada combinación de impuestos del ticket.
 	Lines []CreateTicketParamsLine `json:"lines,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateTicketParamsBuyer: Quién pagó, para reconocer la venta en Tickets. No es el receptor de la factura (eso lo escribe el comprador en el portal) y no se le manda nada.
@@ -7273,6 +7395,8 @@ type CreateWebhookEndpointParams struct {
 	Description *string `json:"description,omitempty"`
 	// La versión de la API en que llegan sus eventos (por ejemplo 2026-10-24); null o sin mandar: la de la cuenta. Así actualiza un endpoint a la vez.
 	APIVersion *string `json:"api_version,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // CrossCheckCFDI: Los CFDI que forman una cifra del cruce de un mes (invoiced): cada uno con lo que aporta, y el ajuste que Impuestos agrega encima.
@@ -7345,7 +7469,7 @@ type CrossCheckCFDIExplanation struct {
 type CrossCheckCFDIExplanationCause struct {
 	// El motivo que comparten.
 	//
-	// Valores: cancelled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
+	// Valores: canceled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
 	Reason string `json:"reason"`
 	// La suma de su effect.
 	Total float64 `json:"total"`
@@ -7369,7 +7493,7 @@ type CrossCheckCFDIExplanationCauseCFDIItem struct {
 	Effect float64 `json:"effect"`
 	// Por qué lo explicaría.
 	//
-	// Valores: cancelled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
+	// Valores: canceled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
 	Reason string `json:"reason"`
 	// true si está en cfdi.
 	InInvoiced bool `json:"in_invoiced"`
@@ -7399,7 +7523,7 @@ type CrossCheckCFDIExplanationExactCFDIItem struct {
 	Effect float64 `json:"effect"`
 	// Por qué lo explicaría.
 	//
-	// Valores: cancelled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
+	// Valores: canceled, ppd_not_collected, other_month, month_edge, credit_note, ppd_payment, duplicate, left_out, withholding_certificate.
 	Reason string `json:"reason"`
 	// true si está en cfdi.
 	InInvoiced bool `json:"in_invoiced"`
@@ -7510,7 +7634,7 @@ type Customer struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
 	TaxID string `json:"tax_id"`
 	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
@@ -7539,6 +7663,8 @@ type Customer struct {
 	PriceList *string `json:"price_list,omitempty"`
 	// Porcentaje de descuento sobre el precio, de 0 a 100; en el CFDI va como Descuento de cada concepto.
 	DiscountPercent *float64 `json:"discount_percent,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
@@ -7567,6 +7693,8 @@ type CustomerDataRequest struct {
 	Description *string `json:"description,omitempty"`
 	// Cuándo deja de servir la liga.
 	ExpiresAt *string `json:"expires_at,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó.
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Lo que mandó el cliente (el último envío: puede corregirlo en las 24 horas siguientes). null mientras no conteste.
@@ -7604,7 +7732,7 @@ type CustomerDataRequestSubmission struct {
 	// Valores: constancia, manual.
 	Source string `json:"source"`
 	// El cliente (cus_…) en el catálogo del emisor: el nuevo, o el que ya existía con ese RFC.
-	Customer *string `json:"customer,omitempty"`
+	Customer *StringOr[Customer] `json:"customer,omitempty"`
 	// true si quedó en el catálogo. false si el cliente ya existía con otros datos: aplíquelos con POST /v1/customers/{id} si son correctos.
 	Applied bool `json:"applied"`
 	// Cuándo los mandó.
@@ -7627,8 +7755,10 @@ type CustomerGroup struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre.
 	Name string `json:"name"`
 	// Color de su etiqueta en la app: info, warning, positive, critical o muted.
@@ -7694,7 +7824,7 @@ type CustomerPaymentBehavior struct {
 	// El emisor.
 	Issuer string `json:"issuer"`
 	// El cliente (cus_…).
-	Customer string `json:"customer"`
+	Customer StringOr[Customer] `json:"customer"`
 	// Su RFC.
 	TaxID string `json:"tax_id"`
 	// Sus días de crédito: los suyos (Clientes, o los de su grupo) o los de la empresa (Ajustes › Cobranza automática). Contra ellos se mide el atraso.
@@ -7801,13 +7931,13 @@ type DeleteCostCenterParams struct {
 
 // DeleteCostOfSalesParams: los campos de «Quitar el costo de ventas de un mes».
 type DeleteCostOfSalesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // DeleteFxRevaluationParams: los campos de «Quitar la revaluación cambiaria de un mes».
 type DeleteFxRevaluationParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -7819,19 +7949,19 @@ type DeleteMemberParams struct {
 
 // DeletePayrollProvisionParams: los campos de «Quitar las cuotas patronales de un mes».
 type DeletePayrollProvisionParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // DeleteRoleParams: los campos de «Borrar un rol».
 type DeleteRoleParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // DeleteTaxDeterminationParams: los campos de «Quitar la determinación de impuestos de un mes».
 type DeleteTaxDeterminationParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -7990,7 +8120,7 @@ type Employee struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Número de empleado (NumEmpleado).
 	Number string `json:"number"`
 	// Nombre completo del empleado.
@@ -8065,6 +8195,8 @@ type Employee struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 	// Lo que el SAT podría observar de sus datos, antes de timbrar.
 	Warnings []string `json:"warnings"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
 }
@@ -8078,9 +8210,9 @@ type EmployeeDeduction struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// infonavit, fonacot, pension (pensión alimenticia), prestamo, anticipo (de salarios), caja (de ahorro) o sindical.
 	//
 	// Valores: infonavit, fonacot, pension, prestamo, anticipo, caja, sindical.
@@ -8142,7 +8274,7 @@ type EmployeeNoticeSettings struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Avisar cada recibo nuevo en cuanto se timbra.
 	Receipt bool `json:"receipt"`
 	// Avisar cuando un recibo suyo se cancela ante el SAT.
@@ -8170,7 +8302,7 @@ type EmployeePortal struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su enlace personal (sin cuenta) para ver, descargar y firmar de recibido sus recibos y pedir vacaciones; null si está apagado.
 	URL *string `json:"url,omitempty"`
 	// Cuándo se hizo el enlace.
@@ -8218,7 +8350,7 @@ type EmployeeRaise struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// iss_…
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// false con dry_run: no se guardó nada.
 	Applied bool `json:"applied"`
 	// Desde cuándo rige: la fecha de la modificación de salario.
@@ -8232,7 +8364,7 @@ type EmployeeRaise struct {
 // EmployeeRaiseEmployee: EmployeeRaiseEmployee.
 type EmployeeRaiseEmployee struct {
 	// emp_…
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su número de empleado.
 	Number string `json:"number"`
 	// Su nombre.
@@ -8256,9 +8388,9 @@ type EmployeeTraining struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su ocupación: la suya o la de su puesto.
 	Occupation *string `json:"occupation,omitempty"`
 	// La suya, cuando no es la de su puesto.
@@ -8304,7 +8436,7 @@ type EmployeeVacations struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// El día del saldo.
 	AsOf string `json:"as_of"`
 	// Los días de años de servicio cumplidos que le quedan y no han prescrito: los que paga el finiquito.
@@ -8525,6 +8657,10 @@ type ErrorBodyError struct {
 	SATCode *string `json:"sat_code,omitempty"`
 	// Con Accept-Language: en, el mensaje original en español cuando message solo dice en inglés qué significa el código.
 	MessageEs *string `json:"message_es,omitempty"`
+	// Con api_key_expired, cuándo dejó de servir la llave (ISO 8601, UTC).
+	ExpiredAt *string `json:"expired_at,omitempty"`
+	// Con api_key_revoked, cuándo se revocó la llave (ISO 8601, UTC).
+	RevokedAt *string `json:"revoked_at,omitempty"`
 	// La explicación de este código en la documentación.
 	DocURL string `json:"doc_url"`
 	// El id de la solicitud (req_…). Inclúyalo si nos escribe.
@@ -8576,7 +8712,7 @@ type EventResend struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El evento (evt_…) que se mandó otra vez.
-	Event string `json:"event"`
+	Event StringOr[Event] `json:"event"`
 	// A cuántos webhooks salió. 0 si ninguno encendido escucha ese tipo de evento.
 	Deliveries int64 `json:"deliveries"`
 }
@@ -8684,7 +8820,7 @@ type ExpensePerson struct {
 	// Valores: empleado, honorarios.
 	Kind string `json:"kind"`
 	// Su empleado de Nómina (emp_…), o null si es por honorarios.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Su nombre.
 	Name string `json:"name"`
 	// Su RFC, o null.
@@ -8699,6 +8835,8 @@ type ExpensePerson struct {
 	LinkActive bool `json:"link_active"`
 	// true si está archivada.
 	Archived bool `json:"archived"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se agregó.
 	CreatedAt *string `json:"created_at,omitempty"`
 }
@@ -8829,6 +8967,8 @@ type ExpenseReport struct {
 	Items []ExpenseItem `json:"items"`
 	// El dinero que se le dio o devolvió.
 	Movements []ExpenseMovement `json:"movements"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se abrió.
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Cuándo cambió por última vez.
@@ -8880,7 +9020,7 @@ type Export struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// zip (los archivos de cada factura) o xlsx (un Excel con una fila por factura).
 	//
 	// Valores: zip, xlsx.
@@ -8967,7 +9107,7 @@ type ExternalPayrollReceiptCreate struct {
 	References *ExternalPayrollReceiptCreateReferences `json:"references,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este sustituye: relación 04 y se cancela con motivo 01.
 	Replaces *string `json:"replaces,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -9214,7 +9354,7 @@ type ExternalPayrollReceiptPreview struct {
 	// external: los importes son los que calculó su sistema.
 	Calculation string `json:"calculation"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El empleado como receptor del CFDI (Receptor).
 	Customer ExternalPayrollReceiptPreviewCustomer `json:"customer"`
 	// El recibo de nómina 1.2: empleado, periodo, percepciones, deducciones y otros pagos.
@@ -9260,7 +9400,7 @@ type ExtraordinaryPayrollReceiptPreview struct {
 	// Mándelo en POST /v1/payroll_receipts/extraordinary para timbrar exactamente este recibo: si al timbrar se calcula otro, contesta 409 payroll_calculation_changed sin timbrar.
 	ConfirmationToken string `json:"confirmation_token"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Qué paga: aguinaldo, ptu o finiquito.
 	//
 	// Valores: aguinaldo, ptu, finiquito.
@@ -9738,7 +9878,7 @@ type Finding struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// purchase_orders (órdenes de compra), payouts (pagos a proveedores), suppliers (proveedores), accounting (contabilidad), bank (movimientos del banco), expense_reports (comprobaciones de viáticos), purchase_receipts (tickets de compra), inventory (inventario), customers (clientes y cobranza) o payroll (nómina).
 	//
 	// Valores: purchase_orders, payouts, suppliers, accounting, bank, expense_reports, purchase_receipts, inventory, customers, payroll.
@@ -10017,13 +10157,13 @@ type GeneralLedgerAccountMovement struct {
 
 // GetAccountingSettingsParams: los campos de «Ver cómo se lleva la contabilidad».
 type GetAccountingSettingsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetAnnualAdjustmentParams: los campos de «Ajuste anual del ISR».
 type GetAnnualAdjustmentParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El ejercicio: 2026.
 	Year int64 `json:"year"`
@@ -10031,7 +10171,7 @@ type GetAnnualAdjustmentParams struct {
 
 // GetAnnualReturnParams: los campos de «Calcular la declaración anual de una persona moral».
 type GetAnnualReturnParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El último mes, de 1 a 12, para estimar el año en curso. Por omisión 12 en un año pasado y el mes actual en el año en curso.
 	ThroughMonth *int64 `json:"through_month,omitempty"`
@@ -10039,7 +10179,7 @@ type GetAnnualReturnParams struct {
 
 // GetAttendanceCalendarParams: los campos de «Ver el calendario de turnos».
 type GetAttendanceCalendarParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El mes, AAAA-MM.
 	Month string `json:"month"`
@@ -10049,7 +10189,7 @@ type GetAttendanceCalendarParams struct {
 
 // GetAttendanceParams: los campos de «Ver la asistencia de un periodo».
 type GetAttendanceParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Primer día, AAAA-MM-DD.
 	From string `json:"from"`
@@ -10061,7 +10201,7 @@ type GetAttendanceParams struct {
 
 // GetAutomaticEntryParams: los campos de «Ver la póliza de un CFDI».
 type GetAutomaticEntryParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10071,13 +10211,13 @@ type GetBooksExportParams struct {
 	FromMonth string `json:"from_month"`
 	// El último mes (AAAA-MM), hasta 24 meses después y no después del mes actual; por omisión, from_month.
 	ToMonth *string `json:"to_month,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetBudgetParams: los campos de «Ver el presupuesto de un año contra lo real».
 type GetBudgetParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El centro de costo (ccn_…). Sin él, toda la empresa.
 	CostCenter *string `json:"cost_center,omitempty"`
@@ -10093,13 +10233,13 @@ type GetCashFlowParams struct {
 	//
 	// Valores: month, year_to_date.
 	Period *string `json:"period,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCashForecastParams: los campos de «Ver el flujo de efectivo».
 type GetCashForecastParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Escenario: sus clientes le pagan estos días después (0 a 120).
 	CustomersPayDaysLater *int64 `json:"customers_pay_days_later,omitempty"`
@@ -10115,19 +10255,19 @@ type GetCashForecastParams struct {
 
 // GetClimateParams: los campos de «Clima laboral».
 type GetClimateParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetClosedPeriodParams: los campos de «Ver hasta qué mes está cerrada la contabilidad».
 type GetClosedPeriodParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCompanyReportParams: los campos de «Ver el reporte de la empresa».
 type GetCompanyReportParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Desde este día (AAAA-MM-DD).
 	DateGte *string `json:"date_gte,omitempty"`
@@ -10147,7 +10287,7 @@ type GetComparativeStatementsParams struct {
 	//
 	// Valores: previous_year, previous_month.
 	CompareTo *string `json:"compare_to,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10157,19 +10297,19 @@ type GetConsolidatedStatementsParams struct {
 	Rfcs string `json:"rfcs"`
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCostCenterResultsParams: los campos de «Ver el estado de resultados por centro de costo».
 type GetCostCenterResultsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetCostOfSalesParams: los campos de «Ver el costo de ventas de un mes».
 type GetCostOfSalesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10181,7 +10321,7 @@ type GetCrossCheckCfdiParams struct {
 	//
 	// Valores: vat_charged, vat_creditable, vat_withheld, isr_income, isr_withheld_salaries, isr_withheld_suppliers, vat_withheld_suppliers.
 	Key string `json:"key"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10189,13 +10329,13 @@ type GetCrossCheckCfdiParams struct {
 type GetCrossChecksParams struct {
 	// El ejercicio. Por omisión, el actual.
 	Year *int64 `json:"year,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetDepreciationReconciliationParams: los campos de «Comparar la depreciación contable con la fiscal».
 type GetDepreciationReconciliationParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10205,7 +10345,7 @@ type GetDiotFileParams struct {
 	Month string `json:"month"`
 	// true para agrupar proveedores de hasta $50,000 en el mes (regla 4.5.2).
 	GroupSmallSuppliers *bool `json:"group_small_suppliers,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10213,7 +10353,7 @@ type GetDiotFileParams struct {
 type GetDiotParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10239,13 +10379,13 @@ type GetElectronicAccountingParams struct {
 	OrderNumber *string `json:"order_number,omitempty"`
 	// DE y CO: el número de trámite (AB123456789012).
 	ProcedureNumber *string `json:"procedure_number,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetEmployeeNoticeSettingsParams: los campos de «Avisos a empleados».
 type GetEmployeeNoticeSettingsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10275,13 +10415,13 @@ type GetEmployeeVacationsParams struct {
 type GetEquityChangesParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetExpensePolicyParams: los campos de «Ver la política».
 type GetExpensePolicyParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10289,7 +10429,7 @@ type GetExpensePolicyParams struct {
 type GetFinancialRatiosParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10297,13 +10437,13 @@ type GetFinancialRatiosParams struct {
 type GetFinancialStatementsParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetFxRevaluationParams: los campos de «Ver la revaluación cambiaria de un mes».
 type GetFxRevaluationParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10317,13 +10457,13 @@ type GetGeneralLedgerParams struct {
 	Account *string `json:"account,omitempty"`
 	// Solo las cuentas de este código agrupador del SAT (102 trae 102.01, 102.02…), como el renglón de un estado financiero. Con account no se usa.
 	GroupingCode *string `json:"grouping_code,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetHiringParams: los campos de «Página de empleos».
 type GetHiringParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10335,7 +10475,7 @@ type GetIepsCustomersFileParams struct {
 	//
 	// Valores: 1, 2, 3, 4.
 	Quarter string `json:"quarter"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10347,13 +10487,13 @@ type GetIepsCustomersParams struct {
 	//
 	// Valores: 1, 2, 3, 4.
 	Quarter *string `json:"quarter,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetInflationAdjustmentParams: los campos de «Calcular el ajuste anual por inflación».
 type GetInflationAdjustmentParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El primer mes del ejercicio, de 1 a 12. Por omisión 1; otro si la empresa empezó en el año.
 	FromMonth *int64 `json:"from_month,omitempty"`
@@ -10389,19 +10529,19 @@ type GetInvoiceXmlParams struct {
 
 // GetOpeningBalancesParams: los campos de «Ver los saldos iniciales».
 type GetOpeningBalancesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetPayoutsPauseParams: los campos de «Ver si los pagos están en pausa».
 type GetPayoutsPauseParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetPayrollAccumulatedParams: los campos de «Acumulados de nómina».
 type GetPayrollAccumulatedParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El año: 2026 (por omisión, el actual).
 	Year *int64 `json:"year,omitempty"`
@@ -10411,7 +10551,7 @@ type GetPayrollAccumulatedParams struct {
 
 // GetPayrollCalendarParams: los campos de «Calendario de nómina».
 type GetPayrollCalendarParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Hasta cuántos días adelante (por omisión 90, hasta 366).
 	DaysAhead *int64 `json:"days_ahead,omitempty"`
@@ -10421,7 +10561,7 @@ type GetPayrollCalendarParams struct {
 
 // GetPayrollCostParams: los campos de «Costo de la nómina».
 type GetPayrollCostParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El año: 2026 (por omisión, el actual).
 	Year *int64 `json:"year,omitempty"`
@@ -10429,7 +10569,7 @@ type GetPayrollCostParams struct {
 
 // GetPayrollOrgChartParams: los campos de «Organigrama».
 type GetPayrollOrgChartParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Un día pasado (YYYY-MM-DD): el organigrama como estaba al cierre de ese día, con los jefes, departamentos y sucursales que tenían (se guardan desde el 21 de noviembre de 2026).
 	AsOf *string `json:"as_of,omitempty"`
@@ -10437,13 +10577,13 @@ type GetPayrollOrgChartParams struct {
 
 // GetPayrollProvisionParams: los campos de «Ver las cuotas patronales de un mes».
 type GetPayrollProvisionParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetPayrollTaxParams: los campos de «Impuesto sobre nómina del mes».
 type GetPayrollTaxParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El mes: 2026-11.
 	Month string `json:"month"`
@@ -10451,19 +10591,19 @@ type GetPayrollTaxParams struct {
 
 // GetPrepaidExpenseParams: los campos de «Ver si una factura se amortiza».
 type GetPrepaidExpenseParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetRepseProfileParams: los campos de «Ver los datos del sujeto obligado».
 type GetRepseProfileParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetRepseReturnParams: los campos de «Informes ICSOE y SISUB de un cuatrimestre».
 type GetRepseReturnParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10489,7 +10629,7 @@ type GetRetentionXmlParams struct {
 
 // GetSatAnnualPreloadParams: los campos de «Ver la precarga de la anual de una persona física».
 type GetSatAnnualPreloadParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El ejercicio, como 2025. Por omisión, el anterior (el que se declara).
 	Year *int64 `json:"year,omitempty"`
@@ -10505,7 +10645,7 @@ type GetSatCatalogParams struct {
 
 // GetSatDeclarationCalendarParams: los campos de «Ver el año mes por mes».
 type GetSatDeclarationCalendarParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El ejercicio, como 2026. Por omisión, el actual.
 	Year *int64 `json:"year,omitempty"`
@@ -10513,25 +10653,25 @@ type GetSatDeclarationCalendarParams struct {
 
 // GetSatRiskCheckParams: los campos de «Revisar como el SAT».
 type GetSatRiskCheckParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetScheduleSettingsParams: los campos de «Ver los horarios».
 type GetScheduleSettingsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetTaxDeterminationParams: los campos de «Ver la determinación de impuestos de un mes».
 type GetTaxDeterminationParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetTaxDiscrepancyParams: los campos de «Calcular la discrepancia fiscal».
 type GetTaxDiscrepancyParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// El ejercicio (por omisión, el año pasado).
 	Year *int64 `json:"year,omitempty"`
@@ -10547,7 +10687,7 @@ type GetTrainingCertificatesPdfParams struct {
 
 // GetTrainingParams: los campos de «Capacitación».
 type GetTrainingParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10555,13 +10695,13 @@ type GetTrainingParams struct {
 type GetTrialBalanceParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
 // GetVariableSalaryParams: los campos de «Salario variable de un bimestre».
 type GetVariableSalaryParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// AAAA-B: 2026-5 es septiembre–octubre de 2026.
 	Bimester string `json:"bimester"`
@@ -10571,7 +10711,7 @@ type GetVariableSalaryParams struct {
 type GetVatRefundParams struct {
 	// El mes del saldo a revisar (AAAA-MM). Sin él, solo los saldos.
 	Month *string `json:"month,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -10588,7 +10728,7 @@ type Hiring struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// La página de empleos del emisor.
 	CareersURL string `json:"careers_url"`
 	// Si la página se ve.
@@ -10664,7 +10804,7 @@ type IEPSCustomers struct {
 	// false en modo de prueba.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El año.
 	Year int64 `json:"year"`
 	// Cada trimestre pedido, también los que no tienen clientes.
@@ -10754,7 +10894,7 @@ type ImssFiles struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// idse o sua.
 	//
 	// Valores: idse, sua.
@@ -10784,7 +10924,7 @@ type ImssFilesFile struct {
 // ImssFilesRefusedItem: ImssFilesRefusedItem.
 type ImssFilesRefusedItem struct {
 	// El movimiento (imv_…).
-	Movement string `json:"movement"`
+	Movement StringOr[ImssMovement] `json:"movement"`
 	// El nombre del empleado.
 	EmployeeName string `json:"employee_name"`
 	// Lo que el IMSS rechazaría en su renglón.
@@ -10800,9 +10940,9 @@ type ImssMovement struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su número de empleado.
 	EmployeeNumber string `json:"employee_number"`
 	// Su nombre completo.
@@ -10964,7 +11104,7 @@ type Invitation struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
 	Email string `json:"email"`
 	// El rol (id de GET /v1/roles).
@@ -11008,7 +11148,7 @@ type Invoice struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// La sucursal (brn_…) desde donde se timbró, o null (el domicilio fiscal del emisor). Sus pagos y notas de crédito la siguen.
 	Branch *string `json:"branch,omitempty"`
 	// Su centro de costo (ccn_…), o null. El que mandó al crearla, o el que le puso o cambió después con POST /v1/invoices/{id}.
@@ -11017,9 +11157,9 @@ type Invoice struct {
 	//
 	// Valores: I, E, P, T, N.
 	Type string `json:"type"`
-	// processing: el PAC no ha contestado (se resuelve sola; escuche invoice.stamped). valid: timbrada. pending: timbrada, sin el UUID aún (se resuelve sola, como processing). Una cancelación en espera del cliente no cambia status: sigue valid, con cancellation.status pending. rejected: el SAT o el PAC no la aceptaron (ver error). canceled: cancelada.
+	// draft: un borrador, sin timbrar (POST /v1/invoices con draft: true, o hecho en Fiscalisto): se cambia con POST /v1/invoices/{id}, se timbra con POST /v1/invoices/{id}/stamp y se borra con DELETE /v1/invoices/{id}. processing: el PAC no ha contestado (se resuelve sola; escuche invoice.stamped). valid: timbrada. pending: timbrada, sin el UUID aún (se resuelve sola, como processing). Una cancelación en espera del cliente no cambia status: sigue valid, con cancellation.status pending. rejected: el SAT o el PAC no la aceptaron (ver error). canceled: cancelada.
 	//
-	// Valores: processing, pending, valid, rejected, canceled.
+	// Valores: draft, processing, pending, valid, rejected, canceled.
 	Status string `json:"status"`
 	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
 	UUID *string `json:"uuid,omitempty"`
@@ -11082,15 +11222,17 @@ type Invoice struct {
 	// Por qué el SAT o el PAC no lo aceptaron: mensaje, código del SAT y texto original.
 	Error *InvoiceError `json:"error,omitempty"`
 	// La factura recurrente (rin_…) que la timbró sola, o null si se timbró con una llamada.
-	RecurringInvoice *string `json:"recurring_invoice,omitempty"`
+	RecurringInvoice *StringOr[RecurringInvoice] `json:"recurring_invoice,omitempty"`
 	// Los tickets (`tkt_…`) que factura: el que su cliente facturó en la autofactura, el que su equipo facturó desde la página del ticket o los que asoció a ella. Vacío en las demás; los de una factura global están en GET /v1/tickets con `status=global`.
-	Tickets []string `json:"tickets"`
+	Tickets []StringOr[Ticket] `json:"tickets"`
 	// Qué timbró la factura; `null` si se timbró fuera de Fiscalisto.
 	Origin *InvoiceOrigin `json:"origin,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata"`
+	// Solo en un borrador (status draft).
+	Draft *InvoiceDraft `json:"draft,omitempty"`
 	// Avisos sobre la factura (solo en la respuesta que la timbra o, con 202, la que la deja en proceso): se timbra como se mandó.
 	Warnings []string `json:"warnings,omitempty"`
 	// Por qué no se pudo mandar el correo; el comprobante sí se timbró.
@@ -11104,7 +11246,7 @@ type Invoice struct {
 // InvoiceAdvanceApplication: La aplicación del anticipo: método, nota de aplicación y su estado.
 type InvoiceAdvanceApplication struct {
 	// El anticipo, como factura (inv_…).
-	Advance *string `json:"advance,omitempty"`
+	Advance *StringOr[Invoice] `json:"advance,omitempty"`
 	// El folio fiscal del anticipo.
 	AdvanceUUID string `json:"advance_uuid"`
 	// egreso (la factura completa y después una nota de crédito por el anticipo, opción A) o remanente (la factura solo por lo que falta, opción B).
@@ -11116,7 +11258,7 @@ type InvoiceAdvanceApplication struct {
 	// Valores: done, credit_note_pending.
 	Status string `json:"status"`
 	// La nota de aplicación del anticipo (inv_…), con method egreso.
-	CreditNote *string `json:"credit_note,omitempty"`
+	CreditNote *StringOr[Invoice] `json:"credit_note,omitempty"`
 	// Por qué no se timbró la nota de aplicación (repita con la misma Idempotency-Key).
 	CreditNoteError *string `json:"credit_note_error,omitempty"`
 }
@@ -11130,7 +11272,7 @@ type InvoiceBatch struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre del lote, para usted.
 	Name string `json:"name"`
 	// processing: timbrando. completed: ya no queda ninguna por timbrar.
@@ -11164,7 +11306,7 @@ type InvoiceBatchInvoice struct {
 	// Valores: processing, valid, failed.
 	Status string `json:"status"`
 	// La factura timbrada (inv_…).
-	Invoice *string `json:"invoice,omitempty"`
+	Invoice *StringOr[Invoice] `json:"invoice,omitempty"`
 	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
 	UUID *string `json:"uuid,omitempty"`
 	// Total en la moneda del comprobante (Total).
@@ -11321,12 +11463,14 @@ type InvoiceCreate struct {
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
 	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
 	Date *string `json:"date,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correos con copia, separados por comas.
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: la guarda como borrador (status draft) sin timbrar ni usar timbres, con las mismas revisiones que al timbrar (un error responde invoice_invalid; los avisos vienen en warnings). Se cambia con POST /v1/invoices/{id}, se timbra con POST /v1/invoices/{id}/stamp y se borra con DELETE /v1/invoices/{id}; también aparece en Por facturar de Fiscalisto. Idempotency-Key es opcional: con ella, repetir la solicitud devuelve el mismo borrador. En las demás rutas que reciben una factura no cambia nada.
+	Draft *bool `json:"draft,omitempty"`
 	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
 	Async *bool `json:"async,omitempty"`
 }
@@ -12307,6 +12451,22 @@ type InvoiceCustomer struct {
 	Foreign map[string]any `json:"foreign,omitempty"`
 }
 
+// InvoiceDraft: Solo en un borrador (status draft).
+type InvoiceDraft struct {
+	// Cuándo cambió por última vez.
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	// Alguien del equipo lo mandó a aprobar en Fiscalisto: no se timbra por la API hasta que un administrador lo apruebe. Cambiarlo retira la solicitud.
+	AwaitingApproval bool `json:"awaiting_approval"`
+	// Se está timbrando en este momento (desde la API o desde Fiscalisto).
+	Stamping bool `json:"stamping"`
+	// Programado en Fiscalisto («Programar timbrado») para timbrarse solo a esa hora; null si no.
+	ScheduledAt *string `json:"scheduled_at,omitempty"`
+	// Al timbrarlo se manda por correo a customer.email.
+	SendEmail bool `json:"send_email"`
+	// Copias del correo al timbrarlo.
+	EmailCc *string `json:"email_cc,omitempty"`
+}
+
 // InvoiceEmail: InvoiceEmail.
 type InvoiceEmail struct {
 	// A quién (correos separados por comas).
@@ -12710,7 +12870,7 @@ type InvoicePreview struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
 	Branch *string `json:"branch,omitempty"`
 	// Tipo de comprobante (TipoDeComprobante): I ingreso, E egreso, P pago, T traslado, N nómina.
@@ -12810,7 +12970,7 @@ type InvoiceSalesOrderParamsItem struct {
 // InvoiceSubstitutes: La factura que esta sustituyó y si quedó cancelada.
 type InvoiceSubstitutes struct {
 	// La factura sustituida (inv_…).
-	Invoice string `json:"invoice"`
+	Invoice StringOr[Invoice] `json:"invoice"`
 	// true si la sustituida ya quedó cancelada. false no es definitivo: vea substitutes.cancellation.
 	Canceled bool `json:"canceled"`
 	// Por qué no se pudo cancelar la sustituida (cancélela con POST /v1/invoices/{id}/cancel).
@@ -12900,7 +13060,7 @@ type Issuer struct {
 	// RFC con el que se timbra: el del emisor en producción y, en pruebas, el contribuyente de pruebas del SAT de su tipo: EKU9003173C9 para una persona moral, CACX7605101P8 para una persona física (con su CURP en la nómina). Se timbra con el régimen y el código postal del emisor.
 	StampsAs string `json:"stamps_as"`
 	// El entorno de prueba (sbx_…) al que pertenece, o null si es de la cuenta. Vea /v1/sandboxes.
-	Sandbox *string `json:"sandbox,omitempty"`
+	Sandbox *StringOr[Sandbox] `json:"sandbox,omitempty"`
 	// Su reloj de prueba (solo emisores de prueba): la hora que es «hoy» para él, o null si va con la hora real. Vea POST /v1/issuers/{id}/test_clock.
 	TestClock *IssuerTestClock `json:"test_clock,omitempty"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
@@ -12916,7 +13076,7 @@ type IssuerBranding struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// Su nombre comercial: va en grande en el PDF, el correo y la página de la factura; null: la razón social.
@@ -13060,7 +13220,7 @@ type JournalEntry struct {
 	// El documento, su folio y la contraparte.
 	Description string `json:"description"`
 	// La factura (inv_…) si es la póliza de un CFDI que timbró este emisor; null en los demás casos.
-	Invoice *string `json:"invoice,omitempty"`
+	Invoice *StringOr[Invoice] `json:"invoice,omitempty"`
 	// El folio fiscal del CFDI (o del complemento de pago); null en la depreciación.
 	UUID *string `json:"uuid,omitempty"`
 	// El RFC de la contraparte (cliente, proveedor o empleado); null en la depreciación.
@@ -13169,6 +13329,22 @@ type ListAdvancesParams struct {
 	Customer *string `json:"customer,omitempty"`
 }
 
+// ListApiKeysParams: los campos de «Listar llaves».
+type ListApiKeysParams struct {
+	// Cuántos por página, de 1 a 100. Por omisión 10.
+	Limit *int64 `json:"limit,omitempty"`
+	// El id del último de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+}
+
 // ListAttendanceRotationsParams: los campos de «Listar los roles de turnos».
 type ListAttendanceRotationsParams struct {
 	// Cuántos por página, de 1 a 100. Por omisión 10.
@@ -13193,7 +13369,7 @@ type ListAttendanceShiftsParams struct {
 type ListBankMovementsParams struct {
 	// El mes (AAAA-MM). Por omisión, el actual.
 	Month *string `json:"month,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13203,12 +13379,28 @@ type ListBankTransactionsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// open (sin conciliar), matched o classified.
 	//
 	// Valores: open, matched, classified.
 	Status *string `json:"status,omitempty"`
+	// Con fecha del movimiento desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// Con fecha del movimiento después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// Con fecha del movimiento hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// Con fecha del movimiento antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListBooksLogParams: los campos de «Listar la bitácora de la contabilidad».
@@ -13217,16 +13409,28 @@ type ListBooksLogParams struct {
 	//
 	// Valores: manual_journal_entry, opening_balances, account, chart_of_accounts, period_close, consolidation_elimination, entry_template, fixed_asset, invoice_account, automatic_journal_entry, prepaid_expense.
 	Subject *string `json:"subject,omitempty"`
-	// Desde este día (AAAA-MM-DD, hora de la Ciudad de México).
-	From *string `json:"from,omitempty"`
-	// Hasta este día, incluido.
-	To *string `json:"to,omitempty"`
 	// Cuántos por página, de 1 a 100. Por omisión 10.
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Igual que created[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	From *string `json:"from,omitempty"`
+	// Igual que created[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	To *string `json:"to,omitempty"`
 }
 
 // ListBranchesParams: los campos de «Listar sucursales».
@@ -13235,12 +13439,22 @@ type ListBranchesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// true para incluir las archivadas.
 	IncludeArchived *bool `json:"include_archived,omitempty"`
 	// Solo la de este código postal.
 	Zip *string `json:"zip,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListCandidatesParams: los campos de «Listar candidatos».
@@ -13249,12 +13463,20 @@ type ListCandidatesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de una vacante (vac_…).
 	Vacancy *string `json:"vacancy,omitempty"`
 	// Solo las de una etapa, como en stages de hiring.
 	Stage *string `json:"stage,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListChartTemplatesParams: los campos de «Listar los catálogos por giro».
@@ -13269,10 +13491,18 @@ type ListClimateActionsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de esta encuesta (cls_…).
 	Survey *string `json:"survey,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListClimateComplaintsParams: los campos de «Listar quejas del buzón».
@@ -13281,7 +13511,7 @@ type ListClimateComplaintsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las nueva, en_atencion o atendida.
 	Status *string `json:"status,omitempty"`
@@ -13293,15 +13523,23 @@ type ListClimateSurveysParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListConsolidationEliminationsParams: los campos de «Listar las eliminaciones de consolidación de un mes».
 type ListConsolidationEliminationsParams struct {
 	// El mes (AAAA-MM).
 	Month string `json:"month"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13311,10 +13549,20 @@ type ListCostCentersParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// true para incluir los archivados.
 	IncludeArchived *bool `json:"include_archived,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListCustomerDataRequestsParams: los campos de «Listar solicitudes de datos».
@@ -13323,8 +13571,18 @@ type ListCustomerDataRequestsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListCustomerGroupsParams: los campos de «Listar grupos de clientes».
@@ -13333,8 +13591,18 @@ type ListCustomerGroupsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListCustomersParams: los campos de «Listar clientes».
@@ -13343,15 +13611,25 @@ type ListCustomersParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo el de este RFC.
 	TaxID *string `json:"tax_id,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListEmployeeDeductionsParams: los campos de «Listar descuentos».
 type ListEmployeeDeductionsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo los de este empleado (emp_…).
 	Employee *string `json:"employee,omitempty"`
@@ -13363,13 +13641,23 @@ type ListEmployeesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListEntryTemplatesParams: los campos de «Listar las pólizas modelo».
 type ListEntryTemplatesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13379,14 +13667,24 @@ type ListEventsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
+	// Un evento (evt_…): contesta los limit que llegaron justo después de él, los más recientes primero; has_more dice si hay más nuevos. Para la página siguiente hacia adelante use el primero de data. No va con starting_after.
+	EndingBefore *string `json:"ending_before,omitempty"`
 	// Solo de este tipo (invoice.stamped), o todos los de un recurso con un comodín (invoice.*).
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer.created, customer.updated, customer.deleted, product.created, product.updated, product.deleted, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, payout.*, payout_transfer.*, ticket.*, retention.*, customer.*, product.*, customer_data_request.*, sat_download.*, sat_declaration.*, sat_refresh.*, issuer.*, balance.*, usage.*, test_clock.*, rule.*.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, invoice.draft_created, invoice.draft_updated, invoice.draft_deleted, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer.created, customer.updated, customer.deleted, product.created, product.updated, product.deleted, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched, invoice.*, invoice_batch.*, payroll_batch.*, recurring_invoice.*, quote.*, sales_order.*, supplier_invoice.*, portal_supplier.*, payout.*, payout_transfer.*, ticket.*, retention.*, customer.*, product.*, customer_data_request.*, sat_download.*, sat_declaration.*, sat_refresh.*, issuer.*, balance.*, usage.*, test_clock.*, rule.*.
 	Type *string `json:"type,omitempty"`
 	// Solo los de este objeto (inv_…, ret_…, bat_…).
 	Object *string `json:"object,omitempty"`
 	// false: los que algún webhook no recibió (su último intento falló). true: los que recibieron todos los webhooks a los que se mandaron.
 	DeliverySuccess *bool `json:"delivery_success,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListExpensePeopleParams: los campos de «Listar personas».
@@ -13395,10 +13693,20 @@ type ListExpensePeopleParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// true para incluir las archivadas.
 	IncludeArchived *bool `json:"include_archived,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListExpenseReportsParams: los campos de «Listar comprobaciones».
@@ -13407,12 +13715,22 @@ type ListExpenseReportsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de un estado: draft, submitted, rejected, approved o closed.
 	Status *string `json:"status,omitempty"`
 	// Solo las de una persona (exp_…).
 	Person *string `json:"person,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListExportsParams: los campos de «Listar exportaciones».
@@ -13421,13 +13739,21 @@ type ListExportsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListFindingsParams: los campos de «Listar hallazgos».
 type ListFindingsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Cuántos por página, de 1 a 100. Por omisión 10.
 	Limit *int64 `json:"limit,omitempty"`
@@ -13449,13 +13775,21 @@ type ListFindingsParams struct {
 	Code *string `json:"code,omitempty"`
 	// Solo los de este proveedor (su RFC).
 	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListFixedAssetsParams: los campos de «Listar los activos fijos».
 type ListFixedAssetsParams struct {
 	// El mes (AAAA-MM) a cuyo cierre van las cifras. Por omisión, el actual.
 	Month *string `json:"month,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13465,7 +13799,7 @@ type ListImssMovementsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// pending (por omisión) o reported.
 	//
@@ -13475,7 +13809,7 @@ type ListImssMovementsParams struct {
 
 // ListInvitationsParams: los campos de «Listar invitaciones».
 type ListInvitationsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13485,8 +13819,16 @@ type ListInvoiceBatchesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListInvoicesParams: los campos de «Listar facturas».
@@ -13495,11 +13837,11 @@ type ListInvoicesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
-	// valid, pending, canceled, rejected o processing.
+	// valid, pending, canceled, rejected o processing; draft lista solo los borradores (sin él no salen). Con draft no van payment_status ni cost_center.
 	//
-	// Valores: valid, pending, canceled, rejected, processing.
+	// Valores: valid, pending, canceled, rejected, processing, draft.
 	Status *string `json:"status,omitempty"`
 	// I, E, P, T o N.
 	//
@@ -13511,12 +13853,34 @@ type ListInvoicesParams struct {
 	//
 	// Valores: unpaid, partial, open, paid.
 	PaymentStatus *string `json:"payment_status,omitempty"`
-	// Creadas desde, en ISO 8601. Un día solo (2026-10-01) cuenta desde su inicio en hora de la Ciudad de México.
-	CreatedGte *string `json:"created_gte,omitempty"`
-	// Creadas hasta, en ISO 8601. Un día solo (2026-10-31) incluye el día completo en hora de la Ciudad de México.
-	CreatedLte *string `json:"created_lte,omitempty"`
+	// Con fecha del CFDI desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// Con fecha del CFDI después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// Con fecha del CFDI hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// Con fecha del CFDI antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
 	// Solo las de este centro de costo (ccn_…), o none para las que no tienen.
 	CostCenter *string `json:"cost_center,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// Igual que created[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	CreatedGteValue *string `json:"created_gte,omitempty"`
+	// Igual que created[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	CreatedLteValue *string `json:"created_lte,omitempty"`
 }
 
 // ListIssuersParams: los campos de «Listar emisores».
@@ -13529,6 +13893,16 @@ type ListIssuersParams struct {
 	TaxID *string `json:"tax_id,omitempty"`
 	// true para incluir los archivados.
 	IncludeArchived *bool `json:"include_archived,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListJournalEntriesParams: los campos de «Listar las pólizas de un mes».
@@ -13539,7 +13913,7 @@ type ListJournalEntriesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id de la última póliza de la página anterior.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13551,7 +13925,7 @@ type ListLedgerAccountsParams struct {
 
 // ListLedgerBankAccountsParams: los campos de «Listar las cuentas de banco de la contabilidad».
 type ListLedgerBankAccountsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13561,46 +13935,98 @@ type ListManualEntriesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// La última (mje_…) de la página anterior.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// Desde este día (AAAA-MM-DD).
-	From *string `json:"from,omitempty"`
-	// Hasta este día (AAAA-MM-DD).
-	To *string `json:"to,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Con fecha de la póliza desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// Con fecha de la póliza después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// Con fecha de la póliza hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// Con fecha de la póliza antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Igual que date[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	From *string `json:"from,omitempty"`
+	// Igual que date[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	To *string `json:"to,omitempty"`
 }
 
 // ListMaterialityInvoicesParams: los campos de «Listar facturas recibidas por probar».
 type ListMaterialityInvoicesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
-	// Facturas desde este día (AAAA-MM-DD).
-	DateGte *string `json:"date_gte,omitempty"`
-	// Facturas hasta este día (AAAA-MM-DD, completo).
-	DateLte *string `json:"date_lte,omitempty"`
+	// Facturas con fecha desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// Facturas con fecha después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// Facturas con fecha hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// Facturas con fecha antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
 	// Solo las de este proveedor (su RFC).
 	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
 	// Solo las de este estado: complete, partial o none. Sin él, las que no están completas.
 	//
 	// Valores: complete, partial, none.
 	State *string `json:"state,omitempty"`
+	// Igual que date[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateGteValue *string `json:"date_gte,omitempty"`
+	// Igual que date[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateLteValue *string `json:"date_lte,omitempty"`
 }
 
 // ListMaterialitySuppliersParams: los campos de «Listar la materialidad por proveedor».
 type ListMaterialitySuppliersParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
-	// Facturas desde este día (AAAA-MM-DD).
-	DateGte *string `json:"date_gte,omitempty"`
-	// Facturas hasta este día (AAAA-MM-DD, completo).
-	DateLte *string `json:"date_lte,omitempty"`
+	// De las facturas con fecha desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// De las facturas con fecha después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// De las facturas con fecha hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// De las facturas con fecha antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
 	// Solo este proveedor (su RFC).
 	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
+	// Igual que date[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateGteValue *string `json:"date_gte,omitempty"`
+	// Igual que date[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateLteValue *string `json:"date_lte,omitempty"`
 }
 
 // ListMembersParams: los campos de «Listar miembros».
 type ListMembersParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListPayableInvoicesParams: los campos de «Listar lo que falta por pagar».
@@ -13609,6 +14035,8 @@ type ListPayableInvoicesParams struct {
 	Issuer *string `json:"issuer,omitempty"`
 	// Cuántas, de 1 a 500. Por omisión 100.
 	Limit *int64 `json:"limit,omitempty"`
+	// El id (folio fiscal) de la última de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
 	// Solo las de este proveedor (su RFC).
 	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
 	// Solo estas: hasta 100 folios fiscales separados por comas.
@@ -13617,16 +14045,32 @@ type ListPayableInvoicesParams struct {
 
 // ListPayeeAccountsParams: los campos de «Listar cuentas de proveedores».
 type ListPayeeAccountsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de este proveedor (su RFC).
 	SupplierTaxID *string `json:"supplier_tax_id,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListPayoutMandatesParams: los campos de «Listar pagos recurrentes».
 type ListPayoutMandatesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListPayoutsParams: los campos de «Listar pagos a proveedores».
@@ -13635,15 +14079,37 @@ type ListPayoutsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo los que estén en este estado.
 	//
 	// Valores: draft, pending_approval, approved, sending, paid, partially_paid, failed, canceled.
 	Status *string `json:"status,omitempty"`
-	// Solo los que salen desde este día (AAAA-MM-DD).
+	// Con fecha de pago desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	PayOnGte *string `json:"pay_on[gte],omitempty"`
+	// Con fecha de pago después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	PayOnGt *string `json:"pay_on[gt],omitempty"`
+	// Con fecha de pago hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	PayOnLte *string `json:"pay_on[lte],omitempty"`
+	// Con fecha de pago antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	PayOnLt *string `json:"pay_on[lt],omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// Igual que pay_on[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
 	PayOnFrom *string `json:"pay_on_from,omitempty"`
-	// Solo los que salen hasta este día (AAAA-MM-DD).
+	// Igual que pay_on[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
 	PayOnTo *string `json:"pay_on_to,omitempty"`
 }
 
@@ -13657,7 +14123,7 @@ type ListPayrollApprovalsParams struct {
 	//
 	// Valores: pending, approved, rejected, withdrawn, replaced.
 	Status *string `json:"status,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13667,8 +14133,16 @@ type ListPayrollBatchesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListPortalSuppliersParams: los campos de «Listar proveedores del portal».
@@ -13677,7 +14151,7 @@ type ListPortalSuppliersParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo los que estén en este estado.
 	//
@@ -13685,6 +14159,14 @@ type ListPortalSuppliersParams struct {
 	Status *string `json:"status,omitempty"`
 	// Solo el de este RFC.
 	TaxID *string `json:"tax_id,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListPriceListsParams: los campos de «Listar listas de precios».
@@ -13693,8 +14175,18 @@ type ListPriceListsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListProductionOrdersParams: los campos de «Listar órdenes de producción».
@@ -13703,14 +14195,24 @@ type ListProductionOrdersParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de este producto (prd_…).
 	Product *string `json:"product,omitempty"`
-	// draft, in_process, completed o cancelled.
+	// draft, in_process, completed o canceled (también se acepta cancelled).
 	//
-	// Valores: draft, in_process, completed, cancelled.
+	// Valores: draft, in_process, completed, canceled, cancelled.
 	Status *string `json:"status,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListProductsParams: los campos de «Listar productos».
@@ -13719,7 +14221,7 @@ type ListProductsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo el de este SKU.
 	SKU *string `json:"sku,omitempty"`
@@ -13727,6 +14229,16 @@ type ListProductsParams struct {
 	ProductKey *string `json:"product_key,omitempty"`
 	// Solo los de esta categoría y sus subcategorías: «Ferretería» o «Ferretería › Tornillos».
 	Category *string `json:"category,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListPurchaseReceiptsParams: los campos de «Listar tickets de compra».
@@ -13735,12 +14247,22 @@ type ListPurchaseReceiptsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// pending, requested, invoiced o non_deductible.
 	//
 	// Valores: pending, requested, invoiced, non_deductible.
 	Status *string `json:"status,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListQuotesParams: los campos de «Listar cotizaciones».
@@ -13749,12 +14271,22 @@ type ListQuotesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las que estén en este estado.
 	//
 	// Valores: draft, sent, viewed, accepted, rejected, withdrawn, expired, invoiced.
 	Status *string `json:"status,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListReceivablesParams: los campos de «Ver lo que le deben».
@@ -13763,7 +14295,7 @@ type ListReceivablesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo este cliente: su RFC o su id (cus_…).
 	Customer *string `json:"customer,omitempty"`
@@ -13775,12 +14307,22 @@ type ListRecurringInvoicesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// active o paused.
 	//
 	// Valores: active, paused.
 	Status *string `json:"status,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListRepseContractsParams: los campos de «Listar contratos de servicios especializados».
@@ -13789,8 +14331,18 @@ type ListRepseContractsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListRetentionsParams: los campos de «Listar constancias».
@@ -13799,7 +14351,7 @@ type ListRetentionsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// valid, canceled, rejected o processing.
 	//
@@ -13809,6 +14361,16 @@ type ListRetentionsParams struct {
 	Recipient *string `json:"recipient,omitempty"`
 	// Ejercicio, 4 dígitos.
 	Year *string `json:"year,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListReviewCyclesParams: los campos de «Listar ciclos de evaluación».
@@ -13817,13 +14379,21 @@ type ListReviewCyclesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListRolesParams: los campos de «Listar roles».
 type ListRolesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -13833,6 +14403,26 @@ type ListRuleRunsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+}
+
+// ListRuleVersionsParams: los campos de «Cambios de una regla».
+type ListRuleVersionsParams struct {
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListRulesParams: los campos de «Listar reglas».
@@ -13841,10 +14431,18 @@ type ListRulesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de este trigger, por ejemplo invoice.received.
 	Trigger *string `json:"trigger,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSalesOrdersParams: los campos de «Listar pedidos».
@@ -13853,7 +14451,7 @@ type ListSalesOrdersParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo los que estén en este estado.
 	//
@@ -13861,6 +14459,28 @@ type ListSalesOrdersParams struct {
 	Status *string `json:"status,omitempty"`
 	// Solo los de este RFC.
 	Customer *string `json:"customer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// ListSandboxesParams: los campos de «Listar entornos de prueba».
+type ListSandboxesParams struct {
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSatDeclarationsParams: los campos de «Listar declaraciones del SAT».
@@ -13869,7 +14489,7 @@ type ListSatDeclarationsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de un ejercicio, como 2025.
 	Year *int64 `json:"year,omitempty"`
@@ -13883,6 +14503,14 @@ type ListSatDeclarationsParams struct {
 	//
 	// Valores: normal, complementary.
 	Type *string `json:"type,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSatDownloadsParams: los campos de «Listar descargas del SAT».
@@ -13891,13 +14519,21 @@ type ListSatDownloadsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSatFindingCounterpartiesParams: los campos de «Listar proveedores y clientes con hallazgos».
 type ListSatFindingCounterpartiesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Cuántos por página, de 1 a 100. Por omisión 10.
 	Limit *int64 `json:"limit,omitempty"`
@@ -13907,36 +14543,60 @@ type ListSatFindingCounterpartiesParams struct {
 	//
 	// Valores: issued, received.
 	Direction *string `json:"direction,omitempty"`
-	// CFDI desde este día (AAAA-MM-DD).
-	DateGte *string `json:"date_gte,omitempty"`
-	// CFDI hasta este día (AAAA-MM-DD, completo).
-	DateLte *string `json:"date_lte,omitempty"`
+	// De los CFDI con fecha desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// De los CFDI con fecha después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// De los CFDI con fecha hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// De los CFDI con fecha antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
 	// Solo los de esta gravedad: critical, warning o info.
 	//
 	// Valores: critical, warning, info.
 	Severity *string `json:"severity,omitempty"`
 	// Solo quienes tienen este hallazgo (efos_definitivo, cancelado, regla_12…; el code de GET /v1/sat_findings).
 	Code *string `json:"code,omitempty"`
+	// Igual que date[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateGteValue *string `json:"date_gte,omitempty"`
+	// Igual que date[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateLteValue *string `json:"date_lte,omitempty"`
 }
 
 // ListSatFindingsParams: los campos de «Listar hallazgos en los CFDI».
 type ListSatFindingsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// issued (emitidos) o received (recibidos); sin él, los dos.
 	//
 	// Valores: issued, received.
 	Direction *string `json:"direction,omitempty"`
-	// CFDI desde este día (AAAA-MM-DD).
-	DateGte *string `json:"date_gte,omitempty"`
-	// CFDI hasta este día (AAAA-MM-DD, completo).
-	DateLte *string `json:"date_lte,omitempty"`
+	// De los CFDI con fecha desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// De los CFDI con fecha después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// De los CFDI con fecha hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// De los CFDI con fecha antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
 	// Solo los de esta gravedad: critical, warning o info.
 	//
 	// Valores: critical, warning, info.
 	Severity *string `json:"severity,omitempty"`
 	// Solo los CFDI de este proveedor o cliente (su RFC): qué hallazgos tiene.
 	Counterparty *string `json:"counterparty,omitempty"`
+	// Igual que date[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateGteValue *string `json:"date_gte,omitempty"`
+	// Igual que date[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateLteValue *string `json:"date_lte,omitempty"`
 }
 
 // ListSatInvoicesParams: los campos de «Listar facturas del SAT».
@@ -13945,7 +14605,7 @@ type ListSatInvoicesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// received (por omisión) o issued.
 	//
@@ -13957,10 +14617,14 @@ type ListSatInvoicesParams struct {
 	Type *string `json:"type,omitempty"`
 	// El RFC de quien la emitió (recibidas) o de quien la recibió (emitidas).
 	CounterpartyTaxID *string `json:"counterparty_tax_id,omitempty"`
-	// Con fecha desde este día (AAAA-MM-DD).
-	DateGte *string `json:"date_gte,omitempty"`
-	// Con fecha hasta este día (AAAA-MM-DD), incluido.
-	DateLte *string `json:"date_lte,omitempty"`
+	// Con fecha desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// Con fecha después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// Con fecha hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// Con fecha antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
 	// Solo las de este centro de costo (ccn_…), o none para las que no tienen.
 	CostCenter *string `json:"cost_center,omitempty"`
 	// Solo las que llevan esta etiqueta (tag_…).
@@ -13969,6 +14633,14 @@ type ListSatInvoicesParams struct {
 	//
 	// Valores: pending, confirmed.
 	CashConfirmation *string `json:"cash_confirmation,omitempty"`
+	// Igual que date[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateGteValue *string `json:"date_gte,omitempty"`
+	// Igual que date[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateLteValue *string `json:"date_lte,omitempty"`
 }
 
 // ListSatMailboxMessagesParams: los campos de «Listar avisos del buzón tributario».
@@ -13977,10 +14649,18 @@ type ListSatMailboxMessagesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// true para solo los no leídos en el SAT, false para los leídos.
 	Unread *bool `json:"unread,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSatRefreshesParams: los campos de «Listar consultas al SAT».
@@ -13995,6 +14675,14 @@ type ListSatRefreshesParams struct {
 	//
 	// Valores: declarations, compliance_opinion, tax_status_certificate, sat_mailbox.
 	Document *string `json:"document,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSatRetentionsParams: los campos de «Listar constancias de retenciones».
@@ -14003,7 +14691,7 @@ type ListSatRetentionsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// received (por omisión) o issued.
 	//
@@ -14025,12 +14713,20 @@ type ListSatRetentionsParams struct {
 
 // ListSatReviewsParams: los campos de «Listar revisiones del SAT».
 type ListSatReviewsParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las de este estado: open, answered, concluded, assessed, in_defense o closed.
 	//
 	// Valores: open, answered, concluded, assessed, in_defense, closed.
 	Status *string `json:"status,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSettingChangesParams: los campos de «Listar los cambios a los ajustes».
@@ -14039,7 +14735,7 @@ type ListSettingChangesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo los de este ajuste, por ejemplo cobranza.dias-credito.
 	Setting *string `json:"setting,omitempty"`
@@ -14051,7 +14747,7 @@ type ListStockAdjustmentsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo los de este almacén (whs_…).
 	Warehouse *string `json:"warehouse,omitempty"`
@@ -14059,6 +14755,16 @@ type ListStockAdjustmentsParams struct {
 	//
 	// Valores: applied, pending, rejected, reversed.
 	Status *string `json:"status,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListStockMovementsParams: los campos de «Listar movimientos (kárdex)».
@@ -14067,7 +14773,7 @@ type ListStockMovementsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo los de este producto (prd_…).
 	Product *string `json:"product,omitempty"`
@@ -14077,10 +14783,30 @@ type ListStockMovementsParams struct {
 	//
 	// Valores: sale, purchase, customer_return, supplier_return, adjustment, count, transfer_out, transfer_in, production_consumption, production_output, initial, cost, reversal.
 	Type *string `json:"type,omitempty"`
-	// Desde este día (AAAA-MM-DD) u hora (AAAA-MM-DDTHH:MM:SS) de la Ciudad de México.
-	DateGte *string `json:"date_gte,omitempty"`
-	// Hasta este día (completo) u hora de la Ciudad de México.
-	DateLte *string `json:"date_lte,omitempty"`
+	// Con fecha desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGte *string `json:"date[gte],omitempty"`
+	// Con fecha después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateGt *string `json:"date[gt],omitempty"`
+	// Con fecha hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLte *string `json:"date[lte],omitempty"`
+	// Con fecha antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	DateLt *string `json:"date[lt],omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Igual que date[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateGteValue *string `json:"date_gte,omitempty"`
+	// Igual que date[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	DateLteValue *string `json:"date_lte,omitempty"`
 }
 
 // ListStoreConnectionsParams: los campos de «Listar tiendas».
@@ -14089,8 +14815,16 @@ type ListStoreConnectionsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListSupplierGroupsParams: los campos de «Listar grupos de proveedores».
@@ -14099,8 +14833,18 @@ type ListSupplierGroupsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListSupplierInvoicesParams: los campos de «Listar facturas de proveedores».
@@ -14109,7 +14853,7 @@ type ListSupplierInvoicesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// Solo las que estén en este estado.
 	//
@@ -14117,7 +14861,17 @@ type ListSupplierInvoicesParams struct {
 	Status *string `json:"status,omitempty"`
 	// Solo las de este proveedor (sup_…).
 	Supplier *string `json:"supplier,omitempty"`
-	// Solo las que llegaron desde este día (AAAA-MM-DD).
+	// Llegadas desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	ReceivedGte *string `json:"received[gte],omitempty"`
+	// Llegadas después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	ReceivedGt *string `json:"received[gt],omitempty"`
+	// Llegadas hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	ReceivedLte *string `json:"received[lte],omitempty"`
+	// Llegadas antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	ReceivedLt *string `json:"received[lt],omitempty"`
+	// Igual que received[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
 	ReceivedSince *string `json:"received_since,omitempty"`
 }
 
@@ -14127,8 +14881,18 @@ type ListTagsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ListTicketsParams: los campos de «Listar tickets».
@@ -14137,16 +14901,38 @@ type ListTicketsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
-	// pending, invoiced, global o cancelled.
+	// pending, invoiced, global o canceled (también se acepta cancelled).
 	//
-	// Valores: pending, invoiced, global, cancelled.
+	// Valores: pending, invoiced, global, canceled, cancelled.
 	Status *string `json:"status,omitempty"`
-	// Vendidos desde (ISO 8601 o AAAA-MM-DD).
-	SoldAtGte *string `json:"sold_at_gte,omitempty"`
-	// Vendidos hasta (ISO 8601 o AAAA-MM-DD, el día completo).
-	SoldAtLte *string `json:"sold_at_lte,omitempty"`
+	// Vendidos desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	SoldAtGte *string `json:"sold_at[gte],omitempty"`
+	// Vendidos después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	SoldAtGt *string `json:"sold_at[gt],omitempty"`
+	// Vendidos hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	SoldAtLte *string `json:"sold_at[lte],omitempty"`
+	// Vendidos antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	SoldAtLt *string `json:"sold_at[lt],omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// Igual que sold_at[gte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	SoldAtGteValue *string `json:"sold_at_gte,omitempty"`
+	// Igual que sold_at[lte]; se conserva por compatibilidad.
+	//
+	// Deprecated: se conserva por compatibilidad.
+	SoldAtLteValue *string `json:"sold_at_lte,omitempty"`
 }
 
 // ListTrainingCertificatesParams: los campos de «Constancias para el aviso a la STPS».
@@ -14165,7 +14951,7 @@ type ListTrainingCoursesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -14179,8 +14965,18 @@ type ListVacationRequestsParams struct {
 	Status *string `json:"status,omitempty"`
 	// Cuántas, de 1 a 500. Por omisión 100.
 	Limit *int64 `json:"limit,omitempty"`
+	// El id (vrq_…) de la última de la página anterior, para la siguiente.
+	StartingAfter *string `json:"starting_after,omitempty"`
 	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListWarehouseStockParams: los campos de «Ver las existencias de un almacén».
@@ -14195,10 +14991,18 @@ type ListWarehouseStockParams struct {
 
 // ListWarehousesParams: los campos de «Listar almacenes».
 type ListWarehousesParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 	// true para incluir los archivados.
 	IncludeArchived *bool `json:"include_archived,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListWebhookDeliveriesParams: los campos de «Listar entregas».
@@ -14209,6 +15013,14 @@ type ListWebhookDeliveriesParams struct {
 	StartingAfter *string `json:"starting_after,omitempty"`
 	// false: solo los que fallaron en su último intento. true: solo los que llegaron.
 	Succeeded *bool `json:"succeeded,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
 }
 
 // ListWebhookEndpointsParams: los campos de «Listar webhooks».
@@ -14217,6 +15029,16 @@ type ListWebhookEndpointsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // ManualEntryImport: Las pólizas que entraron de otro sistema (CONTPAQi, COI, una hoja de cálculo) en una importación.
@@ -14532,7 +15354,7 @@ type Member struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre.
 	Name *string `json:"name,omitempty"`
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
@@ -14574,7 +15396,7 @@ type NetToGross struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El empleado (emp_…) cuyas prestaciones usó, o null.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// 02 semanal, 03 catorcenal, 04 quincenal o 05 mensual.
 	Periodicity string `json:"periodicity"`
 	// El neto que pidió.
@@ -14675,12 +15497,14 @@ type PausePayoutsParams struct {
 
 // PayableInvoice: Una factura recibida con lo que falta por pagar, como la muestra Pagos › Por pagar: lo pagado cuenta complementos, notas de crédito, pagos de Fiscalisto y pagos registrados a mano.
 type PayableInvoice struct {
+	// Su folio fiscal (el mismo que uuid). Sirve como starting_after.
+	ID string `json:"id"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El folio fiscal.
 	UUID string `json:"uuid"`
 	// La factura descargada del SAT (sat_…).
-	SATInvoice string `json:"sat_invoice"`
+	SATInvoice StringOr[SATInvoice] `json:"sat_invoice"`
 	// El RFC del proveedor.
 	SupplierTaxID string `json:"supplier_tax_id"`
 	// El nombre del proveedor, o null.
@@ -14798,7 +15622,7 @@ type PayeeAccount struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…) que paga.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El RFC del proveedor.
 	SupplierTaxID string `json:"supplier_tax_id"`
 	// El nombre del proveedor, o null.
@@ -14858,7 +15682,7 @@ type Payout struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…) que paga.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Su número en la empresa (Pago 12), como en la app.
 	Number int64 `json:"number"`
 	// draft (borrador: falta que alguien lo firme en la app), pending_approval (faltan firmas), approved (firmado: sale en su día), sending, paid (llegaron todas), partially_paid (llegaron algunas), failed (no llegó ninguna) o canceled.
@@ -14895,6 +15719,8 @@ type Payout struct {
 	CancelReason *string `json:"cancel_reason,omitempty"`
 	// true si lo preparó la API.
 	CreatedByAPI bool `json:"created_by_api"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se preparó.
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Cuándo tuvo todas sus firmas, o null.
@@ -14928,7 +15754,7 @@ type PayoutMandate struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…) que paga.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El RFC del proveedor.
 	SupplierTaxID string `json:"supplier_tax_id"`
 	// El nombre del proveedor, o null.
@@ -14994,7 +15820,7 @@ type PayoutTransfer struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…) que paga.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El pago (pyo_…) al que pertenece.
 	Payout string `json:"payout"`
 	// El RFC del proveedor.
@@ -15054,7 +15880,7 @@ type PayoutsPause struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// true mientras los pagos están en pausa.
 	Paused bool `json:"paused"`
 	// Desde cuándo están en pausa, o null.
@@ -15072,11 +15898,11 @@ type PayrollAccumulated struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// iss_…
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Año (Ejercicio).
 	Year float64 `json:"year"`
 	// El empleado que pidió (emp_…), o null.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Los recibos vigentes con fecha de pago en el año.
 	Receipts float64 `json:"receipts"`
 	// Percepciones, luego deducciones y otros pagos, por clave del SAT.
@@ -15112,7 +15938,7 @@ type PayrollAccumulatedConcept struct {
 // PayrollAccumulatedEmployee: PayrollAccumulatedEmployee.
 type PayrollAccumulatedEmployee struct {
 	// emp_…, o null.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Nombre.
 	Name string `json:"name"`
 	// El RFC del empleado.
@@ -15150,7 +15976,7 @@ type PayrollApproval struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// iss_…
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Periodicidad de la nómina (c_PeriodicidadPago): 02, 03, 04 o 05.
 	Periodicity string `json:"periodicity"`
 	// El periodo de pago de la nómina: FechaInicialPago, FechaFinalPago y FechaPago de sus recibos.
@@ -15198,7 +16024,7 @@ type PayrollApprovalPeriod struct {
 // PayrollApprovalReceipt: PayrollApprovalReceipt.
 type PayrollApprovalReceipt struct {
 	// emp_…
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su nombre.
 	Name string `json:"name"`
 	// Días pagados.
@@ -15242,7 +16068,7 @@ type PayrollBankFile struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El formato del banco: bbva, banamex, banorte, santander o spei (CSV).
 	//
 	// Valores: bbva, banamex, banorte, santander, spei.
@@ -15274,7 +16100,7 @@ type PayrollBankFile struct {
 // PayrollBankFileExcludedItem: PayrollBankFileExcludedItem.
 type PayrollBankFileExcludedItem struct {
 	// El empleado (emp_…); null si el recibo lo timbró otro sistema y no hay empleado con ese RFC.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Número de empleado (NumEmpleado).
 	Number *string `json:"number,omitempty"`
 	// Nombre.
@@ -15290,7 +16116,7 @@ type PayrollBankFileExcludedItem struct {
 // PayrollBankFilePayment: PayrollBankFilePayment.
 type PayrollBankFilePayment struct {
 	// El empleado (emp_…); null si el recibo lo timbró otro sistema y no hay empleado con ese RFC.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Número de empleado (NumEmpleado).
 	Number *string `json:"number,omitempty"`
 	// Nombre.
@@ -15316,7 +16142,7 @@ type PayrollBatch struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre del lote, para usted.
 	Name string `json:"name"`
 	// fiscalisto: Fiscalisto calculó cada recibo (receipts); external: se timbraron los importes de su sistema (external_receipts).
@@ -15362,7 +16188,7 @@ type PayrollBatchReceipt struct {
 	// Su identificador de esta factura (su número de pedido), hasta 100 caracteres.
 	Reference *string `json:"reference,omitempty"`
 	// El empleado (emp_…), cuando Fiscalisto calculó el recibo.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// El RFC del empleado.
 	TaxID string `json:"tax_id"`
 	// Nombre.
@@ -15372,7 +16198,7 @@ type PayrollBatchReceipt struct {
 	// Valores: processing, valid, failed.
 	Status string `json:"status"`
 	// El recibo (inv_…, una factura tipo N); también el que el SAT rechazó.
-	Invoice *string `json:"invoice,omitempty"`
+	Invoice *StringOr[Invoice] `json:"invoice,omitempty"`
 	// Folio fiscal que asigna el SAT (UUID del Timbre Fiscal Digital), en mayúsculas.
 	UUID *string `json:"uuid,omitempty"`
 	// El neto del recibo timbrado.
@@ -15396,7 +16222,7 @@ type PayrollCalendar struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Hoy en la Ciudad de México (YYYY-MM-DD).
 	Today string `json:"today"`
 	// Eventos que quiere recibir, o ["*"] para todos (por omisión). La lista con cuándo llega cada uno: [Tipos de evento](https://fiscalisto.com/docs/api/webhooks#tipos-de-evento).
@@ -15462,7 +16288,7 @@ type PayrollCost struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// iss_…
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Año (Ejercicio).
 	Year float64 `json:"year"`
 	// Si las cuotas del patrón y el ISN del año se pueden calcular.
@@ -15518,7 +16344,7 @@ type PayrollOrgChart struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El día del organigrama (YYYY-MM-DD): salen quienes trabajan ese día.
 	AsOf string `json:"as_of"`
 	// Las cuentas del organigrama y lo que conviene revisar.
@@ -15540,7 +16366,7 @@ type PayrollOrgChartDepartment struct {
 	// El departamento dentro del que está.
 	Parent *string `json:"parent,omitempty"`
 	// Su responsable (emp_…).
-	Lead *string `json:"lead,omitempty"`
+	Lead *StringOr[Employee] `json:"lead,omitempty"`
 	// Personas en él.
 	Employees int64 `json:"employees"`
 	// Personas en él y en sus subdepartamentos.
@@ -15552,7 +16378,7 @@ type PayrollOrgChartDepartment struct {
 // PayrollOrgChartEmployee: PayrollOrgChartEmployee.
 type PayrollOrgChartEmployee struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su número de empleado.
 	Number string `json:"number"`
 	// Nombre.
@@ -15564,7 +16390,7 @@ type PayrollOrgChartEmployee struct {
 	// Su sucursal (brn_…); null es la matriz.
 	Branch *string `json:"branch,omitempty"`
 	// Su jefe directo (emp_…); null si está arriba.
-	Manager *string `json:"manager,omitempty"`
+	Manager *StringOr[Employee] `json:"manager,omitempty"`
 	// Personas directamente a su cargo.
 	DirectReports int64 `json:"direct_reports"`
 	// Todas las personas que dependen de él, en toda su cadena.
@@ -15602,7 +16428,7 @@ type PayrollOrgChartVacancy struct {
 	// Departamento (Departamento).
 	Department *string `json:"department,omitempty"`
 	// Bajo qué jefe (emp_…).
-	Manager *string `json:"manager,omitempty"`
+	Manager *StringOr[Employee] `json:"manager,omitempty"`
 	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
 	Branch *string `json:"branch,omitempty"`
 	// Desde cuándo está abierta (YYYY-MM-DD).
@@ -15660,7 +16486,7 @@ type PayrollPayout struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…) que paga.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// La fecha de pago de los recibos que paga.
 	PaymentDate string `json:"payment_date"`
 	// El pago en borrador (pyo_…), con una línea por empleado: se firma en la app, en su app_url.
@@ -15672,7 +16498,7 @@ type PayrollPayout struct {
 // PayrollPayoutExcludedItem: PayrollPayoutExcludedItem.
 type PayrollPayoutExcludedItem struct {
 	// El empleado (emp_…); null si el recibo lo timbró otro sistema y no hay empleado con ese RFC.
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Nombre.
 	Name string `json:"name"`
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
@@ -15730,7 +16556,7 @@ type PayrollProvisionCalculated struct {
 // PayrollProvisionEmployee: PayrollProvisionEmployee.
 type PayrollProvisionEmployee struct {
 	// El empleado (emp_…).
-	Employee *string `json:"employee,omitempty"`
+	Employee *StringOr[Employee] `json:"employee,omitempty"`
 	// Nombre.
 	Name string `json:"name"`
 	// Su salario base de cotización: el SDI del recibo, entre el salario mínimo y 25 UMA.
@@ -15782,7 +16608,7 @@ type PayrollReceiptPreview struct {
 	// Lo que el recibo no incluye o pronto no se podrá calcular; no impide timbrar.
 	Warnings []PayrollReceiptPreviewWarning `json:"warnings"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Periodicidad del pago (PeriodicidadPago): 02 semanal, 03 catorcenal, 04 quincenal (por omisión), 05 mensual.
 	Periodicity string `json:"periodicity"`
 	// El periodo de pago: primer y último día y el día de pago (FechaInicialPago, FechaFinalPago y FechaPago).
@@ -16016,7 +16842,7 @@ type PayrollTax struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El mes: 2026-11.
 	Month string `json:"month"`
 	// Lo que paga en todos los estados.
@@ -16048,7 +16874,7 @@ type PayrollTaxSettings struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Las percepciones que no suman a la base; null, las comunes.
 	ExcludedPerceptionTypes []string `json:"excluded_perception_types,omitempty"`
 	// La opción de tasa de cada estado, por su c_Estado.
@@ -16234,7 +17060,7 @@ type PortalSupplier struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor de su cuenta (iss_…) cuyo portal es.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El RFC del proveedor; uno del extranjero, sin RFC, trae su clave `EXT-<país>-<tax ID>` (país en c_Pais del SAT, «EXT-USA-123456789»).
 	TaxID string `json:"tax_id"`
 	// Su nombre o razón social, o null si aún no lo da.
@@ -16348,7 +17174,7 @@ type PrepaidExpense struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El UUID de la factura recibida.
 	UUID string `json:"uuid"`
 	// true si se amortiza; false si se registra como gasto del mes.
@@ -16421,7 +17247,7 @@ type PreviewExtraordinaryPayrollReceiptParams struct {
 	VacationDaysTaken *float64 `json:"vacation_days_taken,omitempty"`
 	// finiquito: los días de vacaciones de años de servicio cumplidos que no disfrutó ni han prescrito; se pagan con su prima vacacional. Por omisión, pending_days de sus vacaciones.
 	VacationDaysOwed *float64 `json:"vacation_days_owed,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -16443,7 +17269,7 @@ type PreviewPayrollReceiptParams struct {
 	Incidents *PreviewPayrollReceiptParamsIncidents `json:"incidents,omitempty"`
 	// El recibo vigente (inv_… o UUID) que este corrige, calculado por Fiscalisto para el mismo empleado: el nuevo se calcula con los datos del empleado como están ahora, va relacionado con 04 y el anterior se cancela con motivo 01. Para un recibo que calculó su sistema use POST /v1/payroll_receipts/external con replaces.
 	Replaces *string `json:"replaces,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -16523,8 +17349,10 @@ type PriceList struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre.
 	Name string `json:"name"`
 	// Descripción.
@@ -16558,7 +17386,7 @@ type PriceList struct {
 // PriceListItem: PriceListItem.
 type PriceListItem struct {
 	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
-	Product string `json:"product"`
+	Product StringOr[Product] `json:"product"`
 	// Unidad aduana (UnidadAduana), c_UnidadAduana.
 	Unit *string `json:"unit,omitempty"`
 	// Desde cuántas unidades (de su presentación) vale este precio: un escalón de mayoreo. 1 por omisión.
@@ -16588,7 +17416,7 @@ type PriceQuote struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El cliente (cus_…) cuyos precios se calcularon.
-	Customer string `json:"customer"`
+	Customer StringOr[Customer] `json:"customer"`
 	// Conceptos (Conceptos), al menos uno.
 	Items []PriceQuoteItem `json:"items"`
 }
@@ -16596,7 +17424,7 @@ type PriceQuote struct {
 // PriceQuoteItem: PriceQuoteItem.
 type PriceQuoteItem struct {
 	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
-	Product string `json:"product"`
+	Product StringOr[Product] `json:"product"`
 	// Cantidad (Cantidad). Por omisión 1.
 	Quantity float64 `json:"quantity"`
 	// Unidad aduana (UnidadAduana), c_UnidadAduana.
@@ -16630,7 +17458,7 @@ type Product struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre corto para encontrarlo, solo para usted.
 	Name *string `json:"name,omitempty"`
 	// Descripción que va en el CFDI (Descripcion).
@@ -16679,6 +17507,8 @@ type Product struct {
 	MinOrderQty *float64 `json:"min_order_qty,omitempty"`
 	// De cuántos en cuántos se pide en el Portal del cliente (6 para pedir 6, 12, 18…), o null de uno en uno.
 	OrderStep *float64 `json:"order_step,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt string `json:"created_at"`
 	// Cuándo cambió por última vez, ISO 8601 (-06:00).
@@ -16725,16 +17555,18 @@ type ProductionOrder struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor.
 	Issuer string `json:"issuer"`
 	// Su folio, como OP-12.
 	Number string `json:"number"`
-	// draft (borrador, nada se ha movido), in_process (los componentes ya salieron), completed (lo producido ya entró) o cancelled (todo regresó).
+	// draft (borrador, nada se ha movido), in_process (los componentes ya salieron), completed (lo producido ya entró) o canceled (todo regresó).
 	//
-	// Valores: draft, in_process, completed, cancelled.
+	// Valores: draft, in_process, completed, canceled.
 	Status string `json:"status"`
 	// Lo que se produce (prd_…).
-	Product string `json:"product"`
+	Product StringOr[Product] `json:"product"`
 	// Cuántas unidades se planearon.
 	Quantity float64 `json:"quantity"`
 	// Cuántas salieron de verdad, o null si no ha terminado.
@@ -16764,13 +17596,13 @@ type ProductionOrder struct {
 	// Cuándo entró lo producido, o null.
 	CompletedAt *string `json:"completed_at,omitempty"`
 	// Cuándo se canceló, o null.
-	CancelledAt *string `json:"cancelled_at,omitempty"`
+	CanceledAt *string `json:"canceled_at,omitempty"`
 }
 
 // ProductionOrderComponent: ProductionOrderComponent.
 type ProductionOrderComponent struct {
 	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
-	Product string `json:"product"`
+	Product StringOr[Product] `json:"product"`
 	// Cantidad (Cantidad). Por omisión 1.
 	Quantity float64 `json:"quantity"`
 	// Lo que de verdad salió de ese componente, o null antes de iniciar la orden.
@@ -16833,6 +17665,8 @@ type PurchaseReceipt struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor (el que compró).
 	Issuer string `json:"issuer"`
 	// pending (por pedir), requested (pedida a la tienda), invoiced (ya tiene factura) o non_deductible (no hubo factura).
@@ -16868,7 +17702,7 @@ type PurchaseReceipt struct {
 	// El folio fiscal de la factura que lo cubre, o null.
 	InvoiceUUID *string `json:"invoice_uuid,omitempty"`
 	// La factura recibida (sat_…) que lo cubre, si ya llegó con las descargas del SAT, o null.
-	Invoice *string `json:"invoice,omitempty"`
+	Invoice *StringOr[SATInvoice] `json:"invoice,omitempty"`
 	// Cuándo quedó facturado, o null.
 	InvoicedAt *string `json:"invoiced_at,omitempty"`
 	// Cuándo se marcó no deducible, o null.
@@ -16930,7 +17764,7 @@ type Quote struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Su serie y folio, como lo ve el cliente (COT-12).
 	Number string `json:"number"`
 	// Cambiar una ya enviada hace una versión nueva con el mismo número; el id contesta siempre la última.
@@ -16974,7 +17808,9 @@ type Quote struct {
 	// Valores: customer, user.
 	DecidedBy *string `json:"decided_by,omitempty"`
 	// La factura (inv_…) que se timbró de ella, o null.
-	Invoice *string `json:"invoice,omitempty"`
+	Invoice *StringOr[Invoice] `json:"invoice,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó.
 	CreatedAt *string `json:"created_at,omitempty"`
 }
@@ -16988,7 +17824,7 @@ type QuoteCustomer struct {
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
 	Email *string `json:"email,omitempty"`
 	// El cliente (cus_…) en su catálogo, o null si no está en él.
-	CatalogID *string `json:"catalog_id,omitempty"`
+	CatalogID *StringOr[Customer] `json:"catalog_id,omitempty"`
 }
 
 // QuoteItem: QuoteItem.
@@ -17096,7 +17932,7 @@ type RecurringInvoice struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Para reconocerla.
 	Name string `json:"name"`
 	// active (timbra en cada fecha) o paused.
@@ -17110,7 +17946,7 @@ type RecurringInvoice struct {
 	// La fecha del último periodo que timbró, o null si aún no timbra ninguna.
 	LastInvoicedOn *string `json:"last_invoiced_on,omitempty"`
 	// La última factura (inv_…) que timbró, o null.
-	LastInvoice *string `json:"last_invoice,omitempty"`
+	LastInvoice *StringOr[Invoice] `json:"last_invoice,omitempty"`
 	// Por qué no se pudo timbrar la última vez (sin timbres, el cliente borrado, el SAT la rechazó…), o null. Se vuelve a intentar a la siguiente hora del día siguiente; también llega recurring_invoice.failed.
 	LastError *RecurringInvoiceLastError `json:"last_error,omitempty"`
 	// Si cada factura se manda al correo del cliente.
@@ -17127,6 +17963,8 @@ type RecurringInvoice struct {
 	Items []RecurringInvoiceItem `json:"items"`
 	// El total de cada factura con los precios de hoy.
 	Total *float64 `json:"total,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó.
 	CreatedAt *string `json:"created_at,omitempty"`
 }
@@ -17227,7 +18065,7 @@ type RemovePayrollDepartmentParams struct {
 
 // RemovePrepaidExpenseParams: los campos de «Dejar de amortizar una factura».
 type RemovePrepaidExpenseParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -17284,7 +18122,7 @@ type RepseContract struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Número de contrato (dígitos, hasta 20).
 	Number string `json:"number"`
 	// Tipo de contrato.
@@ -17313,6 +18151,8 @@ type RepseContract struct {
 	SiteAddress RepseContractSiteAddress `json:"site_address"`
 	// Quién trabaja en el contrato y desde cuándo.
 	Workers []RepseContractWorker `json:"workers"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 }
@@ -17368,7 +18208,7 @@ type RepseContractSiteAddress struct {
 // RepseContractWorker: RepseContractWorker.
 type RepseContractWorker struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su nombre.
 	Name string `json:"name"`
 	// Desde cuándo trabaja en el contrato (YYYY-MM-DD).
@@ -17384,7 +18224,7 @@ type RepseProfile struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Folio de su registro en el REPSE que dio la STPS.
 	StpsFolio *string `json:"stps_folio,omitempty"`
 	// Fecha en que la STPS otorgó el registro o su última renovación.
@@ -17428,7 +18268,7 @@ type RepseReturn struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El cuatrimestre: AAAA-1 (enero a abril), AAAA-2 o AAAA-3.
 	Period string `json:"period"`
 	// Primer día del cuatrimestre.
@@ -17462,7 +18302,7 @@ type RepseReturnContract struct {
 // RepseReturnContractWorker: RepseReturnContractWorker.
 type RepseReturnContractWorker struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su nombre.
 	Name string `json:"name"`
 	// Su NSS, 11 dígitos.
@@ -17498,7 +18338,7 @@ type RepseReturnTotals struct {
 // RepseReturnWorker: RepseReturnWorker.
 type RepseReturnWorker struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su nombre.
 	Name string `json:"name"`
 	// Su NSS.
@@ -17560,7 +18400,7 @@ type Retention struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// processing: el PAC no ha contestado. valid: timbrada. rejected: el SAT o el PAC no la aceptaron (ver error). canceled: cancelada.
 	//
 	// Valores: processing, valid, rejected, canceled.
@@ -17733,7 +18573,7 @@ type ReturnExpenseReportParams struct {
 
 // RevertAutomaticEntryParams: los campos de «Volver a la póliza original de un CFDI».
 type RevertAutomaticEntryParams struct {
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
 }
 
@@ -17746,7 +18586,7 @@ type ReviewCycle struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Su nombre, como «Evaluación 2026».
 	Title string `json:"title"`
 	// draft, open o closed.
@@ -17820,7 +18660,7 @@ type ReviewCycleList struct {
 // ReviewCycleParticipant: ReviewCycleParticipant.
 type ReviewCycleParticipant struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Nombre.
 	Name string `json:"name"`
 	// Puesto (Puesto).
@@ -17828,9 +18668,9 @@ type ReviewCycleParticipant struct {
 	// Departamento (Departamento).
 	Department *string `json:"department,omitempty"`
 	// Su jefe en el organigrama (emp_…), quien la evalúa como jefe.
-	Manager *string `json:"manager,omitempty"`
+	Manager *StringOr[Employee] `json:"manager,omitempty"`
 	// Los compañeros elegidos para evaluarla (emp_…).
-	Peers []string `json:"peers"`
+	Peers []StringOr[Employee] `json:"peers"`
 	// Quién la evalúa, desde que se abre el ciclo.
 	Raters []ReviewCycleParticipantRater `json:"raters"`
 	// Sus objetivos.
@@ -17854,7 +18694,7 @@ type ReviewCycleParticipant struct {
 // ReviewCycleParticipantRater: ReviewCycleParticipantRater.
 type ReviewCycleParticipantRater struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Nombre.
 	Name string `json:"name"`
 	// self (autoevaluación), manager (su jefe), peer (compañeros) o report (personas a su cargo).
@@ -17928,7 +18768,7 @@ type ReviewObjective struct {
 	// El ciclo (rvc_…).
 	Cycle string `json:"cycle"`
 	// De quién es (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Qué tiene que lograr.
 	Title string `json:"title"`
 	// La meta.
@@ -17966,7 +18806,7 @@ type ReviewResult struct {
 	// El ciclo (rvc_…).
 	Cycle string `json:"cycle"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Nombre.
 	Name string `json:"name"`
 	// El resultado: competencias y objetivos con el peso de los objetivos.
@@ -18026,7 +18866,7 @@ type Role struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre.
 	Name string `json:"name"`
 	// Descripción.
@@ -18057,6 +18897,12 @@ type RoleList struct {
 	URL string `json:"url"`
 }
 
+// RollApiKeyParams: los campos de «Cambiar una llave».
+type RollApiKeyParams struct {
+	// Segundos que la llave anterior sigue funcionando (0: deja de funcionar ya; hasta 7 días). Sin mandar: 24 horas.
+	ExpiresIn *int64 `json:"expires_in,omitempty"`
+}
+
 // RollWebhookSecretParams: los campos de «Cambiar el secreto».
 type RollWebhookSecretParams struct {
 	// Segundos que el secreto anterior sigue firmando, de 0 (deja de firmar ya: úselo si se filtró) a 86400. Por omisión 86400 (24 horas).
@@ -18072,12 +18918,12 @@ type Rule struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre.
 	Name string `json:"name"`
 	// Cuándo corre.
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.canceled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
 	Trigger string `json:"trigger"`
 	// Si: lo que tiene que cumplir la factura u orden. Sin condiciones, corre siempre.
 	Conditions RuleConditions `json:"conditions"`
@@ -18489,7 +19335,7 @@ type RuleRun struct {
 	Rule string `json:"rule"`
 	// Cuándo corre.
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
+	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.canceled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
 	Trigger string `json:"trigger"`
 	// La factura, orden, movimiento del banco o aviso del SAT, en palabras.
 	Record string `json:"record"`
@@ -18532,7 +19378,7 @@ type RuleTest struct {
 	// La orden de compra.
 	PurchaseOrder *int64 `json:"purchase_order,omitempty"`
 	// El movimiento del banco, su id en /v1/accounting/bank_movements: bwd_… un retiro, btx_… un depósito.
-	BankMovement *string `json:"bank_movement,omitempty"`
+	BankMovement *StringOr[BankTransaction] `json:"bank_movement,omitempty"`
 	// Si se cumplen sus condiciones.
 	Matches bool `json:"matches"`
 	// Ya corrió sobre este registro y no lo hará de nuevo.
@@ -18854,7 +19700,7 @@ type SATDeclarationCalendarMonthObligation struct {
 	// Valores: filed, missing, due.
 	Status string `json:"status"`
 	// Las declaraciones (dcl_…) que la presentaron, la normal y sus complementarias.
-	Declarations []string `json:"declarations"`
+	Declarations []StringOr[SATDeclaration] `json:"declarations"`
 }
 
 // SATDeclarationFiles: Qué archivos ya tiene: pdf (GET …/pdf), receipt (GET …/receipt), payment_record (GET …/payment_record, cuando el SAT la tiene como pagada) y financial_statements (GET …/financial_statements, solo en la anual de persona moral).
@@ -19152,7 +19998,7 @@ type SATInvoice struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor de su cuenta (iss_…) a quien pertenece esta factura.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El folio fiscal (UUID del timbre).
 	UUID string `json:"uuid"`
 	// received (se la hicieron al emisor) o issued (la emitió).
@@ -19208,7 +20054,7 @@ type SATInvoice struct {
 	// Sus etiquetas, por nombre. automatic: true en las que puso una regla (la orden de compra a la que se vinculó o una regla de Ajustes › Reglas). Cámbielas con POST /v1/sat_invoices/{id}.
 	Tags []SATInvoiceTag `json:"tags"`
 	// La descarga (sdl_…) que la trajo, o null.
-	SATDownload *string `json:"sat_download,omitempty"`
+	SATDownload *StringOr[SATDownload] `json:"sat_download,omitempty"`
 	// Cuándo llegó.
 	DownloadedAt *string `json:"downloaded_at,omitempty"`
 }
@@ -19446,7 +20292,7 @@ type SATRetention struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor de su cuenta (iss_…) a quien pertenece esta constancia.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El folio fiscal (UUID del timbre).
 	UUID string `json:"uuid"`
 	// received (se la dieron al emisor: un banco, una plataforma, quien le pagó) o issued (la emitió).
@@ -19688,7 +20534,7 @@ type SATRiskCheck struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Su RFC.
 	TaxID string `json:"tax_id"`
 	// Cuántas revisiones salen para atender ya.
@@ -19724,7 +20570,7 @@ type SalesOrder struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Su serie y folio (PED-12).
 	Number string `json:"number"`
 	// draft (borrador), confirmed, partially_delivered, delivered (todo entregado), invoiced (todo facturado), paid (sus facturas pagadas), closed (se dio por terminado) o canceled. Cambia solo, con lo que pasa.
@@ -19740,7 +20586,7 @@ type SalesOrder struct {
 	// El número de orden de compra de su cliente, o null.
 	CustomerPo *string `json:"customer_po,omitempty"`
 	// La cotización (quo_…) de donde salió, o null.
-	Quote *string `json:"quote,omitempty"`
+	Quote *StringOr[Quote] `json:"quote,omitempty"`
 	// La moneda.
 	Currency string `json:"currency"`
 	// Los conceptos: id (para entregar o facturar una parte), lo pedido, lo entregado, lo facturado y lo que ya no se entregará (canceled). goods es true cuando sale del almacén.
@@ -19793,6 +20639,8 @@ type SalesOrder struct {
 	CanceledAt *string `json:"canceled_at,omitempty"`
 	// Por qué se canceló, o null.
 	CancelReason *string `json:"cancel_reason,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó.
 	CreatedAt *string `json:"created_at,omitempty"`
 }
@@ -19806,7 +20654,7 @@ type SalesOrderCustomer struct {
 	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
 	Email *string `json:"email,omitempty"`
 	// El cliente (cus_…) en su catálogo, o null si no está en él.
-	CatalogID *string `json:"catalog_id,omitempty"`
+	CatalogID *StringOr[Customer] `json:"catalog_id,omitempty"`
 }
 
 // SalesOrderDelivery: Una entrega del pedido, con su remisión (REM-1): lo que salió del almacén.
@@ -20124,7 +20972,7 @@ type ScheduleSettings struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…) con que se leyeron; valen para toda la empresa.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// La zona horaria de la empresa (Ajustes › Datos fiscales), en la que van todas las horas.
@@ -20155,8 +21003,18 @@ type SearchCustomersParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // SearchInvoicesParams: los campos de «Buscar facturas».
@@ -20167,8 +21025,18 @@ type SearchInvoicesParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // SearchProductsParams: los campos de «Buscar productos».
@@ -20179,8 +21047,18 @@ type SearchProductsParams struct {
 	Limit *int64 `json:"limit,omitempty"`
 	// El id del último de la página anterior, para la siguiente.
 	StartingAfter *string `json:"starting_after,omitempty"`
-	// El emisor (iss_…). Puede omitirse si la llave o la cuenta tienen uno solo.
+	// Solo los de este emisor (iss_…). Sin él, los de todos los emisores que la llave puede usar, emisor por emisor (cada objeto dice el suyo en issuer); con más de 25, mándelo.
 	Issuer *string `json:"issuer,omitempty"`
+	// Creados desde, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGte *string `json:"created[gte],omitempty"`
+	// Creados después de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedGt *string `json:"created[gt],omitempty"`
+	// Creados hasta, incluido. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLte *string `json:"created[lte],omitempty"`
+	// Creados antes de, sin incluirlo. Una fecha ISO 8601: un día (2026-10-01) es ese día en hora de la Ciudad de México; con hora (2026-10-01T09:00:00-06:00), ese segundo.
+	CreatedLt *string `json:"created[lt],omitempty"`
+	// Solo los que tienen este valor en esta llave de su metadata: metadata[pedido]=A-1042. Hasta 10 llaves, todas deben coincidir.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // SelfInvoicing: El portal de autofactura de un emisor y sus reglas.
@@ -20376,7 +21254,7 @@ type SettingChange struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El ajuste que cambió, por su id (cobranza.dias-credito, horarios.vigencia-cotizaciones…).
@@ -20447,6 +21325,8 @@ type StockAdjustment struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor.
 	Issuer string `json:"issuer"`
 	// El almacén (whs_…).
@@ -20472,7 +21352,7 @@ type StockAdjustment struct {
 // StockAdjustmentLine: StockAdjustmentLine.
 type StockAdjustmentLine struct {
 	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
-	Product string `json:"product"`
+	Product StringOr[Product] `json:"product"`
 	// Cantidad (Cantidad). Por omisión 1.
 	Quantity float64 `json:"quantity"`
 	// El costo por unidad que se dio al ajuste, en pesos sin IVA, o null (el costo promedio).
@@ -20502,7 +21382,7 @@ type StockLevel struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El producto (prd_…).
-	Product string `json:"product"`
+	Product StringOr[Product] `json:"product"`
 	// El almacén (whs_…).
 	Warehouse string `json:"warehouse"`
 	// Lo que hay, en la unidad del producto (todos sus lotes).
@@ -20540,7 +21420,7 @@ type StockMovement struct {
 	// El emisor.
 	Issuer string `json:"issuer"`
 	// El producto (prd_…).
-	Product string `json:"product"`
+	Product StringOr[Product] `json:"product"`
 	// El almacén (whs_…).
 	Warehouse string `json:"warehouse"`
 	// sale (una factura), purchase (una compra), customer_return, supplier_return, adjustment, count (conteo físico), transfer_out, transfer_in, production_consumption (un componente que salió a producción), production_output (lo producido), initial, cost (un ajuste de costo) o reversal (deshace otro, como una factura cancelada).
@@ -20674,7 +21554,7 @@ type StoreImport struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// La conexión (stc_…).
-	StoreConnection string `json:"store_connection"`
+	StoreConnection StringOr[StoreConnection] `json:"store_connection"`
 	// Desde qué día se buscaron pedidos.
 	Since string `json:"since"`
 	// Pedidos que son tickets (los que ya lo eran cuentan otra vez).
@@ -20777,8 +21657,10 @@ type SupplierGroup struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Nombre.
 	Name string `json:"name"`
 	// Color de su etiqueta en la app: info, warning, positive, critical o muted.
@@ -20810,15 +21692,15 @@ type SupplierInvoice struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El emisor de su cuenta (iss_…) que la recibió.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El proveedor (sup_…) que la mandó.
-	Supplier string `json:"supplier"`
+	Supplier StringOr[PortalSupplier] `json:"supplier"`
 	// El RFC del proveedor, o la clave `EXT-<país>-<tax ID>` de uno del extranjero.
 	SupplierTaxID string `json:"supplier_tax_id"`
 	// El folio fiscal (UUID del timbre); la factura de un proveedor del extranjero, que no lleva CFDI, trae `EXT-…` y sat_invoice null.
 	UUID string `json:"uuid"`
 	// La misma factura en sus facturas recibidas (sat_…), para su XML y su PDF, o null.
-	SATInvoice *string `json:"sat_invoice,omitempty"`
+	SATInvoice *StringOr[SATInvoice] `json:"sat_invoice,omitempty"`
 	// Su serie, o null.
 	Series *string `json:"series,omitempty"`
 	// Su folio, o null.
@@ -20895,6 +21777,8 @@ type Tag struct {
 	Livemode bool `json:"livemode"`
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// El emisor de la etiqueta.
 	Issuer string `json:"issuer"`
 	// Cómo la llama su equipo, por ejemplo «Obra Norte».
@@ -20962,7 +21846,7 @@ type TaxDiscrepancy struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…), una persona física.
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Su RFC (13 caracteres).
 	TaxID string `json:"tax_id"`
 	// El ejercicio.
@@ -21177,7 +22061,7 @@ type TestRuleParams struct {
 type TestWebhookEndpointParams struct {
 	// El evento a mandar. Por omisión invoice.stamped.
 	//
-	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer.created, customer.updated, customer.deleted, product.created, product.updated, product.deleted, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched.
+	// Valores: invoice.stamped, invoice.failed, invoice.canceled, invoice.cancellation_pending, invoice.cancellation_rejected, invoice.cancellation_failed, invoice.paid, invoice.partially_paid, invoice.email_bounced, invoice.email_complained, invoice.draft_created, invoice.draft_updated, invoice.draft_deleted, retention.stamped, retention.failed, retention.canceled, invoice_batch.completed, payroll_batch.completed, customer.created, customer.updated, customer.deleted, product.created, product.updated, product.deleted, customer_data_request.completed, sat_download.completed, sat_download.failed, sat_declaration.created, sat_declaration.updated, sat_refresh.completed, sat_refresh.failed, ticket.invoiced, ticket.included_in_global, recurring_invoice.failed, quote.viewed, quote.accepted, quote.changes_requested, quote.rejected, quote.withdrawn, sales_order.confirmed, sales_order.customer_confirmed, sales_order.delivered, sales_order.paid, sales_order.canceled, supplier_invoice.received, supplier_invoice.approved, supplier_invoice.rejected, supplier_invoice.scheduled, supplier_invoice.paid, portal_supplier.approved, payout.approved, payout.paid, payout.partially_paid, payout.failed, payout.canceled, payout_transfer.succeeded, payout_transfer.failed, payout_transfer.returned, issuer.ready, balance.low, usage.high, test_clock.ready, rule.matched.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -21195,9 +22079,9 @@ type Ticket struct {
 	Folio string `json:"folio"`
 	// Lo que su comprador escribe en el portal junto con el total: el folio y 4 caracteres al azar (A123-K7QX). Imprímalo en el ticket o mándelo con la compra.
 	Code string `json:"code"`
-	// pending (se puede facturar), invoiced (su comprador lo facturó: la factura en invoice), global (entró en la factura global del periodo) o cancelled.
+	// pending (se puede facturar), invoiced (su comprador lo facturó: la factura en invoice), global (entró en la factura global del periodo) o canceled.
 	//
-	// Valores: pending, invoiced, global, cancelled.
+	// Valores: pending, invoiced, global, canceled.
 	Status string `json:"status"`
 	// La página del portal con el código (c) y el total (t) del ticket: el portal lo encuentra solo y el comprador solo da sus datos. Quien tenga la liga puede facturar el ticket: désela solo al comprador (como el ticket impreso). Puede incrustarla con fiscalisto.js. null si ya no está pendiente.
 	URL *string `json:"url,omitempty"`
@@ -21218,9 +22102,9 @@ type Ticket struct {
 	// El último día (AAAA-MM-DD) en que el comprador puede facturarlo; después entra en la factura global.
 	InvoiceableUntil string `json:"invoiceable_until"`
 	// La factura (inv_…) que hizo su comprador, o null.
-	Invoice *string `json:"invoice,omitempty"`
+	Invoice *StringOr[Invoice] `json:"invoice,omitempty"`
 	// La factura global (inv_…) en que entró, o null.
-	GlobalInvoice *string `json:"global_invoice,omitempty"`
+	GlobalInvoice *StringOr[Invoice] `json:"global_invoice,omitempty"`
 	// Lo que ya cubren las facturas de un ticket dividido en varias (la autofactura lo permite con `split_max`), con impuestos. 0 si no se ha dividido; un ticket `pending` con más de 0 tiene `total - invoiced_amount` por facturar con el mismo código, y un ticket `invoiced` dividido tiene `invoice` null.
 	InvoicedAmount float64 `json:"invoiced_amount"`
 	// A quién se facturó, o null.
@@ -21229,6 +22113,8 @@ type Ticket struct {
 	Branch *string `json:"branch,omitempty"`
 	// Quién pagó, como lo conoce el origen de la venta (el `buyer` que mandó, o el cliente de un pago de Stripe). No es el receptor de la factura (`customer`).
 	Buyer *TicketBuyer `json:"buyer,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se registró.
 	CreatedAt *string `json:"created_at,omitempty"`
 }
@@ -21252,7 +22138,7 @@ type TicketCustomer struct {
 // TicketLine: TicketLine.
 type TicketLine struct {
 	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
-	Product *string `json:"product,omitempty"`
+	Product *StringOr[Product] `json:"product,omitempty"`
 	// Descripción.
 	Description string `json:"description"`
 	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
@@ -21306,7 +22192,7 @@ type Training struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// Lo que se configura en POST /v1/training/settings.
 	Settings TrainingSettings `json:"settings"`
 	// Los trabajadores que cuenta.
@@ -21378,7 +22264,7 @@ type TrainingCourse struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// El nombre del curso.
 	Name string `json:"name"`
 	// La clave del área temática del catálogo de la STPS (1000 a 9000).
@@ -21396,7 +22282,7 @@ type TrainingCourse struct {
 	// Último día trabajado si ya no trabaja ahí, AAAA-MM-DD.
 	EndDate string `json:"end_date"`
 	// Si se canceló teniendo constancias emitidas (se conservan).
-	Cancelled bool `json:"cancelled"`
+	Canceled bool `json:"canceled"`
 	// El registro del agente externo ante la STPS.
 	TrainerRegistration *string `json:"trainer_registration,omitempty"`
 	// Quien firma como instructor o tutor.
@@ -21444,7 +22330,7 @@ type TrainingCourseDeleted struct {
 	// true si se borró.
 	Deleted bool `json:"deleted"`
 	// true si se canceló porque tenía constancias emitidas.
-	Cancelled bool `json:"cancelled"`
+	Canceled bool `json:"canceled"`
 }
 
 // TrainingCourseList: Una página de la lista.
@@ -21466,7 +22352,7 @@ type TrainingParticipant struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Nombre.
 	Name string `json:"name"`
 	// Su clave del Catálogo Nacional de Ocupaciones.
@@ -21508,7 +22394,7 @@ type TrainingPlanYear struct {
 // TrainingRenewal: TrainingRenewal.
 type TrainingRenewal struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Nombre.
 	Name string `json:"name"`
 	// El nombre del curso.
@@ -21643,6 +22529,18 @@ type UpdateAnnualAdjustmentParams struct {
 	Employees []string `json:"employees"`
 }
 
+// UpdateApiKeyParams: los campos de «Actualizar una llave».
+type UpdateApiKeyParams struct {
+	// Nombre.
+	Name *string `json:"name,omitempty"`
+	// Qué puede hacer la llave en cada recurso: `read` o `write` (escritura incluye lectura). Un recurso que no está es sin acceso. Cada uno, como mucho lo que tiene la llave que la crea.
+	Permissions map[string]string `json:"permissions,omitempty"`
+	// Los emisores con que trabaja (sus id). Vacío o sin mandar: todos los del modo; si la llave que la crea está limitada a algunos emisores, sin mandar son esos mismos y la nueva solo puede tener algunos de ellos.
+	Issuers []string `json:"issuers,omitempty"`
+	// Solo funciona desde estas IP o rangos CIDR (203.0.113.7, 203.0.113.0/24, 2001:db8::/32). Vacío: desde cualquiera; si la llave que la crea tiene IP, sin mandar son esas mismas y la nueva solo puede tener direcciones dentro de ellas.
+	AllowedIps []string `json:"allowed_ips,omitempty"`
+}
+
 // UpdateAttendanceRotationParams: los campos de «Cambiar un rol de turnos».
 type UpdateAttendanceRotationParams struct {
 	// Su nombre, como «4×4».
@@ -21739,6 +22637,8 @@ type UpdateBranchParams struct {
 	TimeZone *string `json:"time_zone,omitempty"`
 	// true la archiva: ya no se puede facturar desde ella, y sus facturas la siguen nombrando. false la restaura.
 	Archived *bool `json:"archived,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateBranchParamsAddress: La dirección que va en el PDF de sus facturas.
@@ -21951,6 +22851,8 @@ type UpdateCostCenterParams struct {
 	Code *string `json:"code,omitempty"`
 	// true lo archiva: ya no se pueden poner facturas en él, pero las suyas lo conservan. false lo restaura.
 	Archived *bool `json:"archived,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateCustomerGroupParams: los campos de «Actualizar un grupo de clientes».
@@ -21983,10 +22885,14 @@ type UpdateCustomerGroupParams struct {
 	CutoffHour *int64 `json:"cutoff_hour,omitempty"`
 	// Días para preparar un pedido antes de poder entregarlo (0 por omisión).
 	PrepDays *int64 `json:"prep_days,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateCustomerParams: los campos de «Actualizar un cliente».
 type UpdateCustomerParams struct {
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
 	TaxID *string `json:"tax_id,omitempty"`
 	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
@@ -22151,6 +23057,8 @@ type UpdateEmployeeParams struct {
 	//
 	// Valores: 1, 2, 3, 4, 5, 6, 7, 8, 9, A.
 	ExitReason *string `json:"exit_reason,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateEmployeePortalParams: los campos de «Activar, cambiar o apagar el portal».
@@ -22271,6 +23179,8 @@ type UpdateExpensePersonParams struct {
 	Department *string `json:"department,omitempty"`
 	// true la archiva (y apaga su enlace): ya no se le abren comprobaciones. false la restaura.
 	Archived *bool `json:"archived,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateExpensePolicyParams: los campos de «Cambiar la política».
@@ -22309,6 +23219,8 @@ type UpdateExpenseReportParams struct {
 	StartDate *string `json:"start_date,omitempty"`
 	// El regreso (o el fin del periodo).
 	EndDate *string `json:"end_date,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateHiringSettingsParams: los campos de «Configurar la página de empleos».
@@ -22347,12 +23259,1052 @@ type UpdateImssMovementParams struct {
 	ExitReason *string `json:"exit_reason,omitempty"`
 }
 
-// UpdateInvoiceParams: los campos de «Actualizar una factura».
+// UpdateInvoiceParams: De un borrador, la factura entera, como en POST /v1/invoices (draft no se manda). De una factura timbrada, solo cost_center y notes.
 type UpdateInvoiceParams struct {
-	// Su centro de costo (ccn_…), o null para quitárselo. Solo facturas, notas de crédito y recibos de nómina timbrados.
+	// Emisor (iss_…). Si la llave tiene un solo emisor o la cuenta tiene uno solo, puede omitirse.
+	Issuer *string `json:"issuer,omitempty"`
+	// Sucursal (brn_…) desde donde se factura: su código postal va en LugarExpedicion, su dirección en el PDF y, si las tiene, sus series. Sin ella, el domicilio fiscal del emisor (la Matriz).
+	Branch *string `json:"branch,omitempty"`
+	// Su centro de costo (ccn_…): la obra, proyecto, sucursal o área a la que pertenece, para ver ingresos y gastos por centro en Reportes. No cambia el CFDI. Sus notas de crédito lo toman solas.
 	CostCenter *string `json:"cost_center,omitempty"`
-	// Nota para el cliente en el PDF (hasta 1,000 caracteres), o null para quitarla. No va en el XML: la factura timbrada no cambia y el siguiente PDF (GET /v1/invoices/{id}/pdf, el correo) ya la lleva. Cada cambio queda en el historial de la factura en Fiscalisto.
+	// Almacén (whs_…) de donde salen sus productos con track_stock. Por omisión, el de su sucursal (o el de la Matriz).
+	Warehouse *string `json:"warehouse,omitempty"`
+	// El cliente (Receptor): el id de uno de su catálogo (cus_…) o sus datos. Obligatorio salvo en un traslado (type T), cuyo receptor es el propio emisor.
+	Customer StringOr[UpdateInvoiceParamsCustomer] `json:"customer,omitzero"`
+	// Conceptos (Conceptos), al menos uno.
+	Items []UpdateInvoiceParamsItem `json:"items,omitempty"`
+	// I ingreso (por omisión; con global, factura global) o T traslado. Notas de crédito: POST /v1/credit_notes. Pagos: POST /v1/payments.
+	//
+	// Valores: I, T.
+	Type *string `json:"type,omitempty"`
+	// Complemento Carta Porte 3.1 (traslado de mercancías).
+	CartaPorte *UpdateInvoiceParamsCartaPorte `json:"carta_porte,omitempty"`
+	// Solo en un traslado (type T) sin carta_porte: la regla de la RMF 2026 que lo permite. 2.7.7.2.1 mercancías propias en un traslado local (no medicamentos, hidrocarburos ni mercancías para despacho aduanero); 2.7.7.2.2 paquetería o mensajería en primera o última milla, un concepto por paquete con su número de guía en sku; 2.7.7.2.3 grúa de arrastre o salvamento local, relacionando con related (05) la factura de ingreso del servicio. Mandarlo es declarar que el traslado no transita por ningún tramo de jurisdicción federal. Los conceptos van con unit_price 0 y taxability 01 (por omisión en un traslado).
+	//
+	// Valores: 2.7.7.2.1, 2.7.7.2.2, 2.7.7.2.3.
+	CartaPorteExemption *string `json:"carta_porte_exemption,omitempty"`
+	// Complemento INE (procesos electorales).
+	INE *UpdateInvoiceParamsINE `json:"ine,omitempty"`
+	// Complemento de leyendas fiscales.
+	Leyendas []UpdateInvoiceParamsLeyenda `json:"leyendas,omitempty"`
+	// Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
+	Donation *UpdateInvoiceParamsDonation `json:"donation,omitempty"`
+	// Impuestos locales (complemento implocal): traslados y retenciones estatales.
+	LocalTaxes []UpdateInvoiceParamsLocalTax `json:"local_taxes,omitempty"`
+	// Exportación (Exportacion), c_Exportacion: 01 no aplica (por omisión), 02 definitiva con clave A1 (lleva comercio_exterior), 03 temporal (sin él), 04 definitiva con clave distinta a A1 o sin enajenación (con o sin comercio_exterior; con él, incoterm opcional).
+	//
+	// Valores: 01, 02, 03, 04.
+	Export *string `json:"export,omitempty"`
+	// Complemento de comercio exterior 2.0.
+	ComercioExterior *UpdateInvoiceParamsComercioExterior `json:"comercio_exterior,omitempty"`
+	// Factura global a público en general (InformacionGlobal): periodicidad, meses y año.
+	Global *UpdateInvoiceParamsGlobal `json:"global,omitempty"`
+	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
+	Use *string `json:"use,omitempty"`
+	// Forma de pago (FormaPago), clave de c_FormaPago: 01 efectivo, 03 transferencia, 04 tarjeta de crédito, 28 débito, 99 por definir… Obligatoria con PUE; con PPD es 99.
+	PaymentForm *string `json:"payment_form,omitempty"`
+	// Método de pago (MetodoPago): PUE (una sola exhibición, por omisión) o PPD (en parcialidades o diferido, se cobra con complementos de pago).
+	//
+	// Valores: PUE, PPD.
+	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Con PUE: true si aún no le pagan («Por cobrar» en la app) aunque se pagará este mes.
+	PaidLater *bool `json:"paid_later,omitempty"`
+	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
+	Currency *string `json:"currency,omitempty"`
+	// Serie (Serie), hasta 25 caracteres. Cada serie lleva sus propios folios.
+	Series *string `json:"series,omitempty"`
+	// Observaciones que aparecen en el PDF (no van en el XML).
 	Notes *string `json:"notes,omitempty"`
+	// Condiciones de pago (CondicionesDePago), hasta 1,000 caracteres sin «|»: «Crédito a 30 días», «50 % anticipo». Van en el XML y en el PDF; solo en ingresos y egresos. No cambian cuándo vence (due_date usa los días de crédito del cliente).
+	PaymentTerms *string `json:"payment_terms,omitempty"`
+	// Idioma del PDF: es (por omisión) o en.
+	//
+	// Valores: es, en, bi.
+	PDFLanguage *string `json:"pdf_language,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda *UpdateInvoiceParamsAddenda `json:"addenda,omitempty"`
+	// CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
+	Related *UpdateInvoiceParamsRelated `json:"related,omitempty"`
+	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
+	ExchangeRate *float64 `json:"exchange_rate,omitempty"`
+	// Folio (Folio) de esta factura en vez del siguiente de la serie: ese número toma su lugar en la numeración. También acepta un texto de hasta 40 caracteres sin «|» ("TIME002", "000120"), como lo acepta el SAT (Anexo 20): va solo en esta factura y la numeración no cambia; "120" es el folio 120. Si otro CFDI del RFC y la serie ya lo tiene, se rechaza.
+	Folio *int64 `json:"folio,omitempty"`
+	// Con un folio elegido: true para que los siguientes sigan desde ese número.
+	ContinueSequence *bool `json:"continue_sequence,omitempty"`
+	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
+	Date *string `json:"date,omitempty"`
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
+	SendEmail *bool `json:"send_email,omitempty"`
+	// Correos con copia, separados por comas.
+	EmailCc *string `json:"email_cc,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: la guarda como borrador (status draft) sin timbrar ni usar timbres, con las mismas revisiones que al timbrar (un error responde invoice_invalid; los avisos vienen en warnings). Se cambia con POST /v1/invoices/{id}, se timbra con POST /v1/invoices/{id}/stamp y se borra con DELETE /v1/invoices/{id}; también aparece en Por facturar de Fiscalisto. Idempotency-Key es opcional: con ella, repetir la solicitud devuelve el mismo borrador. En las demás rutas que reciben una factura no cambia nada.
+	Draft *bool `json:"draft,omitempty"`
+	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
+	Async *bool `json:"async,omitempty"`
+}
+
+// UpdateInvoiceParamsAddenda: Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+type UpdateInvoiceParamsAddenda struct {
+	// type.
+	//
+	// Valores: walmart, soriana, liverpool, homedepot, chedraui, generic.
+	Type string `json:"type"`
+	// values.
+	Values map[string]string `json:"values"`
+	// customer.
+	Customer map[string]string `json:"customer,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorte: Complemento Carta Porte 3.1 (traslado de mercancías).
+type UpdateInvoiceParamsCartaPorte struct {
+	// Cómo viajan las mercancías (c_CveTransporte): 01 autotransporte, 02 marítimo, 03 aéreo, 04 ferroviario; varios si es intermodal. Por omisión 01.
+	Modes []string `json:"modes,omitempty"`
+	// Transporte internacional (TranspInternac Sí): entrada o salida, país, vía y regímenes aduaneros.
+	International *UpdateInvoiceParamsCartaPorteInternational `json:"international,omitempty"`
+	// Corredor Interoceánico del Istmo de Tehuantepec: polos de origen y destino (c_RegistroISTMO).
+	Istmo *UpdateInvoiceParamsCartaPorteIstmo `json:"istmo,omitempty"`
+	// Autotransporte: true si es logística inversa, recolección o devolución.
+	ReverseLogistics *bool `json:"reverse_logistics,omitempty"`
+	// Ubicación de origen (Ubicacion TipoUbicacion Origen): remitente, fecha y hora de salida y domicilio.
+	Origin UpdateInvoiceParamsCartaPorteOrigin `json:"origin"`
+	// Ubicaciones de destino (TipoUbicacion Destino), en orden: destinatario, llegada, distancia y domicilio.
+	Destinations []UpdateInvoiceParamsCartaPorteDestination `json:"destinations"`
+	// Mercancías (Mercancia) que se transportan.
+	Goods []UpdateInvoiceParamsCartaPorteGood `json:"goods"`
+	// Autotransporte (Autotransporte): vehículo, permiso SCT, seguros y remolques.
+	Vehicle *UpdateInvoiceParamsCartaPorteVehicle `json:"vehicle,omitempty"`
+	// Transporte marítimo (TransporteMaritimo): embarcación, naviero y contenedores.
+	Sea *UpdateInvoiceParamsCartaPorteSea `json:"sea,omitempty"`
+	// Transporte aéreo (TransporteAereo): permiso, guía y transportista.
+	Air *UpdateInvoiceParamsCartaPorteAir `json:"air,omitempty"`
+	// Transporte ferroviario (TransporteFerroviario): servicio, tráfico, derechos de paso y carros.
+	Rail *UpdateInvoiceParamsCartaPorteRail `json:"rail,omitempty"`
+	// Operadores (FiguraTransporte tipo 01): RFC, licencia y nombre.
+	Drivers []UpdateInvoiceParamsCartaPorteDriver `json:"drivers"`
+	// Otras figuras de transporte: 02 propietario, 03 arrendador, 04 notificado, 05 integrante de coordinados.
+	Figures []UpdateInvoiceParamsCartaPorteFigure `json:"figures,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteAir: Transporte aéreo (TransporteAereo): permiso, guía y transportista.
+type UpdateInvoiceParamsCartaPorteAir struct {
+	// Tipo de permiso SCT (PermSCT), c_TipoPermiso.
+	PermitType string `json:"permit_type"`
+	// Número de permiso SCT (NumPermisoSCT).
+	PermitNumber string `json:"permit_number"`
+	// Matrícula de la aeronave (MatriculaAeronave).
+	Aircraft *string `json:"aircraft,omitempty"`
+	// Aseguradora de responsabilidad civil (AseguraRespCivil).
+	Insurer *string `json:"insurer,omitempty"`
+	// Póliza de responsabilidad civil (PolizaRespCivil).
+	Policy *string `json:"policy,omitempty"`
+	// Número de guía aérea (NumeroGuia), de 12 a 15 caracteres.
+	Waybill string `json:"waybill"`
+	// Lugar del contrato (LugarContrato).
+	ContractPlace *string `json:"contract_place,omitempty"`
+	// Código del transportista (CodigoTransportista), c_CodigoTransporteAereo.
+	Carrier string `json:"carrier"`
+	// Embarcador (RFCEmbarcador o NumRegIdTribEmbarc y ResidenciaFiscalEmbarc, NombreEmbarcador).
+	Shipper *UpdateInvoiceParamsCartaPorteAirShipper `json:"shipper,omitempty"`
+	// Cargo por tasación (CargoPorTasacion).
+	RateCharge *float64 `json:"rate_charge,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteAirShipper: Embarcador (RFCEmbarcador o NumRegIdTribEmbarc y ResidenciaFiscalEmbarc, NombreEmbarcador).
+type UpdateInvoiceParamsCartaPorteAirShipper struct {
+	// RFC del embarcador (RFCEmbarcador).
+	TaxID *string `json:"tax_id,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *UpdateInvoiceParamsCartaPorteAirShipperForeign `json:"foreign,omitempty"`
+	// Nombre del embarcador (NombreEmbarcador).
+	Name *string `json:"name,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteAirShipperForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type UpdateInvoiceParamsCartaPorteAirShipperForeign struct {
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+}
+
+// UpdateInvoiceParamsCartaPorteDestination: UpdateInvoiceParamsCartaPorteDestination.
+type UpdateInvoiceParamsCartaPorteDestination struct {
+	// RFC del destinatario (RFCRemitenteDestinatario); XEXX010101000 si es extranjero.
+	TaxID string `json:"tax_id"`
+	// Nombre del destinatario (NombreRemitenteDestinatario).
+	Name *string `json:"name,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *UpdateInvoiceParamsCartaPorteDestinationForeign `json:"foreign,omitempty"`
+	// Fecha y hora de salida (origen) o llegada (destino), AAAA-MM-DDTHH:MM, hora local.
+	DateTime string `json:"date_time"`
+	// Distancia recorrida desde la ubicación anterior, en km (DistanciaRecorrida). Autotransporte y ferroviario.
+	DistanceKm *float64 `json:"distance_km,omitempty"`
+	// Estación, puerto o aeropuerto (TipoEstacion y NumEstacion de c_Estaciones). Solo sin autotransporte.
+	Station *UpdateInvoiceParamsCartaPorteDestinationStation `json:"station,omitempty"`
+	// Marítimo: tipo de tráfico (NavegacionTrafico), Altura o Cabotaje.
+	//
+	// Valores: Altura, Cabotaje.
+	Navigation *string `json:"navigation,omitempty"`
+	// Domicilio (Domicilio). En México basta el código postal: estado, municipio y localidad se toman de c_CodigoPostal.
+	Address UpdateInvoiceParamsCartaPorteDestinationAddress `json:"address"`
+}
+
+// UpdateInvoiceParamsCartaPorteDestinationAddress: Domicilio (Domicilio). En México basta el código postal: estado, municipio y localidad se toman de c_CodigoPostal.
+type UpdateInvoiceParamsCartaPorteDestinationAddress struct {
+	// Calle (Calle).
+	Street *string `json:"street,omitempty"`
+	// Número exterior (NumeroExterior).
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior (NumeroInterior).
+	Interior *string `json:"interior,omitempty"`
+	// Código postal (CodigoPostal). En México se deducen de él estado, municipio y localidad.
+	Zip string `json:"zip"`
+	// País (Pais), c_Pais. Por omisión MEX.
+	Country *string `json:"country,omitempty"`
+	// Estado (Estado): en el extranjero c_Estado para USA y CAN, o texto.
+	State *string `json:"state,omitempty"`
+	// Municipio (Municipio), en el extranjero como texto.
+	Municipality *string `json:"municipality,omitempty"`
+	// Localidad (Localidad), en el extranjero como texto.
+	Locality *string `json:"locality,omitempty"`
+	// Colonia (Colonia), en el extranjero como texto.
+	Colony *string `json:"colony,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteDestinationForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type UpdateInvoiceParamsCartaPorteDestinationForeign struct {
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+}
+
+// UpdateInvoiceParamsCartaPorteDestinationStation: Estación, puerto o aeropuerto (TipoEstacion y NumEstacion de c_Estaciones). Solo sin autotransporte.
+type UpdateInvoiceParamsCartaPorteDestinationStation struct {
+	// Tipo de estación (TipoEstacion): 01 origen, 02 intermedia, 03 destino final.
+	Type *string `json:"type,omitempty"`
+	// Clave de la estación, puerto o aeropuerto (NumEstacion), c_Estaciones.
+	Number *string `json:"number,omitempty"`
+	// Nombre de la estación (NombreEstacion).
+	Name *string `json:"name,omitempty"`
+	// true si la estación está en el extranjero (va sin TipoEstacion).
+	Foreign *bool `json:"foreign,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteDriver: UpdateInvoiceParamsCartaPorteDriver.
+type UpdateInvoiceParamsCartaPorteDriver struct {
+	// RFC del operador (RFCFigura); vacío si es extranjero (con foreign).
+	TaxID string `json:"tax_id"`
+	// Número de licencia (NumLicencia).
+	License string `json:"license"`
+	// Nombre del operador (NombreFigura).
+	Name string `json:"name"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *UpdateInvoiceParamsCartaPorteDriverForeign `json:"foreign,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteDriverForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type UpdateInvoiceParamsCartaPorteDriverForeign struct {
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+}
+
+// UpdateInvoiceParamsCartaPorteFigure: UpdateInvoiceParamsCartaPorteFigure.
+type UpdateInvoiceParamsCartaPorteFigure struct {
+	// Tipo de figura (TipoFigura): 02 propietario, 03 arrendador, 04 notificado, 05 integrante.
+	//
+	// Valores: 02, 03, 04, 05.
+	Type string `json:"type"`
+	// RFC de la figura (RFCFigura).
+	TaxID *string `json:"tax_id,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *UpdateInvoiceParamsCartaPorteFigureForeign `json:"foreign,omitempty"`
+	// Nombre de la figura (NombreFigura).
+	Name string `json:"name"`
+	// Partes del transporte que posee o arrienda (ParteTransporte), c_ParteTransporte.
+	Parts []string `json:"parts,omitempty"`
+	// Domicilio (Domicilio). En México basta el código postal: estado, municipio y localidad se toman de c_CodigoPostal.
+	Address *UpdateInvoiceParamsCartaPorteFigureAddress `json:"address,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteFigureAddress: Domicilio (Domicilio). En México basta el código postal: estado, municipio y localidad se toman de c_CodigoPostal.
+type UpdateInvoiceParamsCartaPorteFigureAddress struct {
+	// Calle (Calle).
+	Street *string `json:"street,omitempty"`
+	// Número exterior (NumeroExterior).
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior (NumeroInterior).
+	Interior *string `json:"interior,omitempty"`
+	// Código postal (CodigoPostal). En México se deducen de él estado, municipio y localidad.
+	Zip string `json:"zip"`
+	// País (Pais), c_Pais. Por omisión MEX.
+	Country *string `json:"country,omitempty"`
+	// Estado (Estado): en el extranjero c_Estado para USA y CAN, o texto.
+	State *string `json:"state,omitempty"`
+	// Municipio (Municipio), en el extranjero como texto.
+	Municipality *string `json:"municipality,omitempty"`
+	// Localidad (Localidad), en el extranjero como texto.
+	Locality *string `json:"locality,omitempty"`
+	// Colonia (Colonia), en el extranjero como texto.
+	Colony *string `json:"colony,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteFigureForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type UpdateInvoiceParamsCartaPorteFigureForeign struct {
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+}
+
+// UpdateInvoiceParamsCartaPorteGood: UpdateInvoiceParamsCartaPorteGood.
+type UpdateInvoiceParamsCartaPorteGood struct {
+	// Clave del bien transportado (BienesTransp), c_ClaveProdServCP.
+	ProductKey string `json:"product_key"`
+	// Descripción de la mercancía (Descripcion).
+	Description string `json:"description"`
+	// Cantidad (Cantidad).
+	Quantity float64 `json:"quantity"`
+	// Clave de unidad (ClaveUnidad), c_ClaveUnidad.
+	UnitKey string `json:"unit_key"`
+	// Peso en kilogramos (PesoEnKg).
+	WeightKg float64 `json:"weight_kg"`
+	// Dimensiones (Dimensiones), como 30/40/30cm o en plg.
+	Dimensions *string `json:"dimensions,omitempty"`
+	// Material peligroso (MaterialPeligroso Sí): clave UN y embalaje.
+	Hazmat *UpdateInvoiceParamsCartaPorteGoodHazmat `json:"hazmat,omitempty"`
+	// Datos COFEPRIS de la mercancía: sector y lo que pide cada uno (medicamentos, precursores, psicotrópicos, sustancias tóxicas, plaguicidas).
+	Cofepris *UpdateInvoiceParamsCartaPorteGoodCofepris `json:"cofepris,omitempty"`
+	// Valor de la mercancía (ValorMercancia); obligatorio en transporte aéreo.
+	Value *float64 `json:"value,omitempty"`
+	// Moneda del valor de la mercancía (Moneda), c_Moneda.
+	Currency *string `json:"currency,omitempty"`
+	// Fracción arancelaria (FraccionArancelaria), 10 dígitos. Transporte internacional.
+	Tariff *string `json:"tariff,omitempty"`
+	// UUID del CFDI con complemento de comercio exterior (UUIDComercioExt).
+	CceUUID *string `json:"cce_uuid,omitempty"`
+	// Tipo de materia (TipoMateria, c_TipoMateria) y su descripción si es «otra».
+	Material *UpdateInvoiceParamsCartaPorteGoodMaterial `json:"material,omitempty"`
+	// Documentación aduanera (DocumentacionAduanera) de la mercancía en transporte internacional.
+	CustomsDocs []UpdateInvoiceParamsCartaPorteGoodCustomsDoc `json:"customs_docs,omitempty"`
+	// Paquetería: guías de los paquetes o tarimas (GuiasIdentificacion).
+	Guides []UpdateInvoiceParamsCartaPorteGoodGuide `json:"guides,omitempty"`
+	// Cuánto va a cada destino (CantidadTransporta), por destino.
+	Quantities []UpdateInvoiceParamsCartaPorteGoodQuantity `json:"quantities,omitempty"`
+	// Marítimo: detalle de la mercancía (DetalleMercancia): kilos netos, tara y piezas.
+	Detail *UpdateInvoiceParamsCartaPorteGoodDetail `json:"detail,omitempty"`
+	// Ferroviario: clave STCC (ClaveSTCC).
+	Stcc *string `json:"stcc,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteGoodCofepris: Datos COFEPRIS de la mercancía: sector y lo que pide cada uno (medicamentos, precursores, psicotrópicos, sustancias tóxicas, plaguicidas).
+type UpdateInvoiceParamsCartaPorteGoodCofepris struct {
+	// Sector COFEPRIS (SectorCOFEPRIS): 01 medicamento, 02 precursores y químicos de uso dual, 03 psicotrópicos y estupefacientes, 04 sustancias tóxicas, 05 plaguicidas y fertilizantes.
+	Sector string `json:"sector"`
+	// Nombre del ingrediente activo (NombreIngredienteActivo).
+	ActiveIngredient *string `json:"active_ingredient,omitempty"`
+	// Nombre químico (NomQuimico).
+	ChemicalName *string `json:"chemical_name,omitempty"`
+	// Denominación genérica del producto (DenominacionGenericaProd).
+	GenericName *string `json:"generic_name,omitempty"`
+	// Denominación distintiva o marca (DenominacionDistintivaProd).
+	BrandName *string `json:"brand_name,omitempty"`
+	// Fabricante (Fabricante).
+	Manufacturer *string `json:"manufacturer,omitempty"`
+	// Fecha de caducidad (FechaCaducidad), AAAA-MM-DD.
+	Expiry *string `json:"expiry,omitempty"`
+	// Lote del medicamento (LoteMedicamento).
+	Lot *string `json:"lot,omitempty"`
+	// Forma farmacéutica (FormaFarmaceutica), c_FormaFarmaceutica.
+	Form *string `json:"form,omitempty"`
+	// Condiciones especiales de transporte (CondicionesEspTransp), c_CondicionesEspeciales.
+	Conditions *string `json:"conditions,omitempty"`
+	// Registro sanitario o folio de autorización (RegistroSanitarioFolioAutorizacion).
+	SanitaryRegistry *string `json:"sanitary_registry,omitempty"`
+	// Permiso de importación (PermisoImportacion).
+	ImportPermit *string `json:"import_permit,omitempty"`
+	// Folio de importación VUCEM (FolioImpoVUCEM).
+	VucemFolio *string `json:"vucem_folio,omitempty"`
+	// Número CAS de la sustancia (NumCAS).
+	Cas *string `json:"cas,omitempty"`
+	// Razón social de la empresa importadora (RazonSocialEmpImp).
+	Importer *string `json:"importer,omitempty"`
+	// Registro sanitario de plaguicidas COFEPRIS (NumRegSanPlagCOFEPRIS).
+	PesticideRegistry *string `json:"pesticide_registry,omitempty"`
+	// Datos del fabricante (DatosFabricante).
+	ManufacturerData *string `json:"manufacturer_data,omitempty"`
+	// Datos del formulador (DatosFormulador).
+	FormulatorData *string `json:"formulator_data,omitempty"`
+	// Datos del maquilador (DatosMaquilador).
+	MaquiladorData *string `json:"maquilador_data,omitempty"`
+	// Uso autorizado (UsoAutorizado).
+	AuthorizedUse *string `json:"authorized_use,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteGoodCustomsDoc: UpdateInvoiceParamsCartaPorteGoodCustomsDoc.
+type UpdateInvoiceParamsCartaPorteGoodCustomsDoc struct {
+	// Tipo de documento (TipoDocumento), c_DocumentoAduanero: 01 pedimento…
+	Type string `json:"type"`
+	// Número de pedimento (NumPedimento), con el formato «NN  NN  NNNN  NNNNNNN». Solo con el tipo 01.
+	Pedimento *string `json:"pedimento,omitempty"`
+	// Identificador del documento aduanero (IdentDocAduanero), con un tipo distinto de 01.
+	DocID *string `json:"doc_id,omitempty"`
+	// RFC del importador (RFCImpo), con un pedimento.
+	ImporterTaxID *string `json:"importer_tax_id,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteGoodDetail: Marítimo: detalle de la mercancía (DetalleMercancia): kilos netos, tara y piezas.
+type UpdateInvoiceParamsCartaPorteGoodDetail struct {
+	// Peso neto en kg (PesoNeto).
+	NetKg float64 `json:"net_kg"`
+	// Tara en kg (PesoTara).
+	TareKg float64 `json:"tare_kg"`
+	// Número de piezas (NumPiezas).
+	Pieces *int64 `json:"pieces,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteGoodGuide: UpdateInvoiceParamsCartaPorteGoodGuide.
+type UpdateInvoiceParamsCartaPorteGoodGuide struct {
+	// Número de guía (NumeroGuiaIdentificacion).
+	Number string `json:"number"`
+	// Descripción del contenido (DescripGuiaIdentificacion).
+	Description string `json:"description"`
+	// Peso en kilogramos (PesoEnKg).
+	WeightKg float64 `json:"weight_kg"`
+}
+
+// UpdateInvoiceParamsCartaPorteGoodHazmat: Material peligroso (MaterialPeligroso Sí): clave UN y embalaje.
+type UpdateInvoiceParamsCartaPorteGoodHazmat struct {
+	// Clave del material peligroso (CveMaterialPeligroso), c_MaterialPeligroso (número UN).
+	Key string `json:"key"`
+	// Tipo de embalaje (Embalaje), c_TipoEmbalaje.
+	Packaging string `json:"packaging"`
+	// Descripción del embalaje (DescripEmbalaje).
+	PackagingDescription *string `json:"packaging_description,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteGoodMaterial: Tipo de materia (TipoMateria, c_TipoMateria) y su descripción si es «otra».
+type UpdateInvoiceParamsCartaPorteGoodMaterial struct {
+	// Tipo de materia (TipoMateria), c_TipoMateria.
+	Type string `json:"type"`
+	// Descripción de la materia (DescripcionMateria), con el tipo 05 otra.
+	Description *string `json:"description,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteGoodQuantity: UpdateInvoiceParamsCartaPorteGoodQuantity.
+type UpdateInvoiceParamsCartaPorteGoodQuantity struct {
+	// Cantidad que va a ese destino.
+	Quantity float64 `json:"quantity"`
+	// El destino, por su posición en destinations (desde 0).
+	Destination int64 `json:"destination"`
+	// Medio en que va esa cantidad (CvesTransporte), c_CveTransporte.
+	//
+	// Valores: 01, 02, 03, 04.
+	Mode *string `json:"mode,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteInternational: Transporte internacional (TranspInternac Sí): entrada o salida, país, vía y regímenes aduaneros.
+type UpdateInvoiceParamsCartaPorteInternational struct {
+	// EntradaSalidaMerc: Entrada o Salida.
+	//
+	// Valores: Entrada, Salida.
+	Direction string `json:"direction"`
+	// País de origen o destino (PaisOrigenDestino), c_Pais.
+	Country string `json:"country"`
+	// Vía de entrada o salida (ViaEntradaSalida), c_CveTransporte (05 ducto incluido).
+	Via string `json:"via"`
+	// Regímenes aduaneros (RegimenAduanero), c_RegimenAduanero.
+	Regimes []string `json:"regimes"`
+}
+
+// UpdateInvoiceParamsCartaPorteIstmo: Corredor Interoceánico del Istmo de Tehuantepec: polos de origen y destino (c_RegistroISTMO).
+type UpdateInvoiceParamsCartaPorteIstmo struct {
+	// Polo de origen (UbicacionPoloOrigen).
+	Origin string `json:"origin"`
+	// Polo de destino (UbicacionPoloDestino).
+	Destination string `json:"destination"`
+}
+
+// UpdateInvoiceParamsCartaPorteOrigin: Ubicación de origen (Ubicacion TipoUbicacion Origen): remitente, fecha y hora de salida y domicilio.
+type UpdateInvoiceParamsCartaPorteOrigin struct {
+	// RFC del remitente (RFCRemitenteDestinatario); XEXX010101000 si es extranjero.
+	TaxID string `json:"tax_id"`
+	// Nombre del remitente (NombreRemitenteDestinatario).
+	Name *string `json:"name,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *UpdateInvoiceParamsCartaPorteOriginForeign `json:"foreign,omitempty"`
+	// Fecha y hora de salida (origen) o llegada (destino), AAAA-MM-DDTHH:MM, hora local.
+	DateTime string `json:"date_time"`
+	// Distancia recorrida desde la ubicación anterior, en km (DistanciaRecorrida). Autotransporte y ferroviario.
+	DistanceKm *float64 `json:"distance_km,omitempty"`
+	// Estación, puerto o aeropuerto (TipoEstacion y NumEstacion de c_Estaciones). Solo sin autotransporte.
+	Station *UpdateInvoiceParamsCartaPorteOriginStation `json:"station,omitempty"`
+	// Marítimo: tipo de tráfico (NavegacionTrafico), Altura o Cabotaje.
+	//
+	// Valores: Altura, Cabotaje.
+	Navigation *string `json:"navigation,omitempty"`
+	// Domicilio (Domicilio). En México basta el código postal: estado, municipio y localidad se toman de c_CodigoPostal.
+	Address UpdateInvoiceParamsCartaPorteOriginAddress `json:"address"`
+}
+
+// UpdateInvoiceParamsCartaPorteOriginAddress: Domicilio (Domicilio). En México basta el código postal: estado, municipio y localidad se toman de c_CodigoPostal.
+type UpdateInvoiceParamsCartaPorteOriginAddress struct {
+	// Calle (Calle).
+	Street *string `json:"street,omitempty"`
+	// Número exterior (NumeroExterior).
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior (NumeroInterior).
+	Interior *string `json:"interior,omitempty"`
+	// Código postal (CodigoPostal). En México se deducen de él estado, municipio y localidad.
+	Zip string `json:"zip"`
+	// País (Pais), c_Pais. Por omisión MEX.
+	Country *string `json:"country,omitempty"`
+	// Estado (Estado): en el extranjero c_Estado para USA y CAN, o texto.
+	State *string `json:"state,omitempty"`
+	// Municipio (Municipio), en el extranjero como texto.
+	Municipality *string `json:"municipality,omitempty"`
+	// Localidad (Localidad), en el extranjero como texto.
+	Locality *string `json:"locality,omitempty"`
+	// Colonia (Colonia), en el extranjero como texto.
+	Colony *string `json:"colony,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteOriginForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type UpdateInvoiceParamsCartaPorteOriginForeign struct {
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+}
+
+// UpdateInvoiceParamsCartaPorteOriginStation: Estación, puerto o aeropuerto (TipoEstacion y NumEstacion de c_Estaciones). Solo sin autotransporte.
+type UpdateInvoiceParamsCartaPorteOriginStation struct {
+	// Tipo de estación (TipoEstacion): 01 origen, 02 intermedia, 03 destino final.
+	Type *string `json:"type,omitempty"`
+	// Clave de la estación, puerto o aeropuerto (NumEstacion), c_Estaciones.
+	Number *string `json:"number,omitempty"`
+	// Nombre de la estación (NombreEstacion).
+	Name *string `json:"name,omitempty"`
+	// true si la estación está en el extranjero (va sin TipoEstacion).
+	Foreign *bool `json:"foreign,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteRail: Transporte ferroviario (TransporteFerroviario): servicio, tráfico, derechos de paso y carros.
+type UpdateInvoiceParamsCartaPorteRail struct {
+	// Tipo de servicio (TipoDeServicio), c_TipoDeServicio.
+	Service string `json:"service"`
+	// Tipo de tráfico (TipoDeTrafico), c_TipoDeTrafico.
+	Traffic string `json:"traffic"`
+	// Aseguradora de responsabilidad civil (AseguraRespCivil).
+	Insurer *string `json:"insurer,omitempty"`
+	// Póliza de responsabilidad civil (PolizaRespCivil).
+	Policy *string `json:"policy,omitempty"`
+	// Derechos de paso (DerechosDePaso): tipo y kilómetros.
+	Rights []UpdateInvoiceParamsCartaPorteRailRight `json:"rights,omitempty"`
+	// Carros (Carro).
+	Cars []UpdateInvoiceParamsCartaPorteRailCar `json:"cars"`
+}
+
+// UpdateInvoiceParamsCartaPorteRailCar: UpdateInvoiceParamsCartaPorteRailCar.
+type UpdateInvoiceParamsCartaPorteRailCar struct {
+	// Tipo de carro (TipoCarro), c_TipoCarro.
+	Type string `json:"type"`
+	// Matrícula (Matricula).
+	Registration string `json:"registration"`
+	// Guía del carro (GuiaCarro).
+	Guide string `json:"guide"`
+	// Toneladas netas del carro (ToneladasNetasCarro).
+	NetTons float64 `json:"net_tons"`
+	// Contenedores (Contenedor).
+	Containers []UpdateInvoiceParamsCartaPorteRailCarContainer `json:"containers,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteRailCarContainer: UpdateInvoiceParamsCartaPorteRailCarContainer.
+type UpdateInvoiceParamsCartaPorteRailCarContainer struct {
+	// Tipo de contenedor (TipoContenedor), c_ContenedorMaritimo o c_Contenedor en ferroviario.
+	Type string `json:"type"`
+	// Peso del contenedor vacío en kg (PesoContenedorVacio).
+	EmptyKg float64 `json:"empty_kg"`
+	// Peso neto en kg (PesoNeto).
+	NetKg float64 `json:"net_kg"`
+}
+
+// UpdateInvoiceParamsCartaPorteRailRight: UpdateInvoiceParamsCartaPorteRailRight.
+type UpdateInvoiceParamsCartaPorteRailRight struct {
+	// Tipo de derecho de paso (TipoDerechoDePaso), c_DerechosDePaso.
+	Type string `json:"type"`
+	// Kilometraje pagado (KilometrajePagado).
+	Km float64 `json:"km"`
+}
+
+// UpdateInvoiceParamsCartaPorteSea: Transporte marítimo (TransporteMaritimo): embarcación, naviero y contenedores.
+type UpdateInvoiceParamsCartaPorteSea struct {
+	// Tipo de permiso SCT (PermSCT), c_TipoPermiso.
+	PermitType *string `json:"permit_type,omitempty"`
+	// Número de permiso SCT (NumPermisoSCT).
+	PermitNumber *string `json:"permit_number,omitempty"`
+	// Aseguradora de responsabilidad civil (AseguraRespCivil).
+	Insurer *string `json:"insurer,omitempty"`
+	// Póliza de responsabilidad civil (PolizaRespCivil).
+	Policy *string `json:"policy,omitempty"`
+	// Tipo de embarcación (TipoEmbarcacion), c_ConfigMaritima.
+	VesselType string `json:"vessel_type"`
+	// Matrícula (Matricula).
+	Registration string `json:"registration"`
+	// Número IMO (NumeroOMI): IMO y 7 dígitos.
+	Imo string `json:"imo"`
+	// Año de la embarcación (AnioEmbarcacion).
+	Year *int64 `json:"year,omitempty"`
+	// Nombre de la embarcación (NombreEmbarc).
+	VesselName *string `json:"vessel_name,omitempty"`
+	// Nacionalidad de la embarcación (NacionalidadEmbarc), c_Pais.
+	Flag string `json:"flag"`
+	// Unidades de arqueo bruto (UnidadesDeArqBruto).
+	GrossTonnage float64 `json:"gross_tonnage"`
+	// Tipo de carga (TipoCarga), c_ClaveTipoCarga.
+	CargoType string `json:"cargo_type"`
+	// Eslora en metros (Eslora).
+	Length *float64 `json:"length,omitempty"`
+	// Manga en metros (Manga).
+	Beam *float64 `json:"beam,omitempty"`
+	// Calado en metros (Calado).
+	Draft *float64 `json:"draft,omitempty"`
+	// Puntal en metros (Puntal).
+	Depth *float64 `json:"depth,omitempty"`
+	// Línea naviera (LineaNaviera).
+	Line *string `json:"line,omitempty"`
+	// Nombre del agente naviero consignatario (NombreAgenteNaviero).
+	AgentName string `json:"agent_name"`
+	// Autorización del agente naviero (NumAutorizacionNaviero), c_NumAutorizacionNaviero.
+	AgentAuthorization string `json:"agent_authorization"`
+	// Número de viaje (NumViaje).
+	Voyage *string `json:"voyage,omitempty"`
+	// Número de conocimiento de embarque (NumConocEmbarc).
+	BillOfLading *string `json:"bill_of_lading,omitempty"`
+	// Permiso temporal de navegación (PermisoTempNavegacion), para una embarcación extranjera.
+	TempPermit *string `json:"temp_permit,omitempty"`
+	// Contenedores (Contenedor).
+	Containers []UpdateInvoiceParamsCartaPorteSeaContainer `json:"containers,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteSeaContainer: UpdateInvoiceParamsCartaPorteSeaContainer.
+type UpdateInvoiceParamsCartaPorteSeaContainer struct {
+	// Tipo de contenedor (TipoContenedor), c_ContenedorMaritimo o c_Contenedor en ferroviario.
+	Type string `json:"type"`
+	// Matrícula (Matricula).
+	Registration *string `json:"registration,omitempty"`
+	// Número de precinto (NumPrecinto).
+	Seal *string `json:"seal,omitempty"`
+	// Ferri: el IdCCP de la Carta Porte del autotransporte a bordo (IdCCPRelacionado).
+	RelatedIDCcp *string `json:"related_id_ccp,omitempty"`
+	// Ferri: placa del vehículo a bordo (PlacaVMCCP).
+	TruckPlate *string `json:"truck_plate,omitempty"`
+	// Ferri: fecha de certificación de la Carta Porte del vehículo (FechaCertificacionCCP).
+	CertifiedAt *string `json:"certified_at,omitempty"`
+	// Remolques o semirremolques (Remolque): tipo (c_SubTipoRem) y placa.
+	Trailers []UpdateInvoiceParamsCartaPorteSeaContainerTrailer `json:"trailers,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteSeaContainerTrailer: UpdateInvoiceParamsCartaPorteSeaContainerTrailer.
+type UpdateInvoiceParamsCartaPorteSeaContainerTrailer struct {
+	// Subtipo de remolque (SubTipoRem), c_SubTipoRem.
+	Type string `json:"type"`
+	// Placa del remolque (Placa).
+	Plate string `json:"plate"`
+}
+
+// UpdateInvoiceParamsCartaPorteVehicle: Autotransporte (Autotransporte): vehículo, permiso SCT, seguros y remolques.
+type UpdateInvoiceParamsCartaPorteVehicle struct {
+	// Configuración vehicular (ConfigVehicular), c_ConfigAutotransporte: C2, T3S2…
+	Config string `json:"config"`
+	// Placa (PlacaVM), sin guiones ni espacios.
+	Plate string `json:"plate"`
+	// Año del modelo (AnioModeloVM).
+	Year int64 `json:"year"`
+	// Peso bruto vehicular en toneladas (PesoBrutoVehicular).
+	GrossWeight float64 `json:"gross_weight"`
+	// Tipo de permiso SCT (PermSCT), c_TipoPermiso.
+	PermitType string `json:"permit_type"`
+	// Número de permiso SCT (NumPermisoSCT).
+	PermitNumber string `json:"permit_number"`
+	// Aseguradora de responsabilidad civil (AseguraRespCivil).
+	Insurer string `json:"insurer"`
+	// Póliza de responsabilidad civil (PolizaRespCivil).
+	Policy string `json:"policy"`
+	// Aseguradora de daños al medio ambiente (AseguraMedAmbiente); obligatoria con material peligroso.
+	EnvInsurer *string `json:"env_insurer,omitempty"`
+	// Póliza de daños al medio ambiente (PolizaMedAmbiente).
+	EnvPolicy *string `json:"env_policy,omitempty"`
+	// Aseguradora de la carga (AseguraCarga).
+	CargoInsurer *string `json:"cargo_insurer,omitempty"`
+	// Póliza de la carga (PolizaCarga).
+	CargoPolicy *string `json:"cargo_policy,omitempty"`
+	// Prima del seguro (PrimaSeguro).
+	Premium *float64 `json:"premium,omitempty"`
+	// Remolques o semirremolques (Remolque): tipo (c_SubTipoRem) y placa.
+	Trailers []UpdateInvoiceParamsCartaPorteVehicleTrailer `json:"trailers,omitempty"`
+}
+
+// UpdateInvoiceParamsCartaPorteVehicleTrailer: UpdateInvoiceParamsCartaPorteVehicleTrailer.
+type UpdateInvoiceParamsCartaPorteVehicleTrailer struct {
+	// Subtipo de remolque (SubTipoRem), c_SubTipoRem.
+	Type string `json:"type"`
+	// Placa del remolque (Placa).
+	Plate string `json:"plate"`
+}
+
+// UpdateInvoiceParamsComercioExterior: Complemento de comercio exterior 2.0.
+type UpdateInvoiceParamsComercioExterior struct {
+	// Motivo de traslado (MotivoTraslado), c_MotivoTraslado, solo en un traslado: 01 mercancías facturadas con anterioridad (relacione la factura de venta en related), 02 reubicación de mercancías propias, 03 consignación, 04 para posterior enajenación, 05 propiedad de terceros (con owners), 99 otros.
+	//
+	// Valores: 99, 01, 02, 03, 04, 05.
+	Motive *string `json:"motive,omitempty"`
+	// Propietarios de la mercancía si no es el emisor (Propietario), con motive 05.
+	Owners []UpdateInvoiceParamsComercioExteriorOwner `json:"owners,omitempty"`
+	// Incoterm (Incoterm), c_INCOTERM: EXW, FOB, CIF, DAP, DDP…
+	Incoterm *string `json:"incoterm,omitempty"`
+	// Número de certificado de origen (NumCertificadoOrigen).
+	Certificate *string `json:"certificate,omitempty"`
+	// Tipo de cambio a dólares (TipoCambioUSD).
+	UsdRate float64 `json:"usd_rate"`
+	// CURP del emisor persona física (Emisor Curp).
+	IssuerCURP *string `json:"issuer_curp,omitempty"`
+	// Domicilio del emisor (Emisor Domicilio): calle y números; lo demás sale de su código postal.
+	IssuerAddress *UpdateInvoiceParamsComercioExteriorIssuerAddress `json:"issuer_address,omitempty"`
+	// Domicilio del receptor en el extranjero (Receptor Domicilio).
+	ReceiverAddress *UpdateInvoiceParamsComercioExteriorReceiverAddress `json:"receiver_address,omitempty"`
+	// Destinatario, si no es el receptor (Destinatario).
+	Recipient *UpdateInvoiceParamsComercioExteriorRecipient `json:"recipient,omitempty"`
+	// Mercancías (Mercancia), una por concepto exportado.
+	Goods []UpdateInvoiceParamsComercioExteriorGood `json:"goods"`
+	// Observaciones del complemento (Observaciones).
+	Notes *string `json:"notes,omitempty"`
+}
+
+// UpdateInvoiceParamsComercioExteriorGood: UpdateInvoiceParamsComercioExteriorGood.
+type UpdateInvoiceParamsComercioExteriorGood struct {
+	// Número de identificación de la mercancía (NoIdentificacion): el sku de su concepto.
+	ID *string `json:"id,omitempty"`
+	// Fracción arancelaria (FraccionArancelaria), 10 dígitos con el NICO, vigente en c_FraccionArancelaria (búsquela en `GET /v1/sat_catalogs/customs_tariffs`); una que no lo esté se rechaza antes de timbrar.
+	Tariff *string `json:"tariff,omitempty"`
+	// Unidad aduana (UnidadAduana), c_UnidadAduana; 99 en un servicio. Con `tariff` puede omitirse: va la UMT de la fracción en el catálogo del SAT (otra la rechaza el SAT con CCE161).
+	Unit *string `json:"unit,omitempty"`
+	// Cantidad en la unidad aduana (CantidadAduana).
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Valor unitario en dólares (ValorUnitarioAduana).
+	UnitValueUsd *float64 `json:"unit_value_usd,omitempty"`
+}
+
+// UpdateInvoiceParamsComercioExteriorIssuerAddress: Domicilio del emisor (Emisor Domicilio): calle y números; lo demás sale de su código postal.
+type UpdateInvoiceParamsComercioExteriorIssuerAddress struct {
+	// Calle (Calle).
+	Street string `json:"street"`
+	// Número exterior (NumeroExterior).
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior (NumeroInterior).
+	Interior *string `json:"interior,omitempty"`
+	// Código postal del emisor (CodigoPostal).
+	Zip *string `json:"zip,omitempty"`
+}
+
+// UpdateInvoiceParamsComercioExteriorOwner: UpdateInvoiceParamsComercioExteriorOwner.
+type UpdateInvoiceParamsComercioExteriorOwner struct {
+	// Número de registro tributario del propietario (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+	// País de residencia del propietario (ResidenciaFiscal), c_Pais.
+	Country string `json:"country"`
+}
+
+// UpdateInvoiceParamsComercioExteriorReceiverAddress: Domicilio del receptor en el extranjero (Receptor Domicilio).
+type UpdateInvoiceParamsComercioExteriorReceiverAddress struct {
+	// Calle (Calle).
+	Street string `json:"street"`
+	// Número exterior (NumeroExterior).
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior (NumeroInterior).
+	Interior *string `json:"interior,omitempty"`
+	// Colonia (Colonia), en el extranjero como texto.
+	Colony *string `json:"colony,omitempty"`
+	// Localidad (Localidad), en el extranjero como texto.
+	Locality *string `json:"locality,omitempty"`
+	// Municipio (Municipio), en el extranjero como texto.
+	Municipality *string `json:"municipality,omitempty"`
+	// Estado (Estado), c_Estado para USA y CAN.
+	State *string `json:"state,omitempty"`
+	// País (Pais), c_Pais.
+	Country string `json:"country"`
+	// Código postal en su país (CodigoPostal).
+	Zip string `json:"zip"`
+}
+
+// UpdateInvoiceParamsComercioExteriorRecipient: Destinatario, si no es el receptor (Destinatario).
+type UpdateInvoiceParamsComercioExteriorRecipient struct {
+	// Nombre del destinatario (Nombre).
+	Name *string `json:"name,omitempty"`
+	// Número de registro tributario del destinatario (NumRegIdTrib).
+	TaxID *string `json:"tax_id,omitempty"`
+	// Domicilio del destinatario (Domicilio).
+	Address UpdateInvoiceParamsComercioExteriorRecipientAddress `json:"address"`
+}
+
+// UpdateInvoiceParamsComercioExteriorRecipientAddress: Domicilio del destinatario (Domicilio).
+type UpdateInvoiceParamsComercioExteriorRecipientAddress struct {
+	// Calle (Calle).
+	Street string `json:"street"`
+	// Número exterior (NumeroExterior).
+	Exterior *string `json:"exterior,omitempty"`
+	// Número interior (NumeroInterior).
+	Interior *string `json:"interior,omitempty"`
+	// Colonia (Colonia), en el extranjero como texto.
+	Colony *string `json:"colony,omitempty"`
+	// Localidad (Localidad), en el extranjero como texto.
+	Locality *string `json:"locality,omitempty"`
+	// Municipio (Municipio), en el extranjero como texto.
+	Municipality *string `json:"municipality,omitempty"`
+	// Estado (Estado): en el extranjero c_Estado para USA y CAN, o texto.
+	State *string `json:"state,omitempty"`
+	// País (Pais), c_Pais. Por omisión MEX.
+	Country string `json:"country"`
+	// Código postal (CodigoPostal). En México se deducen de él estado, municipio y localidad.
+	Zip string `json:"zip"`
+}
+
+// UpdateInvoiceParamsCustomer: UpdateInvoiceParamsCustomer.
+type UpdateInvoiceParamsCustomer struct {
+	// RFC (Rfc), 12 caracteres una persona moral y 13 una física.
+	TaxID string `json:"tax_id"`
+	// Nombre o razón social tal como está en la constancia de situación fiscal, sin el régimen de capital (sin «S.A. de C.V.»).
+	LegalName string `json:"legal_name"`
+	// Régimen fiscal (RegimenFiscal), clave de c_RegimenFiscal: 601, 612, 626…
+	TaxSystem string `json:"tax_system"`
+	// Código postal del domicilio fiscal del cliente (DomicilioFiscalReceptor), 5 dígitos.
+	Zip string `json:"zip"`
+	// Correo a donde se envía (varios separados por comas). Solo se usa si se pide enviarlo.
+	Email *string `json:"email,omitempty"`
+	// Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+	Foreign *UpdateInvoiceParamsCustomerForeign `json:"foreign,omitempty"`
+	// true si el cliente es contribuyente de IEPS: el IEPS va desglosado en vez de sumado al precio, salvo el del alcohol y los tabacos (tasas 0.5, 1.6 y 0.304), que va en el precio siempre (LIEPS art. 19 fr. II).
+	IEPSTaxpayer *bool `json:"ieps_taxpayer,omitempty"`
+}
+
+// UpdateInvoiceParamsCustomerForeign: Si es extranjero: su país de residencia (ResidenciaFiscal, c_Pais) y su número de registro tributario (NumRegIdTrib), con el RFC genérico XEXX010101000.
+type UpdateInvoiceParamsCustomerForeign struct {
+	// País de residencia fiscal, clave de 3 letras de c_Pais (USA, CAN…).
+	Country string `json:"country"`
+	// Número de registro de identidad fiscal en su país (NumRegIdTrib).
+	TaxID string `json:"tax_id"`
+}
+
+// UpdateInvoiceParamsDonation: Complemento de donatarias: un recibo de donativo. El emisor debe ser donataria (tax_system 603) con su oficio en donation_authorization (POST /v1/issuers/{id}).
+type UpdateInvoiceParamsDonation struct {
+	// true si el donativo es en especie (bienes): va con forma de pago 12 (dación en pago) y un concepto por cada tipo de bien.
+	InKind *bool `json:"in_kind,omitempty"`
+	// true si el donante ya había deducido los bienes que dona: el recibo dice que el donativo no es deducible.
+	Deducted *bool `json:"deducted,omitempty"`
+}
+
+// UpdateInvoiceParamsGlobal: Factura global a público en general (InformacionGlobal): periodicidad, meses y año.
+type UpdateInvoiceParamsGlobal struct {
+	// Periodicidad (Periodicidad), c_Periodicidad: 01 diario, 02 semanal, 03 quincenal, 04 mensual, 05 bimestral.
+	Periodicity string `json:"periodicity"`
+	// Meses (Meses), c_Meses: 01 a 12, o 13 a 18 bimestres.
+	Months string `json:"months"`
+	// Año (Año): el de la fecha de la factura o hasta cinco años antes (CFDI40136).
+	Year int64 `json:"year"`
+	// Solo emisores con régimen 603 (donatarias y asociaciones): true conserva la descripción, claves, unidad y cantidad de cada concepto en vez de «Venta», 01010101, ACT.
+	KeepConcepts *bool `json:"keep_concepts,omitempty"`
+}
+
+// UpdateInvoiceParamsINE: Complemento INE (procesos electorales).
+type UpdateInvoiceParamsINE struct {
+	// Tipo de proceso (TipoProceso): Ordinario, Precampaña o Campaña.
+	//
+	// Valores: Ordinario, Precampaña, Campaña.
+	Process string `json:"process"`
+	// Tipo de comité (TipoComite), con el proceso Ordinario.
+	//
+	// Valores: Ejecutivo Nacional, Ejecutivo Estatal, Directivo Estatal.
+	Committee *string `json:"committee,omitempty"`
+	// Clave de contabilidad (IdContabilidad), hasta 6 dígitos.
+	AccountingID *string `json:"accounting_id,omitempty"`
+	// Entidades (Entidad): clave del estado, ámbito y claves de contabilidad.
+	Entities []UpdateInvoiceParamsINEEntity `json:"entities,omitempty"`
+}
+
+// UpdateInvoiceParamsINEEntity: UpdateInvoiceParamsINEEntity.
+type UpdateInvoiceParamsINEEntity struct {
+	// Clave de la entidad (ClaveEntidad): la del estado (JAL, QUE…), NAC (nacional) o la circunscripción CR1 a CR5; estas seis no van con ámbito Local.
+	Key string `json:"key"`
+	// Ámbito (Ambito): Local o Federal.
+	//
+	// Valores: Local, Federal.
+	Scope *string `json:"scope,omitempty"`
+	// Claves de contabilidad (IdContabilidad).
+	AccountingIDs []string `json:"accounting_ids,omitempty"`
+}
+
+// UpdateInvoiceParamsItem: Un concepto. description, product_key y unit_price son obligatorios, salvo que mande product (prd_…): entonces vienen de su catálogo y lo que mande encima gana.
+type UpdateInvoiceParamsItem struct {
+	// Un producto de su catálogo (prd_…): toma su clave, unidad, precio e impuestos.
+	Product *string `json:"product,omitempty"`
+	// Descripción del concepto (Descripcion), hasta 1,000 caracteres.
+	Description *string `json:"description,omitempty"`
+	// Clave del producto o servicio (ClaveProdServ), 8 dígitos de c_ClaveProdServ. Búsquela con GET /v1/sat_catalogs/product_keys?q=…
+	ProductKey *string `json:"product_key,omitempty"`
+	// Clave de unidad (ClaveUnidad) de c_ClaveUnidad: E48 unidad de servicio, H87 pieza, ACT actividad… Por omisión H87 si la clave del producto es de un bien (segmentos 10 a 60) y E48 si es de un servicio.
+	UnitKey *string `json:"unit_key,omitempty"`
+	// Nombre de la unidad (Unidad), hasta 20 caracteres.
+	UnitName *string `json:"unit_name,omitempty"`
+	// Número de identificación o SKU (NoIdentificacion).
+	SKU *string `json:"sku,omitempty"`
+	// Cantidad (Cantidad). Por omisión 1.
+	Quantity *float64 `json:"quantity,omitempty"`
+	// Precio unitario antes de impuestos (ValorUnitario).
+	UnitPrice *float64 `json:"unit_price,omitempty"`
+	// Descuento (Descuento).
+	Discount *float64 `json:"discount,omitempty"`
+	// Objeto de impuesto (ObjetoImp), c_ObjetoImp: 01 no objeto, 02 sí objeto (por omisión), 03 sin desglose, 04 no causa…
+	//
+	// Valores: 01, 02, 03, 04, 05, 06, 07, 08.
+	Taxability *string `json:"taxability,omitempty"`
+	// Tasa de IVA trasladado: "0.16" (por omisión), "0.08" (región fronteriza), "0" o "exento". También como número (0.16, 16), con seis decimales ("0.160000") o en por ciento ("16%"); la respuesta la da como "0.16".
+	//
+	// Valores: 0, 0.16, 0.08, exento.
+	IVA *string `json:"iva,omitempty"`
+	// IEPS trasladado: tasa (0.265…) o cuota en pesos por unidad, según ieps_factor.
+	IEPS *float64 `json:"ieps,omitempty"`
+	// Tasa o Cuota (TipoFactor del IEPS).
+	//
+	// Valores: Tasa, Cuota.
+	IEPSFactor *string `json:"ieps_factor,omitempty"`
+	// Unidades de IEPS a cuota (litros, cigarros…), si no son la cantidad.
+	IEPSUnits *float64 `json:"ieps_units,omitempty"`
+	// Tasa de IVA retenido, en fracción (por ejemplo 0.106667, dos terceras partes del 16%).
+	IVARetention *float64 `json:"iva_retention,omitempty"`
+	// Tasa de ISR retenido, en fracción (por ejemplo 0.10 honorarios, 0.0125 RESICO).
+	ISRRetention *float64 `json:"isr_retention,omitempty"`
+	// Números de cuenta predial (CuentaPredial) en arrendamiento.
+	Predial []string `json:"predial,omitempty"`
+	// Números de pedimento (InformacionAduanera) de mercancía importada.
+	Pedimentos []string `json:"pedimentos,omitempty"`
+	// A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+	ThirdParty *UpdateInvoiceParamsItemThirdParty `json:"third_party,omitempty"`
+	// Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+	Iedu *UpdateInvoiceParamsItemIedu `json:"iedu,omitempty"`
+	// Complemento de vehículo usado.
+	UsedVehicle *UpdateInvoiceParamsItemUsedVehicle `json:"used_vehicle,omitempty"`
+	// Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+	Hydrocarbon *UpdateInvoiceParamsItemHydrocarbon `json:"hydrocarbon,omitempty"`
+	// Addenda del receptor (Walmart, Soriana…), con sus propios campos.
+	Addenda map[string]string `json:"addenda,omitempty"`
+}
+
+// UpdateInvoiceParamsItemHydrocarbon: Complemento de Hidrocarburos y Petrolíferos: obligatorio en cada concepto de diésel (15101505) o gasolina (15101514, 15101515) de una factura o nota de crédito, en litros (LTR).
+type UpdateInvoiceParamsItemHydrocarbon struct {
+	// Tipo de permiso de la CNE o la CRE (TipoPermiso, c_TipoPermiso): PER01 a PER11.
+	PermitType string `json:"permit_type"`
+	// Número de permiso de la CNE o la CRE (NumeroPermiso), como PL/12345/EXP/ES/2016: de 15 a 35 caracteres.
+	PermitNumber string `json:"permit_number"`
+	// Subproducto (SubProductoHYP, c_SubProductoHYP): SP16 gasolina regular, SP17 premium, SP18 diésel automotriz…
+	Subproduct string `json:"subproduct"`
+}
+
+// UpdateInvoiceParamsItemIedu: Complemento de instituciones educativas privadas (IEDU): alumno, CURP, nivel y RVOE.
+type UpdateInvoiceParamsItemIedu struct {
+	// Nombre del alumno (nombreAlumno).
+	StudentName string `json:"student_name"`
+	// CURP, 18 caracteres.
+	CURP string `json:"curp"`
+	// Nivel educativo (nivelEducativo).
+	//
+	// Valores: Preescolar, Primaria, Secundaria, Profesional técnico, Bachillerato o su equivalente.
+	Level string `json:"level"`
+	// Reconocimiento de validez oficial de estudios (autRVOE).
+	Rvoe string `json:"rvoe"`
+	// RFC de quien paga, si no es el receptor (rfcPago).
+	PayerTaxID *string `json:"payer_tax_id,omitempty"`
+}
+
+// UpdateInvoiceParamsItemThirdParty: A cuenta de terceros (ACuentaTerceros): RFC, nombre, régimen y código postal.
+type UpdateInvoiceParamsItemThirdParty struct {
+	// RFC de a cuenta de quién (RfcACuentaTerceros).
+	TaxID string `json:"tax_id"`
+	// Nombre (NombreACuentaTerceros).
+	Name string `json:"name"`
+	// Régimen fiscal (RegimenFiscalACuentaTerceros), c_RegimenFiscal.
+	TaxSystem string `json:"tax_system"`
+	// Código postal de su domicilio fiscal (DomicilioFiscalACuentaTerceros).
+	Zip string `json:"zip"`
+}
+
+// UpdateInvoiceParamsItemUsedVehicle: Complemento de vehículo usado.
+type UpdateInvoiceParamsItemUsedVehicle struct {
+	// Monto de adquisición (montoAdquisicion).
+	PurchaseAmount float64 `json:"purchase_amount"`
+	// Monto de enajenación (montoEnajenacion).
+	SaleAmount float64 `json:"sale_amount"`
+	// Clave vehicular (claveVehicular).
+	VehicleKey string `json:"vehicle_key"`
+	// Marca (marca).
+	Make string `json:"make"`
+	// Tipo o versión (tipo).
+	Type string `json:"type"`
+	// Año del modelo (modelo), 4 dígitos.
+	Model string `json:"model"`
+	// Número de motor (numeroMotor).
+	EngineNumber *string `json:"engine_number,omitempty"`
+	// Número de serie (numeroSerie).
+	SerialNumber *string `json:"serial_number,omitempty"`
+	// Número de identificación vehicular (NIV).
+	Niv *string `json:"niv,omitempty"`
+	// Valor según la guía EBC o Libro Azul (valor).
+	GuideValue float64 `json:"guide_value"`
+	// Información aduanera de la importación del vehículo (InformacionAduanera).
+	Customs []UpdateInvoiceParamsItemUsedVehicleCustom `json:"customs,omitempty"`
+}
+
+// UpdateInvoiceParamsItemUsedVehicleCustom: UpdateInvoiceParamsItemUsedVehicleCustom.
+type UpdateInvoiceParamsItemUsedVehicleCustom struct {
+	// Número del documento de importación (numero).
+	Number string `json:"number"`
+	// Fecha del documento (fecha), AAAA-MM-DD.
+	Date string `json:"date"`
+	// Aduana (aduana).
+	Office *string `json:"office,omitempty"`
+}
+
+// UpdateInvoiceParamsLeyenda: UpdateInvoiceParamsLeyenda.
+type UpdateInvoiceParamsLeyenda struct {
+	// Texto de la leyenda (textoLeyenda).
+	Text string `json:"text"`
+	// Disposición fiscal (disposicionFiscal), por ejemplo LISR.
+	Disposition *string `json:"disposition,omitempty"`
+	// Norma o artículo (norma).
+	Norm *string `json:"norm,omitempty"`
+}
+
+// UpdateInvoiceParamsLocalTax: UpdateInvoiceParamsLocalTax.
+type UpdateInvoiceParamsLocalTax struct {
+	// true si es una retención local; false si es un traslado.
+	Retention bool `json:"retention"`
+	// Nombre del impuesto local (ImpLocTrasladado o ImpLocRetenido), como ISH.
+	Name string `json:"name"`
+	// Tasa en por ciento (TasadeTraslado o TasadeRetencion).
+	Rate float64 `json:"rate"`
+	// Importe del impuesto local.
+	Amount float64 `json:"amount"`
+}
+
+// UpdateInvoiceParamsRelated: CFDI relacionados (CfdiRelacionados): tipo de relación de c_TipoRelacion y los UUID.
+type UpdateInvoiceParamsRelated struct {
+	// Tipo de relación (TipoRelacion): 01 nota de crédito, 03 devolución, 04 sustitución, 07 anticipo…
+	Relationship string `json:"relationship"`
+	// Folios fiscales relacionados.
+	Uuids []string `json:"uuids"`
 }
 
 // UpdateIssuerBrandingParams: los campos de «Cambiar el diseño del PDF».
@@ -22613,6 +24565,8 @@ type UpdatePriceListParams struct {
 	IsDefault *bool `json:"is_default,omitempty"`
 	// Sus precios propios; al mandarlos reemplazan a los que tenía.
 	Items []UpdatePriceListParamsItem `json:"items,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdatePriceListParamsItem: UpdatePriceListParamsItem.
@@ -22631,6 +24585,8 @@ type UpdatePriceListParamsItem struct {
 
 // UpdateProductParams: los campos de «Actualizar un producto».
 type UpdateProductParams struct {
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 	// Nombre corto para encontrarlo, solo para usted; en el CFDI va description.
 	Name *string `json:"name,omitempty"`
 	// Descripción.
@@ -22733,6 +24689,8 @@ type UpdatePurchaseReceiptParams struct {
 	Use *string `json:"use,omitempty"`
 	// Una nota para su equipo.
 	Note *string `json:"note,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdatePurchaseReceiptParamsField: UpdatePurchaseReceiptParamsField.
@@ -22759,6 +24717,8 @@ type UpdateQuoteParams struct {
 	//
 	// Valores: PUE, PPD.
 	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Con PUE: true si aún no le pagan («Por cobrar» en la app) aunque se pagará este mes.
+	PaidLater *bool `json:"paid_later,omitempty"`
 	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
 	Use *string `json:"use,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
@@ -22767,6 +24727,8 @@ type UpdateQuoteParams struct {
 	ValidUntil *string `json:"valid_until,omitempty"`
 	// Condiciones: tiempo de entrega, anticipo, garantía…
 	Terms *string `json:"terms,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateQuoteParamsItem: Un concepto. description, product_key y unit_price son obligatorios, salvo que mande product (prd_…): entonces vienen de su catálogo y lo que mande encima gana.
@@ -22907,7 +24869,7 @@ type UpdateRecurringInvoiceParams struct {
 	Schedule *UpdateRecurringInvoiceParamsSchedule `json:"schedule,omitempty"`
 	// La factura completa que se repite desde la siguiente vez (reemplaza la anterior).
 	Invoice *UpdateRecurringInvoiceParamsInvoice `json:"invoice,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Si quedaron periodos sin timbrar: all los timbra todos, cada uno con su mes; latest solo el más reciente.
 	//
@@ -22915,6 +24877,8 @@ type UpdateRecurringInvoiceParams struct {
 	CatchUp *string `json:"catch_up,omitempty"`
 	// false la pausa; true la reanuda desde hoy, sin timbrar las fechas que pasaron en pausa.
 	Active *bool `json:"active,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateRecurringInvoiceParamsInvoice: La factura completa que se repite desde la siguiente vez (reemplaza la anterior).
@@ -22991,12 +24955,14 @@ type UpdateRecurringInvoiceParamsInvoice struct {
 	ContinueSequence *bool `json:"continue_sequence,omitempty"`
 	// Fecha de emisión (Fecha) si no es ahora, AAAA-MM-DDTHH:MM:SS hora de la Ciudad de México: hasta 72 horas antes.
 	Date *string `json:"date,omitempty"`
-	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía.
+	// true para mandar el PDF y el XML por correo al timbrar, con el diseño de Fiscalisto. Por omisión no se envía. A un cliente con «Enviar al timbrar: Nunca» no se le envía aunque sea true: warnings lo dice y POST /v1/invoices/{id}/send sí se la manda.
 	SendEmail *bool `json:"send_email,omitempty"`
 	// Correos con copia, separados por comas.
 	EmailCc *string `json:"email_cc,omitempty"`
 	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	// Solo en POST /v1/invoices. true: la guarda como borrador (status draft) sin timbrar ni usar timbres, con las mismas revisiones que al timbrar (un error responde invoice_invalid; los avisos vienen en warnings). Se cambia con POST /v1/invoices/{id}, se timbra con POST /v1/invoices/{id}/stamp y se borra con DELETE /v1/invoices/{id}; también aparece en Por facturar de Fiscalisto. Idempotency-Key es opcional: con ella, repetir la solicitud devuelve el mismo borrador. En las demás rutas que reciben una factura no cambia nada.
+	Draft *bool `json:"draft,omitempty"`
 	// Solo en POST /v1/invoices. true: responde 202 en cuanto la factura queda guardada con su folio (status processing) y la timbra después de responder; invoice.stamped o invoice.failed dicen cómo terminó. En las demás rutas que reciben una factura no cambia nada.
 	Async *bool `json:"async,omitempty"`
 }
@@ -23051,6 +25017,8 @@ type UpdateRepseContractParams struct {
 	SiteAddress *UpdateRepseContractParamsSiteAddress `json:"site_address,omitempty"`
 	// Quién trabaja en el contrato y desde cuándo (hasta 2,000).
 	Workers []UpdateRepseContractParamsWorker `json:"workers,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateRepseContractParamsClientAddress: Domicilio fiscal del cliente.
@@ -23245,9 +25213,9 @@ type UpdateRoleParams struct {
 type UpdateRuleParams struct {
 	// Cómo se llama en Ajustes › Reglas. Sin él, se nombra por lo que hace.
 	Name *string `json:"name,omitempty"`
-	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.cancelled (el SAT la cancela), invoice.approved (se aprueba en el Portal de proveedores), invoice.rejected (se rechaza en el portal), payout.submitted (se manda a firmar un pago que la incluye), payout.paid (se le paga una factura a un proveedor), payout.failed (falla o se devuelve su pago), invoice.daily (cada mañana a las 8, a cada factura con saldo, recibida o emitida, de Ingreso y no cancelada), purchase_order.daily (cada mañana a las 8, a cada orden que aún no llega toda ni está cerrada o cancelada), finding.created (aparece un hallazgo en una factura de los últimos 45 días), purchase_order.saved, .approved, .rejected, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered, bank.movement (llega un movimiento del banco: un retiro al importar el estado de cuenta, un depósito cuando Conciliación lo clasifica como préstamo, traspaso, devolución o intereses), sat.listed (un proveedor, cliente o RFC suyo aparece en una lista del SAT; cada mañana, una vez por RFC, lista y situación), sat.opinion (cambia la opinión de cumplimiento de un RFC suyo), sat.buzon (llega un comunicado, una notificación por abrir o el buzón no tiene medios de contacto), sat.certificate (cada mañana a las 8, a cada CSD y e.firma, con sus días para vencer).
+	// Cuándo corre: invoice.received (llega una factura de un proveedor), invoice.issued (se emite una factura), invoice.paid (una factura PPD queda pagada), invoice.canceled (el SAT la cancela; también se acepta invoice.cancelled), invoice.approved (se aprueba en el Portal de proveedores), invoice.rejected (se rechaza en el portal), payout.submitted (se manda a firmar un pago que la incluye), payout.paid (se le paga una factura a un proveedor), payout.failed (falla o se devuelve su pago), invoice.daily (cada mañana a las 8, a cada factura con saldo, recibida o emitida, de Ingreso y no cancelada), purchase_order.daily (cada mañana a las 8, a cada orden que aún no llega toda ni está cerrada o cancelada), finding.created (aparece un hallazgo en una factura de los últimos 45 días), purchase_order.saved, .approved, .rejected, .sent, .confirmed, .received_part, .received_all, .invoiced_all, .price_variance, .registered, bank.movement (llega un movimiento del banco: un retiro al importar el estado de cuenta, un depósito cuando Conciliación lo clasifica como préstamo, traspaso, devolución o intereses), sat.listed (un proveedor, cliente o RFC suyo aparece en una lista del SAT; cada mañana, una vez por RFC, lista y situación), sat.opinion (cambia la opinión de cumplimiento de un RFC suyo), sat.buzon (llega un comunicado, una notificación por abrir o el buzón no tiene medios de contacto), sat.certificate (cada mañana a las 8, a cada CSD y e.firma, con sus días para vencer).
 	//
-	// Valores: invoice.received, invoice.issued, invoice.paid, invoice.cancelled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
+	// Valores: invoice.cancelled, invoice.received, invoice.issued, invoice.paid, invoice.canceled, invoice.approved, invoice.rejected, finding.created, payout.submitted, payout.paid, payout.failed, invoice.daily, purchase_order.daily, bank.movement, purchase_order.saved, purchase_order.approved, purchase_order.rejected, purchase_order.sent, purchase_order.confirmed, purchase_order.received_part, purchase_order.received_all, purchase_order.invoiced_all, purchase_order.price_variance, purchase_order.registered, sat.listed, sat.opinion, sat.buzon, sat.certificate.
 	Trigger *string `json:"trigger,omitempty"`
 	// Si: lo que tiene que cumplir. Sin condiciones, corre siempre.
 	Conditions *UpdateRuleParamsConditions `json:"conditions,omitempty"`
@@ -23355,7 +25323,7 @@ type UpdateRuleParamsConditions struct {
 
 // UpdateRuleParamsConditionsCondition: UpdateRuleParamsConditionsCondition.
 type UpdateRuleParamsConditionsCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
+	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.canceled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to; o contra otro campo con compare_to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
@@ -23385,7 +25353,7 @@ type UpdateRuleParamsConditionsGroup struct {
 
 // UpdateRuleParamsConditionsGroupCondition: UpdateRuleParamsConditionsGroupCondition.
 type UpdateRuleParamsConditionsGroupCondition struct {
-	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.cancelled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
+	// Qué se revisa. Facturas: supplier, customer, supplierGroup (recibidas: el grupo del proveedor, sgr_…), customerGroup (emitidas: el grupo del cliente, cgr_…), partyName, ownRfc, direction (received/issued, en invoice.paid e invoice.canceled), category (categoría de gasto), tags (tag_…), total, subtotal, iva, saldo, saldoPct (el saldo en % del total), orderDiff (recibidas: cuánto pasa de sus órdenes, en %), orderTotal (recibidas: el total de sus órdenes, en pesos), lastTotal (el total de la factura anterior de ese proveedor o cliente), avgTotal (el promedio de sus facturas en los últimos 6 meses), age (días desde su fecha), weekday (el día de su fecha: lun, mar, mie, jue, vie, sab, dom), newParty (la primera factura de ese proveedor o cliente), monthTotal (lo facturado ese mes por ese proveedor o cliente, en pesos), dayCount (sus facturas ese día), opinion (recibidas: la opinión 32-D del proveedor en el portal: positive, negative, expired o none), satList (está en una lista del SAT: 69-B o 69), hasOrder (recibidas: ligada a una orden de compra), payoutAmount, newAccount y accountCheck (en payout.*: lo que se le paga al proveedor en el pago, si es el primer pago a esa cuenta y cómo se verificó: bank, hand o none), tipo, metodo, forma, uso, moneda, serie, concept, clave, costCenter, ivaRetenido, isrRetenido, hasFindings. Órdenes de compra: supplier, supplierGroup (sgr_…), ownRfc, total, category, warehouse, stage, createdBy, moneda, note, project (el id del proyecto), paymentDays, deliveryDays (días para la entrega), advance (lleva anticipo), newSupplier (la primera orden a ese proveedor), monthTotal (lo ordenado ese mes a ese proveedor, en pesos), lastTotal (el total de la orden anterior a ese proveedor), avgTotal (el promedio de sus órdenes en los últimos 6 meses). Movimientos del banco: flow (out: retiro; in: depósito), description (el texto del banco), reference, amount, bankAccount (los últimos 4 dígitos de la cuenta), ownRfc, classification (de un depósito: prestamo, traspaso, devolucion o intereses), monthDay (el día del mes), weekday. Avisos del SAT (sat.*): party (supplier/customer/own), supplier, customer, supplierGroup, customerGroup, ownRfc, list (69b, 69b_bis, 69_no_localizados, 69_exigibles, 69_firmes, 69_sentencias, 69_cancelados, 69_csd_sin_efectos), situation (presunto, definitivo, desvirtuado, sentencia_favorable, listado), billed12m (lo facturado con ese RFC en 12 meses, en pesos), balance (su saldo pendiente) en sat.listed; sentido y previous (positivo, negativo, sin_obligaciones, suspendido; previous también ninguno) y pending (obligaciones pendientes) en sat.opinion; kind (comunicado, notificacion, sin_medios), urgency (urgente, atender, informativo) y text (el asunto) en sat.buzon; certificate (csd, efirma) y daysLeft (días para vencer; negativo si ya venció) en sat.certificate.
 	Field string `json:"field"`
 	// Listas: is (alguno de values), not (ninguno), set, unset. Montos (MXN): gte, lte, between (value y to; o contra otro campo con compare_to). Texto: contains, not_contains, starts (text; sin importar acentos ni mayúsculas), set, unset. Sí/no: yes, no.
 	//
@@ -23565,6 +25533,8 @@ type UpdateSalesOrderParams struct {
 	Customer StringOr[UpdateSalesOrderParamsCustomer] `json:"customer,omitzero"`
 	// Los conceptos, como en POST /v1/invoices (hasta 200).
 	Items []UpdateSalesOrderParamsItem `json:"items,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 	// Moneda, clave ISO 4217 de c_Moneda (MXN, USD, EUR…). Por omisión MXN.
 	Currency *string `json:"currency,omitempty"`
 	// Tipo de cambio a pesos (TipoCambio). Obligatorio si la moneda no es MXN; use el del DOF del día anterior.
@@ -23575,6 +25545,8 @@ type UpdateSalesOrderParams struct {
 	//
 	// Valores: PUE, PPD.
 	PaymentMethod *string `json:"payment_method,omitempty"`
+	// Con PUE: true si aún no le pagan («Por cobrar» en la app) aunque se pagará este mes.
+	PaidLater *bool `json:"paid_later,omitempty"`
 	// Uso del CFDI (UsoCFDI), clave de c_UsoCFDI. Por omisión G03, o S01 con régimen 616.
 	Use *string `json:"use,omitempty"`
 	// Observaciones que aparecen en el PDF (no van en el XML).
@@ -24249,6 +26221,8 @@ type UpdateSupplierGroupParams struct {
 	AddSuppliers []string `json:"add_suppliers,omitempty"`
 	// RFC de los proveedores que salen del grupo y quedan sin grupo (hasta 500).
 	RemoveSuppliers []string `json:"remove_suppliers,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateTagParams: los campos de «Actualizar una etiqueta».
@@ -24259,6 +26233,8 @@ type UpdateTagParams struct {
 	//
 	// Valores: info, positive, warning, critical, muted.
 	Color *string `json:"color,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UpdateTrainingCourseParams: los campos de «Cambiar un curso de capacitación».
@@ -24351,6 +26327,8 @@ type UpdateWebhookEndpointParams struct {
 	Disabled *bool `json:"disabled,omitempty"`
 	// La versión de la API en que llegan sus eventos (por ejemplo 2026-10-24); null o sin mandar: la de la cuenta. Así actualiza un endpoint a la vez.
 	APIVersion *string `json:"api_version,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // UploadBranchLogoParams: los campos de «Subir el logo de la sucursal».
@@ -24408,7 +26386,7 @@ type VacationRequest struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// El nombre del empleado.
 	EmployeeName *string `json:"employee_name,omitempty"`
 	// El primer día (AAAA-MM-DD).
@@ -24466,7 +26444,7 @@ type VariableSalary struct {
 	// true en producción (llaves fk_live_), false en pruebas (fk_test_). Lo de pruebas no vale ante el SAT.
 	Livemode bool `json:"livemode"`
 	// El emisor (iss_…).
-	Issuer string `json:"issuer"`
+	Issuer StringOr[Issuer] `json:"issuer"`
 	// AAAA-B: 1 es enero–febrero, 6 noviembre–diciembre.
 	Bimester string `json:"bimester"`
 	// El primer día del bimestre.
@@ -24484,7 +26462,7 @@ type VariableSalary struct {
 // VariableSalaryEmployee: VariableSalaryEmployee.
 type VariableSalaryEmployee struct {
 	// El empleado (emp_…).
-	Employee string `json:"employee"`
+	Employee StringOr[Employee] `json:"employee"`
 	// Su número de empleado.
 	EmployeeNumber string `json:"employee_number"`
 	// Su nombre.
@@ -24698,9 +26676,9 @@ type WebhookDelivery struct {
 	// El último intento (whd_…). Úselo en starting_after para la página siguiente.
 	ID string `json:"id"`
 	// El webhook (whe_…).
-	WebhookEndpoint string `json:"webhook_endpoint"`
+	WebhookEndpoint StringOr[WebhookEndpoint] `json:"webhook_endpoint"`
 	// El evento (evt_…). Reenvíelo con POST /v1/events/{id}/resend.
-	Event string `json:"event"`
+	Event StringOr[Event] `json:"event"`
 	// El tipo del evento (invoice.stamped…).
 	EventType *string `json:"event_type,omitempty"`
 	// true si su servidor contestó 2xx en el último intento.
@@ -24744,7 +26722,7 @@ type WebhookEndpoint struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El entorno de prueba (sbx_…) al que pertenece, o null si es de la cuenta. Vea /v1/sandboxes.
-	Sandbox *string `json:"sandbox,omitempty"`
+	Sandbox *StringOr[Sandbox] `json:"sandbox,omitempty"`
 	// Dirección https de su servidor que recibe los avisos.
 	URL string `json:"url"`
 	// Para qué es, para usted.
@@ -24763,6 +26741,8 @@ type WebhookEndpoint struct {
 	PreviousSecretExpiresAt *string `json:"previous_secret_expires_at,omitempty"`
 	// La versión de la API de sus eventos; null: la de la cuenta.
 	APIVersion *string `json:"api_version,omitempty"`
+	// Sus propios datos: hasta 50 llaves de 40 caracteres con valores de texto de hasta 500. No van al CFDI; vuelven en el objeto y en los webhooks.
+	Metadata map[string]string `json:"metadata"`
 	// Cuándo se creó, ISO 8601 con la hora de la Ciudad de México (-06:00).
 	CreatedAt *string `json:"created_at,omitempty"`
 	// Secreto de firma (whsec_…). Solo viene al crearlo o al cambiarlo: guárdelo para verificar las firmas.
@@ -24786,7 +26766,7 @@ type WebhookRecovery struct {
 	// Qué tipo de objeto es («invoice», «customer»…).
 	Object string `json:"object"`
 	// El webhook (whe_…) al que se mandaron.
-	Endpoint string `json:"endpoint"`
+	Endpoint StringOr[WebhookEndpoint] `json:"endpoint"`
 	// Desde cuándo se buscaron: el since que mandó, o la creación del webhook si es posterior.
 	Since string `json:"since"`
 	// Cuántos eventos salieron otra vez. 0: no le faltaba ninguno.

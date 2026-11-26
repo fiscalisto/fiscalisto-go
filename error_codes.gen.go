@@ -22,6 +22,18 @@ const (
 	CodeAnswerNotReady = "answer_not_ready"
 	// Ya se está armando la respuesta de esta revisión del SAT. Espere a que answer.status sea completed (GET /v1/sat_reviews/{id}).
 	CodeAnswerRunning = "answer_running"
+	// La cuenta ya hizo 30 llaves por la API (creadas o cambiadas) en la última hora. Espere (Retry-After) o escríbanos si necesita más.
+	CodeAPIKeyCreationLimit = "api_key_creation_limit"
+	// La llave que se crea o se edita tendría más que la que hace la solicitud: un recurso con más acceso, otro emisor, IP fuera de las suyas o un vencimiento después del suyo. Una llave solo da lo que tiene. param dice qué campo.
+	CodeAPIKeyEscalation = "api_key_escalation"
+	// La llave venció (eligió cuándo al crearla, o se cambió con «Cambiar llave» y pasó su plazo). El mensaje dice cuándo y expired_at lo trae en ISO 8601. Cree otra en Desarrolladores › Llaves; antes de que venza, «Cambiar llave» le da la nueva sin cortar el servicio.
+	CodeAPIKeyExpired = "api_key_expired"
+	// La llave no se pudo crear, cambiar o revocar: ya hay 50 en el modo, el vencimiento no está entre 1 hora y 3 años, una IP no es válida, no tiene ningún recurso, o ya se cambió por otra. El mensaje dice cuál.
+	CodeAPIKeyRejected = "api_key_rejected"
+	// La llave existió y se revocó: en Desarrolladores › Llaves, al borrar su entorno de prueba, o porque GitHub (u otro buscador de secretos) la encontró publicada. El mensaje dice cuándo y quién, y revoked_at lo trae en ISO 8601. Use otra llave; si se publicó, cree una nueva y guárdela como secreto de su servidor.
+	CodeAPIKeyRevoked = "api_key_revoked"
+	// Solo una llave con permisos por recurso que tenga api_keys (lectura para listar y ver, escritura para crear, cambiar y revocar) usa /v1/api_keys. Una llave con todos los permisos o de solo lectura no lo incluye: se da a propósito, en Desarrolladores › Llaves.
+	CodeAPIKeysPermissionRequired = "api_keys_permission_required"
 	// No existe esa versión de la API (en Fiscalisto-Version o api_version). El mensaje dice cuáles hay; vea Versiones.
 	CodeAPIVersionInvalid = "api_version_invalid"
 	// El activo fijo ya se vendió o se dio de baja: deshaga esa baja con DELETE /v1/accounting/fixed_assets/{id}/disposal si fue un error.
@@ -76,6 +88,10 @@ const (
 	CodeDataRequestCompleted = "data_request_completed"
 	// El mes no tiene pagos a proveedores: esa DIOT se presenta sin operaciones desde el portal del SAT.
 	CodeDiotEmpty = "diot_empty"
+	// El borrador espera la aprobación de un administrador en Fiscalisto y se timbra cuando la dé. Cambiarlo con POST /v1/invoices/{id} retira la solicitud.
+	CodeDraftAwaitingApproval = "draft_awaiting_approval"
+	// El borrador (hecho en la app o con draft: true) no está completo para timbrarse. Complételo con POST /v1/invoices/{id}, con la factura completa.
+	CodeDraftIncomplete = "draft_incomplete"
 	// La e.firma no sirve: no es una e.firma (es un CSD), es de otro RFC, está vencida o la contraseña no abre la llave.
 	CodeEfirmaInvalid = "efirma_invalid"
 	// Para pedirle al SAT las facturas de un emisor en producción, guarde antes su e.firma: POST /v1/issuers/{id}/efirma con keep_for_downloads: true. También si la guardada venció.
@@ -106,7 +122,7 @@ const (
 	CodeFeatureNotInPlan = "feature_not_in_plan"
 	// El hallazgo ya no aplica: lo que lo causó cambió (status resolved). No hay nada que revisar.
 	CodeFindingResolved = "finding_resolved"
-	// Idempotency-Key es de 1 a 255 caracteres ASCII, sin acentos ni ñ: el id de su pedido o un UUID.
+	// Idempotency-Key es de 1 a 255 caracteres ASCII, sin acentos ni ñ: el id de su pedido o un UUID. Lo que timbra o prepara un pago pide 8 o más: el mensaje dice cuántos llegaron.
 	CodeIdempotencyKeyInvalid = "idempotency_key_invalid"
 	// Lo que timbra exige el encabezado Idempotency-Key (8 a 255 caracteres, uno nuevo por comprobante). Así un reintento nunca timbra dos veces.
 	CodeIdempotencyKeyMissing = "idempotency_key_missing"
@@ -116,7 +132,7 @@ const (
 	CodeInsufficientBalance = "insufficient_balance"
 	// Algo falló de nuestro lado. Repita la solicitud con la misma Idempotency-Key: nunca se timbra dos veces. Si sigue, escríbanos con el request_id.
 	CodeInternalError = "internal_error"
-	// La llave no existe, se revocó o expiró. Cree otra en Desarrolladores › Llaves.
+	// La llave no es de ninguna cuenta: mal copiada, inventada o de antes de que guardáramos las llaves revocadas. Revise que la copió completa; sus llaves están en Desarrolladores › Llaves.
 	CodeInvalidAPIKey = "invalid_api_key"
 	// El cuerpo no es un objeto JSON válido.
 	CodeInvalidJSON = "invalid_json"
@@ -126,8 +142,12 @@ const (
 	CodeInventoryRefused = "inventory_refused"
 	// La factura no cumple una regla del SAT que Fiscalisto revisa antes de mandarla al PAC (uso contra régimen, totales, complementos…). No se usó ningún timbre.
 	CodeInvoiceInvalid = "invoice_invalid"
+	// La factura es un borrador: todavía no tiene XML, PDF timbrado, correo ni cancelación. Timbrela con POST /v1/invoices/{id}/stamp.
+	CodeInvoiceIsDraft = "invoice_is_draft"
 	// El acuse de cancelación existe cuando el SAT ya canceló la factura (status canceled). Con una cancelación en espera del cliente (pending), espere invoice.canceled.
 	CodeInvoiceNotCanceled = "invoice_not_canceled"
+	// La factura ya está timbrada: no se edita con su cuerpo completo, no se borra (se cancela o se sustituye) y no hay nada que timbrar.
+	CodeInvoiceNotDraft = "invoice_not_draft"
 	// Solo una factura de ingreso PUE vigente se marca pagada o por cobrar; una PPD se paga con su complemento de pago (type P).
 	CodeInvoiceNotMarkable = "invoice_not_markable"
 	// La acción es para facturas timbradas (enviar, cancelar, sustituir).
@@ -144,7 +164,7 @@ const (
 	CodeIssuerExists = "issuer_exists"
 	// El emisor no tiene equipo: el equipo es el de una empresa, en sus emisores propios (type own) y con una llave fk_live_. Un emisor conectado o uno de pruebas no tiene miembros.
 	CodeIssuerHasNoTeam = "issuer_has_no_team"
-	// El emisor es una empresa de la app conectada a la cuenta (source empresa): con la API solo se usan su Portal de proveedores y, si alguien que puede los encendió, sus pagos a proveedores; o quien la conectó (o encendió sus pagos) ya no tiene en esa empresa el permiso que la ruta pide.
+	// El emisor es una empresa de la app conectada a la cuenta (source empresa): con la API solo se usan su Portal de proveedores y, si alguien que puede los encendió, sus pagos a proveedores; o quien la conectó (o encendió sus pagos) ya no tiene en esa empresa el permiso que la ruta pide, o ya no tiene lo que esa empresa pide para entrar (verificación en dos pasos o llave de acceso).
 	CodeIssuerLinkedEmpresa = "issuer_linked_empresa"
 	// No existe ese emisor en la cuenta (o es del otro modo).
 	CodeIssuerMissing = "issuer_missing"

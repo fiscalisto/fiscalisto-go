@@ -280,3 +280,62 @@ func TestOptionalStringOrIsLeftOut(t *testing.T) {
 		t.Errorf("customer: %s", b)
 	}
 }
+
+func TestExpiryWarning(t *testing.T) {
+	now := time.Date(2026, 11, 25, 0, 0, 0, 0, time.UTC)
+	h := http.Header{}
+	h.Set("Fiscalisto-Key-Expires-At", "2026-12-20T00:00:00Z")
+	if w := expiryWarning(h, now); w != "" {
+		t.Fatalf("a month away warned: %q", w)
+	}
+	h.Set("Fiscalisto-Key-Expires-At", "2026-11-28T00:00:00Z")
+	if w := expiryWarning(h, now); !strings.Contains(w, "2026-11-28T00:00:00Z") {
+		t.Fatalf("three days away: %q", w)
+	}
+	only := http.Header{}
+	only.Set("Fiscalisto-Warning", "api_key_expires_soon; expires_at=x")
+	if w := expiryWarning(only, now); !strings.Contains(w, "menos de 7 días") {
+		t.Fatalf("warning header alone: %q", w)
+	}
+}
+
+func TestExpand(t *testing.T) {
+	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		got := r.URL.Query()["expand[]"]
+		if len(got) == 0 {
+			_, _ = io.WriteString(w, `{"id":"inv_1","object":"invoice","issuer":"iss_1","recurring_invoice":null,"tickets":["tkt_1"]}`)
+			return
+		}
+		if strings.Join(got, ",") != "issuer,tickets" {
+			t.Errorf("expand[]: %v", got)
+		}
+		_, _ = io.WriteString(w, `{"id":"inv_1","object":"invoice","issuer":{"id":"iss_1","object":"issuer","legal_name":"ESCUELA KEMPER URGATE"},"recurring_invoice":"rin_1","tickets":[{"id":"tkt_1","object":"ticket"}]}`)
+	})
+	plain, err := c.Invoices.Get(context.Background(), "inv_1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plain.Issuer.ID != "iss_1" || plain.Issuer.Object != nil || plain.RecurringInvoice != nil || plain.Tickets[0].ID != "tkt_1" {
+		t.Fatalf("sin expand: %+v", plain)
+	}
+	inv, err := c.Invoices.Get(context.Background(), "inv_1", nil, WithExpand("issuer"), WithExpand("tickets"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inv.Issuer.ID != "iss_1" || inv.Issuer.Object == nil || *inv.Issuer.Object.LegalName != "ESCUELA KEMPER URGATE" {
+		t.Fatalf("issuer expandido: %+v", inv.Issuer)
+	}
+	if inv.RecurringInvoice == nil || inv.RecurringInvoice.ID != "rin_1" || inv.Tickets[0].Object == nil || inv.Tickets[0].ID != "tkt_1" {
+		t.Fatalf("expandido: %+v", inv)
+	}
+}
+
+func TestMetadataFilter(t *testing.T) {
+	q, err := queryOf(&ListCustomersParams{Metadata: map[string]string{"pedido": "A-1042"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if q.Get("metadata[pedido]") != "A-1042" {
+		t.Fatalf("query: %v", q)
+	}
+}

@@ -15,13 +15,20 @@ type Page[T any] struct {
 	HasMore bool   `json:"has_more"`
 	URL     string `json:"url"`
 
-	next func(ctx context.Context, startingAfter string) (*Page[T], error)
+	next func(ctx context.Context, cursor string) (*Page[T], error)
+	// forward: the list was asked with ending_before, so the next page is the newer one, after
+	// the first of Data.
+	forward bool
 }
 
-// Next da la página siguiente, o nil cuando no hay más.
+// Next da la página siguiente, o nil cuando no hay más. Con ending_before, la siguiente es la
+// de los más recientes.
 func (p *Page[T]) Next(ctx context.Context) (*Page[T], error) {
 	if !p.HasMore || len(p.Data) == 0 || p.next == nil {
 		return nil, nil
+	}
+	if p.forward {
+		return p.next(ctx, idOf(p.Data[0]))
 	}
 	return p.next(ctx, idOf(p.Data[len(p.Data)-1]))
 }
@@ -39,18 +46,24 @@ func idOf(v any) string {
 	return x.ID
 }
 
-func list[T any](ctx context.Context, c *Client, path string, query any, startingAfter string, opts []RequestOption) (*Page[T], error) {
+func list[T any](ctx context.Context, c *Client, path string, query any, cursor string, opts []RequestOption) (*Page[T], error) {
 	q, err := queryOf(query)
 	if err != nil {
 		return nil, err
 	}
-	if startingAfter != "" {
-		q.Set("starting_after", startingAfter)
+	forward := q.Get("ending_before") != ""
+	if cursor != "" {
+		if forward {
+			q.Set("ending_before", cursor)
+		} else {
+			q.Set("starting_after", cursor)
+		}
 	}
 	page := new(Page[T])
 	if err := c.do(ctx, "GET", path, nil, rawQuery(q), false, page, opts); err != nil {
 		return nil, err
 	}
+	page.forward = forward
 	page.next = func(ctx context.Context, after string) (*Page[T], error) {
 		return list[T](ctx, c, path, query, after, opts)
 	}
@@ -69,7 +82,12 @@ func listAll[T any](ctx context.Context, c *Client, path string, query any, opts
 			if page == nil {
 				return
 			}
-			for _, item := range page.Data {
+			for i := range page.Data {
+				// ending_before: each page is newest first; read it oldest first.
+				item := page.Data[i]
+				if page.forward {
+					item = page.Data[len(page.Data)-1-i]
+				}
 				if !yield(item, nil) {
 					return
 				}

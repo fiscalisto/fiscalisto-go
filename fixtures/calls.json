@@ -4,3877 +4,4495 @@
 		"php": "account->get",
 		"dotnet": "Account.GetAsync",
 		"go": "Account.Get",
-		"java": "account.get"
+		"java": "account.get",
+		"ruby": "account.get"
 	},
 	"POST /v1/account": {
 		"python": "account.update",
 		"php": "account->update",
 		"dotnet": "Account.UpdateAsync",
 		"go": "Account.Update",
-		"java": "account.update"
+		"java": "account.update",
+		"ruby": "account.update"
 	},
 	"POST /v1/test_data/reset": {
 		"python": "test_data.reset",
 		"php": "testData->reset",
 		"dotnet": "TestData.ResetAsync",
 		"go": "TestData.Reset",
-		"java": "testData.reset"
+		"java": "testData.reset",
+		"ruby": "test_data.reset"
 	},
 	"POST /v1/sandboxes": {
 		"python": "sandboxes.create",
 		"php": "sandboxes->create",
 		"dotnet": "Sandboxes.CreateAsync",
 		"go": "Sandboxes.Create",
-		"java": "sandboxes.create"
+		"java": "sandboxes.create",
+		"ruby": "sandboxes.create"
 	},
 	"GET /v1/sandboxes": {
 		"python": "sandboxes.list",
 		"php": "sandboxes->list",
 		"dotnet": "Sandboxes.ListAsync",
 		"go": "Sandboxes.List",
-		"java": "sandboxes.list"
+		"java": "sandboxes.list",
+		"ruby": "sandboxes.list"
 	},
 	"GET /v1/sandboxes/{id}": {
 		"python": "sandboxes.get",
 		"php": "sandboxes->get",
 		"dotnet": "Sandboxes.GetAsync",
 		"go": "Sandboxes.Get",
-		"java": "sandboxes.get"
+		"java": "sandboxes.get",
+		"ruby": "sandboxes.get"
 	},
 	"DELETE /v1/sandboxes/{id}": {
 		"python": "sandboxes.delete",
 		"php": "sandboxes->delete",
 		"dotnet": "Sandboxes.DeleteAsync",
 		"go": "Sandboxes.Delete",
-		"java": "sandboxes.delete"
+		"java": "sandboxes.delete",
+		"ruby": "sandboxes.delete"
 	},
 	"POST /v1/issuers/{id}/test_clock": {
 		"python": "test_clocks.create",
 		"php": "testClocks->create",
 		"dotnet": "TestClocks.CreateAsync",
 		"go": "TestClocks.Create",
-		"java": "testClocks.create"
+		"java": "testClocks.create",
+		"ruby": "test_clocks.create"
 	},
 	"GET /v1/issuers/{id}/test_clock": {
 		"python": "test_clocks.get",
 		"php": "testClocks->get",
 		"dotnet": "TestClocks.GetAsync",
 		"go": "TestClocks.Get",
-		"java": "testClocks.get"
+		"java": "testClocks.get",
+		"ruby": "test_clocks.get"
 	},
 	"DELETE /v1/issuers/{id}/test_clock": {
 		"python": "test_clocks.delete",
 		"php": "testClocks->delete",
 		"dotnet": "TestClocks.DeleteAsync",
 		"go": "TestClocks.Delete",
-		"java": "testClocks.delete"
+		"java": "testClocks.delete",
+		"ruby": "test_clocks.delete"
 	},
 	"POST /v1/issuers/{id}/test_clock/advance": {
 		"python": "test_clocks.advance",
 		"php": "testClocks->advance",
 		"dotnet": "TestClocks.AdvanceAsync",
 		"go": "TestClocks.Advance",
-		"java": "testClocks.advance"
+		"java": "testClocks.advance",
+		"ruby": "test_clocks.advance"
 	},
 	"GET /v1/balance": {
 		"python": "balance.get",
 		"php": "balance->get",
 		"dotnet": "Balance.GetAsync",
 		"go": "Balance.Get",
-		"java": "balance.get"
+		"java": "balance.get",
+		"ruby": "balance.get"
 	},
 	"POST /v1/issuers": {
 		"python": "issuers.create",
 		"php": "issuers->create",
 		"dotnet": "Issuers.CreateAsync",
 		"go": "Issuers.Create",
-		"java": "issuers.create"
+		"java": "issuers.create",
+		"ruby": "issuers.create"
 	},
 	"GET /v1/issuers": {
 		"python": "issuers.list",
 		"php": "issuers->list",
 		"dotnet": "Issuers.ListAsync",
 		"go": "Issuers.List",
-		"java": "issuers.list"
+		"java": "issuers.list",
+		"ruby": "issuers.list"
 	},
 	"GET /v1/issuers/{id}": {
 		"python": "issuers.get",
 		"php": "issuers->get",
 		"dotnet": "Issuers.GetAsync",
 		"go": "Issuers.Get",
-		"java": "issuers.get"
+		"java": "issuers.get",
+		"ruby": "issuers.get"
 	},
 	"POST /v1/issuers/{id}": {
 		"python": "issuers.update",
 		"php": "issuers->update",
 		"dotnet": "Issuers.UpdateAsync",
 		"go": "Issuers.Update",
-		"java": "issuers.update"
+		"java": "issuers.update",
+		"ruby": "issuers.update"
 	},
 	"DELETE /v1/issuers/{id}": {
 		"python": "issuers.archive",
 		"php": "issuers->archive",
 		"dotnet": "Issuers.ArchiveAsync",
 		"go": "Issuers.Archive",
-		"java": "issuers.archive"
+		"java": "issuers.archive",
+		"ruby": "issuers.archive"
 	},
 	"POST /v1/issuers/{id}/certificates": {
 		"python": "issuers.upload_certificate",
 		"php": "issuers->uploadCertificate",
 		"dotnet": "Issuers.UploadCertificateAsync",
 		"go": "Issuers.UploadCertificate",
-		"java": "issuers.uploadCertificate"
+		"java": "issuers.uploadCertificate",
+		"ruby": "issuers.upload_certificate"
 	},
 	"GET /v1/issuers/{id}/branding": {
 		"python": "issuers.get_branding",
 		"php": "issuers->getBranding",
 		"dotnet": "Issuers.GetBrandingAsync",
 		"go": "Issuers.GetBranding",
-		"java": "issuers.getBranding"
+		"java": "issuers.getBranding",
+		"ruby": "issuers.get_branding"
 	},
 	"POST /v1/issuers/{id}/branding": {
 		"python": "issuers.update_branding",
 		"php": "issuers->updateBranding",
 		"dotnet": "Issuers.UpdateBrandingAsync",
 		"go": "Issuers.UpdateBranding",
-		"java": "issuers.updateBranding"
+		"java": "issuers.updateBranding",
+		"ruby": "issuers.update_branding"
 	},
 	"GET /v1/schedule_settings": {
 		"python": "schedule_settings.get",
 		"php": "scheduleSettings->get",
 		"dotnet": "ScheduleSettings.GetAsync",
 		"go": "ScheduleSettings.Get",
-		"java": "scheduleSettings.get"
+		"java": "scheduleSettings.get",
+		"ruby": "schedule_settings.get"
 	},
 	"POST /v1/schedule_settings": {
 		"python": "schedule_settings.update",
 		"php": "scheduleSettings->update",
 		"dotnet": "ScheduleSettings.UpdateAsync",
 		"go": "ScheduleSettings.Update",
-		"java": "scheduleSettings.update"
+		"java": "scheduleSettings.update",
+		"ruby": "schedule_settings.update"
 	},
 	"GET /v1/setting_changes": {
 		"python": "setting_changes.list",
 		"php": "settingChanges->list",
 		"dotnet": "SettingChanges.ListAsync",
 		"go": "SettingChanges.List",
-		"java": "settingChanges.list"
+		"java": "settingChanges.list",
+		"ruby": "setting_changes.list"
 	},
 	"POST /v1/setting_changes/{id}/undo": {
 		"python": "setting_changes.undo",
 		"php": "settingChanges->undo",
 		"dotnet": "SettingChanges.UndoAsync",
 		"go": "SettingChanges.Undo",
-		"java": "settingChanges.undo"
+		"java": "settingChanges.undo",
+		"ruby": "setting_changes.undo"
 	},
 	"POST /v1/issuers/{id}/logo": {
 		"python": "issuers.upload_logo",
 		"php": "issuers->uploadLogo",
 		"dotnet": "Issuers.UploadLogoAsync",
 		"go": "Issuers.UploadLogo",
-		"java": "issuers.uploadLogo"
+		"java": "issuers.uploadLogo",
+		"ruby": "issuers.upload_logo"
 	},
 	"DELETE /v1/issuers/{id}/logo": {
 		"python": "issuers.delete_logo",
 		"php": "issuers->deleteLogo",
 		"dotnet": "Issuers.DeleteLogoAsync",
 		"go": "Issuers.DeleteLogo",
-		"java": "issuers.deleteLogo"
+		"java": "issuers.deleteLogo",
+		"ruby": "issuers.delete_logo"
 	},
 	"POST /v1/issuers/{id}/efirma": {
 		"python": "issuers.sign_efirma",
 		"php": "issuers->signEfirma",
 		"dotnet": "Issuers.SignEfirmaAsync",
 		"go": "Issuers.SignEfirma",
-		"java": "issuers.signEfirma"
+		"java": "issuers.signEfirma",
+		"ruby": "issuers.sign_efirma"
 	},
 	"DELETE /v1/issuers/{id}/efirma": {
 		"python": "issuers.delete_efirma",
 		"php": "issuers->deleteEfirma",
 		"dotnet": "Issuers.DeleteEfirmaAsync",
 		"go": "Issuers.DeleteEfirma",
-		"java": "issuers.deleteEfirma"
+		"java": "issuers.deleteEfirma",
+		"ruby": "issuers.delete_efirma"
 	},
 	"POST /v1/issuers/{id}/onboarding_links": {
 		"python": "issuers.create_onboarding_link",
 		"php": "issuers->createOnboardingLink",
 		"dotnet": "Issuers.CreateOnboardingLinkAsync",
 		"go": "Issuers.CreateOnboardingLink",
-		"java": "issuers.createOnboardingLink"
+		"java": "issuers.createOnboardingLink",
+		"ruby": "issuers.create_onboarding_link"
 	},
 	"POST /v1/invoices": {
 		"python": "invoices.create",
 		"php": "invoices->create",
 		"dotnet": "Invoices.CreateAsync",
 		"go": "Invoices.Create",
-		"java": "invoices.create"
+		"java": "invoices.create",
+		"ruby": "invoices.create"
 	},
 	"GET /v1/invoices": {
 		"python": "invoices.list",
 		"php": "invoices->list",
 		"dotnet": "Invoices.ListAsync",
 		"go": "Invoices.List",
-		"java": "invoices.list"
+		"java": "invoices.list",
+		"ruby": "invoices.list"
 	},
 	"POST /v1/invoices/preview": {
 		"python": "invoices.preview",
 		"php": "invoices->preview",
 		"dotnet": "Invoices.PreviewAsync",
 		"go": "Invoices.Preview",
-		"java": "invoices.preview"
+		"java": "invoices.preview",
+		"ruby": "invoices.preview"
 	},
 	"GET /v1/invoices/search": {
 		"python": "invoices.search",
 		"php": "invoices->search",
 		"dotnet": "Invoices.SearchAsync",
 		"go": "Invoices.Search",
-		"java": "invoices.search"
+		"java": "invoices.search",
+		"ruby": "invoices.search"
 	},
 	"GET /v1/invoices/{id}": {
 		"python": "invoices.get",
 		"php": "invoices->get",
 		"dotnet": "Invoices.GetAsync",
 		"go": "Invoices.Get",
-		"java": "invoices.get"
+		"java": "invoices.get",
+		"ruby": "invoices.get"
 	},
 	"POST /v1/invoices/{id}": {
 		"python": "invoices.update",
 		"php": "invoices->update",
 		"dotnet": "Invoices.UpdateAsync",
 		"go": "Invoices.Update",
-		"java": "invoices.update"
+		"java": "invoices.update",
+		"ruby": "invoices.update"
+	},
+	"DELETE /v1/invoices/{id}": {
+		"python": "invoices.delete",
+		"php": "invoices->delete",
+		"dotnet": "Invoices.DeleteAsync",
+		"go": "Invoices.Delete",
+		"java": "invoices.delete",
+		"ruby": "invoices.delete"
+	},
+	"POST /v1/invoices/{id}/stamp": {
+		"python": "invoices.stamp",
+		"php": "invoices->stamp",
+		"dotnet": "Invoices.StampAsync",
+		"go": "Invoices.Stamp",
+		"java": "invoices.stamp",
+		"ruby": "invoices.stamp"
 	},
 	"GET /v1/invoices/{id}/pdf": {
 		"python": "invoices.pdf",
 		"php": "invoices->pdf",
 		"dotnet": "Invoices.PdfAsync",
 		"go": "Invoices.PDF",
-		"java": "invoices.pdf"
+		"java": "invoices.pdf",
+		"ruby": "invoices.pdf"
 	},
 	"GET /v1/invoices/{id}/xml": {
 		"python": "invoices.xml",
 		"php": "invoices->xml",
 		"dotnet": "Invoices.XmlAsync",
 		"go": "Invoices.XML",
-		"java": "invoices.xml"
+		"java": "invoices.xml",
+		"ruby": "invoices.xml"
 	},
 	"GET /v1/invoices/{id}/cancellation_receipt": {
 		"python": "invoices.cancellation_receipt",
 		"php": "invoices->cancellationReceipt",
 		"dotnet": "Invoices.CancellationReceiptAsync",
 		"go": "Invoices.CancellationReceipt",
-		"java": "invoices.cancellationReceipt"
+		"java": "invoices.cancellationReceipt",
+		"ruby": "invoices.cancellation_receipt"
 	},
 	"POST /v1/invoices/{id}/send": {
 		"python": "invoices.send",
 		"php": "invoices->send",
 		"dotnet": "Invoices.SendAsync",
 		"go": "Invoices.Send",
-		"java": "invoices.send"
+		"java": "invoices.send",
+		"ruby": "invoices.send"
 	},
 	"POST /v1/invoices/{id}/cancel": {
 		"python": "invoices.cancel",
 		"php": "invoices->cancel",
 		"dotnet": "Invoices.CancelAsync",
 		"go": "Invoices.Cancel",
-		"java": "invoices.cancel"
+		"java": "invoices.cancel",
+		"ruby": "invoices.cancel"
 	},
 	"POST /v1/invoices/{id}/substitute": {
 		"python": "invoices.substitute",
 		"php": "invoices->substitute",
 		"dotnet": "Invoices.SubstituteAsync",
 		"go": "Invoices.Substitute",
-		"java": "invoices.substitute"
+		"java": "invoices.substitute",
+		"ruby": "invoices.substitute"
 	},
 	"POST /v1/invoices/{id}/mark_paid": {
 		"python": "invoices.mark_paid",
 		"php": "invoices->markPaid",
 		"dotnet": "Invoices.MarkPaidAsync",
 		"go": "Invoices.MarkPaid",
-		"java": "invoices.markPaid"
+		"java": "invoices.markPaid",
+		"ruby": "invoices.mark_paid"
 	},
 	"POST /v1/invoices/{id}/mark_unpaid": {
 		"python": "invoices.mark_unpaid",
 		"php": "invoices->markUnpaid",
 		"dotnet": "Invoices.MarkUnpaidAsync",
 		"go": "Invoices.MarkUnpaid",
-		"java": "invoices.markUnpaid"
+		"java": "invoices.markUnpaid",
+		"ruby": "invoices.mark_unpaid"
 	},
 	"GET /v1/receivables": {
 		"python": "receivables.list",
 		"php": "receivables->list",
 		"dotnet": "Receivables.ListAsync",
 		"go": "Receivables.List",
-		"java": "receivables.list"
+		"java": "receivables.list",
+		"ruby": "receivables.list"
 	},
 	"GET /v1/customers/{id}/payment_behavior": {
 		"python": "customers.payment_behavior",
 		"php": "customers->paymentBehavior",
 		"dotnet": "Customers.PaymentBehaviorAsync",
 		"go": "Customers.PaymentBehavior",
-		"java": "customers.paymentBehavior"
+		"java": "customers.paymentBehavior",
+		"ruby": "customers.payment_behavior"
 	},
 	"GET /v1/cash_forecast": {
 		"python": "cash_forecast.get",
 		"php": "cashForecast->get",
 		"dotnet": "CashForecast.GetAsync",
 		"go": "CashForecast.Get",
-		"java": "cashForecast.get"
+		"java": "cashForecast.get",
+		"ruby": "cash_forecast.get"
 	},
 	"POST /v1/cash_forecast": {
 		"python": "cash_forecast.update",
 		"php": "cashForecast->update",
 		"dotnet": "CashForecast.UpdateAsync",
 		"go": "CashForecast.Update",
-		"java": "cashForecast.update"
+		"java": "cashForecast.update",
+		"ruby": "cash_forecast.update"
 	},
 	"POST /v1/cash_forecast/planned_items": {
 		"python": "cash_forecast.create_item",
 		"php": "cashForecast->createItem",
 		"dotnet": "CashForecast.CreateItemAsync",
 		"go": "CashForecast.CreateItem",
-		"java": "cashForecast.createItem"
+		"java": "cashForecast.createItem",
+		"ruby": "cash_forecast.create_item"
 	},
 	"POST /v1/cash_forecast/planned_items/{id}": {
 		"python": "cash_forecast.update_item",
 		"php": "cashForecast->updateItem",
 		"dotnet": "CashForecast.UpdateItemAsync",
 		"go": "CashForecast.UpdateItem",
-		"java": "cashForecast.updateItem"
+		"java": "cashForecast.updateItem",
+		"ruby": "cash_forecast.update_item"
 	},
 	"DELETE /v1/cash_forecast/planned_items/{id}": {
 		"python": "cash_forecast.delete_item",
 		"php": "cashForecast->deleteItem",
 		"dotnet": "CashForecast.DeleteItemAsync",
 		"go": "CashForecast.DeleteItem",
-		"java": "cashForecast.deleteItem"
+		"java": "cashForecast.deleteItem",
+		"ruby": "cash_forecast.delete_item"
 	},
 	"POST /v1/cash_forecast/adjustments": {
 		"python": "cash_forecast.adjust",
 		"php": "cashForecast->adjust",
 		"dotnet": "CashForecast.AdjustAsync",
 		"go": "CashForecast.Adjust",
-		"java": "cashForecast.adjust"
+		"java": "cashForecast.adjust",
+		"ruby": "cash_forecast.adjust"
 	},
 	"POST /v1/bank_transactions": {
 		"python": "bank_transactions.create",
 		"php": "bankTransactions->create",
 		"dotnet": "BankTransactions.CreateAsync",
 		"go": "BankTransactions.Create",
-		"java": "bankTransactions.create"
+		"java": "bankTransactions.create",
+		"ruby": "bank_transactions.create"
 	},
 	"GET /v1/bank_transactions": {
 		"python": "bank_transactions.list",
 		"php": "bankTransactions->list",
 		"dotnet": "BankTransactions.ListAsync",
 		"go": "BankTransactions.List",
-		"java": "bankTransactions.list"
+		"java": "bankTransactions.list",
+		"ruby": "bank_transactions.list"
 	},
 	"GET /v1/bank_transactions/{id}": {
 		"python": "bank_transactions.get",
 		"php": "bankTransactions->get",
 		"dotnet": "BankTransactions.GetAsync",
 		"go": "BankTransactions.Get",
-		"java": "bankTransactions.get"
+		"java": "bankTransactions.get",
+		"ruby": "bank_transactions.get"
 	},
 	"POST /v1/bank_transactions/{id}/match": {
 		"python": "bank_transactions.match",
 		"php": "bankTransactions->match",
 		"dotnet": "BankTransactions.MatchAsync",
 		"go": "BankTransactions.Match",
-		"java": "bankTransactions.match"
+		"java": "bankTransactions.match",
+		"ruby": "bank_transactions.match"
 	},
 	"POST /v1/bank_transactions/{id}/classify": {
 		"python": "bank_transactions.classify",
 		"php": "bankTransactions->classify",
 		"dotnet": "BankTransactions.ClassifyAsync",
 		"go": "BankTransactions.Classify",
-		"java": "bankTransactions.classify"
+		"java": "bankTransactions.classify",
+		"ruby": "bank_transactions.classify"
 	},
 	"POST /v1/bank_transactions/{id}/reopen": {
 		"python": "bank_transactions.reopen",
 		"php": "bankTransactions->reopen",
 		"dotnet": "BankTransactions.ReopenAsync",
 		"go": "BankTransactions.Reopen",
-		"java": "bankTransactions.reopen"
+		"java": "bankTransactions.reopen",
+		"ruby": "bank_transactions.reopen"
 	},
 	"POST /v1/purchase_receipts": {
 		"python": "purchase_receipts.create",
 		"php": "purchaseReceipts->create",
 		"dotnet": "PurchaseReceipts.CreateAsync",
 		"go": "PurchaseReceipts.Create",
-		"java": "purchaseReceipts.create"
+		"java": "purchaseReceipts.create",
+		"ruby": "purchase_receipts.create"
 	},
 	"GET /v1/purchase_receipts": {
 		"python": "purchase_receipts.list",
 		"php": "purchaseReceipts->list",
 		"dotnet": "PurchaseReceipts.ListAsync",
 		"go": "PurchaseReceipts.List",
-		"java": "purchaseReceipts.list"
+		"java": "purchaseReceipts.list",
+		"ruby": "purchase_receipts.list"
 	},
 	"GET /v1/purchase_receipts/{id}": {
 		"python": "purchase_receipts.get",
 		"php": "purchaseReceipts->get",
 		"dotnet": "PurchaseReceipts.GetAsync",
 		"go": "PurchaseReceipts.Get",
-		"java": "purchaseReceipts.get"
+		"java": "purchaseReceipts.get",
+		"ruby": "purchase_receipts.get"
 	},
 	"POST /v1/purchase_receipts/{id}": {
 		"python": "purchase_receipts.update",
 		"php": "purchaseReceipts->update",
 		"dotnet": "PurchaseReceipts.UpdateAsync",
 		"go": "PurchaseReceipts.Update",
-		"java": "purchaseReceipts.update"
+		"java": "purchaseReceipts.update",
+		"ruby": "purchase_receipts.update"
 	},
 	"DELETE /v1/purchase_receipts/{id}": {
 		"python": "purchase_receipts.delete",
 		"php": "purchaseReceipts->delete",
 		"dotnet": "PurchaseReceipts.DeleteAsync",
 		"go": "PurchaseReceipts.Delete",
-		"java": "purchaseReceipts.delete"
+		"java": "purchaseReceipts.delete",
+		"ruby": "purchase_receipts.delete"
 	},
 	"POST /v1/purchase_receipts/{id}/request": {
 		"python": "purchase_receipts.request_invoice",
 		"php": "purchaseReceipts->requestInvoice",
 		"dotnet": "PurchaseReceipts.RequestInvoiceAsync",
 		"go": "PurchaseReceipts.RequestInvoice",
-		"java": "purchaseReceipts.requestInvoice"
+		"java": "purchaseReceipts.requestInvoice",
+		"ruby": "purchase_receipts.request_invoice"
 	},
 	"POST /v1/purchase_receipts/{id}/mark_invoiced": {
 		"python": "purchase_receipts.mark_invoiced",
 		"php": "purchaseReceipts->markInvoiced",
 		"dotnet": "PurchaseReceipts.MarkInvoicedAsync",
 		"go": "PurchaseReceipts.MarkInvoiced",
-		"java": "purchaseReceipts.markInvoiced"
+		"java": "purchaseReceipts.markInvoiced",
+		"ruby": "purchase_receipts.mark_invoiced"
 	},
 	"POST /v1/purchase_receipts/{id}/mark_non_deductible": {
 		"python": "purchase_receipts.mark_non_deductible",
 		"php": "purchaseReceipts->markNonDeductible",
 		"dotnet": "PurchaseReceipts.MarkNonDeductibleAsync",
 		"go": "PurchaseReceipts.MarkNonDeductible",
-		"java": "purchaseReceipts.markNonDeductible"
+		"java": "purchaseReceipts.markNonDeductible",
+		"ruby": "purchase_receipts.mark_non_deductible"
 	},
 	"POST /v1/purchase_receipts/{id}/reopen": {
 		"python": "purchase_receipts.reopen",
 		"php": "purchaseReceipts->reopen",
 		"dotnet": "PurchaseReceipts.ReopenAsync",
 		"go": "PurchaseReceipts.Reopen",
-		"java": "purchaseReceipts.reopen"
+		"java": "purchaseReceipts.reopen",
+		"ruby": "purchase_receipts.reopen"
 	},
 	"POST /v1/payments": {
 		"python": "payments.create",
 		"php": "payments->create",
 		"dotnet": "Payments.CreateAsync",
 		"go": "Payments.Create",
-		"java": "payments.create"
+		"java": "payments.create",
+		"ruby": "payments.create"
 	},
 	"POST /v1/credit_notes": {
 		"python": "credit_notes.create",
 		"php": "creditNotes->create",
 		"dotnet": "CreditNotes.CreateAsync",
 		"go": "CreditNotes.Create",
-		"java": "creditNotes.create"
+		"java": "creditNotes.create",
+		"ruby": "credit_notes.create"
 	},
 	"POST /v1/advances": {
 		"python": "advances.create",
 		"php": "advances->create",
 		"dotnet": "Advances.CreateAsync",
 		"go": "Advances.Create",
-		"java": "advances.create"
+		"java": "advances.create",
+		"ruby": "advances.create"
 	},
 	"GET /v1/advances": {
 		"python": "advances.list",
 		"php": "advances->list",
 		"dotnet": "Advances.ListAsync",
 		"go": "Advances.List",
-		"java": "advances.list"
+		"java": "advances.list",
+		"ruby": "advances.list"
 	},
 	"POST /v1/advances/{id}/apply": {
 		"python": "advances.apply",
 		"php": "advances->apply",
 		"dotnet": "Advances.ApplyAsync",
 		"go": "Advances.Apply",
-		"java": "advances.apply"
+		"java": "advances.apply",
+		"ruby": "advances.apply"
 	},
 	"POST /v1/retentions": {
 		"python": "retentions.create",
 		"php": "retentions->create",
 		"dotnet": "Retentions.CreateAsync",
 		"go": "Retentions.Create",
-		"java": "retentions.create"
+		"java": "retentions.create",
+		"ruby": "retentions.create"
 	},
 	"GET /v1/retentions": {
 		"python": "retentions.list",
 		"php": "retentions->list",
 		"dotnet": "Retentions.ListAsync",
 		"go": "Retentions.List",
-		"java": "retentions.list"
+		"java": "retentions.list",
+		"ruby": "retentions.list"
 	},
 	"GET /v1/retentions/{id}": {
 		"python": "retentions.get",
 		"php": "retentions->get",
 		"dotnet": "Retentions.GetAsync",
 		"go": "Retentions.Get",
-		"java": "retentions.get"
+		"java": "retentions.get",
+		"ruby": "retentions.get"
 	},
 	"GET /v1/retentions/{id}/pdf": {
 		"python": "retentions.pdf",
 		"php": "retentions->pdf",
 		"dotnet": "Retentions.PdfAsync",
 		"go": "Retentions.PDF",
-		"java": "retentions.pdf"
+		"java": "retentions.pdf",
+		"ruby": "retentions.pdf"
 	},
 	"GET /v1/retentions/{id}/xml": {
 		"python": "retentions.xml",
 		"php": "retentions->xml",
 		"dotnet": "Retentions.XmlAsync",
 		"go": "Retentions.XML",
-		"java": "retentions.xml"
+		"java": "retentions.xml",
+		"ruby": "retentions.xml"
 	},
 	"POST /v1/retentions/{id}/send": {
 		"python": "retentions.send",
 		"php": "retentions->send",
 		"dotnet": "Retentions.SendAsync",
 		"go": "Retentions.Send",
-		"java": "retentions.send"
+		"java": "retentions.send",
+		"ruby": "retentions.send"
 	},
 	"POST /v1/retentions/{id}/cancel": {
 		"python": "retentions.cancel",
 		"php": "retentions->cancel",
 		"dotnet": "Retentions.CancelAsync",
 		"go": "Retentions.Cancel",
-		"java": "retentions.cancel"
+		"java": "retentions.cancel",
+		"ruby": "retentions.cancel"
 	},
 	"POST /v1/employees": {
 		"python": "employees.create",
 		"php": "employees->create",
 		"dotnet": "Employees.CreateAsync",
 		"go": "Employees.Create",
-		"java": "employees.create"
+		"java": "employees.create",
+		"ruby": "employees.create"
 	},
 	"GET /v1/employees": {
 		"python": "employees.list",
 		"php": "employees->list",
 		"dotnet": "Employees.ListAsync",
 		"go": "Employees.List",
-		"java": "employees.list"
+		"java": "employees.list",
+		"ruby": "employees.list"
 	},
 	"POST /v1/employee_raises": {
 		"python": "employees.give_raise",
 		"php": "employees->giveRaise",
 		"dotnet": "Employees.GiveRaiseAsync",
 		"go": "Employees.GiveRaise",
-		"java": "employees.giveRaise"
+		"java": "employees.giveRaise",
+		"ruby": "employees.give_raise"
 	},
 	"GET /v1/employees/{id}": {
 		"python": "employees.get",
 		"php": "employees->get",
 		"dotnet": "Employees.GetAsync",
 		"go": "Employees.Get",
-		"java": "employees.get"
+		"java": "employees.get",
+		"ruby": "employees.get"
 	},
 	"POST /v1/employees/{id}": {
 		"python": "employees.update",
 		"php": "employees->update",
 		"dotnet": "Employees.UpdateAsync",
 		"go": "Employees.Update",
-		"java": "employees.update"
+		"java": "employees.update",
+		"ruby": "employees.update"
 	},
 	"DELETE /v1/employees/{id}": {
 		"python": "employees.delete",
 		"php": "employees->delete",
 		"dotnet": "Employees.DeleteAsync",
 		"go": "Employees.Delete",
-		"java": "employees.delete"
+		"java": "employees.delete",
+		"ruby": "employees.delete"
 	},
 	"GET /v1/employees/{id}/vacations": {
 		"python": "employees.vacations",
 		"php": "employees->vacations",
 		"dotnet": "Employees.VacationsAsync",
 		"go": "Employees.Vacations",
-		"java": "employees.vacations"
+		"java": "employees.vacations",
+		"ruby": "employees.vacations"
 	},
 	"POST /v1/employees/{id}/vacations": {
 		"python": "employees.update_vacations",
 		"php": "employees->updateVacations",
 		"dotnet": "Employees.UpdateVacationsAsync",
 		"go": "Employees.UpdateVacations",
-		"java": "employees.updateVacations"
+		"java": "employees.updateVacations",
+		"ruby": "employees.update_vacations"
 	},
 	"GET /v1/employees/{id}/vacations/certificate": {
 		"python": "employees.vacation_certificate",
 		"php": "employees->vacationCertificate",
 		"dotnet": "Employees.VacationCertificateAsync",
 		"go": "Employees.VacationCertificate",
-		"java": "employees.vacationCertificate"
+		"java": "employees.vacationCertificate",
+		"ruby": "employees.vacation_certificate"
 	},
 	"GET /v1/employees/{id}/pay_statement": {
 		"python": "employees.pay_statement",
 		"php": "employees->payStatement",
 		"dotnet": "Employees.PayStatementAsync",
 		"go": "Employees.PayStatement",
-		"java": "employees.payStatement"
+		"java": "employees.payStatement",
+		"ruby": "employees.pay_statement"
 	},
 	"GET /v1/employees/{id}/portal": {
 		"python": "employees.portal",
 		"php": "employees->portal",
 		"dotnet": "Employees.PortalAsync",
 		"go": "Employees.Portal",
-		"java": "employees.portal"
+		"java": "employees.portal",
+		"ruby": "employees.portal"
 	},
 	"POST /v1/employees/{id}/portal": {
 		"python": "employees.update_portal",
 		"php": "employees->updatePortal",
 		"dotnet": "Employees.UpdatePortalAsync",
 		"go": "Employees.UpdatePortal",
-		"java": "employees.updatePortal"
+		"java": "employees.updatePortal",
+		"ruby": "employees.update_portal"
 	},
 	"GET /v1/employee_notice_settings": {
 		"python": "employee_notice_settings.get",
 		"php": "employeeNoticeSettings->get",
 		"dotnet": "EmployeeNoticeSettings.GetAsync",
 		"go": "EmployeeNoticeSettings.Get",
-		"java": "employeeNoticeSettings.get"
+		"java": "employeeNoticeSettings.get",
+		"ruby": "employee_notice_settings.get"
 	},
 	"POST /v1/employee_notice_settings": {
 		"python": "employee_notice_settings.update",
 		"php": "employeeNoticeSettings->update",
 		"dotnet": "EmployeeNoticeSettings.UpdateAsync",
 		"go": "EmployeeNoticeSettings.Update",
-		"java": "employeeNoticeSettings.update"
+		"java": "employeeNoticeSettings.update",
+		"ruby": "employee_notice_settings.update"
 	},
 	"GET /v1/vacation_requests": {
 		"python": "vacation_requests.list",
 		"php": "vacationRequests->list",
 		"dotnet": "VacationRequests.ListAsync",
 		"go": "VacationRequests.List",
-		"java": "vacationRequests.list"
+		"java": "vacationRequests.list",
+		"ruby": "vacation_requests.list"
 	},
 	"GET /v1/vacation_requests/{id}": {
 		"python": "vacation_requests.get",
 		"php": "vacationRequests->get",
 		"dotnet": "VacationRequests.GetAsync",
 		"go": "VacationRequests.Get",
-		"java": "vacationRequests.get"
+		"java": "vacationRequests.get",
+		"ruby": "vacation_requests.get"
 	},
 	"POST /v1/vacation_requests/{id}/approve": {
 		"python": "vacation_requests.approve",
 		"php": "vacationRequests->approve",
 		"dotnet": "VacationRequests.ApproveAsync",
 		"go": "VacationRequests.Approve",
-		"java": "vacationRequests.approve"
+		"java": "vacationRequests.approve",
+		"ruby": "vacation_requests.approve"
 	},
 	"POST /v1/vacation_requests/{id}/reject": {
 		"python": "vacation_requests.reject",
 		"php": "vacationRequests->reject",
 		"dotnet": "VacationRequests.RejectAsync",
 		"go": "VacationRequests.Reject",
-		"java": "vacationRequests.reject"
+		"java": "vacationRequests.reject",
+		"ruby": "vacation_requests.reject"
 	},
 	"POST /v1/payroll_receipts": {
 		"python": "payroll_receipts.create",
 		"php": "payrollReceipts->create",
 		"dotnet": "PayrollReceipts.CreateAsync",
 		"go": "PayrollReceipts.Create",
-		"java": "payrollReceipts.create"
+		"java": "payrollReceipts.create",
+		"ruby": "payroll_receipts.create"
 	},
 	"POST /v1/payroll/net_to_gross": {
 		"python": "payroll_receipts.net_to_gross",
 		"php": "payrollReceipts->netToGross",
 		"dotnet": "PayrollReceipts.NetToGrossAsync",
 		"go": "PayrollReceipts.NetToGross",
-		"java": "payrollReceipts.netToGross"
+		"java": "payrollReceipts.netToGross",
+		"ruby": "payroll_receipts.net_to_gross"
 	},
 	"POST /v1/payroll_receipts/preview": {
 		"python": "payroll_receipts.preview",
 		"php": "payrollReceipts->preview",
 		"dotnet": "PayrollReceipts.PreviewAsync",
 		"go": "PayrollReceipts.Preview",
-		"java": "payrollReceipts.preview"
+		"java": "payrollReceipts.preview",
+		"ruby": "payroll_receipts.preview"
 	},
 	"POST /v1/payroll_receipts/extraordinary": {
 		"python": "payroll_receipts.create_extraordinary",
 		"php": "payrollReceipts->createExtraordinary",
 		"dotnet": "PayrollReceipts.CreateExtraordinaryAsync",
 		"go": "PayrollReceipts.CreateExtraordinary",
-		"java": "payrollReceipts.createExtraordinary"
+		"java": "payrollReceipts.createExtraordinary",
+		"ruby": "payroll_receipts.create_extraordinary"
 	},
 	"POST /v1/payroll_receipts/extraordinary/preview": {
 		"python": "payroll_receipts.preview_extraordinary",
 		"php": "payrollReceipts->previewExtraordinary",
 		"dotnet": "PayrollReceipts.PreviewExtraordinaryAsync",
 		"go": "PayrollReceipts.PreviewExtraordinary",
-		"java": "payrollReceipts.previewExtraordinary"
+		"java": "payrollReceipts.previewExtraordinary",
+		"ruby": "payroll_receipts.preview_extraordinary"
 	},
 	"POST /v1/payroll_receipts/external": {
 		"python": "payroll_receipts.create_external",
 		"php": "payrollReceipts->createExternal",
 		"dotnet": "PayrollReceipts.CreateExternalAsync",
 		"go": "PayrollReceipts.CreateExternal",
-		"java": "payrollReceipts.createExternal"
+		"java": "payrollReceipts.createExternal",
+		"ruby": "payroll_receipts.create_external"
 	},
 	"POST /v1/payroll_receipts/external/preview": {
 		"python": "payroll_receipts.preview_external",
 		"php": "payrollReceipts->previewExternal",
 		"dotnet": "PayrollReceipts.PreviewExternalAsync",
 		"go": "PayrollReceipts.PreviewExternal",
-		"java": "payrollReceipts.previewExternal"
+		"java": "payrollReceipts.previewExternal",
+		"ruby": "payroll_receipts.preview_external"
 	},
 	"POST /v1/payroll_batches": {
 		"python": "payroll_batches.create",
 		"php": "payrollBatches->create",
 		"dotnet": "PayrollBatches.CreateAsync",
 		"go": "PayrollBatches.Create",
-		"java": "payrollBatches.create"
+		"java": "payrollBatches.create",
+		"ruby": "payroll_batches.create"
 	},
 	"GET /v1/payroll_batches": {
 		"python": "payroll_batches.list",
 		"php": "payrollBatches->list",
 		"dotnet": "PayrollBatches.ListAsync",
 		"go": "PayrollBatches.List",
-		"java": "payrollBatches.list"
+		"java": "payrollBatches.list",
+		"ruby": "payroll_batches.list"
 	},
 	"POST /v1/payroll_approvals": {
 		"python": "payroll_approvals.create",
 		"php": "payrollApprovals->create",
 		"dotnet": "PayrollApprovals.CreateAsync",
 		"go": "PayrollApprovals.Create",
-		"java": "payrollApprovals.create"
+		"java": "payrollApprovals.create",
+		"ruby": "payroll_approvals.create"
 	},
 	"GET /v1/payroll_approvals": {
 		"python": "payroll_approvals.list",
 		"php": "payrollApprovals->list",
 		"dotnet": "PayrollApprovals.ListAsync",
 		"go": "PayrollApprovals.List",
-		"java": "payrollApprovals.list"
+		"java": "payrollApprovals.list",
+		"ruby": "payroll_approvals.list"
 	},
 	"GET /v1/payroll_approvals/{id}": {
 		"python": "payroll_approvals.get",
 		"php": "payrollApprovals->get",
 		"dotnet": "PayrollApprovals.GetAsync",
 		"go": "PayrollApprovals.Get",
-		"java": "payrollApprovals.get"
+		"java": "payrollApprovals.get",
+		"ruby": "payroll_approvals.get"
 	},
 	"POST /v1/payroll_approvals/{id}/cancel": {
 		"python": "payroll_approvals.cancel",
 		"php": "payrollApprovals->cancel",
 		"dotnet": "PayrollApprovals.CancelAsync",
 		"go": "PayrollApprovals.Cancel",
-		"java": "payrollApprovals.cancel"
+		"java": "payrollApprovals.cancel",
+		"ruby": "payroll_approvals.cancel"
 	},
 	"GET /v1/payroll_batches/{id}": {
 		"python": "payroll_batches.get",
 		"php": "payrollBatches->get",
 		"dotnet": "PayrollBatches.GetAsync",
 		"go": "PayrollBatches.Get",
-		"java": "payrollBatches.get"
+		"java": "payrollBatches.get",
+		"ruby": "payroll_batches.get"
 	},
 	"POST /v1/payroll_bank_files": {
 		"python": "payroll_bank_files.create",
 		"php": "payrollBankFiles->create",
 		"dotnet": "PayrollBankFiles.CreateAsync",
 		"go": "PayrollBankFiles.Create",
-		"java": "payrollBankFiles.create"
+		"java": "payrollBankFiles.create",
+		"ruby": "payroll_bank_files.create"
 	},
 	"POST /v1/payroll_payouts": {
 		"python": "payroll_payouts.create",
 		"php": "payrollPayouts->create",
 		"dotnet": "PayrollPayouts.CreateAsync",
 		"go": "PayrollPayouts.Create",
-		"java": "payrollPayouts.create"
+		"java": "payrollPayouts.create",
+		"ruby": "payroll_payouts.create"
 	},
 	"POST /v1/imss_movements": {
 		"python": "imss_movements.create",
 		"php": "imssMovements->create",
 		"dotnet": "ImssMovements.CreateAsync",
 		"go": "ImssMovements.Create",
-		"java": "imssMovements.create"
+		"java": "imssMovements.create",
+		"ruby": "imss_movements.create"
 	},
 	"GET /v1/imss_movements": {
 		"python": "imss_movements.list",
 		"php": "imssMovements->list",
 		"dotnet": "ImssMovements.ListAsync",
 		"go": "ImssMovements.List",
-		"java": "imssMovements.list"
+		"java": "imssMovements.list",
+		"ruby": "imss_movements.list"
 	},
 	"POST /v1/imss_movements/report": {
 		"python": "imss_movements.report",
 		"php": "imssMovements->report",
 		"dotnet": "ImssMovements.ReportAsync",
 		"go": "ImssMovements.Report",
-		"java": "imssMovements.report"
+		"java": "imssMovements.report",
+		"ruby": "imss_movements.report"
 	},
 	"GET /v1/imss_movements/{id}": {
 		"python": "imss_movements.get",
 		"php": "imssMovements->get",
 		"dotnet": "ImssMovements.GetAsync",
 		"go": "ImssMovements.Get",
-		"java": "imssMovements.get"
+		"java": "imssMovements.get",
+		"ruby": "imss_movements.get"
 	},
 	"POST /v1/imss_movements/{id}": {
 		"python": "imss_movements.update",
 		"php": "imssMovements->update",
 		"dotnet": "ImssMovements.UpdateAsync",
 		"go": "ImssMovements.Update",
-		"java": "imssMovements.update"
+		"java": "imssMovements.update",
+		"ruby": "imss_movements.update"
 	},
 	"DELETE /v1/imss_movements/{id}": {
 		"python": "imss_movements.delete",
 		"php": "imssMovements->delete",
 		"dotnet": "ImssMovements.DeleteAsync",
 		"go": "ImssMovements.Delete",
-		"java": "imssMovements.delete"
+		"java": "imssMovements.delete",
+		"ruby": "imss_movements.delete"
 	},
 	"POST /v1/imss_files": {
 		"python": "imss_files.create",
 		"php": "imssFiles->create",
 		"dotnet": "ImssFiles.CreateAsync",
 		"go": "ImssFiles.Create",
-		"java": "imssFiles.create"
+		"java": "imssFiles.create",
+		"ruby": "imss_files.create"
 	},
 	"POST /v1/employee_deductions": {
 		"python": "employee_deductions.create",
 		"php": "employeeDeductions->create",
 		"dotnet": "EmployeeDeductions.CreateAsync",
 		"go": "EmployeeDeductions.Create",
-		"java": "employeeDeductions.create"
+		"java": "employeeDeductions.create",
+		"ruby": "employee_deductions.create"
 	},
 	"GET /v1/employee_deductions": {
 		"python": "employee_deductions.list",
 		"php": "employeeDeductions->list",
 		"dotnet": "EmployeeDeductions.ListAsync",
 		"go": "EmployeeDeductions.List",
-		"java": "employeeDeductions.list"
+		"java": "employeeDeductions.list",
+		"ruby": "employee_deductions.list"
 	},
 	"GET /v1/employee_deductions/{id}": {
 		"python": "employee_deductions.get",
 		"php": "employeeDeductions->get",
 		"dotnet": "EmployeeDeductions.GetAsync",
 		"go": "EmployeeDeductions.Get",
-		"java": "employeeDeductions.get"
+		"java": "employeeDeductions.get",
+		"ruby": "employee_deductions.get"
 	},
 	"POST /v1/employee_deductions/{id}": {
 		"python": "employee_deductions.update",
 		"php": "employeeDeductions->update",
 		"dotnet": "EmployeeDeductions.UpdateAsync",
 		"go": "EmployeeDeductions.Update",
-		"java": "employeeDeductions.update"
+		"java": "employeeDeductions.update",
+		"ruby": "employee_deductions.update"
 	},
 	"DELETE /v1/employee_deductions/{id}": {
 		"python": "employee_deductions.delete",
 		"php": "employeeDeductions->delete",
 		"dotnet": "EmployeeDeductions.DeleteAsync",
 		"go": "EmployeeDeductions.Delete",
-		"java": "employeeDeductions.delete"
+		"java": "employeeDeductions.delete",
+		"ruby": "employee_deductions.delete"
 	},
 	"GET /v1/variable_salaries": {
 		"python": "variable_salaries.get",
 		"php": "variableSalaries->get",
 		"dotnet": "VariableSalaries.GetAsync",
 		"go": "VariableSalaries.Get",
-		"java": "variableSalaries.get"
+		"java": "variableSalaries.get",
+		"ruby": "variable_salaries.get"
 	},
 	"POST /v1/variable_salaries": {
 		"python": "variable_salaries.apply",
 		"php": "variableSalaries->apply",
 		"dotnet": "VariableSalaries.ApplyAsync",
 		"go": "VariableSalaries.Apply",
-		"java": "variableSalaries.apply"
+		"java": "variableSalaries.apply",
+		"ruby": "variable_salaries.apply"
 	},
 	"GET /v1/annual_adjustments": {
 		"python": "annual_adjustments.get",
 		"php": "annualAdjustments->get",
 		"dotnet": "AnnualAdjustments.GetAsync",
 		"go": "AnnualAdjustments.Get",
-		"java": "annualAdjustments.get"
+		"java": "annualAdjustments.get",
+		"ruby": "annual_adjustments.get"
 	},
 	"POST /v1/annual_adjustments": {
 		"python": "annual_adjustments.update",
 		"php": "annualAdjustments->update",
 		"dotnet": "AnnualAdjustments.UpdateAsync",
 		"go": "AnnualAdjustments.Update",
-		"java": "annualAdjustments.update"
+		"java": "annualAdjustments.update",
+		"ruby": "annual_adjustments.update"
 	},
 	"GET /v1/payroll_taxes": {
 		"python": "payroll_taxes.get",
 		"php": "payrollTaxes->get",
 		"dotnet": "PayrollTaxes.GetAsync",
 		"go": "PayrollTaxes.Get",
-		"java": "payrollTaxes.get"
+		"java": "payrollTaxes.get",
+		"ruby": "payroll_taxes.get"
 	},
 	"GET /v1/payroll_reports/accumulated": {
 		"python": "payroll_reports.accumulated",
 		"php": "payrollReports->accumulated",
 		"dotnet": "PayrollReports.AccumulatedAsync",
 		"go": "PayrollReports.Accumulated",
-		"java": "payrollReports.accumulated"
+		"java": "payrollReports.accumulated",
+		"ruby": "payroll_reports.accumulated"
 	},
 	"GET /v1/payroll_reports/cost": {
 		"python": "payroll_reports.cost",
 		"php": "payrollReports->cost",
 		"dotnet": "PayrollReports.CostAsync",
 		"go": "PayrollReports.Cost",
-		"java": "payrollReports.cost"
+		"java": "payrollReports.cost",
+		"ruby": "payroll_reports.cost"
 	},
 	"GET /v1/payroll_calendar": {
 		"python": "payroll_calendar.get",
 		"php": "payrollCalendar->get",
 		"dotnet": "PayrollCalendar.GetAsync",
 		"go": "PayrollCalendar.Get",
-		"java": "payrollCalendar.get"
+		"java": "payrollCalendar.get",
+		"ruby": "payroll_calendar.get"
 	},
 	"POST /v1/payroll_calendar/mark": {
 		"python": "payroll_calendar.mark",
 		"php": "payrollCalendar->mark",
 		"dotnet": "PayrollCalendar.MarkAsync",
 		"go": "PayrollCalendar.Mark",
-		"java": "payrollCalendar.mark"
+		"java": "payrollCalendar.mark",
+		"ruby": "payroll_calendar.mark"
 	},
 	"POST /v1/repse_contracts": {
 		"python": "repse_contracts.create",
 		"php": "repseContracts->create",
 		"dotnet": "RepseContracts.CreateAsync",
 		"go": "RepseContracts.Create",
-		"java": "repseContracts.create"
+		"java": "repseContracts.create",
+		"ruby": "repse_contracts.create"
 	},
 	"GET /v1/repse_contracts": {
 		"python": "repse_contracts.list",
 		"php": "repseContracts->list",
 		"dotnet": "RepseContracts.ListAsync",
 		"go": "RepseContracts.List",
-		"java": "repseContracts.list"
+		"java": "repseContracts.list",
+		"ruby": "repse_contracts.list"
 	},
 	"GET /v1/repse_contracts/{id}": {
 		"python": "repse_contracts.get",
 		"php": "repseContracts->get",
 		"dotnet": "RepseContracts.GetAsync",
 		"go": "RepseContracts.Get",
-		"java": "repseContracts.get"
+		"java": "repseContracts.get",
+		"ruby": "repse_contracts.get"
 	},
 	"POST /v1/repse_contracts/{id}": {
 		"python": "repse_contracts.update",
 		"php": "repseContracts->update",
 		"dotnet": "RepseContracts.UpdateAsync",
 		"go": "RepseContracts.Update",
-		"java": "repseContracts.update"
+		"java": "repseContracts.update",
+		"ruby": "repse_contracts.update"
 	},
 	"DELETE /v1/repse_contracts/{id}": {
 		"python": "repse_contracts.delete",
 		"php": "repseContracts->delete",
 		"dotnet": "RepseContracts.DeleteAsync",
 		"go": "RepseContracts.Delete",
-		"java": "repseContracts.delete"
+		"java": "repseContracts.delete",
+		"ruby": "repse_contracts.delete"
 	},
 	"GET /v1/repse_profile": {
 		"python": "repse_profile.get",
 		"php": "repseProfile->get",
 		"dotnet": "RepseProfile.GetAsync",
 		"go": "RepseProfile.Get",
-		"java": "repseProfile.get"
+		"java": "repseProfile.get",
+		"ruby": "repse_profile.get"
 	},
 	"POST /v1/repse_profile": {
 		"python": "repse_profile.update",
 		"php": "repseProfile->update",
 		"dotnet": "RepseProfile.UpdateAsync",
 		"go": "RepseProfile.Update",
-		"java": "repseProfile.update"
+		"java": "repseProfile.update",
+		"ruby": "repse_profile.update"
 	},
 	"GET /v1/repse_returns/{period}": {
 		"python": "repse_returns.get",
 		"php": "repseReturns->get",
 		"dotnet": "RepseReturns.GetAsync",
 		"go": "RepseReturns.Get",
-		"java": "repseReturns.get"
+		"java": "repseReturns.get",
+		"ruby": "repse_returns.get"
 	},
 	"GET /v1/payroll_org_chart": {
 		"python": "payroll_org_chart.get",
 		"php": "payrollOrgChart->get",
 		"dotnet": "PayrollOrgChart.GetAsync",
 		"go": "PayrollOrgChart.Get",
-		"java": "payrollOrgChart.get"
+		"java": "payrollOrgChart.get",
+		"ruby": "payroll_org_chart.get"
 	},
 	"POST /v1/payroll_org_chart/assign": {
 		"python": "payroll_org_chart.assign",
 		"php": "payrollOrgChart->assign",
 		"dotnet": "PayrollOrgChart.AssignAsync",
 		"go": "PayrollOrgChart.Assign",
-		"java": "payrollOrgChart.assign"
+		"java": "payrollOrgChart.assign",
+		"ruby": "payroll_org_chart.assign"
 	},
 	"POST /v1/payroll_org_chart/departments": {
 		"python": "payroll_org_chart.save_department",
 		"php": "payrollOrgChart->saveDepartment",
 		"dotnet": "PayrollOrgChart.SaveDepartmentAsync",
 		"go": "PayrollOrgChart.SaveDepartment",
-		"java": "payrollOrgChart.saveDepartment"
+		"java": "payrollOrgChart.saveDepartment",
+		"ruby": "payroll_org_chart.save_department"
 	},
 	"POST /v1/payroll_org_chart/departments/remove": {
 		"python": "payroll_org_chart.remove_department",
 		"php": "payrollOrgChart->removeDepartment",
 		"dotnet": "PayrollOrgChart.RemoveDepartmentAsync",
 		"go": "PayrollOrgChart.RemoveDepartment",
-		"java": "payrollOrgChart.removeDepartment"
+		"java": "payrollOrgChart.removeDepartment",
+		"ruby": "payroll_org_chart.remove_department"
 	},
 	"POST /v1/payroll_org_chart/vacancies": {
 		"python": "payroll_org_chart.create_vacancy",
 		"php": "payrollOrgChart->createVacancy",
 		"dotnet": "PayrollOrgChart.CreateVacancyAsync",
 		"go": "PayrollOrgChart.CreateVacancy",
-		"java": "payrollOrgChart.createVacancy"
+		"java": "payrollOrgChart.createVacancy",
+		"ruby": "payroll_org_chart.create_vacancy"
 	},
 	"POST /v1/payroll_org_chart/vacancies/{id}": {
 		"python": "payroll_org_chart.update_vacancy",
 		"php": "payrollOrgChart->updateVacancy",
 		"dotnet": "PayrollOrgChart.UpdateVacancyAsync",
 		"go": "PayrollOrgChart.UpdateVacancy",
-		"java": "payrollOrgChart.updateVacancy"
+		"java": "payrollOrgChart.updateVacancy",
+		"ruby": "payroll_org_chart.update_vacancy"
 	},
 	"DELETE /v1/payroll_org_chart/vacancies/{id}": {
 		"python": "payroll_org_chart.delete_vacancy",
 		"php": "payrollOrgChart->deleteVacancy",
 		"dotnet": "PayrollOrgChart.DeleteVacancyAsync",
 		"go": "PayrollOrgChart.DeleteVacancy",
-		"java": "payrollOrgChart.deleteVacancy"
+		"java": "payrollOrgChart.deleteVacancy",
+		"ruby": "payroll_org_chart.delete_vacancy"
 	},
 	"POST /v1/payroll_org_chart/vacancies/{id}/fill": {
 		"python": "payroll_org_chart.fill_vacancy",
 		"php": "payrollOrgChart->fillVacancy",
 		"dotnet": "PayrollOrgChart.FillVacancyAsync",
 		"go": "PayrollOrgChart.FillVacancy",
-		"java": "payrollOrgChart.fillVacancy"
+		"java": "payrollOrgChart.fillVacancy",
+		"ruby": "payroll_org_chart.fill_vacancy"
 	},
 	"POST /v1/payroll_org_chart/vacancies/{id}/publish": {
 		"python": "payroll_org_chart.publish_vacancy",
 		"php": "payrollOrgChart->publishVacancy",
 		"dotnet": "PayrollOrgChart.PublishVacancyAsync",
 		"go": "PayrollOrgChart.PublishVacancy",
-		"java": "payrollOrgChart.publishVacancy"
+		"java": "payrollOrgChart.publishVacancy",
+		"ruby": "payroll_org_chart.publish_vacancy"
 	},
 	"GET /v1/hiring": {
 		"python": "hiring.get",
 		"php": "hiring->get",
 		"dotnet": "Hiring.GetAsync",
 		"go": "Hiring.Get",
-		"java": "hiring.get"
+		"java": "hiring.get",
+		"ruby": "hiring.get"
 	},
 	"POST /v1/hiring/settings": {
 		"python": "hiring.update_settings",
 		"php": "hiring->updateSettings",
 		"dotnet": "Hiring.UpdateSettingsAsync",
 		"go": "Hiring.UpdateSettings",
-		"java": "hiring.updateSettings"
+		"java": "hiring.updateSettings",
+		"ruby": "hiring.update_settings"
 	},
 	"POST /v1/hiring/forms": {
 		"python": "hiring.create_form",
 		"php": "hiring->createForm",
 		"dotnet": "Hiring.CreateFormAsync",
 		"go": "Hiring.CreateForm",
-		"java": "hiring.createForm"
+		"java": "hiring.createForm",
+		"ruby": "hiring.create_form"
 	},
 	"POST /v1/hiring/forms/{id}": {
 		"python": "hiring.update_form",
 		"php": "hiring->updateForm",
 		"dotnet": "Hiring.UpdateFormAsync",
 		"go": "Hiring.UpdateForm",
-		"java": "hiring.updateForm"
+		"java": "hiring.updateForm",
+		"ruby": "hiring.update_form"
 	},
 	"DELETE /v1/hiring/forms/{id}": {
 		"python": "hiring.delete_form",
 		"php": "hiring->deleteForm",
 		"dotnet": "Hiring.DeleteFormAsync",
 		"go": "Hiring.DeleteForm",
-		"java": "hiring.deleteForm"
+		"java": "hiring.deleteForm",
+		"ruby": "hiring.delete_form"
 	},
 	"GET /v1/candidates": {
 		"python": "candidates.list",
 		"php": "candidates->list",
 		"dotnet": "Candidates.ListAsync",
 		"go": "Candidates.List",
-		"java": "candidates.list"
+		"java": "candidates.list",
+		"ruby": "candidates.list"
 	},
 	"GET /v1/candidates/{id}": {
 		"python": "candidates.get",
 		"php": "candidates->get",
 		"dotnet": "Candidates.GetAsync",
 		"go": "Candidates.Get",
-		"java": "candidates.get"
+		"java": "candidates.get",
+		"ruby": "candidates.get"
 	},
 	"POST /v1/candidates/{id}": {
 		"python": "candidates.update",
 		"php": "candidates->update",
 		"dotnet": "Candidates.UpdateAsync",
 		"go": "Candidates.Update",
-		"java": "candidates.update"
+		"java": "candidates.update",
+		"ruby": "candidates.update"
 	},
 	"DELETE /v1/candidates/{id}": {
 		"python": "candidates.delete",
 		"php": "candidates->delete",
 		"dotnet": "Candidates.DeleteAsync",
 		"go": "Candidates.Delete",
-		"java": "candidates.delete"
+		"java": "candidates.delete",
+		"ruby": "candidates.delete"
 	},
 	"POST /v1/candidates/{id}/hire": {
 		"python": "candidates.hire",
 		"php": "candidates->hire",
 		"dotnet": "Candidates.HireAsync",
 		"go": "Candidates.Hire",
-		"java": "candidates.hire"
+		"java": "candidates.hire",
+		"ruby": "candidates.hire"
 	},
 	"GET /v1/candidates/{id}/files/{question}": {
 		"python": "candidates.file",
 		"php": "candidates->file",
 		"dotnet": "Candidates.FileAsync",
 		"go": "Candidates.File",
-		"java": "candidates.file"
+		"java": "candidates.file",
+		"ruby": "candidates.file"
 	},
 	"GET /v1/training": {
 		"python": "training.get",
 		"php": "training->get",
 		"dotnet": "Training.GetAsync",
 		"go": "Training.Get",
-		"java": "training.get"
+		"java": "training.get",
+		"ruby": "training.get"
 	},
 	"POST /v1/training/settings": {
 		"python": "training.update_settings",
 		"php": "training->updateSettings",
 		"dotnet": "Training.UpdateSettingsAsync",
 		"go": "Training.UpdateSettings",
-		"java": "training.updateSettings"
+		"java": "training.updateSettings",
+		"ruby": "training.update_settings"
 	},
 	"GET /v1/training/certificates": {
 		"python": "training.certificates",
 		"php": "training->certificates",
 		"dotnet": "Training.CertificatesAsync",
 		"go": "Training.Certificates",
-		"java": "training.certificates"
+		"java": "training.certificates",
+		"ruby": "training.certificates"
 	},
 	"GET /v1/training_courses": {
 		"python": "training_courses.list",
 		"php": "trainingCourses->list",
 		"dotnet": "TrainingCourses.ListAsync",
 		"go": "TrainingCourses.List",
-		"java": "trainingCourses.list"
+		"java": "trainingCourses.list",
+		"ruby": "training_courses.list"
 	},
 	"POST /v1/training_courses": {
 		"python": "training_courses.create",
 		"php": "trainingCourses->create",
 		"dotnet": "TrainingCourses.CreateAsync",
 		"go": "TrainingCourses.Create",
-		"java": "trainingCourses.create"
+		"java": "trainingCourses.create",
+		"ruby": "training_courses.create"
 	},
 	"GET /v1/training_courses/{id}": {
 		"python": "training_courses.get",
 		"php": "trainingCourses->get",
 		"dotnet": "TrainingCourses.GetAsync",
 		"go": "TrainingCourses.Get",
-		"java": "trainingCourses.get"
+		"java": "trainingCourses.get",
+		"ruby": "training_courses.get"
 	},
 	"POST /v1/training_courses/{id}": {
 		"python": "training_courses.update",
 		"php": "trainingCourses->update",
 		"dotnet": "TrainingCourses.UpdateAsync",
 		"go": "TrainingCourses.Update",
-		"java": "trainingCourses.update"
+		"java": "trainingCourses.update",
+		"ruby": "training_courses.update"
 	},
 	"DELETE /v1/training_courses/{id}": {
 		"python": "training_courses.delete",
 		"php": "trainingCourses->delete",
 		"dotnet": "TrainingCourses.DeleteAsync",
 		"go": "TrainingCourses.Delete",
-		"java": "trainingCourses.delete"
+		"java": "trainingCourses.delete",
+		"ruby": "training_courses.delete"
 	},
 	"POST /v1/training_courses/{id}/participants": {
 		"python": "training_courses.set_participants",
 		"php": "trainingCourses->setParticipants",
 		"dotnet": "TrainingCourses.SetParticipantsAsync",
 		"go": "TrainingCourses.SetParticipants",
-		"java": "trainingCourses.setParticipants"
+		"java": "trainingCourses.setParticipants",
+		"ruby": "training_courses.set_participants"
 	},
 	"POST /v1/training_courses/{id}/results": {
 		"python": "training_courses.set_results",
 		"php": "trainingCourses->setResults",
 		"dotnet": "TrainingCourses.SetResultsAsync",
 		"go": "TrainingCourses.SetResults",
-		"java": "trainingCourses.setResults"
+		"java": "trainingCourses.setResults",
+		"ruby": "training_courses.set_results"
 	},
 	"POST /v1/training_courses/{id}/issue": {
 		"python": "training_courses.issue",
 		"php": "trainingCourses->issue",
 		"dotnet": "TrainingCourses.IssueAsync",
 		"go": "TrainingCourses.Issue",
-		"java": "trainingCourses.issue"
+		"java": "trainingCourses.issue",
+		"ruby": "training_courses.issue"
 	},
 	"POST /v1/training_courses/{id}/deliver": {
 		"python": "training_courses.deliver",
 		"php": "trainingCourses->deliver",
 		"dotnet": "TrainingCourses.DeliverAsync",
 		"go": "TrainingCourses.Deliver",
-		"java": "trainingCourses.deliver"
+		"java": "trainingCourses.deliver",
+		"ruby": "training_courses.deliver"
 	},
 	"GET /v1/training_courses/{id}/pdf": {
 		"python": "training_courses.pdf",
 		"php": "trainingCourses->pdf",
 		"dotnet": "TrainingCourses.PdfAsync",
 		"go": "TrainingCourses.PDF",
-		"java": "trainingCourses.pdf"
+		"java": "trainingCourses.pdf",
+		"ruby": "training_courses.pdf"
 	},
 	"GET /v1/employees/{id}/training": {
 		"python": "employees.training",
 		"php": "employees->training",
 		"dotnet": "Employees.TrainingAsync",
 		"go": "Employees.Training",
-		"java": "employees.training"
+		"java": "employees.training",
+		"ruby": "employees.training"
 	},
 	"POST /v1/employees/{id}/training": {
 		"python": "employees.update_training",
 		"php": "employees->updateTraining",
 		"dotnet": "Employees.UpdateTrainingAsync",
 		"go": "Employees.UpdateTraining",
-		"java": "employees.updateTraining"
+		"java": "employees.updateTraining",
+		"ruby": "employees.update_training"
 	},
 	"GET /v1/climate": {
 		"python": "climate.get",
 		"php": "climate->get",
 		"dotnet": "Climate.GetAsync",
 		"go": "Climate.Get",
-		"java": "climate.get"
+		"java": "climate.get",
+		"ruby": "climate.get"
 	},
 	"POST /v1/climate/policy": {
 		"python": "climate.update_policy",
 		"php": "climate->updatePolicy",
 		"dotnet": "Climate.UpdatePolicyAsync",
 		"go": "Climate.UpdatePolicy",
-		"java": "climate.updatePolicy"
+		"java": "climate.updatePolicy",
+		"ruby": "climate.update_policy"
 	},
 	"GET /v1/climate_surveys": {
 		"python": "climate_surveys.list",
 		"php": "climateSurveys->list",
 		"dotnet": "ClimateSurveys.ListAsync",
 		"go": "ClimateSurveys.List",
-		"java": "climateSurveys.list"
+		"java": "climateSurveys.list",
+		"ruby": "climate_surveys.list"
 	},
 	"POST /v1/climate_surveys": {
 		"python": "climate_surveys.create",
 		"php": "climateSurveys->create",
 		"dotnet": "ClimateSurveys.CreateAsync",
 		"go": "ClimateSurveys.Create",
-		"java": "climateSurveys.create"
+		"java": "climateSurveys.create",
+		"ruby": "climate_surveys.create"
 	},
 	"GET /v1/climate_surveys/{id}": {
 		"python": "climate_surveys.get",
 		"php": "climateSurveys->get",
 		"dotnet": "ClimateSurveys.GetAsync",
 		"go": "ClimateSurveys.Get",
-		"java": "climateSurveys.get"
+		"java": "climateSurveys.get",
+		"ruby": "climate_surveys.get"
 	},
 	"POST /v1/climate_surveys/{id}": {
 		"python": "climate_surveys.update",
 		"php": "climateSurveys->update",
 		"dotnet": "ClimateSurveys.UpdateAsync",
 		"go": "ClimateSurveys.Update",
-		"java": "climateSurveys.update"
+		"java": "climateSurveys.update",
+		"ruby": "climate_surveys.update"
 	},
 	"DELETE /v1/climate_surveys/{id}": {
 		"python": "climate_surveys.delete",
 		"php": "climateSurveys->delete",
 		"dotnet": "ClimateSurveys.DeleteAsync",
 		"go": "ClimateSurveys.Delete",
-		"java": "climateSurveys.delete"
+		"java": "climateSurveys.delete",
+		"ruby": "climate_surveys.delete"
 	},
 	"POST /v1/climate_surveys/{id}/open": {
 		"python": "climate_surveys.open",
 		"php": "climateSurveys->open",
 		"dotnet": "ClimateSurveys.OpenAsync",
 		"go": "ClimateSurveys.Open",
-		"java": "climateSurveys.open"
+		"java": "climateSurveys.open",
+		"ruby": "climate_surveys.open"
 	},
 	"POST /v1/climate_surveys/{id}/close": {
 		"python": "climate_surveys.close",
 		"php": "climateSurveys->close",
 		"dotnet": "ClimateSurveys.CloseAsync",
 		"go": "ClimateSurveys.Close",
-		"java": "climateSurveys.close"
+		"java": "climateSurveys.close",
+		"ruby": "climate_surveys.close"
 	},
 	"POST /v1/climate_surveys/{id}/report": {
 		"python": "climate_surveys.update_report",
 		"php": "climateSurveys->updateReport",
 		"dotnet": "ClimateSurveys.UpdateReportAsync",
 		"go": "ClimateSurveys.UpdateReport",
-		"java": "climateSurveys.updateReport"
+		"java": "climateSurveys.updateReport",
+		"ruby": "climate_surveys.update_report"
 	},
 	"GET /v1/climate_surveys/{id}/traumatic_events": {
 		"python": "climate_surveys.traumatic_events",
 		"php": "climateSurveys->traumaticEvents",
 		"dotnet": "ClimateSurveys.TraumaticEventsAsync",
 		"go": "ClimateSurveys.TraumaticEvents",
-		"java": "climateSurveys.traumaticEvents"
+		"java": "climateSurveys.traumaticEvents",
+		"ruby": "climate_surveys.traumatic_events"
 	},
 	"POST /v1/climate_surveys/{id}/referrals": {
 		"python": "climate_surveys.refer",
 		"php": "climateSurveys->refer",
 		"dotnet": "ClimateSurveys.ReferAsync",
 		"go": "ClimateSurveys.Refer",
-		"java": "climateSurveys.refer"
+		"java": "climateSurveys.refer",
+		"ruby": "climate_surveys.refer"
 	},
 	"GET /v1/climate_actions": {
 		"python": "climate_actions.list",
 		"php": "climateActions->list",
 		"dotnet": "ClimateActions.ListAsync",
 		"go": "ClimateActions.List",
-		"java": "climateActions.list"
+		"java": "climateActions.list",
+		"ruby": "climate_actions.list"
 	},
 	"POST /v1/climate_actions": {
 		"python": "climate_actions.create",
 		"php": "climateActions->create",
 		"dotnet": "ClimateActions.CreateAsync",
 		"go": "ClimateActions.Create",
-		"java": "climateActions.create"
+		"java": "climateActions.create",
+		"ruby": "climate_actions.create"
 	},
 	"POST /v1/climate_actions/{id}": {
 		"python": "climate_actions.update",
 		"php": "climateActions->update",
 		"dotnet": "ClimateActions.UpdateAsync",
 		"go": "ClimateActions.Update",
-		"java": "climateActions.update"
+		"java": "climateActions.update",
+		"ruby": "climate_actions.update"
 	},
 	"DELETE /v1/climate_actions/{id}": {
 		"python": "climate_actions.delete",
 		"php": "climateActions->delete",
 		"dotnet": "ClimateActions.DeleteAsync",
 		"go": "ClimateActions.Delete",
-		"java": "climateActions.delete"
+		"java": "climateActions.delete",
+		"ruby": "climate_actions.delete"
 	},
 	"GET /v1/climate_complaints": {
 		"python": "climate_complaints.list",
 		"php": "climateComplaints->list",
 		"dotnet": "ClimateComplaints.ListAsync",
 		"go": "ClimateComplaints.List",
-		"java": "climateComplaints.list"
+		"java": "climateComplaints.list",
+		"ruby": "climate_complaints.list"
 	},
 	"POST /v1/climate_complaints/{id}": {
 		"python": "climate_complaints.update",
 		"php": "climateComplaints->update",
 		"dotnet": "ClimateComplaints.UpdateAsync",
 		"go": "ClimateComplaints.Update",
-		"java": "climateComplaints.update"
+		"java": "climateComplaints.update",
+		"ruby": "climate_complaints.update"
 	},
 	"GET /v1/review_cycles": {
 		"python": "review_cycles.list",
 		"php": "reviewCycles->list",
 		"dotnet": "ReviewCycles.ListAsync",
 		"go": "ReviewCycles.List",
-		"java": "reviewCycles.list"
+		"java": "reviewCycles.list",
+		"ruby": "review_cycles.list"
 	},
 	"POST /v1/review_cycles": {
 		"python": "review_cycles.create",
 		"php": "reviewCycles->create",
 		"dotnet": "ReviewCycles.CreateAsync",
 		"go": "ReviewCycles.Create",
-		"java": "reviewCycles.create"
+		"java": "reviewCycles.create",
+		"ruby": "review_cycles.create"
 	},
 	"GET /v1/review_cycles/{id}": {
 		"python": "review_cycles.get",
 		"php": "reviewCycles->get",
 		"dotnet": "ReviewCycles.GetAsync",
 		"go": "ReviewCycles.Get",
-		"java": "reviewCycles.get"
+		"java": "reviewCycles.get",
+		"ruby": "review_cycles.get"
 	},
 	"POST /v1/review_cycles/{id}": {
 		"python": "review_cycles.update",
 		"php": "reviewCycles->update",
 		"dotnet": "ReviewCycles.UpdateAsync",
 		"go": "ReviewCycles.Update",
-		"java": "reviewCycles.update"
+		"java": "reviewCycles.update",
+		"ruby": "review_cycles.update"
 	},
 	"DELETE /v1/review_cycles/{id}": {
 		"python": "review_cycles.delete",
 		"php": "reviewCycles->delete",
 		"dotnet": "ReviewCycles.DeleteAsync",
 		"go": "ReviewCycles.Delete",
-		"java": "reviewCycles.delete"
+		"java": "reviewCycles.delete",
+		"ruby": "review_cycles.delete"
 	},
 	"POST /v1/review_cycles/{id}/open": {
 		"python": "review_cycles.open",
 		"php": "reviewCycles->open",
 		"dotnet": "ReviewCycles.OpenAsync",
 		"go": "ReviewCycles.Open",
-		"java": "reviewCycles.open"
+		"java": "reviewCycles.open",
+		"ruby": "review_cycles.open"
 	},
 	"POST /v1/review_cycles/{id}/close": {
 		"python": "review_cycles.close",
 		"php": "reviewCycles->close",
 		"dotnet": "ReviewCycles.CloseAsync",
 		"go": "ReviewCycles.Close",
-		"java": "reviewCycles.close"
+		"java": "reviewCycles.close",
+		"ruby": "review_cycles.close"
 	},
 	"POST /v1/review_cycles/{id}/participants": {
 		"python": "review_cycles.set_participants",
 		"php": "reviewCycles->setParticipants",
 		"dotnet": "ReviewCycles.SetParticipantsAsync",
 		"go": "ReviewCycles.SetParticipants",
-		"java": "reviewCycles.setParticipants"
+		"java": "reviewCycles.setParticipants",
+		"ruby": "review_cycles.set_participants"
 	},
 	"POST /v1/review_cycles/{id}/peers": {
 		"python": "review_cycles.set_peers",
 		"php": "reviewCycles->setPeers",
 		"dotnet": "ReviewCycles.SetPeersAsync",
 		"go": "ReviewCycles.SetPeers",
-		"java": "reviewCycles.setPeers"
+		"java": "reviewCycles.setPeers",
+		"ruby": "review_cycles.set_peers"
 	},
 	"POST /v1/review_cycles/{id}/calibrations": {
 		"python": "review_cycles.calibrate",
 		"php": "reviewCycles->calibrate",
 		"dotnet": "ReviewCycles.CalibrateAsync",
 		"go": "ReviewCycles.Calibrate",
-		"java": "reviewCycles.calibrate"
+		"java": "reviewCycles.calibrate",
+		"ruby": "review_cycles.calibrate"
 	},
 	"GET /v1/review_cycles/{id}/results/{employee}": {
 		"python": "review_cycles.result",
 		"php": "reviewCycles->result",
 		"dotnet": "ReviewCycles.ResultAsync",
 		"go": "ReviewCycles.Result",
-		"java": "reviewCycles.result"
+		"java": "reviewCycles.result",
+		"ruby": "review_cycles.result"
 	},
 	"POST /v1/review_objectives": {
 		"python": "review_objectives.create",
 		"php": "reviewObjectives->create",
 		"dotnet": "ReviewObjectives.CreateAsync",
 		"go": "ReviewObjectives.Create",
-		"java": "reviewObjectives.create"
+		"java": "reviewObjectives.create",
+		"ruby": "review_objectives.create"
 	},
 	"POST /v1/review_objectives/{id}": {
 		"python": "review_objectives.update",
 		"php": "reviewObjectives->update",
 		"dotnet": "ReviewObjectives.UpdateAsync",
 		"go": "ReviewObjectives.Update",
-		"java": "reviewObjectives.update"
+		"java": "reviewObjectives.update",
+		"ruby": "review_objectives.update"
 	},
 	"DELETE /v1/review_objectives/{id}": {
 		"python": "review_objectives.delete",
 		"php": "reviewObjectives->delete",
 		"dotnet": "ReviewObjectives.DeleteAsync",
 		"go": "ReviewObjectives.Delete",
-		"java": "reviewObjectives.delete"
+		"java": "reviewObjectives.delete",
+		"ruby": "review_objectives.delete"
 	},
 	"POST /v1/payroll_taxes/settings": {
 		"python": "payroll_taxes.update_settings",
 		"php": "payrollTaxes->updateSettings",
 		"dotnet": "PayrollTaxes.UpdateSettingsAsync",
 		"go": "PayrollTaxes.UpdateSettings",
-		"java": "payrollTaxes.updateSettings"
+		"java": "payrollTaxes.updateSettings",
+		"ruby": "payroll_taxes.update_settings"
 	},
 	"POST /v1/invoice_batches": {
 		"python": "invoice_batches.create",
 		"php": "invoiceBatches->create",
 		"dotnet": "InvoiceBatches.CreateAsync",
 		"go": "InvoiceBatches.Create",
-		"java": "invoiceBatches.create"
+		"java": "invoiceBatches.create",
+		"ruby": "invoice_batches.create"
 	},
 	"GET /v1/invoice_batches": {
 		"python": "invoice_batches.list",
 		"php": "invoiceBatches->list",
 		"dotnet": "InvoiceBatches.ListAsync",
 		"go": "InvoiceBatches.List",
-		"java": "invoiceBatches.list"
+		"java": "invoiceBatches.list",
+		"ruby": "invoice_batches.list"
 	},
 	"GET /v1/invoice_batches/{id}": {
 		"python": "invoice_batches.get",
 		"php": "invoiceBatches->get",
 		"dotnet": "InvoiceBatches.GetAsync",
 		"go": "InvoiceBatches.Get",
-		"java": "invoiceBatches.get"
+		"java": "invoiceBatches.get",
+		"ruby": "invoice_batches.get"
 	},
 	"POST /v1/tax_ids/validate": {
 		"python": "tax_ids.validate",
 		"php": "taxIds->validate",
 		"dotnet": "TaxIds.ValidateAsync",
 		"go": "TaxIds.Validate",
-		"java": "taxIds.validate"
+		"java": "taxIds.validate",
+		"ruby": "tax_ids.validate"
 	},
 	"POST /v1/branches": {
 		"python": "branches.create",
 		"php": "branches->create",
 		"dotnet": "Branches.CreateAsync",
 		"go": "Branches.Create",
-		"java": "branches.create"
+		"java": "branches.create",
+		"ruby": "branches.create"
 	},
 	"GET /v1/branches": {
 		"python": "branches.list",
 		"php": "branches->list",
 		"dotnet": "Branches.ListAsync",
 		"go": "Branches.List",
-		"java": "branches.list"
+		"java": "branches.list",
+		"ruby": "branches.list"
 	},
 	"GET /v1/branches/{id}": {
 		"python": "branches.get",
 		"php": "branches->get",
 		"dotnet": "Branches.GetAsync",
 		"go": "Branches.Get",
-		"java": "branches.get"
+		"java": "branches.get",
+		"ruby": "branches.get"
 	},
 	"POST /v1/branches/{id}": {
 		"python": "branches.update",
 		"php": "branches->update",
 		"dotnet": "Branches.UpdateAsync",
 		"go": "Branches.Update",
-		"java": "branches.update"
+		"java": "branches.update",
+		"ruby": "branches.update"
 	},
 	"DELETE /v1/branches/{id}": {
 		"python": "branches.delete",
 		"php": "branches->delete",
 		"dotnet": "Branches.DeleteAsync",
 		"go": "Branches.Delete",
-		"java": "branches.delete"
+		"java": "branches.delete",
+		"ruby": "branches.delete"
 	},
 	"POST /v1/branches/{id}/logo": {
 		"python": "branches.upload_logo",
 		"php": "branches->uploadLogo",
 		"dotnet": "Branches.UploadLogoAsync",
 		"go": "Branches.UploadLogo",
-		"java": "branches.uploadLogo"
+		"java": "branches.uploadLogo",
+		"ruby": "branches.upload_logo"
 	},
 	"DELETE /v1/branches/{id}/logo": {
 		"python": "branches.delete_logo",
 		"php": "branches->deleteLogo",
 		"dotnet": "Branches.DeleteLogoAsync",
 		"go": "Branches.DeleteLogo",
-		"java": "branches.deleteLogo"
+		"java": "branches.deleteLogo",
+		"ruby": "branches.delete_logo"
 	},
 	"POST /v1/rules": {
 		"python": "rules.create",
 		"php": "rules->create",
 		"dotnet": "Rules.CreateAsync",
 		"go": "Rules.Create",
-		"java": "rules.create"
+		"java": "rules.create",
+		"ruby": "rules.create"
 	},
 	"GET /v1/rules": {
 		"python": "rules.list",
 		"php": "rules->list",
 		"dotnet": "Rules.ListAsync",
 		"go": "Rules.List",
-		"java": "rules.list"
+		"java": "rules.list",
+		"ruby": "rules.list"
 	},
 	"POST /v1/rules/order": {
 		"python": "rules.order",
 		"php": "rules->order",
 		"dotnet": "Rules.OrderAsync",
 		"go": "Rules.Order",
-		"java": "rules.order"
+		"java": "rules.order",
+		"ruby": "rules.order"
 	},
 	"GET /v1/rules/{id}": {
 		"python": "rules.get",
 		"php": "rules->get",
 		"dotnet": "Rules.GetAsync",
 		"go": "Rules.Get",
-		"java": "rules.get"
+		"java": "rules.get",
+		"ruby": "rules.get"
 	},
 	"POST /v1/rules/{id}": {
 		"python": "rules.update",
 		"php": "rules->update",
 		"dotnet": "Rules.UpdateAsync",
 		"go": "Rules.Update",
-		"java": "rules.update"
+		"java": "rules.update",
+		"ruby": "rules.update"
 	},
 	"DELETE /v1/rules/{id}": {
 		"python": "rules.delete",
 		"php": "rules->delete",
 		"dotnet": "Rules.DeleteAsync",
 		"go": "Rules.Delete",
-		"java": "rules.delete"
+		"java": "rules.delete",
+		"ruby": "rules.delete"
 	},
 	"POST /v1/rules/{id}/test": {
 		"python": "rules.test",
 		"php": "rules->test",
 		"dotnet": "Rules.TestAsync",
 		"go": "Rules.Test",
-		"java": "rules.test"
+		"java": "rules.test",
+		"ruby": "rules.test"
 	},
 	"GET /v1/rules/{id}/runs": {
 		"python": "rules.list_runs",
 		"php": "rules->listRuns",
 		"dotnet": "Rules.ListRunsAsync",
 		"go": "Rules.ListRuns",
-		"java": "rules.listRuns"
+		"java": "rules.listRuns",
+		"ruby": "rules.list_runs"
 	},
 	"POST /v1/rules/{id}/backtest": {
 		"python": "rules.backtest",
 		"php": "rules->backtest",
 		"dotnet": "Rules.BacktestAsync",
 		"go": "Rules.Backtest",
-		"java": "rules.backtest"
+		"java": "rules.backtest",
+		"ruby": "rules.backtest"
 	},
 	"GET /v1/rules/{id}/versions": {
 		"python": "rules.list_versions",
 		"php": "rules->listVersions",
 		"dotnet": "Rules.ListVersionsAsync",
 		"go": "Rules.ListVersions",
-		"java": "rules.listVersions"
+		"java": "rules.listVersions",
+		"ruby": "rules.list_versions"
 	},
 	"POST /v1/rules/{id}/versions/{version}/restore": {
 		"python": "rules.restore_version",
 		"php": "rules->restoreVersion",
 		"dotnet": "Rules.RestoreVersionAsync",
 		"go": "Rules.RestoreVersion",
-		"java": "rules.restoreVersion"
+		"java": "rules.restoreVersion",
+		"ruby": "rules.restore_version"
 	},
 	"POST /v1/supplier_groups": {
 		"python": "supplier_groups.create",
 		"php": "supplierGroups->create",
 		"dotnet": "SupplierGroups.CreateAsync",
 		"go": "SupplierGroups.Create",
-		"java": "supplierGroups.create"
+		"java": "supplierGroups.create",
+		"ruby": "supplier_groups.create"
 	},
 	"GET /v1/supplier_groups": {
 		"python": "supplier_groups.list",
 		"php": "supplierGroups->list",
 		"dotnet": "SupplierGroups.ListAsync",
 		"go": "SupplierGroups.List",
-		"java": "supplierGroups.list"
+		"java": "supplierGroups.list",
+		"ruby": "supplier_groups.list"
 	},
 	"GET /v1/supplier_groups/{id}": {
 		"python": "supplier_groups.get",
 		"php": "supplierGroups->get",
 		"dotnet": "SupplierGroups.GetAsync",
 		"go": "SupplierGroups.Get",
-		"java": "supplierGroups.get"
+		"java": "supplierGroups.get",
+		"ruby": "supplier_groups.get"
 	},
 	"POST /v1/supplier_groups/{id}": {
 		"python": "supplier_groups.update",
 		"php": "supplierGroups->update",
 		"dotnet": "SupplierGroups.UpdateAsync",
 		"go": "SupplierGroups.Update",
-		"java": "supplierGroups.update"
+		"java": "supplierGroups.update",
+		"ruby": "supplier_groups.update"
 	},
 	"DELETE /v1/supplier_groups/{id}": {
 		"python": "supplier_groups.delete",
 		"php": "supplierGroups->delete",
 		"dotnet": "SupplierGroups.DeleteAsync",
 		"go": "SupplierGroups.Delete",
-		"java": "supplierGroups.delete"
+		"java": "supplierGroups.delete",
+		"ruby": "supplier_groups.delete"
 	},
 	"GET /v1/findings": {
 		"python": "findings.list",
 		"php": "findings->list",
 		"dotnet": "Findings.ListAsync",
 		"go": "Findings.List",
-		"java": "findings.list"
+		"java": "findings.list",
+		"ruby": "findings.list"
 	},
 	"GET /v1/findings/{id}": {
 		"python": "findings.get",
 		"php": "findings->get",
 		"dotnet": "Findings.GetAsync",
 		"go": "Findings.Get",
-		"java": "findings.get"
+		"java": "findings.get",
+		"ruby": "findings.get"
 	},
 	"POST /v1/findings/{id}/review": {
 		"python": "findings.review",
 		"php": "findings->review",
 		"dotnet": "Findings.ReviewAsync",
 		"go": "Findings.Review",
-		"java": "findings.review"
+		"java": "findings.review",
+		"ruby": "findings.review"
 	},
 	"POST /v1/findings/{id}/reopen": {
 		"python": "findings.reopen",
 		"php": "findings->reopen",
 		"dotnet": "Findings.ReopenAsync",
 		"go": "Findings.Reopen",
-		"java": "findings.reopen"
+		"java": "findings.reopen",
+		"ruby": "findings.reopen"
 	},
 	"POST /v1/cost_centers": {
 		"python": "cost_centers.create",
 		"php": "costCenters->create",
 		"dotnet": "CostCenters.CreateAsync",
 		"go": "CostCenters.Create",
-		"java": "costCenters.create"
+		"java": "costCenters.create",
+		"ruby": "cost_centers.create"
 	},
 	"GET /v1/cost_centers": {
 		"python": "cost_centers.list",
 		"php": "costCenters->list",
 		"dotnet": "CostCenters.ListAsync",
 		"go": "CostCenters.List",
-		"java": "costCenters.list"
+		"java": "costCenters.list",
+		"ruby": "cost_centers.list"
 	},
 	"GET /v1/cost_centers/{id}": {
 		"python": "cost_centers.get",
 		"php": "costCenters->get",
 		"dotnet": "CostCenters.GetAsync",
 		"go": "CostCenters.Get",
-		"java": "costCenters.get"
+		"java": "costCenters.get",
+		"ruby": "cost_centers.get"
 	},
 	"POST /v1/cost_centers/{id}": {
 		"python": "cost_centers.update",
 		"php": "costCenters->update",
 		"dotnet": "CostCenters.UpdateAsync",
 		"go": "CostCenters.Update",
-		"java": "costCenters.update"
+		"java": "costCenters.update",
+		"ruby": "cost_centers.update"
 	},
 	"DELETE /v1/cost_centers/{id}": {
 		"python": "cost_centers.delete",
 		"php": "costCenters->delete",
 		"dotnet": "CostCenters.DeleteAsync",
 		"go": "CostCenters.Delete",
-		"java": "costCenters.delete"
+		"java": "costCenters.delete",
+		"ruby": "cost_centers.delete"
 	},
 	"POST /v1/tags": {
 		"python": "tags.create",
 		"php": "tags->create",
 		"dotnet": "Tags.CreateAsync",
 		"go": "Tags.Create",
-		"java": "tags.create"
+		"java": "tags.create",
+		"ruby": "tags.create"
 	},
 	"GET /v1/tags": {
 		"python": "tags.list",
 		"php": "tags->list",
 		"dotnet": "Tags.ListAsync",
 		"go": "Tags.List",
-		"java": "tags.list"
+		"java": "tags.list",
+		"ruby": "tags.list"
 	},
 	"GET /v1/tags/{id}": {
 		"python": "tags.get",
 		"php": "tags->get",
 		"dotnet": "Tags.GetAsync",
 		"go": "Tags.Get",
-		"java": "tags.get"
+		"java": "tags.get",
+		"ruby": "tags.get"
 	},
 	"POST /v1/tags/{id}": {
 		"python": "tags.update",
 		"php": "tags->update",
 		"dotnet": "Tags.UpdateAsync",
 		"go": "Tags.Update",
-		"java": "tags.update"
+		"java": "tags.update",
+		"ruby": "tags.update"
 	},
 	"DELETE /v1/tags/{id}": {
 		"python": "tags.delete",
 		"php": "tags->delete",
 		"dotnet": "Tags.DeleteAsync",
 		"go": "Tags.Delete",
-		"java": "tags.delete"
+		"java": "tags.delete",
+		"ruby": "tags.delete"
 	},
 	"POST /v1/price_lists": {
 		"python": "price_lists.create",
 		"php": "priceLists->create",
 		"dotnet": "PriceLists.CreateAsync",
 		"go": "PriceLists.Create",
-		"java": "priceLists.create"
+		"java": "priceLists.create",
+		"ruby": "price_lists.create"
 	},
 	"GET /v1/price_lists": {
 		"python": "price_lists.list",
 		"php": "priceLists->list",
 		"dotnet": "PriceLists.ListAsync",
 		"go": "PriceLists.List",
-		"java": "priceLists.list"
+		"java": "priceLists.list",
+		"ruby": "price_lists.list"
 	},
 	"GET /v1/price_lists/{id}": {
 		"python": "price_lists.get",
 		"php": "priceLists->get",
 		"dotnet": "PriceLists.GetAsync",
 		"go": "PriceLists.Get",
-		"java": "priceLists.get"
+		"java": "priceLists.get",
+		"ruby": "price_lists.get"
 	},
 	"POST /v1/price_lists/{id}": {
 		"python": "price_lists.update",
 		"php": "priceLists->update",
 		"dotnet": "PriceLists.UpdateAsync",
 		"go": "PriceLists.Update",
-		"java": "priceLists.update"
+		"java": "priceLists.update",
+		"ruby": "price_lists.update"
 	},
 	"DELETE /v1/price_lists/{id}": {
 		"python": "price_lists.delete",
 		"php": "priceLists->delete",
 		"dotnet": "PriceLists.DeleteAsync",
 		"go": "PriceLists.Delete",
-		"java": "priceLists.delete"
+		"java": "priceLists.delete",
+		"ruby": "price_lists.delete"
 	},
 	"POST /v1/customer_groups": {
 		"python": "customer_groups.create",
 		"php": "customerGroups->create",
 		"dotnet": "CustomerGroups.CreateAsync",
 		"go": "CustomerGroups.Create",
-		"java": "customerGroups.create"
+		"java": "customerGroups.create",
+		"ruby": "customer_groups.create"
 	},
 	"GET /v1/customer_groups": {
 		"python": "customer_groups.list",
 		"php": "customerGroups->list",
 		"dotnet": "CustomerGroups.ListAsync",
 		"go": "CustomerGroups.List",
-		"java": "customerGroups.list"
+		"java": "customerGroups.list",
+		"ruby": "customer_groups.list"
 	},
 	"GET /v1/customer_groups/{id}": {
 		"python": "customer_groups.get",
 		"php": "customerGroups->get",
 		"dotnet": "CustomerGroups.GetAsync",
 		"go": "CustomerGroups.Get",
-		"java": "customerGroups.get"
+		"java": "customerGroups.get",
+		"ruby": "customer_groups.get"
 	},
 	"POST /v1/customer_groups/{id}": {
 		"python": "customer_groups.update",
 		"php": "customerGroups->update",
 		"dotnet": "CustomerGroups.UpdateAsync",
 		"go": "CustomerGroups.Update",
-		"java": "customerGroups.update"
+		"java": "customerGroups.update",
+		"ruby": "customer_groups.update"
 	},
 	"DELETE /v1/customer_groups/{id}": {
 		"python": "customer_groups.delete",
 		"php": "customerGroups->delete",
 		"dotnet": "CustomerGroups.DeleteAsync",
 		"go": "CustomerGroups.Delete",
-		"java": "customerGroups.delete"
+		"java": "customerGroups.delete",
+		"ruby": "customer_groups.delete"
 	},
 	"POST /v1/prices": {
 		"python": "prices.quote",
 		"php": "prices->quote",
 		"dotnet": "Prices.QuoteAsync",
 		"go": "Prices.Quote",
-		"java": "prices.quote"
+		"java": "prices.quote",
+		"ruby": "prices.quote"
 	},
 	"GET /v1/attendance": {
 		"python": "attendance.get",
 		"php": "attendance->get",
 		"dotnet": "Attendance.GetAsync",
 		"go": "Attendance.Get",
-		"java": "attendance.get"
+		"java": "attendance.get",
+		"ruby": "attendance.get"
 	},
 	"POST /v1/attendance/marks": {
 		"python": "attendance.create_mark",
 		"php": "attendance->createMark",
 		"dotnet": "Attendance.CreateMarkAsync",
 		"go": "Attendance.CreateMark",
-		"java": "attendance.createMark"
+		"java": "attendance.createMark",
+		"ruby": "attendance.create_mark"
 	},
 	"POST /v1/attendance/marks/{id}/void": {
 		"python": "attendance.void_mark",
 		"php": "attendance->voidMark",
 		"dotnet": "Attendance.VoidMarkAsync",
 		"go": "Attendance.VoidMark",
-		"java": "attendance.voidMark"
+		"java": "attendance.voidMark",
+		"ruby": "attendance.void_mark"
 	},
 	"POST /v1/attendance/overtime": {
 		"python": "attendance.approve_overtime",
 		"php": "attendance->approveOvertime",
 		"dotnet": "Attendance.ApproveOvertimeAsync",
 		"go": "Attendance.ApproveOvertime",
-		"java": "attendance.approveOvertime"
+		"java": "attendance.approveOvertime",
+		"ruby": "attendance.approve_overtime"
 	},
 	"GET /v1/attendance/shifts": {
 		"python": "attendance.list_shifts",
 		"php": "attendance->listShifts",
 		"dotnet": "Attendance.ListShiftsAsync",
 		"go": "Attendance.ListShifts",
-		"java": "attendance.listShifts"
+		"java": "attendance.listShifts",
+		"ruby": "attendance.list_shifts"
 	},
 	"POST /v1/attendance/shifts": {
 		"python": "attendance.create_shift",
 		"php": "attendance->createShift",
 		"dotnet": "Attendance.CreateShiftAsync",
 		"go": "Attendance.CreateShift",
-		"java": "attendance.createShift"
+		"java": "attendance.createShift",
+		"ruby": "attendance.create_shift"
 	},
 	"POST /v1/attendance/shifts/{id}": {
 		"python": "attendance.update_shift",
 		"php": "attendance->updateShift",
 		"dotnet": "Attendance.UpdateShiftAsync",
 		"go": "Attendance.UpdateShift",
-		"java": "attendance.updateShift"
+		"java": "attendance.updateShift",
+		"ruby": "attendance.update_shift"
 	},
 	"GET /v1/attendance/rotations": {
 		"python": "attendance.list_rotations",
 		"php": "attendance->listRotations",
 		"dotnet": "Attendance.ListRotationsAsync",
 		"go": "Attendance.ListRotations",
-		"java": "attendance.listRotations"
+		"java": "attendance.listRotations",
+		"ruby": "attendance.list_rotations"
 	},
 	"POST /v1/attendance/rotations": {
 		"python": "attendance.create_rotation",
 		"php": "attendance->createRotation",
 		"dotnet": "Attendance.CreateRotationAsync",
 		"go": "Attendance.CreateRotation",
-		"java": "attendance.createRotation"
+		"java": "attendance.createRotation",
+		"ruby": "attendance.create_rotation"
 	},
 	"POST /v1/attendance/rotations/{id}": {
 		"python": "attendance.update_rotation",
 		"php": "attendance->updateRotation",
 		"dotnet": "Attendance.UpdateRotationAsync",
 		"go": "Attendance.UpdateRotation",
-		"java": "attendance.updateRotation"
+		"java": "attendance.updateRotation",
+		"ruby": "attendance.update_rotation"
 	},
 	"GET /v1/attendance/calendar": {
 		"python": "attendance.get_calendar",
 		"php": "attendance->getCalendar",
 		"dotnet": "Attendance.GetCalendarAsync",
 		"go": "Attendance.GetCalendar",
-		"java": "attendance.getCalendar"
+		"java": "attendance.getCalendar",
+		"ruby": "attendance.get_calendar"
 	},
 	"POST /v1/attendance/calendar": {
 		"python": "attendance.set_calendar",
 		"php": "attendance->setCalendar",
 		"dotnet": "Attendance.SetCalendarAsync",
 		"go": "Attendance.SetCalendar",
-		"java": "attendance.setCalendar"
+		"java": "attendance.setCalendar",
+		"ruby": "attendance.set_calendar"
 	},
 	"POST /v1/expense_people": {
 		"python": "expense_people.create",
 		"php": "expensePeople->create",
 		"dotnet": "ExpensePeople.CreateAsync",
 		"go": "ExpensePeople.Create",
-		"java": "expensePeople.create"
+		"java": "expensePeople.create",
+		"ruby": "expense_people.create"
 	},
 	"GET /v1/expense_people": {
 		"python": "expense_people.list",
 		"php": "expensePeople->list",
 		"dotnet": "ExpensePeople.ListAsync",
 		"go": "ExpensePeople.List",
-		"java": "expensePeople.list"
+		"java": "expensePeople.list",
+		"ruby": "expense_people.list"
 	},
 	"GET /v1/expense_people/{id}": {
 		"python": "expense_people.get",
 		"php": "expensePeople->get",
 		"dotnet": "ExpensePeople.GetAsync",
 		"go": "ExpensePeople.Get",
-		"java": "expensePeople.get"
+		"java": "expensePeople.get",
+		"ruby": "expense_people.get"
 	},
 	"POST /v1/expense_people/{id}": {
 		"python": "expense_people.update",
 		"php": "expensePeople->update",
 		"dotnet": "ExpensePeople.UpdateAsync",
 		"go": "ExpensePeople.Update",
-		"java": "expensePeople.update"
+		"java": "expensePeople.update",
+		"ruby": "expense_people.update"
 	},
 	"POST /v1/expense_people/{id}/link": {
 		"python": "expense_people.create_link",
 		"php": "expensePeople->createLink",
 		"dotnet": "ExpensePeople.CreateLinkAsync",
 		"go": "ExpensePeople.CreateLink",
-		"java": "expensePeople.createLink"
+		"java": "expensePeople.createLink",
+		"ruby": "expense_people.create_link"
 	},
 	"DELETE /v1/expense_people/{id}/link": {
 		"python": "expense_people.delete_link",
 		"php": "expensePeople->deleteLink",
 		"dotnet": "ExpensePeople.DeleteLinkAsync",
 		"go": "ExpensePeople.DeleteLink",
-		"java": "expensePeople.deleteLink"
+		"java": "expensePeople.deleteLink",
+		"ruby": "expense_people.delete_link"
 	},
 	"POST /v1/expense_reports": {
 		"python": "expense_reports.create",
 		"php": "expenseReports->create",
 		"dotnet": "ExpenseReports.CreateAsync",
 		"go": "ExpenseReports.Create",
-		"java": "expenseReports.create"
+		"java": "expenseReports.create",
+		"ruby": "expense_reports.create"
 	},
 	"GET /v1/expense_reports": {
 		"python": "expense_reports.list",
 		"php": "expenseReports->list",
 		"dotnet": "ExpenseReports.ListAsync",
 		"go": "ExpenseReports.List",
-		"java": "expenseReports.list"
+		"java": "expenseReports.list",
+		"ruby": "expense_reports.list"
 	},
 	"GET /v1/expense_reports/{id}": {
 		"python": "expense_reports.get",
 		"php": "expenseReports->get",
 		"dotnet": "ExpenseReports.GetAsync",
 		"go": "ExpenseReports.Get",
-		"java": "expenseReports.get"
+		"java": "expenseReports.get",
+		"ruby": "expense_reports.get"
 	},
 	"POST /v1/expense_reports/{id}": {
 		"python": "expense_reports.update",
 		"php": "expenseReports->update",
 		"dotnet": "ExpenseReports.UpdateAsync",
 		"go": "ExpenseReports.Update",
-		"java": "expenseReports.update"
+		"java": "expenseReports.update",
+		"ruby": "expense_reports.update"
 	},
 	"DELETE /v1/expense_reports/{id}": {
 		"python": "expense_reports.delete",
 		"php": "expenseReports->delete",
 		"dotnet": "ExpenseReports.DeleteAsync",
 		"go": "ExpenseReports.Delete",
-		"java": "expenseReports.delete"
+		"java": "expenseReports.delete",
+		"ruby": "expense_reports.delete"
 	},
 	"POST /v1/expense_reports/{id}/submit": {
 		"python": "expense_reports.submit",
 		"php": "expenseReports->submit",
 		"dotnet": "ExpenseReports.SubmitAsync",
 		"go": "ExpenseReports.Submit",
-		"java": "expenseReports.submit"
+		"java": "expenseReports.submit",
+		"ruby": "expense_reports.submit"
 	},
 	"POST /v1/expense_reports/{id}/approve": {
 		"python": "expense_reports.approve",
 		"php": "expenseReports->approve",
 		"dotnet": "ExpenseReports.ApproveAsync",
 		"go": "ExpenseReports.Approve",
-		"java": "expenseReports.approve"
+		"java": "expenseReports.approve",
+		"ruby": "expense_reports.approve"
 	},
 	"POST /v1/expense_reports/{id}/return": {
 		"python": "expense_reports.send_back",
 		"php": "expenseReports->sendBack",
 		"dotnet": "ExpenseReports.SendBackAsync",
 		"go": "ExpenseReports.SendBack",
-		"java": "expenseReports.sendBack"
+		"java": "expenseReports.sendBack",
+		"ruby": "expense_reports.send_back"
 	},
 	"POST /v1/expense_reports/{id}/reopen": {
 		"python": "expense_reports.reopen",
 		"php": "expenseReports->reopen",
 		"dotnet": "ExpenseReports.ReopenAsync",
 		"go": "ExpenseReports.Reopen",
-		"java": "expenseReports.reopen"
+		"java": "expenseReports.reopen",
+		"ruby": "expense_reports.reopen"
 	},
 	"POST /v1/expense_reports/{id}/items": {
 		"python": "expense_reports.create_item",
 		"php": "expenseReports->createItem",
 		"dotnet": "ExpenseReports.CreateItemAsync",
 		"go": "ExpenseReports.CreateItem",
-		"java": "expenseReports.createItem"
+		"java": "expenseReports.createItem",
+		"ruby": "expense_reports.create_item"
 	},
 	"POST /v1/expense_reports/{id}/items/{item}": {
 		"python": "expense_reports.update_item",
 		"php": "expenseReports->updateItem",
 		"dotnet": "ExpenseReports.UpdateItemAsync",
 		"go": "ExpenseReports.UpdateItem",
-		"java": "expenseReports.updateItem"
+		"java": "expenseReports.updateItem",
+		"ruby": "expense_reports.update_item"
 	},
 	"DELETE /v1/expense_reports/{id}/items/{item}": {
 		"python": "expense_reports.delete_item",
 		"php": "expenseReports->deleteItem",
 		"dotnet": "ExpenseReports.DeleteItemAsync",
 		"go": "ExpenseReports.DeleteItem",
-		"java": "expenseReports.deleteItem"
+		"java": "expenseReports.deleteItem",
+		"ruby": "expense_reports.delete_item"
 	},
 	"POST /v1/expense_reports/{id}/movements": {
 		"python": "expense_reports.create_movement",
 		"php": "expenseReports->createMovement",
 		"dotnet": "ExpenseReports.CreateMovementAsync",
 		"go": "ExpenseReports.CreateMovement",
-		"java": "expenseReports.createMovement"
+		"java": "expenseReports.createMovement",
+		"ruby": "expense_reports.create_movement"
 	},
 	"DELETE /v1/expense_reports/{id}/movements/{movement}": {
 		"python": "expense_reports.delete_movement",
 		"php": "expenseReports->deleteMovement",
 		"dotnet": "ExpenseReports.DeleteMovementAsync",
 		"go": "ExpenseReports.DeleteMovement",
-		"java": "expenseReports.deleteMovement"
+		"java": "expenseReports.deleteMovement",
+		"ruby": "expense_reports.delete_movement"
 	},
 	"GET /v1/expense_policy": {
 		"python": "expense_policy.get",
 		"php": "expensePolicy->get",
 		"dotnet": "ExpensePolicy.GetAsync",
 		"go": "ExpensePolicy.Get",
-		"java": "expensePolicy.get"
+		"java": "expensePolicy.get",
+		"ruby": "expense_policy.get"
 	},
 	"POST /v1/expense_policy": {
 		"python": "expense_policy.update",
 		"php": "expensePolicy->update",
 		"dotnet": "ExpensePolicy.UpdateAsync",
 		"go": "ExpensePolicy.Update",
-		"java": "expensePolicy.update"
+		"java": "expensePolicy.update",
+		"ruby": "expense_policy.update"
 	},
 	"POST /v1/customers": {
 		"python": "customers.create",
 		"php": "customers->create",
 		"dotnet": "Customers.CreateAsync",
 		"go": "Customers.Create",
-		"java": "customers.create"
+		"java": "customers.create",
+		"ruby": "customers.create"
 	},
 	"GET /v1/customers": {
 		"python": "customers.list",
 		"php": "customers->list",
 		"dotnet": "Customers.ListAsync",
 		"go": "Customers.List",
-		"java": "customers.list"
+		"java": "customers.list",
+		"ruby": "customers.list"
 	},
 	"GET /v1/customers/search": {
 		"python": "customers.search",
 		"php": "customers->search",
 		"dotnet": "Customers.SearchAsync",
 		"go": "Customers.Search",
-		"java": "customers.search"
+		"java": "customers.search",
+		"ruby": "customers.search"
 	},
 	"GET /v1/customers/{id}": {
 		"python": "customers.get",
 		"php": "customers->get",
 		"dotnet": "Customers.GetAsync",
 		"go": "Customers.Get",
-		"java": "customers.get"
+		"java": "customers.get",
+		"ruby": "customers.get"
 	},
 	"POST /v1/customers/{id}": {
 		"python": "customers.update",
 		"php": "customers->update",
 		"dotnet": "Customers.UpdateAsync",
 		"go": "Customers.Update",
-		"java": "customers.update"
+		"java": "customers.update",
+		"ruby": "customers.update"
 	},
 	"DELETE /v1/customers/{id}": {
 		"python": "customers.delete",
 		"php": "customers->delete",
 		"dotnet": "Customers.DeleteAsync",
 		"go": "Customers.Delete",
-		"java": "customers.delete"
+		"java": "customers.delete",
+		"ruby": "customers.delete"
 	},
 	"POST /v1/customer_data_requests": {
 		"python": "customer_data_requests.create",
 		"php": "customerDataRequests->create",
 		"dotnet": "CustomerDataRequests.CreateAsync",
 		"go": "CustomerDataRequests.Create",
-		"java": "customerDataRequests.create"
+		"java": "customerDataRequests.create",
+		"ruby": "customer_data_requests.create"
 	},
 	"GET /v1/customer_data_requests": {
 		"python": "customer_data_requests.list",
 		"php": "customerDataRequests->list",
 		"dotnet": "CustomerDataRequests.ListAsync",
 		"go": "CustomerDataRequests.List",
-		"java": "customerDataRequests.list"
+		"java": "customerDataRequests.list",
+		"ruby": "customer_data_requests.list"
 	},
 	"GET /v1/customer_data_requests/{id}": {
 		"python": "customer_data_requests.get",
 		"php": "customerDataRequests->get",
 		"dotnet": "CustomerDataRequests.GetAsync",
 		"go": "CustomerDataRequests.Get",
-		"java": "customerDataRequests.get"
+		"java": "customerDataRequests.get",
+		"ruby": "customer_data_requests.get"
 	},
 	"DELETE /v1/customer_data_requests/{id}": {
 		"python": "customer_data_requests.cancel",
 		"php": "customerDataRequests->cancel",
 		"dotnet": "CustomerDataRequests.CancelAsync",
 		"go": "CustomerDataRequests.Cancel",
-		"java": "customerDataRequests.cancel"
+		"java": "customerDataRequests.cancel",
+		"ruby": "customer_data_requests.cancel"
 	},
 	"POST /v1/products": {
 		"python": "products.create",
 		"php": "products->create",
 		"dotnet": "Products.CreateAsync",
 		"go": "Products.Create",
-		"java": "products.create"
+		"java": "products.create",
+		"ruby": "products.create"
 	},
 	"GET /v1/products": {
 		"python": "products.list",
 		"php": "products->list",
 		"dotnet": "Products.ListAsync",
 		"go": "Products.List",
-		"java": "products.list"
+		"java": "products.list",
+		"ruby": "products.list"
 	},
 	"GET /v1/products/search": {
 		"python": "products.search",
 		"php": "products->search",
 		"dotnet": "Products.SearchAsync",
 		"go": "Products.Search",
-		"java": "products.search"
+		"java": "products.search",
+		"ruby": "products.search"
 	},
 	"GET /v1/products/{id}": {
 		"python": "products.get",
 		"php": "products->get",
 		"dotnet": "Products.GetAsync",
 		"go": "Products.Get",
-		"java": "products.get"
+		"java": "products.get",
+		"ruby": "products.get"
 	},
 	"POST /v1/products/{id}": {
 		"python": "products.update",
 		"php": "products->update",
 		"dotnet": "Products.UpdateAsync",
 		"go": "Products.Update",
-		"java": "products.update"
+		"java": "products.update",
+		"ruby": "products.update"
 	},
 	"DELETE /v1/products/{id}": {
 		"python": "products.delete",
 		"php": "products->delete",
 		"dotnet": "Products.DeleteAsync",
 		"go": "Products.Delete",
-		"java": "products.delete"
+		"java": "products.delete",
+		"ruby": "products.delete"
 	},
 	"GET /v1/issuers/{id}/compliance_opinion": {
 		"python": "issuers.compliance_opinion",
 		"php": "issuers->complianceOpinion",
 		"dotnet": "Issuers.ComplianceOpinionAsync",
 		"go": "Issuers.ComplianceOpinion",
-		"java": "issuers.complianceOpinion"
+		"java": "issuers.complianceOpinion",
+		"ruby": "issuers.compliance_opinion"
 	},
 	"POST /v1/issuers/{id}/compliance_opinion/refresh": {
 		"python": "issuers.refresh_compliance_opinion",
 		"php": "issuers->refreshComplianceOpinion",
 		"dotnet": "Issuers.RefreshComplianceOpinionAsync",
 		"go": "Issuers.RefreshComplianceOpinion",
-		"java": "issuers.refreshComplianceOpinion"
+		"java": "issuers.refreshComplianceOpinion",
+		"ruby": "issuers.refresh_compliance_opinion"
 	},
 	"GET /v1/issuers/{id}/compliance_opinion/pdf": {
 		"python": "issuers.compliance_opinion_pdf",
 		"php": "issuers->complianceOpinionPdf",
 		"dotnet": "Issuers.ComplianceOpinionPdfAsync",
 		"go": "Issuers.ComplianceOpinionPDF",
-		"java": "issuers.complianceOpinionPdf"
+		"java": "issuers.complianceOpinionPdf",
+		"ruby": "issuers.compliance_opinion_pdf"
 	},
 	"GET /v1/issuers/{id}/tax_status_certificate": {
 		"python": "issuers.tax_status_certificate",
 		"php": "issuers->taxStatusCertificate",
 		"dotnet": "Issuers.TaxStatusCertificateAsync",
 		"go": "Issuers.TaxStatusCertificate",
-		"java": "issuers.taxStatusCertificate"
+		"java": "issuers.taxStatusCertificate",
+		"ruby": "issuers.tax_status_certificate"
 	},
 	"POST /v1/issuers/{id}/tax_status_certificate/refresh": {
 		"python": "issuers.refresh_tax_status_certificate",
 		"php": "issuers->refreshTaxStatusCertificate",
 		"dotnet": "Issuers.RefreshTaxStatusCertificateAsync",
 		"go": "Issuers.RefreshTaxStatusCertificate",
-		"java": "issuers.refreshTaxStatusCertificate"
+		"java": "issuers.refreshTaxStatusCertificate",
+		"ruby": "issuers.refresh_tax_status_certificate"
 	},
 	"GET /v1/issuers/{id}/tax_status_certificate/pdf": {
 		"python": "issuers.tax_status_certificate_pdf",
 		"php": "issuers->taxStatusCertificatePdf",
 		"dotnet": "Issuers.TaxStatusCertificatePdfAsync",
 		"go": "Issuers.TaxStatusCertificatePDF",
-		"java": "issuers.taxStatusCertificatePdf"
+		"java": "issuers.taxStatusCertificatePdf",
+		"ruby": "issuers.tax_status_certificate_pdf"
 	},
 	"POST /v1/issuers/{id}/sat_mailbox/refresh": {
 		"python": "issuers.refresh_sat_mailbox",
 		"php": "issuers->refreshSatMailbox",
 		"dotnet": "Issuers.RefreshSatMailboxAsync",
 		"go": "Issuers.RefreshSATMailbox",
-		"java": "issuers.refreshSatMailbox"
+		"java": "issuers.refreshSatMailbox",
+		"ruby": "issuers.refresh_sat_mailbox"
 	},
 	"GET /v1/sat_mailbox_messages": {
 		"python": "sat_mailbox_messages.list",
 		"php": "satMailboxMessages->list",
 		"dotnet": "SatMailboxMessages.ListAsync",
 		"go": "SatMailboxMessages.List",
-		"java": "satMailboxMessages.list"
+		"java": "satMailboxMessages.list",
+		"ruby": "sat_mailbox_messages.list"
 	},
 	"GET /v1/sat_mailbox_messages/{id}": {
 		"python": "sat_mailbox_messages.get",
 		"php": "satMailboxMessages->get",
 		"dotnet": "SatMailboxMessages.GetAsync",
 		"go": "SatMailboxMessages.Get",
-		"java": "satMailboxMessages.get"
+		"java": "satMailboxMessages.get",
+		"ruby": "sat_mailbox_messages.get"
 	},
 	"GET /v1/sat_findings": {
 		"python": "sat_findings.list",
 		"php": "satFindings->list",
 		"dotnet": "SatFindings.ListAsync",
 		"go": "SatFindings.List",
-		"java": "satFindings.list"
+		"java": "satFindings.list",
+		"ruby": "sat_findings.list"
 	},
 	"GET /v1/sat_finding_counterparties": {
 		"python": "sat_finding_counterparties.list",
 		"php": "satFindingCounterparties->list",
 		"dotnet": "SatFindingCounterparties.ListAsync",
 		"go": "SatFindingCounterparties.List",
-		"java": "satFindingCounterparties.list"
+		"java": "satFindingCounterparties.list",
+		"ruby": "sat_finding_counterparties.list"
 	},
 	"GET /v1/company_report": {
 		"python": "company_report.get",
 		"php": "companyReport->get",
 		"dotnet": "CompanyReport.GetAsync",
 		"go": "CompanyReport.Get",
-		"java": "companyReport.get"
+		"java": "companyReport.get",
+		"ruby": "company_report.get"
 	},
 	"GET /v1/materiality_suppliers": {
 		"python": "materiality_suppliers.list",
 		"php": "materialitySuppliers->list",
 		"dotnet": "MaterialitySuppliers.ListAsync",
 		"go": "MaterialitySuppliers.List",
-		"java": "materialitySuppliers.list"
+		"java": "materialitySuppliers.list",
+		"ruby": "materiality_suppliers.list"
 	},
 	"GET /v1/materiality_invoices": {
 		"python": "materiality_invoices.list",
 		"php": "materialityInvoices->list",
 		"dotnet": "MaterialityInvoices.ListAsync",
 		"go": "MaterialityInvoices.List",
-		"java": "materialityInvoices.list"
+		"java": "materialityInvoices.list",
+		"ruby": "materiality_invoices.list"
 	},
 	"POST /v1/sat_reviews": {
 		"python": "sat_reviews.create",
 		"php": "satReviews->create",
 		"dotnet": "SatReviews.CreateAsync",
 		"go": "SatReviews.Create",
-		"java": "satReviews.create"
+		"java": "satReviews.create",
+		"ruby": "sat_reviews.create"
 	},
 	"GET /v1/sat_reviews": {
 		"python": "sat_reviews.list",
 		"php": "satReviews->list",
 		"dotnet": "SatReviews.ListAsync",
 		"go": "SatReviews.List",
-		"java": "satReviews.list"
+		"java": "satReviews.list",
+		"ruby": "sat_reviews.list"
 	},
 	"GET /v1/sat_reviews/{id}": {
 		"python": "sat_reviews.get",
 		"php": "satReviews->get",
 		"dotnet": "SatReviews.GetAsync",
 		"go": "SatReviews.Get",
-		"java": "satReviews.get"
+		"java": "satReviews.get",
+		"ruby": "sat_reviews.get"
 	},
 	"POST /v1/sat_reviews/{id}": {
 		"python": "sat_reviews.update",
 		"php": "satReviews->update",
 		"dotnet": "SatReviews.UpdateAsync",
 		"go": "SatReviews.Update",
-		"java": "satReviews.update"
+		"java": "satReviews.update",
+		"ruby": "sat_reviews.update"
 	},
 	"DELETE /v1/sat_reviews/{id}": {
 		"python": "sat_reviews.delete",
 		"php": "satReviews->delete",
 		"dotnet": "SatReviews.DeleteAsync",
 		"go": "SatReviews.Delete",
-		"java": "satReviews.delete"
+		"java": "satReviews.delete",
+		"ruby": "sat_reviews.delete"
 	},
 	"POST /v1/sat_reviews/{id}/answer": {
 		"python": "sat_reviews.arm_answer",
 		"php": "satReviews->armAnswer",
 		"dotnet": "SatReviews.ArmAnswerAsync",
 		"go": "SatReviews.ArmAnswer",
-		"java": "satReviews.armAnswer"
+		"java": "satReviews.armAnswer",
+		"ruby": "sat_reviews.arm_answer"
 	},
 	"GET /v1/sat_reviews/{id}/answer": {
 		"python": "sat_reviews.download_answer",
 		"php": "satReviews->downloadAnswer",
 		"dotnet": "SatReviews.DownloadAnswerAsync",
 		"go": "SatReviews.DownloadAnswer",
-		"java": "satReviews.downloadAnswer"
+		"java": "satReviews.downloadAnswer",
+		"ruby": "sat_reviews.download_answer"
 	},
 	"GET /v1/sat_risk_check": {
 		"python": "sat_risk_check.get",
 		"php": "satRiskCheck->get",
 		"dotnet": "SatRiskCheck.GetAsync",
 		"go": "SatRiskCheck.Get",
-		"java": "satRiskCheck.get"
+		"java": "satRiskCheck.get",
+		"ruby": "sat_risk_check.get"
 	},
 	"GET /v1/tax_discrepancy": {
 		"python": "tax_discrepancy.get",
 		"php": "taxDiscrepancy->get",
 		"dotnet": "TaxDiscrepancy.GetAsync",
 		"go": "TaxDiscrepancy.Get",
-		"java": "taxDiscrepancy.get"
+		"java": "taxDiscrepancy.get",
+		"ruby": "tax_discrepancy.get"
 	},
 	"GET /v1/warehouses": {
 		"python": "warehouses.list",
 		"php": "warehouses->list",
 		"dotnet": "Warehouses.ListAsync",
 		"go": "Warehouses.List",
-		"java": "warehouses.list"
+		"java": "warehouses.list",
+		"ruby": "warehouses.list"
 	},
 	"GET /v1/warehouses/{id}": {
 		"python": "warehouses.get",
 		"php": "warehouses->get",
 		"dotnet": "Warehouses.GetAsync",
 		"go": "Warehouses.Get",
-		"java": "warehouses.get"
+		"java": "warehouses.get",
+		"ruby": "warehouses.get"
 	},
 	"GET /v1/warehouses/{id}/stock": {
 		"python": "warehouses.stock",
 		"php": "warehouses->stock",
 		"dotnet": "Warehouses.StockAsync",
 		"go": "Warehouses.Stock",
-		"java": "warehouses.stock"
+		"java": "warehouses.stock",
+		"ruby": "warehouses.stock"
 	},
 	"GET /v1/products/{id}/stock": {
 		"python": "products.stock",
 		"php": "products->stock",
 		"dotnet": "Products.StockAsync",
 		"go": "Products.Stock",
-		"java": "products.stock"
+		"java": "products.stock",
+		"ruby": "products.stock"
 	},
 	"GET /v1/stock_movements": {
 		"python": "stock_movements.list",
 		"php": "stockMovements->list",
 		"dotnet": "StockMovements.ListAsync",
 		"go": "StockMovements.List",
-		"java": "stockMovements.list"
+		"java": "stockMovements.list",
+		"ruby": "stock_movements.list"
 	},
 	"GET /v1/stock_movements/{id}": {
 		"python": "stock_movements.get",
 		"php": "stockMovements->get",
 		"dotnet": "StockMovements.GetAsync",
 		"go": "StockMovements.Get",
-		"java": "stockMovements.get"
+		"java": "stockMovements.get",
+		"ruby": "stock_movements.get"
 	},
 	"POST /v1/stock_adjustments": {
 		"python": "stock_adjustments.create",
 		"php": "stockAdjustments->create",
 		"dotnet": "StockAdjustments.CreateAsync",
 		"go": "StockAdjustments.Create",
-		"java": "stockAdjustments.create"
+		"java": "stockAdjustments.create",
+		"ruby": "stock_adjustments.create"
 	},
 	"GET /v1/stock_adjustments": {
 		"python": "stock_adjustments.list",
 		"php": "stockAdjustments->list",
 		"dotnet": "StockAdjustments.ListAsync",
 		"go": "StockAdjustments.List",
-		"java": "stockAdjustments.list"
+		"java": "stockAdjustments.list",
+		"ruby": "stock_adjustments.list"
 	},
 	"GET /v1/stock_adjustments/{id}": {
 		"python": "stock_adjustments.get",
 		"php": "stockAdjustments->get",
 		"dotnet": "StockAdjustments.GetAsync",
 		"go": "StockAdjustments.Get",
-		"java": "stockAdjustments.get"
+		"java": "stockAdjustments.get",
+		"ruby": "stock_adjustments.get"
 	},
 	"POST /v1/production_orders": {
 		"python": "production_orders.create",
 		"php": "productionOrders->create",
 		"dotnet": "ProductionOrders.CreateAsync",
 		"go": "ProductionOrders.Create",
-		"java": "productionOrders.create"
+		"java": "productionOrders.create",
+		"ruby": "production_orders.create"
 	},
 	"GET /v1/production_orders": {
 		"python": "production_orders.list",
 		"php": "productionOrders->list",
 		"dotnet": "ProductionOrders.ListAsync",
 		"go": "ProductionOrders.List",
-		"java": "productionOrders.list"
+		"java": "productionOrders.list",
+		"ruby": "production_orders.list"
 	},
 	"GET /v1/production_orders/{id}": {
 		"python": "production_orders.get",
 		"php": "productionOrders->get",
 		"dotnet": "ProductionOrders.GetAsync",
 		"go": "ProductionOrders.Get",
-		"java": "productionOrders.get"
+		"java": "productionOrders.get",
+		"ruby": "production_orders.get"
 	},
 	"POST /v1/production_orders/{id}/start": {
 		"python": "production_orders.start",
 		"php": "productionOrders->start",
 		"dotnet": "ProductionOrders.StartAsync",
 		"go": "ProductionOrders.Start",
-		"java": "productionOrders.start"
+		"java": "productionOrders.start",
+		"ruby": "production_orders.start"
 	},
 	"POST /v1/production_orders/{id}/complete": {
 		"python": "production_orders.complete",
 		"php": "productionOrders->complete",
 		"dotnet": "ProductionOrders.CompleteAsync",
 		"go": "ProductionOrders.Complete",
-		"java": "productionOrders.complete"
+		"java": "productionOrders.complete",
+		"ruby": "production_orders.complete"
 	},
 	"POST /v1/production_orders/{id}/cancel": {
 		"python": "production_orders.cancel",
 		"php": "productionOrders->cancel",
 		"dotnet": "ProductionOrders.CancelAsync",
 		"go": "ProductionOrders.Cancel",
-		"java": "productionOrders.cancel"
+		"java": "productionOrders.cancel",
+		"ruby": "production_orders.cancel"
 	},
 	"GET /v1/sat_catalogs/{name}": {
 		"python": "sat_catalogs.get",
 		"php": "satCatalogs->get",
 		"dotnet": "SatCatalogs.GetAsync",
 		"go": "SatCatalogs.Get",
-		"java": "satCatalogs.get"
+		"java": "satCatalogs.get",
+		"ruby": "sat_catalogs.get"
 	},
 	"GET /v1/sat_lists/{tax_id}": {
 		"python": "sat_lists.get",
 		"php": "satLists->get",
 		"dotnet": "SatLists.GetAsync",
 		"go": "SatLists.Get",
-		"java": "satLists.get"
+		"java": "satLists.get",
+		"ruby": "sat_lists.get"
 	},
 	"POST /v1/sat_lists/check": {
 		"python": "sat_lists.check",
 		"php": "satLists->check",
 		"dotnet": "SatLists.CheckAsync",
 		"go": "SatLists.Check",
-		"java": "satLists.check"
+		"java": "satLists.check",
+		"ruby": "sat_lists.check"
 	},
 	"POST /v1/cfdi_verifications": {
 		"python": "cfdi_verifications.create",
 		"php": "cfdiVerifications->create",
 		"dotnet": "CfdiVerifications.CreateAsync",
 		"go": "CfdiVerifications.Create",
-		"java": "cfdiVerifications.create"
+		"java": "cfdiVerifications.create",
+		"ruby": "cfdi_verifications.create"
 	},
 	"GET /v1/members": {
 		"python": "members.list",
 		"php": "members->list",
 		"dotnet": "Members.ListAsync",
 		"go": "Members.List",
-		"java": "members.list"
+		"java": "members.list",
+		"ruby": "members.list"
 	},
 	"GET /v1/members/{id}": {
 		"python": "members.get",
 		"php": "members->get",
 		"dotnet": "Members.GetAsync",
 		"go": "Members.Get",
-		"java": "members.get"
+		"java": "members.get",
+		"ruby": "members.get"
 	},
 	"POST /v1/members/{id}": {
 		"python": "members.update",
 		"php": "members->update",
 		"dotnet": "Members.UpdateAsync",
 		"go": "Members.Update",
-		"java": "members.update"
+		"java": "members.update",
+		"ruby": "members.update"
 	},
 	"DELETE /v1/members/{id}": {
 		"python": "members.delete",
 		"php": "members->delete",
 		"dotnet": "Members.DeleteAsync",
 		"go": "Members.Delete",
-		"java": "members.delete"
+		"java": "members.delete",
+		"ruby": "members.delete"
 	},
 	"GET /v1/invitations": {
 		"python": "invitations.list",
 		"php": "invitations->list",
 		"dotnet": "Invitations.ListAsync",
 		"go": "Invitations.List",
-		"java": "invitations.list"
+		"java": "invitations.list",
+		"ruby": "invitations.list"
 	},
 	"POST /v1/invitations": {
 		"python": "invitations.create",
 		"php": "invitations->create",
 		"dotnet": "Invitations.CreateAsync",
 		"go": "Invitations.Create",
-		"java": "invitations.create"
+		"java": "invitations.create",
+		"ruby": "invitations.create"
 	},
 	"DELETE /v1/invitations/{id}": {
 		"python": "invitations.cancel",
 		"php": "invitations->cancel",
 		"dotnet": "Invitations.CancelAsync",
 		"go": "Invitations.Cancel",
-		"java": "invitations.cancel"
+		"java": "invitations.cancel",
+		"ruby": "invitations.cancel"
 	},
 	"GET /v1/roles": {
 		"python": "roles.list",
 		"php": "roles->list",
 		"dotnet": "Roles.ListAsync",
 		"go": "Roles.List",
-		"java": "roles.list"
+		"java": "roles.list",
+		"ruby": "roles.list"
 	},
 	"POST /v1/roles": {
 		"python": "roles.create",
 		"php": "roles->create",
 		"dotnet": "Roles.CreateAsync",
 		"go": "Roles.Create",
-		"java": "roles.create"
+		"java": "roles.create",
+		"ruby": "roles.create"
 	},
 	"POST /v1/roles/{id}": {
 		"python": "roles.update",
 		"php": "roles->update",
 		"dotnet": "Roles.UpdateAsync",
 		"go": "Roles.Update",
-		"java": "roles.update"
+		"java": "roles.update",
+		"ruby": "roles.update"
 	},
 	"DELETE /v1/roles/{id}": {
 		"python": "roles.delete",
 		"php": "roles->delete",
 		"dotnet": "Roles.DeleteAsync",
 		"go": "Roles.Delete",
-		"java": "roles.delete"
+		"java": "roles.delete",
+		"ruby": "roles.delete"
 	},
 	"GET /v1/permissions": {
 		"python": "permissions.list",
 		"php": "permissions->list",
 		"dotnet": "Permissions.ListAsync",
 		"go": "Permissions.List",
-		"java": "permissions.list"
+		"java": "permissions.list",
+		"ruby": "permissions.list"
 	},
 	"POST /v1/exports": {
 		"python": "exports.create",
 		"php": "exports->create",
 		"dotnet": "Exports.CreateAsync",
 		"go": "Exports.Create",
-		"java": "exports.create"
+		"java": "exports.create",
+		"ruby": "exports.create"
 	},
 	"GET /v1/exports": {
 		"python": "exports.list",
 		"php": "exports->list",
 		"dotnet": "Exports.ListAsync",
 		"go": "Exports.List",
-		"java": "exports.list"
+		"java": "exports.list",
+		"ruby": "exports.list"
 	},
 	"GET /v1/exports/{id}": {
 		"python": "exports.get",
 		"php": "exports->get",
 		"dotnet": "Exports.GetAsync",
 		"go": "Exports.Get",
-		"java": "exports.get"
+		"java": "exports.get",
+		"ruby": "exports.get"
 	},
 	"GET /v1/exports/{id}/download": {
 		"python": "exports.download",
 		"php": "exports->download",
 		"dotnet": "Exports.DownloadAsync",
 		"go": "Exports.Download",
-		"java": "exports.download"
+		"java": "exports.download",
+		"ruby": "exports.download"
 	},
 	"POST /v1/sat_downloads": {
 		"python": "sat_downloads.create",
 		"php": "satDownloads->create",
 		"dotnet": "SatDownloads.CreateAsync",
 		"go": "SatDownloads.Create",
-		"java": "satDownloads.create"
+		"java": "satDownloads.create",
+		"ruby": "sat_downloads.create"
 	},
 	"GET /v1/sat_downloads": {
 		"python": "sat_downloads.list",
 		"php": "satDownloads->list",
 		"dotnet": "SatDownloads.ListAsync",
 		"go": "SatDownloads.List",
-		"java": "satDownloads.list"
+		"java": "satDownloads.list",
+		"ruby": "sat_downloads.list"
 	},
 	"GET /v1/sat_downloads/{id}": {
 		"python": "sat_downloads.get",
 		"php": "satDownloads->get",
 		"dotnet": "SatDownloads.GetAsync",
 		"go": "SatDownloads.Get",
-		"java": "satDownloads.get"
+		"java": "satDownloads.get",
+		"ruby": "sat_downloads.get"
 	},
 	"GET /v1/sat_invoices": {
 		"python": "sat_invoices.list",
 		"php": "satInvoices->list",
 		"dotnet": "SatInvoices.ListAsync",
 		"go": "SatInvoices.List",
-		"java": "satInvoices.list"
+		"java": "satInvoices.list",
+		"ruby": "sat_invoices.list"
 	},
 	"GET /v1/sat_invoices/{id}": {
 		"python": "sat_invoices.get",
 		"php": "satInvoices->get",
 		"dotnet": "SatInvoices.GetAsync",
 		"go": "SatInvoices.Get",
-		"java": "satInvoices.get"
+		"java": "satInvoices.get",
+		"ruby": "sat_invoices.get"
 	},
 	"POST /v1/sat_invoices/{id}": {
 		"python": "sat_invoices.update",
 		"php": "satInvoices->update",
 		"dotnet": "SatInvoices.UpdateAsync",
 		"go": "SatInvoices.Update",
-		"java": "satInvoices.update"
+		"java": "satInvoices.update",
+		"ruby": "sat_invoices.update"
 	},
 	"POST /v1/sat_invoices/{id}/mark_paid": {
 		"python": "sat_invoices.mark_paid",
 		"php": "satInvoices->markPaid",
 		"dotnet": "SatInvoices.MarkPaidAsync",
 		"go": "SatInvoices.MarkPaid",
-		"java": "satInvoices.markPaid"
+		"java": "satInvoices.markPaid",
+		"ruby": "sat_invoices.mark_paid"
 	},
 	"POST /v1/sat_invoices/{id}/mark_unpaid": {
 		"python": "sat_invoices.mark_unpaid",
 		"php": "satInvoices->markUnpaid",
 		"dotnet": "SatInvoices.MarkUnpaidAsync",
 		"go": "SatInvoices.MarkUnpaid",
-		"java": "satInvoices.markUnpaid"
+		"java": "satInvoices.markUnpaid",
+		"ruby": "sat_invoices.mark_unpaid"
 	},
 	"GET /v1/sat_invoices/{id}/xml": {
 		"python": "sat_invoices.xml",
 		"php": "satInvoices->xml",
 		"dotnet": "SatInvoices.XmlAsync",
 		"go": "SatInvoices.XML",
-		"java": "satInvoices.xml"
+		"java": "satInvoices.xml",
+		"ruby": "sat_invoices.xml"
 	},
 	"GET /v1/sat_invoices/{id}/pdf": {
 		"python": "sat_invoices.pdf",
 		"php": "satInvoices->pdf",
 		"dotnet": "SatInvoices.PdfAsync",
 		"go": "SatInvoices.PDF",
-		"java": "satInvoices.pdf"
+		"java": "satInvoices.pdf",
+		"ruby": "sat_invoices.pdf"
 	},
 	"GET /v1/sat_retentions": {
 		"python": "sat_retentions.list",
 		"php": "satRetentions->list",
 		"dotnet": "SatRetentions.ListAsync",
 		"go": "SatRetentions.List",
-		"java": "satRetentions.list"
+		"java": "satRetentions.list",
+		"ruby": "sat_retentions.list"
 	},
 	"GET /v1/sat_retentions/{id}": {
 		"python": "sat_retentions.get",
 		"php": "satRetentions->get",
 		"dotnet": "SatRetentions.GetAsync",
 		"go": "SatRetentions.Get",
-		"java": "satRetentions.get"
+		"java": "satRetentions.get",
+		"ruby": "sat_retentions.get"
 	},
 	"GET /v1/sat_retentions/{id}/xml": {
 		"python": "sat_retentions.xml",
 		"php": "satRetentions->xml",
 		"dotnet": "SatRetentions.XmlAsync",
 		"go": "SatRetentions.XML",
-		"java": "satRetentions.xml"
+		"java": "satRetentions.xml",
+		"ruby": "sat_retentions.xml"
 	},
 	"GET /v1/sat_retentions/{id}/pdf": {
 		"python": "sat_retentions.pdf",
 		"php": "satRetentions->pdf",
 		"dotnet": "SatRetentions.PdfAsync",
 		"go": "SatRetentions.PDF",
-		"java": "satRetentions.pdf"
+		"java": "satRetentions.pdf",
+		"ruby": "sat_retentions.pdf"
 	},
 	"POST /v1/sat_retentions/{id}/cancel": {
 		"python": "sat_retentions.cancel",
 		"php": "satRetentions->cancel",
 		"dotnet": "SatRetentions.CancelAsync",
 		"go": "SatRetentions.Cancel",
-		"java": "satRetentions.cancel"
+		"java": "satRetentions.cancel",
+		"ruby": "sat_retentions.cancel"
 	},
 	"GET /v1/portal_suppliers": {
 		"python": "portal_suppliers.list",
 		"php": "portalSuppliers->list",
 		"dotnet": "PortalSuppliers.ListAsync",
 		"go": "PortalSuppliers.List",
-		"java": "portalSuppliers.list"
+		"java": "portalSuppliers.list",
+		"ruby": "portal_suppliers.list"
 	},
 	"GET /v1/portal_suppliers/{id}": {
 		"python": "portal_suppliers.get",
 		"php": "portalSuppliers->get",
 		"dotnet": "PortalSuppliers.GetAsync",
 		"go": "PortalSuppliers.Get",
-		"java": "portalSuppliers.get"
+		"java": "portalSuppliers.get",
+		"ruby": "portal_suppliers.get"
 	},
 	"GET /v1/supplier_invoices": {
 		"python": "supplier_invoices.list",
 		"php": "supplierInvoices->list",
 		"dotnet": "SupplierInvoices.ListAsync",
 		"go": "SupplierInvoices.List",
-		"java": "supplierInvoices.list"
+		"java": "supplierInvoices.list",
+		"ruby": "supplier_invoices.list"
 	},
 	"GET /v1/supplier_invoices/{id}": {
 		"python": "supplier_invoices.get",
 		"php": "supplierInvoices->get",
 		"dotnet": "SupplierInvoices.GetAsync",
 		"go": "SupplierInvoices.Get",
-		"java": "supplierInvoices.get"
+		"java": "supplierInvoices.get",
+		"ruby": "supplier_invoices.get"
 	},
 	"POST /v1/supplier_invoices/{id}/schedule": {
 		"python": "supplier_invoices.schedule",
 		"php": "supplierInvoices->schedule",
 		"dotnet": "SupplierInvoices.ScheduleAsync",
 		"go": "SupplierInvoices.Schedule",
-		"java": "supplierInvoices.schedule"
+		"java": "supplierInvoices.schedule",
+		"ruby": "supplier_invoices.schedule"
 	},
 	"POST /v1/supplier_invoices/{id}/mark_paid": {
 		"python": "supplier_invoices.mark_paid",
 		"php": "supplierInvoices->markPaid",
 		"dotnet": "SupplierInvoices.MarkPaidAsync",
 		"go": "SupplierInvoices.MarkPaid",
-		"java": "supplierInvoices.markPaid"
+		"java": "supplierInvoices.markPaid",
+		"ruby": "supplier_invoices.mark_paid"
 	},
 	"GET /v1/payable_invoices": {
 		"python": "payable_invoices.list",
 		"php": "payableInvoices->list",
 		"dotnet": "PayableInvoices.ListAsync",
 		"go": "PayableInvoices.List",
-		"java": "payableInvoices.list"
+		"java": "payableInvoices.list",
+		"ruby": "payable_invoices.list"
 	},
 	"POST /v1/payouts": {
 		"python": "payouts.create",
 		"php": "payouts->create",
 		"dotnet": "Payouts.CreateAsync",
 		"go": "Payouts.Create",
-		"java": "payouts.create"
+		"java": "payouts.create",
+		"ruby": "payouts.create"
 	},
 	"GET /v1/payouts": {
 		"python": "payouts.list",
 		"php": "payouts->list",
 		"dotnet": "Payouts.ListAsync",
 		"go": "Payouts.List",
-		"java": "payouts.list"
+		"java": "payouts.list",
+		"ruby": "payouts.list"
 	},
 	"GET /v1/payouts/pause": {
 		"python": "payouts.get_pause",
 		"php": "payouts->getPause",
 		"dotnet": "Payouts.GetPauseAsync",
 		"go": "Payouts.GetPause",
-		"java": "payouts.getPause"
+		"java": "payouts.getPause",
+		"ruby": "payouts.get_pause"
 	},
 	"POST /v1/payouts/pause": {
 		"python": "payouts.pause",
 		"php": "payouts->pause",
 		"dotnet": "Payouts.PauseAsync",
 		"go": "Payouts.Pause",
-		"java": "payouts.pause"
+		"java": "payouts.pause",
+		"ruby": "payouts.pause"
 	},
 	"GET /v1/payouts/{id}": {
 		"python": "payouts.get",
 		"php": "payouts->get",
 		"dotnet": "Payouts.GetAsync",
 		"go": "Payouts.Get",
-		"java": "payouts.get"
+		"java": "payouts.get",
+		"ruby": "payouts.get"
 	},
 	"POST /v1/payouts/{id}/cancel": {
 		"python": "payouts.cancel",
 		"php": "payouts->cancel",
 		"dotnet": "Payouts.CancelAsync",
 		"go": "Payouts.Cancel",
-		"java": "payouts.cancel"
+		"java": "payouts.cancel",
+		"ruby": "payouts.cancel"
 	},
 	"GET /v1/payee_accounts": {
 		"python": "payee_accounts.list",
 		"php": "payeeAccounts->list",
 		"dotnet": "PayeeAccounts.ListAsync",
 		"go": "PayeeAccounts.List",
-		"java": "payeeAccounts.list"
+		"java": "payeeAccounts.list",
+		"ruby": "payee_accounts.list"
 	},
 	"GET /v1/payout_mandates": {
 		"python": "payout_mandates.list",
 		"php": "payoutMandates->list",
 		"dotnet": "PayoutMandates.ListAsync",
 		"go": "PayoutMandates.List",
-		"java": "payoutMandates.list"
+		"java": "payoutMandates.list",
+		"ruby": "payout_mandates.list"
 	},
 	"POST /v1/sat_declarations/refresh": {
 		"python": "sat_declarations.refresh",
 		"php": "satDeclarations->refresh",
 		"dotnet": "SatDeclarations.RefreshAsync",
 		"go": "SatDeclarations.Refresh",
-		"java": "satDeclarations.refresh"
+		"java": "satDeclarations.refresh",
+		"ruby": "sat_declarations.refresh"
 	},
 	"GET /v1/sat_refreshes": {
 		"python": "sat_refreshes.list",
 		"php": "satRefreshes->list",
 		"dotnet": "SatRefreshes.ListAsync",
 		"go": "SatRefreshes.List",
-		"java": "satRefreshes.list"
+		"java": "satRefreshes.list",
+		"ruby": "sat_refreshes.list"
 	},
 	"GET /v1/sat_refreshes/{id}": {
 		"python": "sat_refreshes.get",
 		"php": "satRefreshes->get",
 		"dotnet": "SatRefreshes.GetAsync",
 		"go": "SatRefreshes.Get",
-		"java": "satRefreshes.get"
+		"java": "satRefreshes.get",
+		"ruby": "sat_refreshes.get"
 	},
 	"GET /v1/sat_declarations": {
 		"python": "sat_declarations.list",
 		"php": "satDeclarations->list",
 		"dotnet": "SatDeclarations.ListAsync",
 		"go": "SatDeclarations.List",
-		"java": "satDeclarations.list"
+		"java": "satDeclarations.list",
+		"ruby": "sat_declarations.list"
 	},
 	"GET /v1/sat_declarations/calendar": {
 		"python": "sat_declarations.calendar",
 		"php": "satDeclarations->calendar",
 		"dotnet": "SatDeclarations.CalendarAsync",
 		"go": "SatDeclarations.Calendar",
-		"java": "satDeclarations.calendar"
+		"java": "satDeclarations.calendar",
+		"ruby": "sat_declarations.calendar"
 	},
 	"GET /v1/sat_declarations/annual_preload": {
 		"python": "sat_declarations.annual_preload",
 		"php": "satDeclarations->annualPreload",
 		"dotnet": "SatDeclarations.AnnualPreloadAsync",
 		"go": "SatDeclarations.AnnualPreload",
-		"java": "satDeclarations.annualPreload"
+		"java": "satDeclarations.annualPreload",
+		"ruby": "sat_declarations.annual_preload"
 	},
 	"GET /v1/sat_declarations/{id}": {
 		"python": "sat_declarations.get",
 		"php": "satDeclarations->get",
 		"dotnet": "SatDeclarations.GetAsync",
 		"go": "SatDeclarations.Get",
-		"java": "satDeclarations.get"
+		"java": "satDeclarations.get",
+		"ruby": "sat_declarations.get"
 	},
 	"GET /v1/sat_declarations/{id}/pdf": {
 		"python": "sat_declarations.pdf",
 		"php": "satDeclarations->pdf",
 		"dotnet": "SatDeclarations.PdfAsync",
 		"go": "SatDeclarations.PDF",
-		"java": "satDeclarations.pdf"
+		"java": "satDeclarations.pdf",
+		"ruby": "sat_declarations.pdf"
 	},
 	"GET /v1/sat_declarations/{id}/receipt": {
 		"python": "sat_declarations.receipt",
 		"php": "satDeclarations->receipt",
 		"dotnet": "SatDeclarations.ReceiptAsync",
 		"go": "SatDeclarations.Receipt",
-		"java": "satDeclarations.receipt"
+		"java": "satDeclarations.receipt",
+		"ruby": "sat_declarations.receipt"
 	},
 	"GET /v1/sat_declarations/{id}/payment_record": {
 		"python": "sat_declarations.payment_record",
 		"php": "satDeclarations->paymentRecord",
 		"dotnet": "SatDeclarations.PaymentRecordAsync",
 		"go": "SatDeclarations.PaymentRecord",
-		"java": "satDeclarations.paymentRecord"
+		"java": "satDeclarations.paymentRecord",
+		"ruby": "sat_declarations.payment_record"
 	},
 	"GET /v1/sat_declarations/{id}/financial_statements": {
 		"python": "sat_declarations.financial_statements",
 		"php": "satDeclarations->financialStatements",
 		"dotnet": "SatDeclarations.FinancialStatementsAsync",
 		"go": "SatDeclarations.FinancialStatements",
-		"java": "satDeclarations.financialStatements"
+		"java": "satDeclarations.financialStatements",
+		"ruby": "sat_declarations.financial_statements"
 	},
 	"POST /v1/tickets": {
 		"python": "tickets.create",
 		"php": "tickets->create",
 		"dotnet": "Tickets.CreateAsync",
 		"go": "Tickets.Create",
-		"java": "tickets.create"
+		"java": "tickets.create",
+		"ruby": "tickets.create"
 	},
 	"GET /v1/tickets": {
 		"python": "tickets.list",
 		"php": "tickets->list",
 		"dotnet": "Tickets.ListAsync",
 		"go": "Tickets.List",
-		"java": "tickets.list"
+		"java": "tickets.list",
+		"ruby": "tickets.list"
 	},
 	"GET /v1/tickets/{id}": {
 		"python": "tickets.get",
 		"php": "tickets->get",
 		"dotnet": "Tickets.GetAsync",
 		"go": "Tickets.Get",
-		"java": "tickets.get"
+		"java": "tickets.get",
+		"ruby": "tickets.get"
 	},
 	"DELETE /v1/tickets/{id}": {
 		"python": "tickets.cancel",
 		"php": "tickets->cancel",
 		"dotnet": "Tickets.CancelAsync",
 		"go": "Tickets.Cancel",
-		"java": "tickets.cancel"
+		"java": "tickets.cancel",
+		"ruby": "tickets.cancel"
 	},
 	"GET /v1/issuers/{id}/self_invoicing": {
 		"python": "issuers.get_self_invoicing",
 		"php": "issuers->getSelfInvoicing",
 		"dotnet": "Issuers.GetSelfInvoicingAsync",
 		"go": "Issuers.GetSelfInvoicing",
-		"java": "issuers.getSelfInvoicing"
+		"java": "issuers.getSelfInvoicing",
+		"ruby": "issuers.get_self_invoicing"
 	},
 	"POST /v1/issuers/{id}/self_invoicing": {
 		"python": "issuers.update_self_invoicing",
 		"php": "issuers->updateSelfInvoicing",
 		"dotnet": "Issuers.UpdateSelfInvoicingAsync",
 		"go": "Issuers.UpdateSelfInvoicing",
-		"java": "issuers.updateSelfInvoicing"
+		"java": "issuers.updateSelfInvoicing",
+		"ruby": "issuers.update_self_invoicing"
 	},
 	"GET /v1/accounting/journal_entries": {
 		"python": "accounting.journal_entries",
 		"php": "accounting->journalEntries",
 		"dotnet": "Accounting.JournalEntriesAsync",
 		"go": "Accounting.JournalEntries",
-		"java": "accounting.journalEntries"
+		"java": "accounting.journalEntries",
+		"ruby": "accounting.journal_entries"
 	},
 	"GET /v1/accounting/trial_balance": {
 		"python": "accounting.trial_balance",
 		"php": "accounting->trialBalance",
 		"dotnet": "Accounting.TrialBalanceAsync",
 		"go": "Accounting.TrialBalance",
-		"java": "accounting.trialBalance"
+		"java": "accounting.trialBalance",
+		"ruby": "accounting.trial_balance"
 	},
 	"GET /v1/accounting/general_ledger": {
 		"python": "accounting.general_ledger",
 		"php": "accounting->generalLedger",
 		"dotnet": "Accounting.GeneralLedgerAsync",
 		"go": "Accounting.GeneralLedger",
-		"java": "accounting.generalLedger"
+		"java": "accounting.generalLedger",
+		"ruby": "accounting.general_ledger"
 	},
 	"GET /v1/accounting/financial_statements": {
 		"python": "accounting.financial_statements",
 		"php": "accounting->financialStatements",
 		"dotnet": "Accounting.FinancialStatementsAsync",
 		"go": "Accounting.FinancialStatements",
-		"java": "accounting.financialStatements"
+		"java": "accounting.financialStatements",
+		"ruby": "accounting.financial_statements"
 	},
 	"GET /v1/accounting/cash_flow": {
 		"python": "accounting.cash_flow",
 		"php": "accounting->cashFlow",
 		"dotnet": "Accounting.CashFlowAsync",
 		"go": "Accounting.CashFlow",
-		"java": "accounting.cashFlow"
+		"java": "accounting.cashFlow",
+		"ruby": "accounting.cash_flow"
 	},
 	"GET /v1/accounting/equity_changes": {
 		"python": "accounting.equity_changes",
 		"php": "accounting->equityChanges",
 		"dotnet": "Accounting.EquityChangesAsync",
 		"go": "Accounting.EquityChanges",
-		"java": "accounting.equityChanges"
+		"java": "accounting.equityChanges",
+		"ruby": "accounting.equity_changes"
 	},
 	"GET /v1/accounting/comparative_statements": {
 		"python": "accounting.comparative_statements",
 		"php": "accounting->comparativeStatements",
 		"dotnet": "Accounting.ComparativeStatementsAsync",
 		"go": "Accounting.ComparativeStatements",
-		"java": "accounting.comparativeStatements"
+		"java": "accounting.comparativeStatements",
+		"ruby": "accounting.comparative_statements"
 	},
 	"GET /v1/accounting/financial_ratios": {
 		"python": "accounting.financial_ratios",
 		"php": "accounting->financialRatios",
 		"dotnet": "Accounting.FinancialRatiosAsync",
 		"go": "Accounting.FinancialRatios",
-		"java": "accounting.financialRatios"
+		"java": "accounting.financialRatios",
+		"ruby": "accounting.financial_ratios"
 	},
 	"GET /v1/accounting/cross_checks": {
 		"python": "accounting.cross_checks",
 		"php": "accounting->crossChecks",
 		"dotnet": "Accounting.CrossChecksAsync",
 		"go": "Accounting.CrossChecks",
-		"java": "accounting.crossChecks"
+		"java": "accounting.crossChecks",
+		"ruby": "accounting.cross_checks"
 	},
 	"GET /v1/accounting/vat_refund": {
 		"python": "accounting.vat_refund",
 		"php": "accounting->vatRefund",
 		"dotnet": "Accounting.VatRefundAsync",
 		"go": "Accounting.VatRefund",
-		"java": "accounting.vatRefund"
+		"java": "accounting.vatRefund",
+		"ruby": "accounting.vat_refund"
 	},
 	"GET /v1/accounting/cross_checks/cfdi": {
 		"python": "accounting.cross_check_cfdi",
 		"php": "accounting->crossCheckCfdi",
 		"dotnet": "Accounting.CrossCheckCfdiAsync",
 		"go": "Accounting.CrossCheckCFDI",
-		"java": "accounting.crossCheckCfdi"
+		"java": "accounting.crossCheckCfdi",
+		"ruby": "accounting.cross_check_cfdi"
 	},
 	"GET /v1/accounting/accounts": {
 		"python": "accounting.accounts",
 		"php": "accounting->accounts",
 		"dotnet": "Accounting.AccountsAsync",
 		"go": "Accounting.Accounts",
-		"java": "accounting.accounts"
+		"java": "accounting.accounts",
+		"ruby": "accounting.accounts"
 	},
 	"POST /v1/accounting/accounts": {
 		"python": "accounting.create_account",
 		"php": "accounting->createAccount",
 		"dotnet": "Accounting.CreateAccountAsync",
 		"go": "Accounting.CreateAccount",
-		"java": "accounting.createAccount"
+		"java": "accounting.createAccount",
+		"ruby": "accounting.create_account"
 	},
 	"POST /v1/accounting/manual_entries": {
 		"python": "manual_entries.create",
 		"php": "manualEntries->create",
 		"dotnet": "ManualEntries.CreateAsync",
 		"go": "ManualEntries.Create",
-		"java": "manualEntries.create"
+		"java": "manualEntries.create",
+		"ruby": "manual_entries.create"
 	},
 	"GET /v1/accounting/manual_entries": {
 		"python": "manual_entries.list",
 		"php": "manualEntries->list",
 		"dotnet": "ManualEntries.ListAsync",
 		"go": "ManualEntries.List",
-		"java": "manualEntries.list"
+		"java": "manualEntries.list",
+		"ruby": "manual_entries.list"
 	},
 	"GET /v1/accounting/manual_entries/{id}": {
 		"python": "manual_entries.get",
 		"php": "manualEntries->get",
 		"dotnet": "ManualEntries.GetAsync",
 		"go": "ManualEntries.Get",
-		"java": "manualEntries.get"
+		"java": "manualEntries.get",
+		"ruby": "manual_entries.get"
 	},
 	"POST /v1/accounting/manual_entries/{id}": {
 		"python": "manual_entries.update",
 		"php": "manualEntries->update",
 		"dotnet": "ManualEntries.UpdateAsync",
 		"go": "ManualEntries.Update",
-		"java": "manualEntries.update"
+		"java": "manualEntries.update",
+		"ruby": "manual_entries.update"
 	},
 	"DELETE /v1/accounting/manual_entries/{id}": {
 		"python": "manual_entries.delete",
 		"php": "manualEntries->delete",
 		"dotnet": "ManualEntries.DeleteAsync",
 		"go": "ManualEntries.Delete",
-		"java": "manualEntries.delete"
+		"java": "manualEntries.delete",
+		"ruby": "manual_entries.delete"
 	},
 	"GET /v1/accounting/automatic_entries/{uuid}": {
 		"python": "automatic_entries.get",
 		"php": "automaticEntries->get",
 		"dotnet": "AutomaticEntries.GetAsync",
 		"go": "AutomaticEntries.Get",
-		"java": "automaticEntries.get"
+		"java": "automaticEntries.get",
+		"ruby": "automatic_entries.get"
 	},
 	"POST /v1/accounting/automatic_entries/{uuid}": {
 		"python": "automatic_entries.update",
 		"php": "automaticEntries->update",
 		"dotnet": "AutomaticEntries.UpdateAsync",
 		"go": "AutomaticEntries.Update",
-		"java": "automaticEntries.update"
+		"java": "automaticEntries.update",
+		"ruby": "automatic_entries.update"
 	},
 	"DELETE /v1/accounting/automatic_entries/{uuid}": {
 		"python": "automatic_entries.revert",
 		"php": "automaticEntries->revert",
 		"dotnet": "AutomaticEntries.RevertAsync",
 		"go": "AutomaticEntries.Revert",
-		"java": "automaticEntries.revert"
+		"java": "automaticEntries.revert",
+		"ruby": "automatic_entries.revert"
 	},
 	"GET /v1/accounting/prepaid_expenses/{uuid}": {
 		"python": "prepaid_expenses.get",
 		"php": "prepaidExpenses->get",
 		"dotnet": "PrepaidExpenses.GetAsync",
 		"go": "PrepaidExpenses.Get",
-		"java": "prepaidExpenses.get"
+		"java": "prepaidExpenses.get",
+		"ruby": "prepaid_expenses.get"
 	},
 	"POST /v1/accounting/prepaid_expenses/{uuid}": {
 		"python": "prepaid_expenses.update",
 		"php": "prepaidExpenses->update",
 		"dotnet": "PrepaidExpenses.UpdateAsync",
 		"go": "PrepaidExpenses.Update",
-		"java": "prepaidExpenses.update"
+		"java": "prepaidExpenses.update",
+		"ruby": "prepaid_expenses.update"
 	},
 	"DELETE /v1/accounting/prepaid_expenses/{uuid}": {
 		"python": "prepaid_expenses.remove",
 		"php": "prepaidExpenses->remove",
 		"dotnet": "PrepaidExpenses.RemoveAsync",
 		"go": "PrepaidExpenses.Remove",
-		"java": "prepaidExpenses.remove"
+		"java": "prepaidExpenses.remove",
+		"ruby": "prepaid_expenses.remove"
 	},
 	"POST /v1/accounting/manual_entry_imports": {
 		"python": "manual_entries.import_entries",
 		"php": "manualEntries->importEntries",
 		"dotnet": "ManualEntries.ImportEntriesAsync",
 		"go": "ManualEntries.ImportEntries",
-		"java": "manualEntries.importEntries"
+		"java": "manualEntries.importEntries",
+		"ruby": "manual_entries.import_entries"
 	},
 	"DELETE /v1/accounting/manual_entry_imports/{id}": {
 		"python": "manual_entries.undo_import",
 		"php": "manualEntries->undoImport",
 		"dotnet": "ManualEntries.UndoImportAsync",
 		"go": "ManualEntries.UndoImport",
-		"java": "manualEntries.undoImport"
+		"java": "manualEntries.undoImport",
+		"ruby": "manual_entries.undo_import"
 	},
 	"GET /v1/accounting/opening_balances": {
 		"python": "opening_balances.get",
 		"php": "openingBalances->get",
 		"dotnet": "OpeningBalances.GetAsync",
 		"go": "OpeningBalances.Get",
-		"java": "openingBalances.get"
+		"java": "openingBalances.get",
+		"ruby": "opening_balances.get"
 	},
 	"POST /v1/accounting/opening_balances": {
 		"python": "opening_balances.set",
 		"php": "openingBalances->set",
 		"dotnet": "OpeningBalances.SetAsync",
 		"go": "OpeningBalances.Set",
-		"java": "openingBalances.set"
+		"java": "openingBalances.set",
+		"ruby": "opening_balances.set"
 	},
 	"GET /v1/accounting/fixed_assets": {
 		"python": "fixed_assets.list",
 		"php": "fixedAssets->list",
 		"dotnet": "FixedAssets.ListAsync",
 		"go": "FixedAssets.List",
-		"java": "fixedAssets.list"
+		"java": "fixedAssets.list",
+		"ruby": "fixed_assets.list"
 	},
 	"POST /v1/accounting/fixed_assets": {
 		"python": "fixed_assets.create",
 		"php": "fixedAssets->create",
 		"dotnet": "FixedAssets.CreateAsync",
 		"go": "FixedAssets.Create",
-		"java": "fixedAssets.create"
+		"java": "fixedAssets.create",
+		"ruby": "fixed_assets.create"
 	},
 	"GET /v1/accounting/fixed_assets/{id}": {
 		"python": "fixed_assets.get",
 		"php": "fixedAssets->get",
 		"dotnet": "FixedAssets.GetAsync",
 		"go": "FixedAssets.Get",
-		"java": "fixedAssets.get"
+		"java": "fixedAssets.get",
+		"ruby": "fixed_assets.get"
 	},
 	"DELETE /v1/accounting/fixed_assets/{id}": {
 		"python": "fixed_assets.delete",
 		"php": "fixedAssets->delete",
 		"dotnet": "FixedAssets.DeleteAsync",
 		"go": "FixedAssets.Delete",
-		"java": "fixedAssets.delete"
+		"java": "fixedAssets.delete",
+		"ruby": "fixed_assets.delete"
 	},
 	"POST /v1/accounting/fixed_assets/{id}/dispose": {
 		"python": "fixed_assets.dispose",
 		"php": "fixedAssets->dispose",
 		"dotnet": "FixedAssets.DisposeAsync",
 		"go": "FixedAssets.Dispose",
-		"java": "fixedAssets.dispose"
+		"java": "fixedAssets.dispose",
+		"ruby": "fixed_assets.dispose"
 	},
 	"DELETE /v1/accounting/fixed_assets/{id}/disposal": {
 		"python": "fixed_assets.undispose",
 		"php": "fixedAssets->undispose",
 		"dotnet": "FixedAssets.UndisposeAsync",
 		"go": "FixedAssets.Undispose",
-		"java": "fixedAssets.undispose"
+		"java": "fixedAssets.undispose",
+		"ruby": "fixed_assets.undispose"
 	},
 	"GET /v1/accounting/settings": {
 		"python": "accounting_settings.get",
 		"php": "accountingSettings->get",
 		"dotnet": "AccountingSettings.GetAsync",
 		"go": "AccountingSettings.Get",
-		"java": "accountingSettings.get"
+		"java": "accountingSettings.get",
+		"ruby": "accounting_settings.get"
 	},
 	"POST /v1/accounting/settings": {
 		"python": "accounting_settings.update",
 		"php": "accountingSettings->update",
 		"dotnet": "AccountingSettings.UpdateAsync",
 		"go": "AccountingSettings.Update",
-		"java": "accountingSettings.update"
+		"java": "accountingSettings.update",
+		"ruby": "accounting_settings.update"
 	},
 	"GET /v1/accounting/closed_period": {
 		"python": "closed_period.get",
 		"php": "closedPeriod->get",
 		"dotnet": "ClosedPeriod.GetAsync",
 		"go": "ClosedPeriod.Get",
-		"java": "closedPeriod.get"
+		"java": "closedPeriod.get",
+		"ruby": "closed_period.get"
 	},
 	"POST /v1/accounting/closed_period": {
 		"python": "closed_period.set",
 		"php": "closedPeriod->set",
 		"dotnet": "ClosedPeriod.SetAsync",
 		"go": "ClosedPeriod.Set",
-		"java": "closedPeriod.set"
+		"java": "closedPeriod.set",
+		"ruby": "closed_period.set"
 	},
 	"GET /v1/accounting/fx_revaluations/{month}": {
 		"python": "fx_revaluations.get",
 		"php": "fxRevaluations->get",
 		"dotnet": "FxRevaluations.GetAsync",
 		"go": "FxRevaluations.Get",
-		"java": "fxRevaluations.get"
+		"java": "fxRevaluations.get",
+		"ruby": "fx_revaluations.get"
 	},
 	"POST /v1/accounting/fx_revaluations/{month}": {
 		"python": "fx_revaluations.create",
 		"php": "fxRevaluations->create",
 		"dotnet": "FxRevaluations.CreateAsync",
 		"go": "FxRevaluations.Create",
-		"java": "fxRevaluations.create"
+		"java": "fxRevaluations.create",
+		"ruby": "fx_revaluations.create"
 	},
 	"DELETE /v1/accounting/fx_revaluations/{month}": {
 		"python": "fx_revaluations.delete",
 		"php": "fxRevaluations->delete",
 		"dotnet": "FxRevaluations.DeleteAsync",
 		"go": "FxRevaluations.Delete",
-		"java": "fxRevaluations.delete"
+		"java": "fxRevaluations.delete",
+		"ruby": "fx_revaluations.delete"
 	},
 	"GET /v1/accounting/cost_of_sales/{month}": {
 		"python": "cost_of_sales.get",
 		"php": "costOfSales->get",
 		"dotnet": "CostOfSales.GetAsync",
 		"go": "CostOfSales.Get",
-		"java": "costOfSales.get"
+		"java": "costOfSales.get",
+		"ruby": "cost_of_sales.get"
 	},
 	"POST /v1/accounting/cost_of_sales/{month}": {
 		"python": "cost_of_sales.create",
 		"php": "costOfSales->create",
 		"dotnet": "CostOfSales.CreateAsync",
 		"go": "CostOfSales.Create",
-		"java": "costOfSales.create"
+		"java": "costOfSales.create",
+		"ruby": "cost_of_sales.create"
 	},
 	"DELETE /v1/accounting/cost_of_sales/{month}": {
 		"python": "cost_of_sales.delete",
 		"php": "costOfSales->delete",
 		"dotnet": "CostOfSales.DeleteAsync",
 		"go": "CostOfSales.Delete",
-		"java": "costOfSales.delete"
+		"java": "costOfSales.delete",
+		"ruby": "cost_of_sales.delete"
 	},
 	"GET /v1/accounting/budgets/{year}": {
 		"python": "budgets.get",
 		"php": "budgets->get",
 		"dotnet": "Budgets.GetAsync",
 		"go": "Budgets.Get",
-		"java": "budgets.get"
+		"java": "budgets.get",
+		"ruby": "budgets.get"
 	},
 	"POST /v1/accounting/budgets/{year}": {
 		"python": "budgets.save",
 		"php": "budgets->save",
 		"dotnet": "Budgets.SaveAsync",
 		"go": "Budgets.Save",
-		"java": "budgets.save"
+		"java": "budgets.save",
+		"ruby": "budgets.save"
 	},
 	"GET /v1/accounting/inflation_adjustments/{year}": {
 		"python": "inflation_adjustments.get",
 		"php": "inflationAdjustments->get",
 		"dotnet": "InflationAdjustments.GetAsync",
 		"go": "InflationAdjustments.Get",
-		"java": "inflationAdjustments.get"
+		"java": "inflationAdjustments.get",
+		"ruby": "inflation_adjustments.get"
 	},
 	"POST /v1/accounting/inflation_accounts": {
 		"python": "inflation_accounts.save",
 		"php": "inflationAccounts->save",
 		"dotnet": "InflationAccounts.SaveAsync",
 		"go": "InflationAccounts.Save",
-		"java": "inflationAccounts.save"
+		"java": "inflationAccounts.save",
+		"ruby": "inflation_accounts.save"
 	},
 	"GET /v1/accounting/annual_returns/{year}": {
 		"python": "annual_returns.get",
 		"php": "annualReturns->get",
 		"dotnet": "AnnualReturns.GetAsync",
 		"go": "AnnualReturns.Get",
-		"java": "annualReturns.get"
+		"java": "annualReturns.get",
+		"ruby": "annual_returns.get"
 	},
 	"POST /v1/accounting/annual_returns/{year}": {
 		"python": "annual_returns.save",
 		"php": "annualReturns->save",
 		"dotnet": "AnnualReturns.SaveAsync",
 		"go": "AnnualReturns.Save",
-		"java": "annualReturns.save"
+		"java": "annualReturns.save",
+		"ruby": "annual_returns.save"
 	},
 	"POST /v1/accounting/annual_returns/{year}/carry_forward": {
 		"python": "annual_returns.carry_forward",
 		"php": "annualReturns->carryForward",
 		"dotnet": "AnnualReturns.CarryForwardAsync",
 		"go": "AnnualReturns.CarryForward",
-		"java": "annualReturns.carryForward"
+		"java": "annualReturns.carryForward",
+		"ruby": "annual_returns.carry_forward"
 	},
 	"GET /v1/accounting/depreciation_reconciliations/{year}": {
 		"python": "depreciation_reconciliations.get",
 		"php": "depreciationReconciliations->get",
 		"dotnet": "DepreciationReconciliations.GetAsync",
 		"go": "DepreciationReconciliations.Get",
-		"java": "depreciationReconciliations.get"
+		"java": "depreciationReconciliations.get",
+		"ruby": "depreciation_reconciliations.get"
 	},
 	"POST /v1/accounting/book_depreciation_rates": {
 		"python": "book_depreciation_rates.save",
 		"php": "bookDepreciationRates->save",
 		"dotnet": "BookDepreciationRates.SaveAsync",
 		"go": "BookDepreciationRates.Save",
-		"java": "bookDepreciationRates.save"
+		"java": "bookDepreciationRates.save",
+		"ruby": "book_depreciation_rates.save"
 	},
 	"GET /v1/accounting/chart_templates": {
 		"python": "chart_templates.list",
 		"php": "chartTemplates->list",
 		"dotnet": "ChartTemplates.ListAsync",
 		"go": "ChartTemplates.List",
-		"java": "chartTemplates.list"
+		"java": "chartTemplates.list",
+		"ruby": "chart_templates.list"
 	},
 	"POST /v1/accounting/chart_templates/{id}/apply": {
 		"python": "chart_templates.apply",
 		"php": "chartTemplates->apply",
 		"dotnet": "ChartTemplates.ApplyAsync",
 		"go": "ChartTemplates.Apply",
-		"java": "chartTemplates.apply"
+		"java": "chartTemplates.apply",
+		"ruby": "chart_templates.apply"
 	},
 	"POST /v1/accounting/account_renumberings": {
 		"python": "account_renumberings.create",
 		"php": "accountRenumberings->create",
 		"dotnet": "AccountRenumberings.CreateAsync",
 		"go": "AccountRenumberings.Create",
-		"java": "accountRenumberings.create"
+		"java": "accountRenumberings.create",
+		"ruby": "account_renumberings.create"
 	},
 	"GET /v1/accounting/books_log": {
 		"python": "books_log.list",
 		"php": "booksLog->list",
 		"dotnet": "BooksLog.ListAsync",
 		"go": "BooksLog.List",
-		"java": "booksLog.list"
+		"java": "booksLog.list",
+		"ruby": "books_log.list"
 	},
 	"GET /v1/accounting/consolidated_statements": {
 		"python": "accounting.consolidated_statements",
 		"php": "accounting->consolidatedStatements",
 		"dotnet": "Accounting.ConsolidatedStatementsAsync",
 		"go": "Accounting.ConsolidatedStatements",
-		"java": "accounting.consolidatedStatements"
+		"java": "accounting.consolidatedStatements",
+		"ruby": "accounting.consolidated_statements"
 	},
 	"GET /v1/accounting/consolidation_eliminations": {
 		"python": "consolidation_eliminations.list",
 		"php": "consolidationEliminations->list",
 		"dotnet": "ConsolidationEliminations.ListAsync",
 		"go": "ConsolidationEliminations.List",
-		"java": "consolidationEliminations.list"
+		"java": "consolidationEliminations.list",
+		"ruby": "consolidation_eliminations.list"
 	},
 	"POST /v1/accounting/consolidation_eliminations": {
 		"python": "consolidation_eliminations.create",
 		"php": "consolidationEliminations->create",
 		"dotnet": "ConsolidationEliminations.CreateAsync",
 		"go": "ConsolidationEliminations.Create",
-		"java": "consolidationEliminations.create"
+		"java": "consolidationEliminations.create",
+		"ruby": "consolidation_eliminations.create"
 	},
 	"POST /v1/accounting/consolidation_eliminations/{id}": {
 		"python": "consolidation_eliminations.update",
 		"php": "consolidationEliminations->update",
 		"dotnet": "ConsolidationEliminations.UpdateAsync",
 		"go": "ConsolidationEliminations.Update",
-		"java": "consolidationEliminations.update"
+		"java": "consolidationEliminations.update",
+		"ruby": "consolidation_eliminations.update"
 	},
 	"DELETE /v1/accounting/consolidation_eliminations/{id}": {
 		"python": "consolidation_eliminations.delete",
 		"php": "consolidationEliminations->delete",
 		"dotnet": "ConsolidationEliminations.DeleteAsync",
 		"go": "ConsolidationEliminations.Delete",
-		"java": "consolidationEliminations.delete"
+		"java": "consolidationEliminations.delete",
+		"ruby": "consolidation_eliminations.delete"
 	},
 	"GET /v1/accounting/entry_templates": {
 		"python": "entry_templates.list",
 		"php": "entryTemplates->list",
 		"dotnet": "EntryTemplates.ListAsync",
 		"go": "EntryTemplates.List",
-		"java": "entryTemplates.list"
+		"java": "entryTemplates.list",
+		"ruby": "entry_templates.list"
 	},
 	"POST /v1/accounting/entry_templates": {
 		"python": "entry_templates.create",
 		"php": "entryTemplates->create",
 		"dotnet": "EntryTemplates.CreateAsync",
 		"go": "EntryTemplates.Create",
-		"java": "entryTemplates.create"
+		"java": "entryTemplates.create",
+		"ruby": "entry_templates.create"
 	},
 	"POST /v1/accounting/entry_templates/{id}": {
 		"python": "entry_templates.update",
 		"php": "entryTemplates->update",
 		"dotnet": "EntryTemplates.UpdateAsync",
 		"go": "EntryTemplates.Update",
-		"java": "entryTemplates.update"
+		"java": "entryTemplates.update",
+		"ruby": "entry_templates.update"
 	},
 	"DELETE /v1/accounting/entry_templates/{id}": {
 		"python": "entry_templates.delete",
 		"php": "entryTemplates->delete",
 		"dotnet": "EntryTemplates.DeleteAsync",
 		"go": "EntryTemplates.Delete",
-		"java": "entryTemplates.delete"
+		"java": "entryTemplates.delete",
+		"ruby": "entry_templates.delete"
 	},
 	"POST /v1/accounting/entry_templates/{id}/apply": {
 		"python": "entry_templates.apply",
 		"php": "entryTemplates->apply",
 		"dotnet": "EntryTemplates.ApplyAsync",
 		"go": "EntryTemplates.Apply",
-		"java": "entryTemplates.apply"
+		"java": "entryTemplates.apply",
+		"ruby": "entry_templates.apply"
 	},
 	"GET /v1/accounting/cost_center_results/{month}": {
 		"python": "cost_center_results.get",
 		"php": "costCenterResults->get",
 		"dotnet": "CostCenterResults.GetAsync",
 		"go": "CostCenterResults.Get",
-		"java": "costCenterResults.get"
+		"java": "costCenterResults.get",
+		"ruby": "cost_center_results.get"
 	},
 	"GET /v1/accounting/payroll_provisions/{month}": {
 		"python": "payroll_provisions.get",
 		"php": "payrollProvisions->get",
 		"dotnet": "PayrollProvisions.GetAsync",
 		"go": "PayrollProvisions.Get",
-		"java": "payrollProvisions.get"
+		"java": "payrollProvisions.get",
+		"ruby": "payroll_provisions.get"
 	},
 	"POST /v1/accounting/payroll_provisions/{month}": {
 		"python": "payroll_provisions.create",
 		"php": "payrollProvisions->create",
 		"dotnet": "PayrollProvisions.CreateAsync",
 		"go": "PayrollProvisions.Create",
-		"java": "payrollProvisions.create"
+		"java": "payrollProvisions.create",
+		"ruby": "payroll_provisions.create"
 	},
 	"DELETE /v1/accounting/payroll_provisions/{month}": {
 		"python": "payroll_provisions.delete",
 		"php": "payrollProvisions->delete",
 		"dotnet": "PayrollProvisions.DeleteAsync",
 		"go": "PayrollProvisions.Delete",
-		"java": "payrollProvisions.delete"
+		"java": "payrollProvisions.delete",
+		"ruby": "payroll_provisions.delete"
 	},
 	"POST /v1/accounting/payroll_provisions/{month}/sua_comparison": {
 		"python": "payroll_provisions.compare_sua",
 		"php": "payrollProvisions->compareSua",
 		"dotnet": "PayrollProvisions.CompareSuaAsync",
 		"go": "PayrollProvisions.CompareSua",
-		"java": "payrollProvisions.compareSua"
+		"java": "payrollProvisions.compareSua",
+		"ruby": "payroll_provisions.compare_sua"
 	},
 	"GET /v1/accounting/tax_determinations/{month}": {
 		"python": "tax_determinations.get",
 		"php": "taxDeterminations->get",
 		"dotnet": "TaxDeterminations.GetAsync",
 		"go": "TaxDeterminations.Get",
-		"java": "taxDeterminations.get"
+		"java": "taxDeterminations.get",
+		"ruby": "tax_determinations.get"
 	},
 	"POST /v1/accounting/tax_determinations/{month}": {
 		"python": "tax_determinations.create",
 		"php": "taxDeterminations->create",
 		"dotnet": "TaxDeterminations.CreateAsync",
 		"go": "TaxDeterminations.Create",
-		"java": "taxDeterminations.create"
+		"java": "taxDeterminations.create",
+		"ruby": "tax_determinations.create"
 	},
 	"DELETE /v1/accounting/tax_determinations/{month}": {
 		"python": "tax_determinations.delete",
 		"php": "taxDeterminations->delete",
 		"dotnet": "TaxDeterminations.DeleteAsync",
 		"go": "TaxDeterminations.Delete",
-		"java": "taxDeterminations.delete"
+		"java": "taxDeterminations.delete",
+		"ruby": "tax_determinations.delete"
 	},
 	"GET /v1/accounting/bank_accounts": {
 		"python": "ledger_bank_accounts.list",
 		"php": "ledgerBankAccounts->list",
 		"dotnet": "LedgerBankAccounts.ListAsync",
 		"go": "LedgerBankAccounts.List",
-		"java": "ledgerBankAccounts.list"
+		"java": "ledgerBankAccounts.list",
+		"ruby": "ledger_bank_accounts.list"
 	},
 	"POST /v1/accounting/bank_accounts/{last_four}": {
 		"python": "ledger_bank_accounts.update",
 		"php": "ledgerBankAccounts->update",
 		"dotnet": "LedgerBankAccounts.UpdateAsync",
 		"go": "LedgerBankAccounts.Update",
-		"java": "ledgerBankAccounts.update"
+		"java": "ledgerBankAccounts.update",
+		"ruby": "ledger_bank_accounts.update"
 	},
 	"GET /v1/accounting/bank_movements": {
 		"python": "bank_movements.list",
 		"php": "bankMovements->list",
 		"dotnet": "BankMovements.ListAsync",
 		"go": "BankMovements.List",
-		"java": "bankMovements.list"
+		"java": "bankMovements.list",
+		"ruby": "bank_movements.list"
 	},
 	"POST /v1/accounting/bank_movements/{id}/post": {
 		"python": "bank_movements.post",
 		"php": "bankMovements->post",
 		"dotnet": "BankMovements.PostAsync",
 		"go": "BankMovements.Post",
-		"java": "bankMovements.post"
+		"java": "bankMovements.post",
+		"ruby": "bank_movements.post"
 	},
 	"DELETE /v1/accounting/bank_movements/{id}/post": {
 		"python": "bank_movements.unpost",
 		"php": "bankMovements->unpost",
 		"dotnet": "BankMovements.UnpostAsync",
 		"go": "BankMovements.Unpost",
-		"java": "bankMovements.unpost"
+		"java": "bankMovements.unpost",
+		"ruby": "bank_movements.unpost"
 	},
 	"POST /v1/accounting/bank_movements/{id}/mark": {
 		"python": "bank_movements.mark",
 		"php": "bankMovements->mark",
 		"dotnet": "BankMovements.MarkAsync",
 		"go": "BankMovements.Mark",
-		"java": "bankMovements.mark"
+		"java": "bankMovements.mark",
+		"ruby": "bank_movements.mark"
 	},
 	"GET /v1/accounting/electronic_accounting": {
 		"python": "accounting.electronic_accounting",
 		"php": "accounting->electronicAccounting",
 		"dotnet": "Accounting.ElectronicAccountingAsync",
 		"go": "Accounting.ElectronicAccounting",
-		"java": "accounting.electronicAccounting"
+		"java": "accounting.electronicAccounting",
+		"ruby": "accounting.electronic_accounting"
 	},
 	"GET /v1/accounting/books_export": {
 		"python": "accounting.books_export",
 		"php": "accounting->booksExport",
 		"dotnet": "Accounting.BooksExportAsync",
 		"go": "Accounting.BooksExport",
-		"java": "accounting.booksExport"
+		"java": "accounting.booksExport",
+		"ruby": "accounting.books_export"
 	},
 	"GET /v1/accounting/diot": {
 		"python": "accounting.diot",
 		"php": "accounting->diot",
 		"dotnet": "Accounting.DiotAsync",
 		"go": "Accounting.Diot",
-		"java": "accounting.diot"
+		"java": "accounting.diot",
+		"ruby": "accounting.diot"
 	},
 	"GET /v1/accounting/diot/file": {
 		"python": "accounting.diot_file",
 		"php": "accounting->diotFile",
 		"dotnet": "Accounting.DiotFileAsync",
 		"go": "Accounting.DiotFile",
-		"java": "accounting.diotFile"
+		"java": "accounting.diotFile",
+		"ruby": "accounting.diot_file"
 	},
 	"GET /v1/accounting/ieps_customers": {
 		"python": "accounting.ieps_customers",
 		"php": "accounting->iepsCustomers",
 		"dotnet": "Accounting.IepsCustomersAsync",
 		"go": "Accounting.IEPSCustomers",
-		"java": "accounting.iepsCustomers"
+		"java": "accounting.iepsCustomers",
+		"ruby": "accounting.ieps_customers"
 	},
 	"GET /v1/accounting/ieps_customers/file": {
 		"python": "accounting.ieps_customers_file",
 		"php": "accounting->iepsCustomersFile",
 		"dotnet": "Accounting.IepsCustomersFileAsync",
 		"go": "Accounting.IEPSCustomersFile",
-		"java": "accounting.iepsCustomersFile"
+		"java": "accounting.iepsCustomersFile",
+		"ruby": "accounting.ieps_customers_file"
 	},
 	"POST /v1/store_connections": {
 		"python": "store_connections.create",
 		"php": "storeConnections->create",
 		"dotnet": "StoreConnections.CreateAsync",
 		"go": "StoreConnections.Create",
-		"java": "storeConnections.create"
+		"java": "storeConnections.create",
+		"ruby": "store_connections.create"
 	},
 	"GET /v1/store_connections": {
 		"python": "store_connections.list",
 		"php": "storeConnections->list",
 		"dotnet": "StoreConnections.ListAsync",
 		"go": "StoreConnections.List",
-		"java": "storeConnections.list"
+		"java": "storeConnections.list",
+		"ruby": "store_connections.list"
 	},
 	"GET /v1/store_connections/{id}": {
 		"python": "store_connections.get",
 		"php": "storeConnections->get",
 		"dotnet": "StoreConnections.GetAsync",
 		"go": "StoreConnections.Get",
-		"java": "storeConnections.get"
+		"java": "storeConnections.get",
+		"ruby": "store_connections.get"
 	},
 	"POST /v1/store_connections/{id}": {
 		"python": "store_connections.update",
 		"php": "storeConnections->update",
 		"dotnet": "StoreConnections.UpdateAsync",
 		"go": "StoreConnections.Update",
-		"java": "storeConnections.update"
+		"java": "storeConnections.update",
+		"ruby": "store_connections.update"
 	},
 	"DELETE /v1/store_connections/{id}": {
 		"python": "store_connections.delete",
 		"php": "storeConnections->delete",
 		"dotnet": "StoreConnections.DeleteAsync",
 		"go": "StoreConnections.Delete",
-		"java": "storeConnections.delete"
+		"java": "storeConnections.delete",
+		"ruby": "store_connections.delete"
 	},
 	"POST /v1/store_connections/{id}/import_orders": {
 		"python": "store_connections.import_orders",
 		"php": "storeConnections->importOrders",
 		"dotnet": "StoreConnections.ImportOrdersAsync",
 		"go": "StoreConnections.ImportOrders",
-		"java": "storeConnections.importOrders"
+		"java": "storeConnections.importOrders",
+		"ruby": "store_connections.import_orders"
 	},
 	"POST /v1/recurring_invoices": {
 		"python": "recurring_invoices.create",
 		"php": "recurringInvoices->create",
 		"dotnet": "RecurringInvoices.CreateAsync",
 		"go": "RecurringInvoices.Create",
-		"java": "recurringInvoices.create"
+		"java": "recurringInvoices.create",
+		"ruby": "recurring_invoices.create"
 	},
 	"GET /v1/recurring_invoices": {
 		"python": "recurring_invoices.list",
 		"php": "recurringInvoices->list",
 		"dotnet": "RecurringInvoices.ListAsync",
 		"go": "RecurringInvoices.List",
-		"java": "recurringInvoices.list"
+		"java": "recurringInvoices.list",
+		"ruby": "recurring_invoices.list"
 	},
 	"GET /v1/recurring_invoices/{id}": {
 		"python": "recurring_invoices.get",
 		"php": "recurringInvoices->get",
 		"dotnet": "RecurringInvoices.GetAsync",
 		"go": "RecurringInvoices.Get",
-		"java": "recurringInvoices.get"
+		"java": "recurringInvoices.get",
+		"ruby": "recurring_invoices.get"
 	},
 	"POST /v1/recurring_invoices/{id}": {
 		"python": "recurring_invoices.update",
 		"php": "recurringInvoices->update",
 		"dotnet": "RecurringInvoices.UpdateAsync",
 		"go": "RecurringInvoices.Update",
-		"java": "recurringInvoices.update"
+		"java": "recurringInvoices.update",
+		"ruby": "recurring_invoices.update"
 	},
 	"DELETE /v1/recurring_invoices/{id}": {
 		"python": "recurring_invoices.delete",
 		"php": "recurringInvoices->delete",
 		"dotnet": "RecurringInvoices.DeleteAsync",
 		"go": "RecurringInvoices.Delete",
-		"java": "recurringInvoices.delete"
+		"java": "recurringInvoices.delete",
+		"ruby": "recurring_invoices.delete"
 	},
 	"POST /v1/recurring_invoices/{id}/skip": {
 		"python": "recurring_invoices.skip",
 		"php": "recurringInvoices->skip",
 		"dotnet": "RecurringInvoices.SkipAsync",
 		"go": "RecurringInvoices.Skip",
-		"java": "recurringInvoices.skip"
+		"java": "recurringInvoices.skip",
+		"ruby": "recurring_invoices.skip"
 	},
 	"POST /v1/recurring_invoices/{id}/run": {
 		"python": "recurring_invoices.run",
 		"php": "recurringInvoices->run",
 		"dotnet": "RecurringInvoices.RunAsync",
 		"go": "RecurringInvoices.Run",
-		"java": "recurringInvoices.run"
+		"java": "recurringInvoices.run",
+		"ruby": "recurring_invoices.run"
 	},
 	"POST /v1/quotes": {
 		"python": "quotes.create",
 		"php": "quotes->create",
 		"dotnet": "Quotes.CreateAsync",
 		"go": "Quotes.Create",
-		"java": "quotes.create"
+		"java": "quotes.create",
+		"ruby": "quotes.create"
 	},
 	"GET /v1/quotes": {
 		"python": "quotes.list",
 		"php": "quotes->list",
 		"dotnet": "Quotes.ListAsync",
 		"go": "Quotes.List",
-		"java": "quotes.list"
+		"java": "quotes.list",
+		"ruby": "quotes.list"
 	},
 	"GET /v1/quotes/{id}": {
 		"python": "quotes.get",
 		"php": "quotes->get",
 		"dotnet": "Quotes.GetAsync",
 		"go": "Quotes.Get",
-		"java": "quotes.get"
+		"java": "quotes.get",
+		"ruby": "quotes.get"
 	},
 	"POST /v1/quotes/{id}": {
 		"python": "quotes.update",
 		"php": "quotes->update",
 		"dotnet": "Quotes.UpdateAsync",
 		"go": "Quotes.Update",
-		"java": "quotes.update"
+		"java": "quotes.update",
+		"ruby": "quotes.update"
 	},
 	"DELETE /v1/quotes/{id}": {
 		"python": "quotes.delete",
 		"php": "quotes->delete",
 		"dotnet": "Quotes.DeleteAsync",
 		"go": "Quotes.Delete",
-		"java": "quotes.delete"
+		"java": "quotes.delete",
+		"ruby": "quotes.delete"
 	},
 	"POST /v1/quotes/{id}/send": {
 		"python": "quotes.send",
 		"php": "quotes->send",
 		"dotnet": "Quotes.SendAsync",
 		"go": "Quotes.Send",
-		"java": "quotes.send"
+		"java": "quotes.send",
+		"ruby": "quotes.send"
 	},
 	"POST /v1/quotes/{id}/accept": {
 		"python": "quotes.accept",
 		"php": "quotes->accept",
 		"dotnet": "Quotes.AcceptAsync",
 		"go": "Quotes.Accept",
-		"java": "quotes.accept"
+		"java": "quotes.accept",
+		"ruby": "quotes.accept"
 	},
 	"POST /v1/quotes/{id}/withdraw": {
 		"python": "quotes.withdraw",
 		"php": "quotes->withdraw",
 		"dotnet": "Quotes.WithdrawAsync",
 		"go": "Quotes.Withdraw",
-		"java": "quotes.withdraw"
+		"java": "quotes.withdraw",
+		"ruby": "quotes.withdraw"
 	},
 	"POST /v1/quotes/{id}/reject": {
 		"python": "quotes.reject",
 		"php": "quotes->reject",
 		"dotnet": "Quotes.RejectAsync",
 		"go": "Quotes.Reject",
-		"java": "quotes.reject"
+		"java": "quotes.reject",
+		"ruby": "quotes.reject"
 	},
 	"POST /v1/quotes/{id}/invoice": {
 		"python": "quotes.invoice",
 		"php": "quotes->invoice",
 		"dotnet": "Quotes.InvoiceAsync",
 		"go": "Quotes.Invoice",
-		"java": "quotes.invoice"
+		"java": "quotes.invoice",
+		"ruby": "quotes.invoice"
 	},
 	"GET /v1/quotes/{id}/pdf": {
 		"python": "quotes.pdf",
 		"php": "quotes->pdf",
 		"dotnet": "Quotes.PdfAsync",
 		"go": "Quotes.PDF",
-		"java": "quotes.pdf"
+		"java": "quotes.pdf",
+		"ruby": "quotes.pdf"
 	},
 	"POST /v1/sales_orders": {
 		"python": "sales_orders.create",
 		"php": "salesOrders->create",
 		"dotnet": "SalesOrders.CreateAsync",
 		"go": "SalesOrders.Create",
-		"java": "salesOrders.create"
+		"java": "salesOrders.create",
+		"ruby": "sales_orders.create"
 	},
 	"GET /v1/sales_orders": {
 		"python": "sales_orders.list",
 		"php": "salesOrders->list",
 		"dotnet": "SalesOrders.ListAsync",
 		"go": "SalesOrders.List",
-		"java": "salesOrders.list"
+		"java": "salesOrders.list",
+		"ruby": "sales_orders.list"
 	},
 	"GET /v1/sales_orders/{id}": {
 		"python": "sales_orders.get",
 		"php": "salesOrders->get",
 		"dotnet": "SalesOrders.GetAsync",
 		"go": "SalesOrders.Get",
-		"java": "salesOrders.get"
+		"java": "salesOrders.get",
+		"ruby": "sales_orders.get"
 	},
 	"POST /v1/sales_orders/{id}": {
 		"python": "sales_orders.update",
 		"php": "salesOrders->update",
 		"dotnet": "SalesOrders.UpdateAsync",
 		"go": "SalesOrders.Update",
-		"java": "salesOrders.update"
+		"java": "salesOrders.update",
+		"ruby": "sales_orders.update"
 	},
 	"DELETE /v1/sales_orders/{id}": {
 		"python": "sales_orders.delete",
 		"php": "salesOrders->delete",
 		"dotnet": "SalesOrders.DeleteAsync",
 		"go": "SalesOrders.Delete",
-		"java": "salesOrders.delete"
+		"java": "salesOrders.delete",
+		"ruby": "sales_orders.delete"
 	},
 	"POST /v1/sales_orders/{id}/confirm": {
 		"python": "sales_orders.confirm",
 		"php": "salesOrders->confirm",
 		"dotnet": "SalesOrders.ConfirmAsync",
 		"go": "SalesOrders.Confirm",
-		"java": "salesOrders.confirm"
+		"java": "salesOrders.confirm",
+		"ruby": "sales_orders.confirm"
 	},
 	"POST /v1/sales_orders/{id}/deliveries": {
 		"python": "sales_orders.deliver",
 		"php": "salesOrders->deliver",
 		"dotnet": "SalesOrders.DeliverAsync",
 		"go": "SalesOrders.Deliver",
-		"java": "salesOrders.deliver"
+		"java": "salesOrders.deliver",
+		"ruby": "sales_orders.deliver"
 	},
 	"POST /v1/sales_orders/{id}/deliveries/{delivery}/cancel": {
 		"python": "sales_orders.cancel_delivery",
 		"php": "salesOrders->cancelDelivery",
 		"dotnet": "SalesOrders.CancelDeliveryAsync",
 		"go": "SalesOrders.CancelDelivery",
-		"java": "salesOrders.cancelDelivery"
+		"java": "salesOrders.cancelDelivery",
+		"ruby": "sales_orders.cancel_delivery"
 	},
 	"POST /v1/sales_orders/{id}/invoice": {
 		"python": "sales_orders.invoice",
 		"php": "salesOrders->invoice",
 		"dotnet": "SalesOrders.InvoiceAsync",
 		"go": "SalesOrders.Invoice",
-		"java": "salesOrders.invoice"
+		"java": "salesOrders.invoice",
+		"ruby": "sales_orders.invoice"
 	},
 	"POST /v1/sales_orders/{id}/send": {
 		"python": "sales_orders.send",
 		"php": "salesOrders->send",
 		"dotnet": "SalesOrders.SendAsync",
 		"go": "SalesOrders.Send",
-		"java": "salesOrders.send"
+		"java": "salesOrders.send",
+		"ruby": "sales_orders.send"
 	},
 	"POST /v1/sales_orders/{id}/cancel_remaining": {
 		"python": "sales_orders.cancel_remaining",
 		"php": "salesOrders->cancelRemaining",
 		"dotnet": "SalesOrders.CancelRemainingAsync",
 		"go": "SalesOrders.CancelRemaining",
-		"java": "salesOrders.cancelRemaining"
+		"java": "salesOrders.cancelRemaining",
+		"ruby": "sales_orders.cancel_remaining"
 	},
 	"POST /v1/sales_orders/{id}/close": {
 		"python": "sales_orders.close",
 		"php": "salesOrders->close",
 		"dotnet": "SalesOrders.CloseAsync",
 		"go": "SalesOrders.Close",
-		"java": "salesOrders.close"
+		"java": "salesOrders.close",
+		"ruby": "sales_orders.close"
 	},
 	"POST /v1/sales_orders/{id}/cancel": {
 		"python": "sales_orders.cancel",
 		"php": "salesOrders->cancel",
 		"dotnet": "SalesOrders.CancelAsync",
 		"go": "SalesOrders.Cancel",
-		"java": "salesOrders.cancel"
+		"java": "salesOrders.cancel",
+		"ruby": "sales_orders.cancel"
 	},
 	"POST /v1/sales_orders/{id}/reopen": {
 		"python": "sales_orders.reopen",
 		"php": "salesOrders->reopen",
 		"dotnet": "SalesOrders.ReopenAsync",
 		"go": "SalesOrders.Reopen",
-		"java": "salesOrders.reopen"
+		"java": "salesOrders.reopen",
+		"ruby": "sales_orders.reopen"
 	},
 	"GET /v1/sales_orders/{id}/pdf": {
 		"python": "sales_orders.pdf",
 		"php": "salesOrders->pdf",
 		"dotnet": "SalesOrders.PdfAsync",
 		"go": "SalesOrders.PDF",
-		"java": "salesOrders.pdf"
+		"java": "salesOrders.pdf",
+		"ruby": "sales_orders.pdf"
+	},
+	"POST /v1/api_keys": {
+		"python": "api_keys.create",
+		"php": "apiKeys->create",
+		"dotnet": "ApiKeys.CreateAsync",
+		"go": "ApiKeys.Create",
+		"java": "apiKeys.create",
+		"ruby": "api_keys.create"
+	},
+	"GET /v1/api_keys": {
+		"python": "api_keys.list",
+		"php": "apiKeys->list",
+		"dotnet": "ApiKeys.ListAsync",
+		"go": "ApiKeys.List",
+		"java": "apiKeys.list",
+		"ruby": "api_keys.list"
+	},
+	"GET /v1/api_keys/{id}": {
+		"python": "api_keys.get",
+		"php": "apiKeys->get",
+		"dotnet": "ApiKeys.GetAsync",
+		"go": "ApiKeys.Get",
+		"java": "apiKeys.get",
+		"ruby": "api_keys.get"
+	},
+	"POST /v1/api_keys/{id}": {
+		"python": "api_keys.update",
+		"php": "apiKeys->update",
+		"dotnet": "ApiKeys.UpdateAsync",
+		"go": "ApiKeys.Update",
+		"java": "apiKeys.update",
+		"ruby": "api_keys.update"
+	},
+	"DELETE /v1/api_keys/{id}": {
+		"python": "api_keys.revoke",
+		"php": "apiKeys->revoke",
+		"dotnet": "ApiKeys.RevokeAsync",
+		"go": "ApiKeys.Revoke",
+		"java": "apiKeys.revoke",
+		"ruby": "api_keys.revoke"
+	},
+	"POST /v1/api_keys/{id}/roll": {
+		"python": "api_keys.roll",
+		"php": "apiKeys->roll",
+		"dotnet": "ApiKeys.RollAsync",
+		"go": "ApiKeys.Roll",
+		"java": "apiKeys.roll",
+		"ruby": "api_keys.roll"
 	},
 	"POST /v1/webhook_endpoints": {
 		"python": "webhook_endpoints.create",
 		"php": "webhookEndpoints->create",
 		"dotnet": "WebhookEndpoints.CreateAsync",
 		"go": "WebhookEndpoints.Create",
-		"java": "webhookEndpoints.create"
+		"java": "webhookEndpoints.create",
+		"ruby": "webhook_endpoints.create"
 	},
 	"GET /v1/webhook_endpoints": {
 		"python": "webhook_endpoints.list",
 		"php": "webhookEndpoints->list",
 		"dotnet": "WebhookEndpoints.ListAsync",
 		"go": "WebhookEndpoints.List",
-		"java": "webhookEndpoints.list"
+		"java": "webhookEndpoints.list",
+		"ruby": "webhook_endpoints.list"
 	},
 	"GET /v1/webhook_endpoints/{id}": {
 		"python": "webhook_endpoints.get",
 		"php": "webhookEndpoints->get",
 		"dotnet": "WebhookEndpoints.GetAsync",
 		"go": "WebhookEndpoints.Get",
-		"java": "webhookEndpoints.get"
+		"java": "webhookEndpoints.get",
+		"ruby": "webhook_endpoints.get"
 	},
 	"POST /v1/webhook_endpoints/{id}": {
 		"python": "webhook_endpoints.update",
 		"php": "webhookEndpoints->update",
 		"dotnet": "WebhookEndpoints.UpdateAsync",
 		"go": "WebhookEndpoints.Update",
-		"java": "webhookEndpoints.update"
+		"java": "webhookEndpoints.update",
+		"ruby": "webhook_endpoints.update"
 	},
 	"DELETE /v1/webhook_endpoints/{id}": {
 		"python": "webhook_endpoints.delete",
 		"php": "webhookEndpoints->delete",
 		"dotnet": "WebhookEndpoints.DeleteAsync",
 		"go": "WebhookEndpoints.Delete",
-		"java": "webhookEndpoints.delete"
+		"java": "webhookEndpoints.delete",
+		"ruby": "webhook_endpoints.delete"
 	},
 	"POST /v1/webhook_endpoints/{id}/roll_secret": {
 		"python": "webhook_endpoints.roll_secret",
 		"php": "webhookEndpoints->rollSecret",
 		"dotnet": "WebhookEndpoints.RollSecretAsync",
 		"go": "WebhookEndpoints.RollSecret",
-		"java": "webhookEndpoints.rollSecret"
+		"java": "webhookEndpoints.rollSecret",
+		"ruby": "webhook_endpoints.roll_secret"
 	},
 	"POST /v1/webhook_endpoints/{id}/test": {
 		"python": "webhook_endpoints.test",
 		"php": "webhookEndpoints->test",
 		"dotnet": "WebhookEndpoints.TestAsync",
 		"go": "WebhookEndpoints.Test",
-		"java": "webhookEndpoints.test"
+		"java": "webhookEndpoints.test",
+		"ruby": "webhook_endpoints.test"
 	},
 	"GET /v1/webhook_endpoints/{id}/deliveries": {
 		"python": "webhook_endpoints.list_deliveries",
 		"php": "webhookEndpoints->listDeliveries",
 		"dotnet": "WebhookEndpoints.ListDeliveriesAsync",
 		"go": "WebhookEndpoints.ListDeliveries",
-		"java": "webhookEndpoints.listDeliveries"
+		"java": "webhookEndpoints.listDeliveries",
+		"ruby": "webhook_endpoints.list_deliveries"
 	},
 	"POST /v1/webhook_endpoints/{id}/recover": {
 		"python": "webhook_endpoints.recover",
 		"php": "webhookEndpoints->recover",
 		"dotnet": "WebhookEndpoints.RecoverAsync",
 		"go": "WebhookEndpoints.Recover",
-		"java": "webhookEndpoints.recover"
+		"java": "webhookEndpoints.recover",
+		"ruby": "webhook_endpoints.recover"
 	},
 	"GET /v1/events": {
 		"python": "events.list",
 		"php": "events->list",
 		"dotnet": "Events.ListAsync",
 		"go": "Events.List",
-		"java": "events.list"
+		"java": "events.list",
+		"ruby": "events.list"
 	},
 	"GET /v1/events/{id}": {
 		"python": "events.get",
 		"php": "events->get",
 		"dotnet": "Events.GetAsync",
 		"go": "Events.Get",
-		"java": "events.get"
+		"java": "events.get",
+		"ruby": "events.get"
 	},
 	"POST /v1/events/{id}/resend": {
 		"python": "events.resend",
 		"php": "events->resend",
 		"dotnet": "Events.ResendAsync",
 		"go": "Events.Resend",
-		"java": "events.resend"
+		"java": "events.resend",
+		"ruby": "events.resend"
 	}
 }

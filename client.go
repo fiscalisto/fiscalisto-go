@@ -23,16 +23,18 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
 // Version del SDK, en el User-Agent.
-const Version = "0.1.224"
+const Version = "0.1.225"
 
 // APIVersion es la versión de la API para la que se hizo este SDK (cabecera Fiscalisto-Version).
-const APIVersion = "2026-10-24"
+const APIVersion = "2026-11-25"
 
 // DefaultBaseURL es la dirección de la API.
 const DefaultBaseURL = "https://api.fiscalisto.com"
@@ -49,6 +51,7 @@ type Client struct {
 	maxRetries int
 	timeout    time.Duration
 	sleep      func(context.Context, time.Duration) error
+	warned     atomic.Bool
 }
 
 // Option configura un Client en NewClient.
@@ -111,6 +114,7 @@ type requestConfig struct {
 	idempotencyKey string
 	timeout        time.Duration
 	maxRetries     *int
+	expand         []string
 }
 
 // WithIdempotencyKey usa su propia Idempotency-Key (la de su pedido, por ejemplo): repetir la
@@ -127,6 +131,16 @@ func WithRequestTimeout(d time.Duration) RequestOption {
 // WithRequestMaxRetries cambia los reintentos de esta llamada.
 func WithRequestMaxRetries(n int) RequestOption {
 	return func(r *requestConfig) { r.maxRetries = &n }
+}
+
+// WithExpand pide que esos campos, que guardan el id de otro objeto, lleguen como el objeto
+// completo en la misma respuesta (expand[], https://fiscalisto.com/docs/api/expandir). El campo
+// es un StringOr: léalo en .Object (y su id en .ID, expandido o no).
+//
+//	inv, err := client.Invoices.Get(ctx, "inv_…", fiscalisto.WithExpand("issuer", "recurring_invoice"))
+//	fmt.Println(inv.Issuer.Object.LegalName)
+func WithExpand(fields ...string) RequestOption {
+	return func(r *requestConfig) { r.expand = append(r.expand, fields...) }
 }
 
 // String, Int64, Float64 y Bool dan el apuntador de un valor, para los campos opcionales.
@@ -166,7 +180,7 @@ func isNil(v any) bool {
 	return r.Kind() == reflect.Pointer && r.IsNil()
 }
 
-// queryOf: the params' fields as the URL's query (they are all scalars).
+// queryOf: the params' fields as the URL's query (scalars, and maps as k[sub]=v).
 func queryOf(params any) (url.Values, error) {
 	if r, ok := params.(rawQuery); ok {
 		return url.Values(r), nil
@@ -194,6 +208,13 @@ func queryOf(params any) (url.Values, error) {
 			q.Set(k, strconv.FormatBool(x))
 		case json.Number:
 			q.Set(k, x.String())
+		case map[string]any:
+			// metadata[pedido]=A-1042, one pair per key.
+			for kk, vv := range x {
+				if s, ok := vv.(string); ok {
+					q.Set(k+"["+kk+"]", s)
+				}
+			}
 		default:
 			return nil, fmt.Errorf("fiscalisto: %s no va en la dirección", k)
 		}
@@ -230,6 +251,9 @@ func (c *Client) call(ctx context.Context, method, path string, body, query any,
 	q, err := queryOf(query)
 	if err != nil {
 		return nil, 0, "", err
+	}
+	for _, f := range cfg.expand {
+		q.Add("expand[]", f)
 	}
 	target := c.baseURL + path
 	if len(q) > 0 {
@@ -268,6 +292,11 @@ func (c *Client) call(ctx context.Context, method, path string, body, query any,
 			}
 			return nil, 0, "", connectionError(err, key, cfg.timeout)
 		}
+		if !c.warned.Load() {
+			if warning := expiryWarning(header, time.Now()); warning != "" && c.warned.CompareAndSwap(false, true) {
+				fmt.Fprintln(os.Stderr, warning)
+			}
+		}
 		if status >= 200 && status < 300 {
 			return answer, status, header.Get("Request-Id"), nil
 		}
@@ -291,7 +320,12 @@ func (c *Client) call(ctx context.Context, method, path string, body, query any,
 		if e.Message == "" {
 			e.Message = "Error de la API de Fiscalisto"
 		}
-		retryAfter, _ := strconv.ParseFloat(header.Get("Retry-After"), 64)
+		// Retry-After when the API sends it; otherwise RateLimit-Reset on a 429.
+		wait := header.Get("Retry-After")
+		if wait == "" && status == http.StatusTooManyRequests {
+			wait = header.Get("RateLimit-Reset")
+		}
+		retryAfter, _ := strconv.ParseFloat(wait, 64)
 		retryable := status == http.StatusTooManyRequests || e.Code == CodeRequestInProgress ||
 			(safe && status >= 500)
 		if retryable && attempt < retries && retryAfter <= 60 {
@@ -384,4 +418,23 @@ func (c *Client) do(ctx context.Context, method, path string, body, query any, i
 			Message: fmt.Sprintf("La respuesta (%d) no es de la API: %s. ¿Hay un proxy o un portal de por medio?", status, text)}
 	}
 	return nil
+}
+
+var expiresSoon = regexp.MustCompile(`\bapi_key_expires_soon\b`)
+
+// expiryWarning is the console message when the API says the key ends soon
+// (Fiscalisto-Key-Expires-At within 7 days, or Fiscalisto-Warning: api_key_expires_soon).
+func expiryWarning(header http.Header, now time.Time) string {
+	at, err := time.Parse(time.RFC3339, header.Get("Fiscalisto-Key-Expires-At"))
+	known := err == nil
+	soon := expiresSoon.MatchString(header.Get("Fiscalisto-Warning")) ||
+		(known && at.After(now) && at.Sub(now) <= 7*24*time.Hour)
+	if !soon {
+		return ""
+	}
+	when := "en menos de 7 días"
+	if known {
+		when = "el " + at.UTC().Format(time.RFC3339)
+	}
+	return "[fiscalisto] Su llave de la API vence " + when + ". Cámbiela antes en Desarrolladores › Llaves (Cambiar llave) para que sus solicitudes no fallen con api_key_expired."
 }
