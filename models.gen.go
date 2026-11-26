@@ -12239,7 +12239,7 @@ type InvoiceCreateDonation struct {
 
 // InvoiceCreateGlobal: Factura global a público en general (InformacionGlobal): periodicidad, meses y año.
 type InvoiceCreateGlobal struct {
-	// Periodicidad (Periodicidad), c_Periodicidad: 01 diario, 02 semanal, 03 quincenal, 04 mensual, 05 bimestral.
+	// Periodicidad (Periodicidad), c_Periodicidad: 01 diario, 02 semanal o 04 mensual; 05 bimestral solo en el Régimen de Incorporación Fiscal (621). La regla 2.7.1.21 de la RMF 2026 no permite 03 quincenal.
 	Periodicity string `json:"periodicity"`
 	// Meses (Meses), c_Meses: 01 a 12, o 13 a 18 bimestres.
 	Months string `json:"months"`
@@ -21077,9 +21077,9 @@ type SelfInvoicing struct {
 	Window string `json:"window"`
 	// Días para facturar con window: days.
 	WindowDays int64 `json:"window_days"`
-	// Cada cuánto se timbra sola la factura global con lo que nadie facturó: 01 diaria, 02 semanal, 03 quincenal, 04 mensual.
+	// Cada cuánto se timbra sola la factura global con lo que nadie facturó: 01 diaria, 02 semanal o 04 mensual (regla 2.7.1.21 de la RMF 2026).
 	//
-	// Valores: 01, 02, 03, 04.
+	// Valores: 01, 02, 04.
 	GlobalPeriodicity string `json:"global_periodicity"`
 	// auto: los tickets que nadie facturó van solos a la factura global de su periodo. off: Fiscalisto no hace factura global de estos tickets (la hace usted en otro lado).
 	//
@@ -24109,7 +24109,7 @@ type UpdateInvoiceParamsDonation struct {
 
 // UpdateInvoiceParamsGlobal: Factura global a público en general (InformacionGlobal): periodicidad, meses y año.
 type UpdateInvoiceParamsGlobal struct {
-	// Periodicidad (Periodicidad), c_Periodicidad: 01 diario, 02 semanal, 03 quincenal, 04 mensual, 05 bimestral.
+	// Periodicidad (Periodicidad), c_Periodicidad: 01 diario, 02 semanal o 04 mensual; 05 bimestral solo en el Régimen de Incorporación Fiscal (621). La regla 2.7.1.21 de la RMF 2026 no permite 03 quincenal.
 	Periodicity string `json:"periodicity"`
 	// Meses (Meses), c_Meses: 01 a 12, o 13 a 18 bimestres.
 	Months string `json:"months"`
@@ -25819,9 +25819,9 @@ type UpdateSelfInvoicingParams struct {
 	Window *string `json:"window,omitempty"`
 	// Días para facturar con `window: days`.
 	WindowDays *int64 `json:"window_days,omitempty"`
-	// c_Periodicidad de la factura global con los tickets que nadie facturó: 01 diaria, 02 semanal, 03 quincenal, 04 mensual.
+	// c_Periodicidad de la factura global con los tickets que nadie facturó: 01 diaria, 02 semanal o 04 mensual (regla 2.7.1.21 de la RMF 2026; 03 quincenal no).
 	//
-	// Valores: 01, 02, 03, 04.
+	// Valores: 01, 02, 04.
 	GlobalPeriodicity *string `json:"global_periodicity,omitempty"`
 	// `auto` (por omisión): los tickets que nadie facturó van solos a la factura global al terminar su periodo. `off`: Fiscalisto no hace factura global de los tickets (por ejemplo, porque su punto de venta ya la hace); quedan pendientes y usted responde por ellos ante el SAT.
 	//

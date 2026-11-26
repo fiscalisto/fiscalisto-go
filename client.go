@@ -31,7 +31,7 @@ import (
 )
 
 // Version del SDK, en el User-Agent.
-const Version = "0.1.225"
+const Version = "0.1.226"
 
 // APIVersion es la versión de la API para la que se hizo este SDK (cabecera Fiscalisto-Version).
 const APIVersion = "2026-11-25"
